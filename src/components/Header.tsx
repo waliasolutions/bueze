@@ -46,7 +46,7 @@ export const Header = () => {
               <Hammer className="h-6 w-6 text-ink-900" />
             </div>
             <div className="font-bold text-xl text-ink-900">
-              HandwerkerLeads
+              Büeze
             </div>
           </div>
 

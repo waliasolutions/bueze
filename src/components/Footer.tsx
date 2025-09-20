@@ -53,7 +53,7 @@ export const Footer = () => {
                 <Hammer className="h-6 w-6 text-ink-900" />
               </div>
               <div className="font-bold text-xl">
-                HandwerkerLeads
+                Büeze
               </div>
             </div>
             
@@ -65,7 +65,7 @@ export const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm text-ink-500">
                 <Mail className="h-4 w-4" />
-                <span>info@handwerkerleads.ch</span>
+                <span>info@büeze.ch</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-500">
                 <Phone className="h-4 w-4" />
@@ -145,7 +145,7 @@ export const Footer = () => {
           {/* Copyright */}
           <div className="text-center mt-8 pt-6 border-t border-ink-700">
             <p className="text-sm text-ink-500">
-              © 2024 HandwerkerLeads AG. Alle Rechte vorbehalten.
+              © 2024 Büeze AG. Alle Rechte vorbehalten.
             </p>
           </div>
         </div>

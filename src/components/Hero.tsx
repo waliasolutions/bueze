@@ -67,7 +67,7 @@ export const Hero = () => {
           <div className="flex justify-center lg:justify-end">
             <div className="bg-surface/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl max-w-md">
               <h3 className="text-2xl font-bold text-ink-900 mb-4">
-                Warum HandwerkerLeads?
+                Warum Büeze?
               </h3>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">

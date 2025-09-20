@@ -142,7 +142,7 @@ export default function Auth() {
         </div>
 
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-ink-900">HandwerkerLeads.ch</h1>
+          <h1 className="text-3xl font-bold text-ink-900">Büeze.ch</h1>
           <p className="text-ink-700 mt-2">Anmelden oder registrieren</p>
         </div>
 

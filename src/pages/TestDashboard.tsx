@@ -237,7 +237,7 @@ export default function TestDashboard() {
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold">QA Test Dashboard</h1>
         <p className="text-muted-foreground">
-          Comprehensive testing platform for HandwerkerLeads.ch
+          Comprehensive testing platform for Büeze.ch
         </p>
       </div>
 

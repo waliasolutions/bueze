@@ -7,7 +7,7 @@ const testimonials = [
     name: 'Maria Schneider',
     location: 'Zürich',
     rating: 5,
-    text: 'Dank HandwerkerLeads habe ich innerhalb von 2 Stunden drei Offerten erhalten. Die Qualität der Handwerker war ausgezeichnet.',
+    text: 'Dank Büeze habe ich innerhalb von 2 Stunden drei Offerten erhalten. Die Qualität der Handwerker war ausgezeichnet.',
     project: 'Badumbau'
   },
   {
@@ -35,7 +35,7 @@ export const Testimonials = () => {
             Das sagen unsere Kunden
           </h2>
           <p className="text-xl text-ink-700 max-w-2xl mx-auto">
-            Über 25'000 zufriedene Kunden vertrauen auf HandwerkerLeads
+            Über 25'000 zufriedene Kunden vertrauen auf Büeze
           </p>
         </div>
 
