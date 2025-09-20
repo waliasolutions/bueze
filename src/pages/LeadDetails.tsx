@@ -152,7 +152,7 @@ const LeadDetails = () => {
       }
 
       // Insert purchase record
-      const { error } = await supabase
+      const { error: purchaseError } = await supabase
         .from('lead_purchases')
         .insert({
           lead_id: lead.id,
@@ -160,7 +160,21 @@ const LeadDetails = () => {
           price: 2000, // 20 CHF in cents
         });
 
-      if (error) throw error;
+      if (purchaseError) throw purchaseError;
+
+      // Create conversation between buyer and lead owner
+      const { error: conversationError } = await supabase
+        .from('conversations')
+        .insert({
+          lead_id: lead.id,
+          homeowner_id: lead.owner_id,
+          handwerker_id: user.id,
+        });
+
+      // Don't throw error if conversation already exists
+      if (conversationError && !conversationError.message.includes('duplicate key')) {
+        console.error('Conversation creation error:', conversationError);
+      }
 
       toast({
         title: "Auftrag gekauft",
@@ -290,14 +304,14 @@ const LeadDetails = () => {
                 </CardContent>
               </Card>
 
-              {/* Contact information - only show if purchased */}
+              {/* Contact information and message button - only show if purchased */}
               {user && owner && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Auftraggeber</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 mb-4">
                       <Avatar className="h-12 w-12">
                         <AvatarImage src={owner.avatar_url} />
                         <AvatarFallback>
@@ -320,6 +334,12 @@ const LeadDetails = () => {
                         </div>
                       </div>
                     </div>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => navigate('/conversations')}
+                    >
+                      Nachricht senden
+                    </Button>
                   </CardContent>
                 </Card>
               )}

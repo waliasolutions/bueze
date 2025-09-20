@@ -9,6 +9,8 @@ import Search from "./pages/Search";
 import SubmitLead from "./pages/SubmitLead";
 import LeadDetails from "./pages/LeadDetails";
 import Dashboard from "./pages/Dashboard";
+import Messages from "./pages/Messages";
+import ConversationsList from "./pages/ConversationsList";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/submit-lead" element={<SubmitLead />} />
           <Route path="/lead/:id" element={<LeadDetails />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/conversations" element={<ConversationsList />} />
+          <Route path="/messages/:conversationId" element={<Messages />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

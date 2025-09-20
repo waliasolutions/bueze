@@ -79,12 +79,14 @@ export const Header = () => {
             ))}
           </nav>
 
-          {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-4">
                 <Button variant="ghost" onClick={() => navigate('/dashboard')}>
                   Dashboard
+                </Button>
+                <Button variant="ghost" onClick={() => navigate('/conversations')}>
+                  Nachrichten
                 </Button>
                 <Button variant="outline" onClick={() => navigate('/submit-lead')}>
                   Auftrag erstellen
@@ -135,6 +137,10 @@ export const Header = () => {
                   <Button variant="ghost" className="justify-start gap-2" onClick={() => navigate('/dashboard')}>
                     <User className="h-4 w-4" />
                     Dashboard
+                  </Button>
+                  <Button variant="ghost" className="justify-start gap-2" onClick={() => navigate('/conversations')}>
+                    <Settings className="h-4 w-4" />
+                    Nachrichten
                   </Button>
                   <Button variant="ghost" className="justify-start gap-2" onClick={() => navigate('/submit-lead')}>
                     <Settings className="h-4 w-4" />
