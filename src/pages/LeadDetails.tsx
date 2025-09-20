@@ -258,6 +258,10 @@ const LeadDetails = () => {
     return `vor ${Math.floor(diffInHours / 168)} Wochen`;
   };
 
+  const isOwnLead = user && lead && lead.owner_id === user.id;
+  const shouldShowContactInfo = user && owner && (hasPurchased || isOwnLead);
+  const shouldShowPurchaseSection = !isOwnLead;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -300,16 +304,21 @@ const LeadDetails = () => {
             <div className="lg:col-span-2 space-y-6">
               <Card>
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <CardTitle className="text-2xl">{lead.title}</CardTitle>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        <span>{lead.zip} {lead.city}, {lead.canton}</span>
-                        <Clock className="h-4 w-4 ml-4" />
-                        <span>{getTimeAgo(lead.created_at)}</span>
-                      </div>
-                    </div>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <CardTitle className="text-2xl">{lead.title}</CardTitle>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            <span>
+                              {isOwnLead || hasPurchased ? 
+                                `${lead.address ? lead.address + ', ' : ''}${lead.zip} ${lead.city}, ${lead.canton}` : 
+                                `${lead.zip} ${lead.city}, ${lead.canton}`
+                              }
+                            </span>
+                            <Clock className="h-4 w-4 ml-4" />
+                            <span>{getTimeAgo(lead.created_at)}</span>
+                          </div>
+                        </div>
                     <div className="flex items-center gap-2">
                       <Badge className={urgencyColors[lead.urgency as keyof typeof urgencyColors]}>
                         {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
@@ -352,12 +361,12 @@ const LeadDetails = () => {
                 </CardContent>
               </Card>
 
-              {/* Contact information and message button - show if purchased OR if it's user's own lead */}
-              {user && owner && (hasPurchased || (lead && lead.owner_id === user.id)) && (
+              {/* Contact information - show if purchased OR if it's user's own lead */}
+              {shouldShowContactInfo && (
                 <Card>
                   <CardHeader>
                     <CardTitle>
-                      {lead && lead.owner_id === user.id ? 'Ihr Auftrag' : 'Auftraggeber'}
+                      {isOwnLead ? 'Ihre Kontaktdaten' : 'Auftraggeber'}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -384,12 +393,40 @@ const LeadDetails = () => {
                         </div>
                       </div>
                     </div>
-                    <Button 
-                      className="w-full" 
-                      onClick={() => navigate('/conversations')}
-                      disabled={lead && lead.owner_id === user.id}
-                    >
-                      {lead && lead.owner_id === user.id ? 'Ihr eigener Auftrag' : 'Nachricht senden'}
+                    {!isOwnLead && (
+                      <Button 
+                        className="w-full" 
+                        onClick={() => navigate('/conversations')}
+                      >
+                        Nachricht senden
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Manage own lead section */}
+              {isOwnLead && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Auftrag verwalten</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-muted rounded-lg">
+                        <div className="text-2xl font-bold text-primary">{lead.purchased_count}</div>
+                        <div className="text-sm text-muted-foreground">Verkäufe</div>
+                      </div>
+                      <div className="text-center p-3 bg-muted rounded-lg">
+                        <div className="text-2xl font-bold text-primary">{lead.quality_score}</div>
+                        <div className="text-sm text-muted-foreground">Qualität</div>
+                      </div>
+                    </div>
+                    <Button variant="outline" className="w-full">
+                      Auftrag bearbeiten
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      Status ändern
                     </Button>
                   </CardContent>
                 </Card>
@@ -398,69 +435,101 @@ const LeadDetails = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Auftrag kaufen</CardTitle>
-                  <CardDescription>
-                    Erhalten Sie Zugang zu den Kontaktdaten und können sich direkt bewerben.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-primary">CHF 20</div>
-                    <div className="text-sm text-muted-foreground">einmalig</div>
-                  </div>
-                  
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    onClick={handlePurchase}
-                    disabled={purchasing || !user || hasPurchased || (lead && lead.owner_id === user.id)}
-                    variant={hasPurchased ? "secondary" : "default"}
-                  >
-                    {lead && lead.owner_id === user.id 
-                      ? 'Ihr eigener Auftrag' 
-                      : hasPurchased 
-                        ? 'Bereits gekauft' 
-                        : purchasing 
-                          ? 'Wird gekauft...' 
-                          : 'Jetzt kaufen'
-                    }
-                  </Button>
+              {/* Purchase section - only show for other's leads */}
+              {shouldShowPurchaseSection && (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Auftrag kaufen</CardTitle>
+                      <CardDescription>
+                        Erhalten Sie Zugang zu den Kontaktdaten und können sich direkt bewerben.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold text-primary">CHF 20</div>
+                        <div className="text-sm text-muted-foreground">einmalig</div>
+                      </div>
+                      
+                      <Button 
+                        className="w-full" 
+                        size="lg"
+                        onClick={handlePurchase}
+                        disabled={purchasing || !user || hasPurchased}
+                        variant={hasPurchased ? "secondary" : "default"}
+                      >
+                        {hasPurchased 
+                          ? 'Bereits gekauft' 
+                          : purchasing 
+                            ? 'Wird gekauft...' 
+                            : 'Jetzt kaufen'
+                        }
+                      </Button>
 
-                  {!user && (
-                    <p className="text-xs text-center text-muted-foreground">
-                      <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/auth')}>
-                        Anmelden
-                      </Button> um diesen Auftrag zu kaufen
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                      {!user && (
+                        <p className="text-xs text-center text-muted-foreground">
+                          <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/auth')}>
+                            Anmelden
+                          </Button> um diesen Auftrag zu kaufen
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Was Sie erhalten</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-2 h-2 bg-primary rounded-full" />
-                    <span>Vollständige Kontaktdaten</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-2 h-2 bg-primary rounded-full" />
-                    <span>Direkte Bewerbung möglich</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-2 h-2 bg-primary rounded-full" />
-                    <span>Exklusiver Zugang (max. {lead.max_purchases} Handwerker)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <div className="w-2 h-2 bg-primary rounded-full" />
-                    <span>Integriertes Messaging-System</span>
-                  </div>
-                </CardContent>
-              </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Was Sie erhalten</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="w-2 h-2 bg-primary rounded-full" />
+                        <span>Vollständige Kontaktdaten</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="w-2 h-2 bg-primary rounded-full" />
+                        <span>Direkte Bewerbung möglich</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="w-2 h-2 bg-primary rounded-full" />
+                        <span>Exklusiver Zugang (max. {lead.max_purchases} Handwerker)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <div className="w-2 h-2 bg-primary rounded-full" />
+                        <span>Integriertes Messaging-System</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {/* Lead performance for own leads */}
+              {isOwnLead && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Auftrag-Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Aufrufe</span>
+                        <span className="text-sm font-medium">247</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Interessenten</span>
+                        <span className="text-sm font-medium">{lead.purchased_count}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Verfügbare Plätze</span>
+                        <span className="text-sm font-medium">{lead.max_purchases - lead.purchased_count}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Qualitätsscore</span>
+                        <span className="text-sm font-medium">{lead.quality_score}/100</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </div>
