@@ -91,6 +91,9 @@ export const Header = () => {
                 <Button variant="outline" onClick={() => navigate('/submit-lead')}>
                   Auftrag erstellen
                 </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/test-dashboard')}>
+                  QA Tests
+                </Button>
                 <Button variant="ghost" className="gap-2" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4" />
                   Abmelden
