@@ -19,6 +19,45 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        
+        /* Swiss Brand Colors */
+        brand: {
+          50: "hsl(var(--brand-50))",
+          100: "hsl(var(--brand-100))",
+          200: "hsl(var(--brand-200))",
+          300: "hsl(var(--brand-300))",
+          400: "hsl(var(--brand-400))",
+          500: "hsl(var(--brand-500))",
+          600: "hsl(var(--brand-600))",
+          700: "hsl(var(--brand-700))",
+        },
+        
+        /* Pastel Backgrounds */
+        pastel: {
+          blue: {
+            50: "hsl(var(--pastel-blue-50))",
+            100: "hsl(var(--pastel-blue-100))",
+          },
+          green: {
+            50: "hsl(var(--pastel-green-50))",
+          },
+          grey: {
+            50: "hsl(var(--pastel-grey-50))",
+            100: "hsl(var(--pastel-grey-100))",
+          },
+        },
+        
+        /* Neutral Text Colors */
+        ink: {
+          900: "hsl(var(--ink-900))",
+          700: "hsl(var(--ink-700))",
+          500: "hsl(var(--ink-500))",
+        },
+        line: {
+          200: "hsl(var(--line-200))",
+        },
+        surface: "hsl(var(--surface))",
+        
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",

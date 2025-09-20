@@ -8,35 +8,62 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    /* Swiss HandwerkerLeads Design System */
+    
+    /* Brand Colors - Dark Yellow Accent */
+    --brand-50: 48 100% 96%;   /* #FFF8E1 */
+    --brand-100: 48 100% 85%;  /* #FFECB3 */
+    --brand-200: 48 100% 75%;  /* #FFE082 */
+    --brand-300: 48 100% 65%;  /* #FFD54F */
+    --brand-400: 48 100% 58%;  /* #FFCA28 */
+    --brand-500: 43 100% 48%;  /* #F5B800 - Core Accent */
+    --brand-600: 43 100% 42%;  /* #D69E00 - Hover/Focus */
+    --brand-700: 43 100% 36%;  /* #B68600 - Active */
+    
+    /* Pastel Backgrounds for calm surfaces */
+    --pastel-blue-50: 212 100% 97%;   /* #EEF6FF */
+    --pastel-blue-100: 212 100% 93%;  /* #DCEEFF */
+    --pastel-green-50: 142 71% 96%;   /* #EDF9F2 */
+    --pastel-grey-50: 216 20% 98%;    /* #F7F8FA */
+    --pastel-grey-100: 215 25% 94%;   /* #ECEFF3 */
+    
+    /* Neutral colors for text and structure */
+    --ink-900: 217 91% 7%;    /* #111827 - Primary text */
+    --ink-700: 217 19% 25%;   /* #374151 - Secondary text */
+    --ink-500: 217 9% 45%;    /* #6B7280 - Meta text */
+    --line-200: 217 13% 90%;  /* #E5E7EB - Dividers */
+    --surface: 0 0% 100%;     /* #FFFFFF - Cards/blocks */
+    
+    /* Design System Mappings */
+    --background: var(--pastel-grey-50);
+    --foreground: var(--ink-900);
+    
+    --card: var(--surface);
+    --card-foreground: var(--ink-900);
+    
+    --popover: var(--surface);
+    --popover-foreground: var(--ink-900);
+    
+    --primary: var(--brand-500);
+    --primary-foreground: var(--ink-900);
+    
+    --secondary: var(--pastel-blue-50);
+    --secondary-foreground: var(--ink-700);
+    
+    --muted: var(--pastel-grey-100);
+    --muted-foreground: var(--ink-500);
+    
+    --accent: var(--brand-500);
+    --accent-foreground: var(--ink-900);
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: var(--line-200);
+    --input: var(--surface);
+    --ring: var(--brand-500);
+    
+    --radius: 1rem;
 
     --sidebar-background: 0 0% 98%;
 
