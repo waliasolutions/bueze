@@ -108,24 +108,6 @@ export default function Search() {
     checkUser();
   }, []);
 
-  // Helper function to parse budget range from search params
-  const parseBudgetRange = (budgetParam: string): [number | null, number | null] => {
-    if (!budgetParam) return [null, null];
-    
-    switch (budgetParam) {
-      case '0-500':
-        return [0, 500];
-      case '500-1500':
-        return [500, 1500];
-      case '1500-5000':
-        return [1500, 5000];
-      case '5000+':
-        return [5000, 999999];
-      default:
-        return [null, null];
-    }
-  };
-
   useEffect(() => {
     fetchData();
   }, [searchParams]);
@@ -133,97 +115,59 @@ export default function Search() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch leads
-      let leadsQueryBuilder = supabase
+      // Simple leads query
+      let leadsQuery = supabase
         .from('leads')
         .select('*')
         .eq('status', 'active');
 
-      // Apply full-text search if query is provided
+      // Add simple filters
       if (query.trim()) {
-        const searchTerms = query.trim().split(' ').join(' & ');
-        leadsQueryBuilder = leadsQueryBuilder.textSearch('search_text', searchTerms);
+        leadsQuery = leadsQuery.or(`title.ilike.%${query.trim()}%, description.ilike.%${query.trim()}%`);
       }
 
-      // Apply category filter
       if (category && Object.keys(categoryLabels).includes(category)) {
-        leadsQueryBuilder = leadsQueryBuilder.eq('category', category as any);
-      }
-      
-      // Apply enhanced location search
-      if (location.trim()) {
-        const locationTerm = location.trim();
-        leadsQueryBuilder = leadsQueryBuilder.or(`city.ilike.%${locationTerm}%, zip.ilike.${locationTerm}%, canton.ilike.%${locationTerm}%`);
-      }
-      
-      // Apply urgency filter
-      if (urgency && Object.keys(urgencyLabels).includes(urgency)) {
-        leadsQueryBuilder = leadsQueryBuilder.eq('urgency', urgency as any);
+        leadsQuery = leadsQuery.eq('category', category as any);
       }
 
-      // Fetch handwerker profiles with profile data
-      let handwerkersQueryBuilder = supabase
+      if (location.trim()) {
+        leadsQuery = leadsQuery.or(`city.ilike.%${location.trim()}%, zip.ilike.%${location.trim()}%`);
+      }
+
+      if (urgency && Object.keys(urgencyLabels).includes(urgency)) {
+        leadsQuery = leadsQuery.eq('urgency', urgency as any);
+      }
+
+      // Simple handwerkers query
+      let handwerkersQuery = supabase
         .from('handwerker_profiles')
         .select('*')
         .eq('is_verified', true);
 
-      // Apply full-text search for handwerkers if query is provided
       if (query.trim()) {
-        const searchTerms = query.trim().split(' ').join(' & ');
-        handwerkersQueryBuilder = handwerkersQueryBuilder.textSearch('search_text', searchTerms);
+        handwerkersQuery = handwerkersQuery.ilike('bio', `%${query.trim()}%`);
       }
 
-      // Apply category filter for handwerkers
-      if (category && Object.keys(categoryLabels).includes(category)) {
-        handwerkersQueryBuilder = handwerkersQueryBuilder.contains('categories', [category]);
+      if (category) {
+        handwerkersQuery = handwerkersQuery.contains('categories', [category]);
       }
 
-      // Apply location filter for handwerkers
       if (location.trim()) {
-        const locationTerm = location.trim();
-        // Search in service areas or profile location
-        handwerkersQueryBuilder = handwerkersQueryBuilder.or(`service_areas.cs.{${locationTerm}}`);
+        handwerkersQuery = handwerkersQuery.contains('service_areas', [location.trim()]);
       }
 
       const [leadsResult, handwerkersResult] = await Promise.all([
-        leadsQueryBuilder.order('created_at', { ascending: false }),
-        handwerkersQueryBuilder.order('created_at', { ascending: false })
+        leadsQuery.order('created_at', { ascending: false }),
+        handwerkersQuery.order('created_at', { ascending: false })
       ]);
 
-      if (leadsResult.error) {
-        console.error('Error fetching leads:', leadsResult.error);
-      }
+      setLeads(leadsResult.data || []);
+      setHandwerkers(handwerkersResult.data || []);
 
-      if (handwerkersResult.error) {
-        console.error('Error fetching handwerkers:', handwerkersResult.error);
-      }
-
-      let filteredLeads = leadsResult.data || [];
-      
-      // Apply client-side budget filtering
-      if (budget) {
-        const [minBudget, maxBudget] = parseBudgetRange(budget);
-        if (minBudget !== null && maxBudget !== null) {
-          filteredLeads = filteredLeads.filter(lead => {
-            // Handle leads with budget on request (null values)
-            if (!lead.budget_min && !lead.budget_max) return true;
-            
-            const leadMin = lead.budget_min || lead.budget_max || 0;
-            const leadMax = lead.budget_max || lead.budget_min || 999999;
-            
-            // Check if budget ranges overlap
-            return leadMax >= minBudget && leadMin <= maxBudget;
-          });
-        }
-      }
-      
-      setLeads(filteredLeads);
-      
-      // For handwerkers, we'll fetch profile data separately for now
-      const handwerkersWithProfiles = handwerkersResult.data || [];
-      setHandwerkers(handwerkersWithProfiles as HandwerkerProfile[]);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Search error:', error);
+      setLeads([]);
+      setHandwerkers([]);
     } finally {
       setLoading(false);
     }
@@ -269,7 +213,6 @@ export default function Search() {
       navigate('/auth');
       return;
     }
-    // TODO: Implement contact functionality
     console.log('Contact handwerker:', handwerker);
   };
 
@@ -316,14 +259,6 @@ export default function Search() {
                 Ort: {location}
               </Badge>
             )}
-            {budget && (
-              <Badge variant="outline">
-                Budget: {budget === '0-500' ? 'Bis 500 CHF' : 
-                        budget === '500-1500' ? '500 - 1\'500 CHF' :
-                        budget === '1500-5000' ? '1\'500 - 5\'000 CHF' :
-                        budget === '5000+' ? 'Über 5\'000 CHF' : budget}
-              </Badge>
-            )}
             {urgency && (
               <Badge variant="outline">
                 Dringlichkeit: {urgencyLabels[urgency] || urgency}
@@ -343,7 +278,7 @@ export default function Search() {
                 Keine Ergebnisse gefunden
               </h3>
               <p className="text-ink-700 mb-6">
-                Versuchen Sie es mit anderen Suchkriterien oder erstellen Sie eine Benachrichtigung.
+                Versuchen Sie es mit anderen Suchkriterien.
               </p>
               <Button onClick={() => navigate('/')}>
                 Neue Suche starten
@@ -352,7 +287,7 @@ export default function Search() {
           </Card>
         ) : (
           <div className="space-y-12">
-            {/* Handwerker Results Section */}
+            {/* Handwerker Results */}
             {handwerkers.length > 0 && (
               <section>
                 <h2 className="text-2xl font-bold text-ink-900 mb-6">
@@ -370,7 +305,7 @@ export default function Search() {
               </section>
             )}
 
-            {/* Leads Results Section */}
+            {/* Leads Results */}
             {leads.length > 0 && (
               <section>
                 <h2 className="text-2xl font-bold text-ink-900 mb-6">
