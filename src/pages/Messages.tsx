@@ -85,8 +85,8 @@ const Messages = () => {
         .select(`
           *,
           lead:leads(title, description),
-          homeowner:profiles!conversations_homeowner_id_fkey(full_name, avatar_url),
-          handwerker:profiles!conversations_handwerker_id_fkey(full_name, avatar_url)
+          homeowner:profiles!homeowner_id(full_name, avatar_url),
+          handwerker:profiles!handwerker_id(full_name, avatar_url)
         `)
         .eq('id', conversationId)
         .single();
@@ -157,15 +157,19 @@ const Messages = () => {
         ? conversation.handwerker_id 
         : conversation.homeowner_id;
 
+      const messageData = {
+        conversation_id: conversationId,
+        sender_id: user.id,
+        recipient_id: recipientId,
+        content: newMessage.trim(),
+        lead_id: conversation.lead_id, // Required field
+      };
+
+      console.log('Sending message:', messageData);
+
       const { error } = await supabase
         .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          recipient_id: recipientId,
-          content: newMessage.trim(),
-          lead_id: conversation.lead_id, // Required field
-        });
+        .insert(messageData);
 
       if (error) throw error;
 

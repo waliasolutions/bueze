@@ -72,8 +72,8 @@ const ConversationsList = () => {
         .select(`
           *,
           lead:leads(title, status),
-          homeowner:profiles!conversations_homeowner_id_fkey(full_name, avatar_url),
-          handwerker:profiles!conversations_handwerker_id_fkey(full_name, avatar_url)
+          homeowner:profiles!homeowner_id(full_name, avatar_url),
+          handwerker:profiles!handwerker_id(full_name, avatar_url)
         `)
         .or(`homeowner_id.eq.${user.id},handwerker_id.eq.${user.id}`)
         .order('last_message_at', { ascending: false, nullsFirst: false });

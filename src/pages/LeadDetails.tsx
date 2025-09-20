@@ -210,27 +210,43 @@ const LeadDetails = () => {
       if (purchaseError) throw purchaseError;
 
       // Create conversation between buyer and lead owner
-      const { error: conversationError } = await supabase
+      const { data: conversation, error: conversationError } = await supabase
         .from('conversations')
         .insert({
           lead_id: lead.id,
           homeowner_id: lead.owner_id,
           handwerker_id: user.id,
-        });
+        })
+        .select()
+        .single();
 
-      // Don't throw error if conversation already exists
-      if (conversationError && !conversationError.message.includes('duplicate key')) {
-        console.error('Conversation creation error:', conversationError);
+      let conversationId = conversation?.id;
+
+      // If conversation already exists, get it
+      if (conversationError && conversationError.message.includes('duplicate key')) {
+        const { data: existingConversation } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('lead_id', lead.id)
+          .eq('homeowner_id', lead.owner_id)
+          .eq('handwerker_id', user.id)
+          .single();
+        
+        conversationId = existingConversation?.id;
       }
 
       toast({
         title: "Auftrag gekauft",
-        description: "Sie haben den Auftrag erfolgreich gekauft. Die Kontaktdaten sind jetzt sichtbar.",
+        description: "Sie haben den Auftrag erfolgreich gekauft und können jetzt eine Nachricht senden.",
       });
 
-      // Update purchase status and refresh lead data
+      // Update purchase status and navigate to conversation
       setHasPurchased(true);
-      fetchLead();
+      if (conversationId) {
+        navigate(`/messages/${conversationId}`);
+      } else {
+        navigate('/conversations');
+      }
     } catch (error) {
       console.error('Error purchasing lead:', error);
       toast({
@@ -387,10 +403,24 @@ const LeadDetails = () => {
                         </div>
                       </div>
                     </div>
-                    {!isOwnLead && (
+                    {!isOwnLead && hasPurchased && (
                       <Button 
                         className="w-full" 
-                        onClick={() => navigate('/conversations')}
+                        onClick={async () => {
+                          // Find the conversation for this lead and user
+                          const { data: conversation } = await supabase
+                            .from('conversations')
+                            .select('id')
+                            .eq('lead_id', lead.id)
+                            .eq('handwerker_id', user.id)
+                            .single();
+                          
+                          if (conversation) {
+                            navigate(`/messages/${conversation.id}`);
+                          } else {
+                            navigate('/conversations');
+                          }
+                        }}
                       >
                         Nachricht senden
                       </Button>
