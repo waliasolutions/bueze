@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { HandwerkerCard } from '@/components/HandwerkerCard';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,24 @@ interface Lead {
   purchased_count: number;
   max_purchases: number;
   created_at: string;
+}
+
+interface HandwerkerProfile {
+  id: string;
+  user_id: string;
+  categories: string[];
+  hourly_rate_min?: number;
+  hourly_rate_max?: number;
+  bio?: string;
+  service_areas: string[];
+  languages?: string[];
+  is_verified: boolean;
+  profiles?: {
+    full_name?: string;
+    phone?: string;
+    city?: string;
+    canton?: string;
+  };
 }
 
 const categoryLabels: Record<string, string> = {
@@ -70,11 +89,12 @@ export default function Search() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [handwerkers, setHandwerkers] = useState<HandwerkerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
 
   // Get search parameters
-  const query = searchParams.get('q') || '';
+  const query = searchParams.get('q') || searchParams.get('query') || '';
   const category = searchParams.get('category') || '';
   const location = searchParams.get('location') || '';
   const budget = searchParams.get('budget') || '';
@@ -107,13 +127,14 @@ export default function Search() {
   };
 
   useEffect(() => {
-    fetchLeads();
+    fetchData();
   }, [searchParams]);
 
-  const fetchLeads = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      let queryBuilder = supabase
+      // Fetch leads
+      let leadsQueryBuilder = supabase
         .from('leads')
         .select('*')
         .eq('status', 'active');
@@ -121,62 +142,86 @@ export default function Search() {
       // Apply full-text search if query is provided
       if (query.trim()) {
         const searchTerms = query.trim().split(' ').join(' & ');
-        queryBuilder = queryBuilder.textSearch('search_text', searchTerms);
+        leadsQueryBuilder = leadsQueryBuilder.textSearch('search_text', searchTerms);
       }
 
       // Apply category filter
       if (category && Object.keys(categoryLabels).includes(category)) {
-        queryBuilder = queryBuilder.eq('category', category as any);
+        leadsQueryBuilder = leadsQueryBuilder.eq('category', category as any);
       }
       
       // Apply enhanced location search
       if (location.trim()) {
         const locationTerm = location.trim();
-        // Search in city, zip, and canton with better matching
-        queryBuilder = queryBuilder.or(`city.ilike.%${locationTerm}%, zip.ilike.${locationTerm}%, zip.ilike.${locationTerm}%, canton.ilike.%${locationTerm}%`);
+        leadsQueryBuilder = leadsQueryBuilder.or(`city.ilike.%${locationTerm}%, zip.ilike.${locationTerm}%, canton.ilike.%${locationTerm}%`);
       }
       
       // Apply urgency filter
       if (urgency && Object.keys(urgencyLabels).includes(urgency)) {
-        queryBuilder = queryBuilder.eq('urgency', urgency as any);
+        leadsQueryBuilder = leadsQueryBuilder.eq('urgency', urgency as any);
       }
 
-      // Note: Budget filtering will be done client-side after fetching data
+      // Fetch handwerker profiles with profile data
+      let handwerkersQueryBuilder = supabase
+        .from('handwerker_profiles')
+        .select('*')
+        .eq('is_verified', true);
 
-      // Order by relevance if there's a text search, otherwise by date
+      // Apply full-text search for handwerkers if query is provided
       if (query.trim()) {
-        queryBuilder = queryBuilder.order('created_at', { ascending: false });
-      } else {
-        queryBuilder = queryBuilder.order('created_at', { ascending: false });
+        const searchTerms = query.trim().split(' ').join(' & ');
+        handwerkersQueryBuilder = handwerkersQueryBuilder.textSearch('search_text', searchTerms);
       }
 
-      const { data, error } = await queryBuilder;
+      // Apply category filter for handwerkers
+      if (category && Object.keys(categoryLabels).includes(category)) {
+        handwerkersQueryBuilder = handwerkersQueryBuilder.contains('categories', [category]);
+      }
 
-      if (error) {
-        console.error('Error fetching leads:', error);
-        setLeads([]);
-      } else {
-        let filteredLeads = data || [];
-        
-        // Apply client-side budget filtering
-        if (budget) {
-          const [minBudget, maxBudget] = parseBudgetRange(budget);
-          if (minBudget !== null && maxBudget !== null) {
-            filteredLeads = filteredLeads.filter(lead => {
-              // Handle leads with budget on request (null values)
-              if (!lead.budget_min && !lead.budget_max) return true;
-              
-              const leadMin = lead.budget_min || lead.budget_max || 0;
-              const leadMax = lead.budget_max || lead.budget_min || 999999;
-              
-              // Check if budget ranges overlap
-              return leadMax >= minBudget && leadMin <= maxBudget;
-            });
-          }
+      // Apply location filter for handwerkers
+      if (location.trim()) {
+        const locationTerm = location.trim();
+        // Search in service areas or profile location
+        handwerkersQueryBuilder = handwerkersQueryBuilder.or(`service_areas.cs.{${locationTerm}}`);
+      }
+
+      const [leadsResult, handwerkersResult] = await Promise.all([
+        leadsQueryBuilder.order('created_at', { ascending: false }),
+        handwerkersQueryBuilder.order('created_at', { ascending: false })
+      ]);
+
+      if (leadsResult.error) {
+        console.error('Error fetching leads:', leadsResult.error);
+      }
+
+      if (handwerkersResult.error) {
+        console.error('Error fetching handwerkers:', handwerkersResult.error);
+      }
+
+      let filteredLeads = leadsResult.data || [];
+      
+      // Apply client-side budget filtering
+      if (budget) {
+        const [minBudget, maxBudget] = parseBudgetRange(budget);
+        if (minBudget !== null && maxBudget !== null) {
+          filteredLeads = filteredLeads.filter(lead => {
+            // Handle leads with budget on request (null values)
+            if (!lead.budget_min && !lead.budget_max) return true;
+            
+            const leadMin = lead.budget_min || lead.budget_max || 0;
+            const leadMax = lead.budget_max || lead.budget_min || 999999;
+            
+            // Check if budget ranges overlap
+            return leadMax >= minBudget && leadMin <= maxBudget;
+          });
         }
-        
-        setLeads(filteredLeads);
       }
+      
+      setLeads(filteredLeads);
+      
+      // For handwerkers, we'll fetch profile data separately for now
+      const handwerkersWithProfiles = handwerkersResult.data || [];
+      setHandwerkers(handwerkersWithProfiles as HandwerkerProfile[]);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -219,6 +264,15 @@ export default function Search() {
     navigate(`/lead/${leadId}`);
   };
 
+  const handleHandwerkerContact = (handwerker: HandwerkerProfile) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    // TODO: Implement contact functionality
+    console.log('Contact handwerker:', handwerker);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -226,13 +280,15 @@ export default function Search() {
         <main className="container mx-auto px-4 py-8 pt-24">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-500 mx-auto"></div>
-            <p className="mt-4 text-ink-700">Leads werden geladen...</p>
+            <p className="mt-4 text-ink-700">Suchergebnisse werden geladen...</p>
           </div>
         </main>
         <Footer />
       </div>
     );
   }
+
+  const hasResults = leads.length > 0 || handwerkers.length > 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -276,15 +332,15 @@ export default function Search() {
           </div>
           
           <p className="text-ink-700">
-            {leads.length} {leads.length === 1 ? 'Lead gefunden' : 'Leads gefunden'}
+            {handwerkers.length} Handwerker und {leads.length} Aufträge gefunden
           </p>
         </div>
 
-        {leads.length === 0 ? (
+        {!hasResults ? (
           <Card className="text-center py-12">
             <CardContent>
               <h3 className="text-xl font-semibold text-ink-900 mb-2">
-                Keine Leads gefunden
+                Keine Ergebnisse gefunden
               </h3>
               <p className="text-ink-700 mb-6">
                 Versuchen Sie es mit anderen Suchkriterien oder erstellen Sie eine Benachrichtigung.
@@ -295,71 +351,99 @@ export default function Search() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {leads.map((lead) => (
-              <Card 
-                key={lead.id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => handleLeadClick(lead.id)}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="secondary">
-                      {categoryLabels[lead.category] || lead.category}
-                    </Badge>
-                    <Badge className={urgencyColors[lead.urgency]}>
-                      {urgencyLabels[lead.urgency] || lead.urgency}
-                    </Badge>
-                  </div>
-                  
-                  <CardTitle className="text-lg">{lead.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">
-                    {lead.description}
-                  </CardDescription>
-                </CardHeader>
-                
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-ink-700">
-                      <MapPin className="h-4 w-4" />
-                      {lead.zip} {lead.city}, {lead.canton}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-ink-700">
-                      <Coins className="h-4 w-4" />
-                      {formatBudget(lead)}
-                    </div>
-                    
-                    <div className="flex items-center gap-2 text-sm text-ink-700">
-                      <Clock className="h-4 w-4" />
-                      {getTimeAgo(lead.created_at)}
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 text-brand-500" />
-                        <span>{lead.quality_score}/100</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-1">
-                        <Users className="h-4 w-4 text-ink-500" />
-                        <span>{lead.purchased_count}/{lead.max_purchases}</span>
-                      </div>
-                    </div>
-                    
-                    <Button 
-                      className="w-full mt-4"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleLeadClick(lead.id);
-                      }}
+          <div className="space-y-12">
+            {/* Handwerker Results Section */}
+            {handwerkers.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-ink-900 mb-6">
+                  Handwerker ({handwerkers.length})
+                </h2>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {handwerkers.map((handwerker) => (
+                    <HandwerkerCard 
+                      key={handwerker.id} 
+                      handwerker={handwerker}
+                      onContactClick={handleHandwerkerContact}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Leads Results Section */}
+            {leads.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold text-ink-900 mb-6">
+                  Aufträge ({leads.length})
+                </h2>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {leads.map((lead) => (
+                    <Card 
+                      key={lead.id} 
+                      className="hover:shadow-lg transition-shadow cursor-pointer"
+                      onClick={() => handleLeadClick(lead.id)}
                     >
-                      {user ? 'Details ansehen' : 'Anmelden für Details'}
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                      <CardHeader>
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge variant="secondary">
+                            {categoryLabels[lead.category] || lead.category}
+                          </Badge>
+                          <Badge className={urgencyColors[lead.urgency]}>
+                            {urgencyLabels[lead.urgency] || lead.urgency}
+                          </Badge>
+                        </div>
+                        
+                        <CardTitle className="text-lg">{lead.title}</CardTitle>
+                        <CardDescription className="line-clamp-2">
+                          {lead.description}
+                        </CardDescription>
+                      </CardHeader>
+                      
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-sm text-ink-700">
+                            <MapPin className="h-4 w-4" />
+                            {lead.zip} {lead.city}, {lead.canton}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm text-ink-700">
+                            <Coins className="h-4 w-4" />
+                            {formatBudget(lead)}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 text-sm text-ink-700">
+                            <Clock className="h-4 w-4" />
+                            {getTimeAgo(lead.created_at)}
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-1">
+                              <Star className="h-4 w-4 text-brand-500" />
+                              <span>{lead.quality_score}/100</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-1">
+                              <Users className="h-4 w-4 text-ink-500" />
+                              <span>{lead.purchased_count}/{lead.max_purchases}</span>
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            className="w-full mt-4"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLeadClick(lead.id);
+                            }}
+                          >
+                            {user ? 'Details ansehen' : 'Anmelden für Details'}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </main>

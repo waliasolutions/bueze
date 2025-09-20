@@ -14,6 +14,7 @@ import Messages from "./pages/Messages";
 import ConversationsList from "./pages/ConversationsList";
 import Profile from "./pages/Profile";
 import TestDashboard from "./pages/TestDashboard";
+import PopulateData from "./pages/PopulateData";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => {
             <Route path="/messages/:conversationId" element={<Messages />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/test-dashboard" element={<TestDashboard />} />
+            <Route path="/populate-data" element={<PopulateData />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

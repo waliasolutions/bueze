@@ -286,6 +286,227 @@ export const testUsers: TestUser[] = [
       service_areas: ["Lugano", "Bellinzona", "Locarno"],
       languages: ["it", "de", "fr"]
     }
+  },
+  // Additional comprehensive handwerker profiles
+  {
+    email: "lisa.schneider@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Lisa Schneider",
+      first_name: "Lisa",
+      last_name: "Schneider",
+      phone: "+41 44 789 01 23",
+      canton: "ZH",
+      city: "Zürich",
+      zip: "8044"
+    },
+    handwerkerProfile: {
+      categories: ["bodenleger", "plattenleger"],
+      hourly_rate_min: 75,
+      hourly_rate_max: 110,
+      bio: "Spezialistin für hochwertigen Bodenbelag und Fliesenverlegung. Parkett, Laminat, Naturstein und Keramik. 12 Jahre Erfahrung in exklusiven Projekten mit Fokus auf Präzision und Ästhetik.",
+      service_areas: ["Zürich", "Zug", "Pfäffikon"],
+      languages: ["de", "en"]
+    }
+  },
+  {
+    email: "jean.martin@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Jean Martin",
+      first_name: "Jean",
+      last_name: "Martin",
+      phone: "+41 21 456 78 90",
+      canton: "VD",
+      city: "Lausanne",
+      zip: "1000"
+    },
+    handwerkerProfile: {
+      categories: ["fenster_tueren", "schreiner"],
+      hourly_rate_min: 85,
+      hourly_rate_max: 130,
+      bio: "Artisan menuisier spécialisé dans les fenêtres et portes sur mesure. Matériaux nobles, isolation optimale, design contemporain. Solutions énergétiques performantes avec 20 ans d'expertise.",
+      service_areas: ["Lausanne", "Montreux", "Vevey"],
+      languages: ["fr", "de", "en"]
+    }
+  },
+  {
+    email: "werner.hoffmann@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Werner Hoffmann",
+      first_name: "Werner",
+      last_name: "Hoffmann",
+      phone: "+41 41 234 56 78",
+      canton: "LU",
+      city: "Luzern",
+      zip: "6000"
+    },
+    handwerkerProfile: {
+      categories: ["gartenbau", "pflasterarbeiten"],
+      hourly_rate_min: 70,
+      hourly_rate_max: 105,
+      bio: "Landschaftsgärtner mit Passion für natürliche Gartengestaltung. Terrassen, Wege, Bepflanzung und Wasserspiele. Nachhaltiges Gärtnern mit einheimischen Pflanzen und ökologischen Methoden.",
+      service_areas: ["Luzern", "Sursee", "Hochdorf"],
+      languages: ["de"]
+    }
+  },
+  {
+    email: "alessandro.rossi@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Alessandro Rossi",
+      first_name: "Alessandro",
+      last_name: "Rossi",
+      phone: "+41 91 345 67 89",
+      canton: "TI",
+      city: "Bellinzona",
+      zip: "6500"
+    },
+    handwerkerProfile: {
+      categories: ["fassadenbauer", "gipser"],
+      hourly_rate_min: 80,
+      hourly_rate_max: 120,
+      bio: "Costruttore di facciate con specializzazione in isolamento termico e finiture decorative. Ristrutturazioni storiche e moderne, cappotto termico, intonaci tradizionali e contemporanei.",
+      service_areas: ["Bellinzona", "Lugano", "Locarno"],
+      languages: ["it", "de"]
+    }
+  },
+  {
+    email: "claudia.weber@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Claudia Weber",
+      first_name: "Claudia",
+      last_name: "Weber",
+      phone: "+41 62 567 89 01",
+      canton: "AG",
+      city: "Aarau",
+      zip: "5000"
+    },
+    handwerkerProfile: {
+      categories: ["klimatechnik", "heizung"],
+      hourly_rate_min: 90,
+      hourly_rate_max: 140,
+      bio: "Klimatechnikerin mit Fokus auf energieeffiziente Lösungen. Wärmepumpen, Lüftungsanlagen, Smart Home Integration. Beratung für nachhaltiges Raumklima und Energieoptimierung in Wohn- und Geschäftsräumen.",
+      service_areas: ["Aarau", "Baden", "Wohlen"],
+      languages: ["de", "en"]
+    }
+  },
+  {
+    email: "dimitri.mueller@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Dimitri Müller",
+      first_name: "Dimitri",
+      last_name: "Müller",
+      phone: "+41 52 678 90 12",
+      canton: "SH",
+      city: "Schaffhausen",
+      zip: "8200"
+    },
+    handwerkerProfile: {
+      categories: ["schlosserei", "zaun_torbau"],
+      hourly_rate_min: 85,
+      hourly_rate_max: 125,
+      bio: "Kunstschlosser mit traditionellem Handwerk und modernen Techniken. Tore, Zäune, Geländer, Sicherheitstechnik. Individuelle Metallarbeiten vom Design bis zur Montage mit höchster Qualität.",
+      service_areas: ["Schaffhausen", "Winterthur", "Konstanz"],
+      languages: ["de", "ru"]
+    }
+  },
+  {
+    email: "sophie.blanc@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Sophie Blanc",
+      first_name: "Sophie",
+      last_name: "Blanc",
+      phone: "+41 32 789 01 23",
+      canton: "NE",
+      city: "Neuchâtel",
+      zip: "2000"
+    },
+    handwerkerProfile: {
+      categories: ["reinigung", "umzug"],
+      hourly_rate_min: 45,
+      hourly_rate_max: 75,
+      bio: "Service de nettoyage professionnel et déménagement. Nettoyage après construction, entretien régulier, déménagements résidentiels et commerciaux. Équipe qualifiée, matériel professionnel, service personnalisé.",
+      service_areas: ["Neuchâtel", "La Chaux-de-Fonds", "Yverdon"],
+      languages: ["fr", "de"]
+    }
+  },
+  {
+    email: "tobias.graf@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Tobias Graf",
+      first_name: "Tobias",
+      last_name: "Graf",
+      phone: "+41 81 890 12 34",
+      canton: "GR",
+      city: "Chur",
+      zip: "7000"
+    },
+    handwerkerProfile: {
+      categories: ["spengler", "dachdecker"],
+      hourly_rate_min: 80,
+      hourly_rate_max: 115,
+      bio: "Spengler und Dachdecker in den Bündner Bergen. Traditionelle Techniken für alpine Bedingungen. Kupfer-, Zink- und Titanarbeiten, Schneefänge, Dachrinnen. Spezialist für historische Gebäude.",
+      service_areas: ["Chur", "Davos", "St. Moritz"],
+      languages: ["de", "rm"]
+    }
+  },
+  {
+    email: "natalie.fischer@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Natalie Fischer",
+      first_name: "Natalie",
+      last_name: "Fischer",
+      phone: "+41 44 901 23 45",
+      canton: "ZH",
+      city: "Dietikon",
+      zip: "8953"
+    },
+    handwerkerProfile: {
+      categories: ["badumbau", "sanitaer"],
+      hourly_rate_min: 85,
+      hourly_rate_max: 130,
+      bio: "Badezimmer-Spezialistin mit Fokus auf barrierefreie und luxuriöse Lösungen. Komplettbäder von der Planung bis zur Realisierung. Moderne Sanitärtechnik, edle Materialien, durchdachte Raumkonzepte.",
+      service_areas: ["Dietikon", "Schlieren", "Limmattal"],
+      languages: ["de", "en", "it"]
+    }
+  },
+  {
+    email: "fabrice.lecomte@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Fabrice Lecomte",
+      first_name: "Fabrice",
+      last_name: "Lecomte",
+      phone: "+41 26 012 34 56",
+      canton: "FR",
+      city: "Fribourg",
+      zip: "1700"
+    },
+    handwerkerProfile: {
+      categories: ["kuechenbau", "schreiner"],
+      hourly_rate_min: 90,
+      hourly_rate_max: 145,
+      bio: "Cuisiniste d'exception avec 18 ans d'expérience. Cuisines sur mesure, matériaux nobles, intégration parfaite. Design contemporain et traditionnel, conseils d'aménagement, électroménager haut de gamme.",
+      service_areas: ["Fribourg", "Bulle", "Romont"],
+      languages: ["fr", "de"]
+    }
   }
 ];
 
