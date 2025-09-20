@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
 import { Search, MapPin, Wrench, Hammer, Zap, Droplets, Paintbrush, TreePine, Clock, Banknote } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const categories = [
   { value: 'elektriker', label: 'Elektriker', icon: Zap },
@@ -34,6 +35,7 @@ export const HeroSearch = () => {
   const [location, setLocation] = useState('');
   const [budget, setBudget] = useState('');
   const [urgency, setUrgency] = useState('');
+  const navigate = useNavigate();
 
   const handleSearch = () => {
     // Build search URL with parameters
@@ -45,8 +47,8 @@ export const HeroSearch = () => {
     if (budget) searchParams.set('budget', budget);
     if (urgency) searchParams.set('urgency', urgency);
     
-    // Navigate to search page
-    window.location.href = `/search?${searchParams.toString()}`;
+    // Navigate to search page using React Router
+    navigate(`/search?${searchParams.toString()}`);
   };
 
   return (
