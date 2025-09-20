@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, User, Phone, Mail, Star } from 'lucide-react';
+import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, ToggleLeft } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -335,15 +335,9 @@ const LeadDetails = () => {
                     <p className="text-muted-foreground whitespace-pre-wrap">{lead.description}</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                    <div className="flex items-center gap-2">
-                      <Coins className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{formatBudget(lead.budget_min, lead.budget_max)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Qualität: {lead.quality_score}/100</span>
-                    </div>
+                  <div className="flex items-center gap-2 pt-4 border-t">
+                    <Coins className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium">{formatBudget(lead.budget_min, lead.budget_max)}</span>
                   </div>
 
                   <div className="pt-4 border-t">
@@ -418,16 +412,38 @@ const LeadDetails = () => {
                         <div className="text-sm text-muted-foreground">Verkäufe</div>
                       </div>
                       <div className="text-center p-3 bg-muted rounded-lg">
-                        <div className="text-2xl font-bold text-primary">{lead.quality_score}</div>
-                        <div className="text-sm text-muted-foreground">Qualität</div>
+                        <div className="text-2xl font-bold text-primary">{lead.max_purchases - lead.purchased_count}</div>
+                        <div className="text-sm text-muted-foreground">Verfügbar</div>
                       </div>
                     </div>
-                    <Button variant="outline" className="w-full">
-                      Auftrag bearbeiten
-                    </Button>
-                    <Button variant="outline" className="w-full">
-                      Status ändern
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => {
+                          toast({
+                            title: "In Entwicklung",
+                            description: "Bearbeitung wird bald verfügbar sein.",
+                          });
+                        }}
+                      >
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Bearbeiten
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => {
+                          toast({
+                            title: "In Entwicklung", 
+                            description: "Status ändern wird bald verfügbar sein.",
+                          });
+                        }}
+                      >
+                        <ToggleLeft className="h-4 w-4 mr-2" />
+                        Status
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}
