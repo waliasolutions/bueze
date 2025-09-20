@@ -115,6 +115,14 @@ const LeadDetails = () => {
         .eq('buyer_id', user.id)
         .maybeSingle();
 
+      console.log('Purchase check:', { 
+        leadId: lead.id, 
+        userId: user.id, 
+        leadOwnerId: lead.owner_id,
+        purchaseFound: !!purchase,
+        isOwnLead: lead.owner_id === user.id 
+      });
+      
       setHasPurchased(!!purchase);
     } catch (error) {
       console.error('Error checking purchase status:', error);
@@ -344,11 +352,13 @@ const LeadDetails = () => {
                 </CardContent>
               </Card>
 
-              {/* Contact information and message button - only show if purchased */}
-              {user && owner && hasPurchased && (
+              {/* Contact information and message button - show if purchased OR if it's user's own lead */}
+              {user && owner && (hasPurchased || (lead && lead.owner_id === user.id)) && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Auftraggeber</CardTitle>
+                    <CardTitle>
+                      {lead && lead.owner_id === user.id ? 'Ihr Auftrag' : 'Auftraggeber'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-4 mb-4">
@@ -377,8 +387,9 @@ const LeadDetails = () => {
                     <Button 
                       className="w-full" 
                       onClick={() => navigate('/conversations')}
+                      disabled={lead && lead.owner_id === user.id}
                     >
-                      Nachricht senden
+                      {lead && lead.owner_id === user.id ? 'Ihr eigener Auftrag' : 'Nachricht senden'}
                     </Button>
                   </CardContent>
                 </Card>
@@ -404,10 +415,17 @@ const LeadDetails = () => {
                     className="w-full" 
                     size="lg"
                     onClick={handlePurchase}
-                    disabled={purchasing || !user || hasPurchased}
+                    disabled={purchasing || !user || hasPurchased || (lead && lead.owner_id === user.id)}
                     variant={hasPurchased ? "secondary" : "default"}
                   >
-                    {hasPurchased ? 'Bereits gekauft' : purchasing ? 'Wird gekauft...' : 'Jetzt kaufen'}
+                    {lead && lead.owner_id === user.id 
+                      ? 'Ihr eigener Auftrag' 
+                      : hasPurchased 
+                        ? 'Bereits gekauft' 
+                        : purchasing 
+                          ? 'Wird gekauft...' 
+                          : 'Jetzt kaufen'
+                    }
                   </Button>
 
                   {!user && (
