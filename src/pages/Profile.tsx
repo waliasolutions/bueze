@@ -15,7 +15,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Save, User, Settings as SettingsIcon } from 'lucide-react';
+import { PaymentMethodCard } from '@/components/PaymentMethodCard';
+import { SubscriptionManagement } from '@/components/SubscriptionManagement';
+import { AddPaymentMethodDialog } from '@/components/AddPaymentMethodDialog';
+import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name muss mindestens 2 Zeichen haben'),
@@ -75,6 +78,9 @@ const Profile = () => {
   const [handwerkerProfile, setHandwerkerProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+  const [showAddPaymentDialog, setShowAddPaymentDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -134,7 +140,7 @@ const Profile = () => {
           canton: profileData.canton || '',
         });
 
-        // If handwerker, fetch handwerker profile
+        // If handwerker, fetch handwerker profile and subscription
         if (profileData.role === 'handwerker') {
           const { data: handwerkerData } = await supabase
             .from('handwerker_profiles')
@@ -154,6 +160,40 @@ const Profile = () => {
               website: handwerkerData.website || '',
             });
           }
+
+          // Fetch subscription data
+          const { data: subscriptionData } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+          if (subscriptionData) {
+            setCurrentSubscription({
+              plan: {
+                id: subscriptionData.plan,
+                name: subscriptionData.plan,
+                displayName: subscriptionData.plan === 'starter' ? 'Starter' : 'Professional',
+                monthlyPrice: subscriptionData.plan === 'starter' ? 49 : 99,
+                yearlyPrice: subscriptionData.plan === 'starter' ? 490 : 990,
+                competitors: subscriptionData.plan === 'starter' ? 4 : 2,
+                includedLeads: subscriptionData.included_leads,
+                extraLeadPrice: subscriptionData.extra_lead_price / 100,
+                features: []
+              },
+              isActive: subscriptionData.status === 'active',
+              currentPeriodStart: subscriptionData.current_period_start,
+              currentPeriodEnd: subscriptionData.current_period_end,
+              usedLeads: subscriptionData.used_leads || 0,
+              isYearly: false, // Default for now
+              hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified)
+            });
+          }
+
+          // Mock payment methods for now
+          setPaymentMethods([
+            // This will be replaced with real data from payment provider
+          ]);
         }
       }
     } catch (error) {
@@ -248,6 +288,53 @@ const Profile = () => {
     }
   };
 
+  // Payment methods handlers
+  const handleAddPaymentMethod = (newPaymentMethod: any) => {
+    setPaymentMethods(prev => [...prev, newPaymentMethod]);
+    
+    // Update subscription to reflect payment method status
+    if (currentSubscription) {
+      setCurrentSubscription(prev => ({
+        ...prev,
+        hasPaymentMethod: true
+      }));
+    }
+  };
+
+  const handleRemovePaymentMethod = (id: string) => {
+    setPaymentMethods(prev => prev.filter(pm => pm.id !== id));
+    
+    const remainingMethods = paymentMethods.filter(pm => pm.id !== id);
+    if (currentSubscription) {
+      setCurrentSubscription(prev => ({
+        ...prev,
+        hasPaymentMethod: remainingMethods.length > 0 && remainingMethods.some(pm => pm.isVerified)
+      }));
+    }
+  };
+
+  const handleSetDefaultPaymentMethod = (id: string) => {
+    setPaymentMethods(prev => 
+      prev.map(pm => ({ ...pm, isDefault: pm.id === id }))
+    );
+  };
+
+  // Subscription handlers
+  const handleUpgradePlan = (planId: string, yearly: boolean) => {
+    toast({
+      title: "Upgrade wird vorbereitet",
+      description: "Sie werden zur Zahlungsseite weitergeleitet...",
+    });
+    // In real implementation, redirect to payment flow
+  };
+
+  const handleCancelSubscription = () => {
+    toast({
+      title: "Kündigung wird bearbeitet",
+      description: "Ihr Abonnement wird zum Ende der Laufzeit gekündigt.",
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -294,6 +381,18 @@ const Profile = () => {
                 <TabsTrigger value="handwerker">
                   <SettingsIcon className="h-4 w-4 mr-2" />
                   Handwerker-Profil
+                </TabsTrigger>
+              )}
+              {isHandwerker && (
+                <TabsTrigger value="subscription">
+                  <Crown className="h-4 w-4 mr-2" />
+                  Abonnement
+                </TabsTrigger>
+              )}
+              {isHandwerker && (
+                <TabsTrigger value="payments">
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Zahlungen
                 </TabsTrigger>
               )}
               <TabsTrigger value="settings">
@@ -546,6 +645,30 @@ const Profile = () => {
               </TabsContent>
             )}
 
+            {/* Subscription Tab - Only for Handwerker */}
+            {isHandwerker && (
+              <TabsContent value="subscription">
+                <SubscriptionManagement
+                  currentSubscription={currentSubscription}
+                  availablePlans={[]}
+                  onUpgradePlan={handleUpgradePlan}
+                  onCancelSubscription={handleCancelSubscription}
+                />
+              </TabsContent>
+            )}
+
+            {/* Payment Methods Tab - Only for Handwerker */}
+            {isHandwerker && (
+              <TabsContent value="payments">
+                <PaymentMethodCard
+                  paymentMethods={paymentMethods}
+                  onAddPaymentMethod={() => setShowAddPaymentDialog(true)}
+                  onRemovePaymentMethod={handleRemovePaymentMethod}
+                  onSetDefault={handleSetDefaultPaymentMethod}
+                />
+              </TabsContent>
+            )}
+
             {/* Settings Tab */}
             <TabsContent value="settings">
               <Card>
@@ -596,6 +719,13 @@ const Profile = () => {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Add Payment Method Dialog */}
+        <AddPaymentMethodDialog
+          open={showAddPaymentDialog}
+          onOpenChange={setShowAddPaymentDialog}
+          onPaymentMethodAdded={handleAddPaymentMethod}
+        />
       </main>
       <Footer />
     </div>
