@@ -88,6 +88,24 @@ export default function Search() {
     checkUser();
   }, []);
 
+  // Helper function to parse budget range from search params
+  const parseBudgetRange = (budgetParam: string): [number | null, number | null] => {
+    if (!budgetParam) return [null, null];
+    
+    switch (budgetParam) {
+      case '0-500':
+        return [0, 500];
+      case '500-1500':
+        return [500, 1500];
+      case '1500-5000':
+        return [1500, 5000];
+      case '5000+':
+        return [5000, 999999];
+      default:
+        return [null, null];
+    }
+  };
+
   useEffect(() => {
     fetchLeads();
   }, [searchParams]);
@@ -95,31 +113,69 @@ export default function Search() {
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      let query = supabase
+      let queryBuilder = supabase
         .from('leads')
         .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .eq('status', 'active');
 
-      // Apply filters based on search params
+      // Apply full-text search if query is provided
+      if (query.trim()) {
+        const searchTerms = query.trim().split(' ').join(' & ');
+        queryBuilder = queryBuilder.textSearch('search_text', searchTerms);
+      }
+
+      // Apply category filter
       if (category && Object.keys(categoryLabels).includes(category)) {
-        query = query.eq('category', category as any);
+        queryBuilder = queryBuilder.eq('category', category as any);
       }
       
-      if (location) {
-        query = query.or(`city.ilike.%${location}%, zip.ilike.%${location}%, canton.ilike.%${location}%`);
+      // Apply enhanced location search
+      if (location.trim()) {
+        const locationTerm = location.trim();
+        // Search in city, zip, and canton with better matching
+        queryBuilder = queryBuilder.or(`city.ilike.%${locationTerm}%, zip.ilike.${locationTerm}%, zip.ilike.${locationTerm}%, canton.ilike.%${locationTerm}%`);
       }
       
+      // Apply urgency filter
       if (urgency && Object.keys(urgencyLabels).includes(urgency)) {
-        query = query.eq('urgency', urgency as any);
+        queryBuilder = queryBuilder.eq('urgency', urgency as any);
       }
 
-      const { data, error } = await query;
+      // Note: Budget filtering will be done client-side after fetching data
+
+      // Order by relevance if there's a text search, otherwise by date
+      if (query.trim()) {
+        queryBuilder = queryBuilder.order('created_at', { ascending: false });
+      } else {
+        queryBuilder = queryBuilder.order('created_at', { ascending: false });
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) {
         console.error('Error fetching leads:', error);
+        setLeads([]);
       } else {
-        setLeads(data || []);
+        let filteredLeads = data || [];
+        
+        // Apply client-side budget filtering
+        if (budget) {
+          const [minBudget, maxBudget] = parseBudgetRange(budget);
+          if (minBudget !== null && maxBudget !== null) {
+            filteredLeads = filteredLeads.filter(lead => {
+              // Handle leads with budget on request (null values)
+              if (!lead.budget_min && !lead.budget_max) return true;
+              
+              const leadMin = lead.budget_min || lead.budget_max || 0;
+              const leadMax = lead.budget_max || lead.budget_min || 999999;
+              
+              // Check if budget ranges overlap
+              return leadMax >= minBudget && leadMin <= maxBudget;
+            });
+          }
+        }
+        
+        setLeads(filteredLeads);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -189,6 +245,11 @@ export default function Search() {
           </h1>
           
           <div className="flex flex-wrap gap-2 mb-4">
+            {query && (
+              <Badge variant="outline">
+                Suche: "{query}"
+              </Badge>
+            )}
             {category && (
               <Badge variant="outline">
                 Kategorie: {categoryLabels[category] || category}
@@ -197,6 +258,14 @@ export default function Search() {
             {location && (
               <Badge variant="outline">
                 Ort: {location}
+              </Badge>
+            )}
+            {budget && (
+              <Badge variant="outline">
+                Budget: {budget === '0-500' ? 'Bis 500 CHF' : 
+                        budget === '500-1500' ? '500 - 1\'500 CHF' :
+                        budget === '1500-5000' ? '1\'500 - 5\'000 CHF' :
+                        budget === '5000+' ? 'Über 5\'000 CHF' : budget}
               </Badge>
             )}
             {urgency && (
