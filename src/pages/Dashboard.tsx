@@ -452,7 +452,7 @@ const Dashboard = () => {
                   </div>
                   
                   <div className="pt-4">
-                    <Button>Profil bearbeiten</Button>
+                    <Button onClick={() => navigate('/profile')}>Profil bearbeiten</Button>
                   </div>
                 </CardContent>
               </Card>
