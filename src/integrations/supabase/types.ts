@@ -733,6 +733,7 @@ export type Database = {
           languages: string[] | null
           portfolio_urls: string[] | null
           response_time_hours: number | null
+          search_text: unknown | null
           service_areas: string[]
           updated_at: string
           user_id: string
@@ -752,6 +753,7 @@ export type Database = {
           languages?: string[] | null
           portfolio_urls?: string[] | null
           response_time_hours?: number | null
+          search_text?: unknown | null
           service_areas?: string[]
           updated_at?: string
           user_id: string
@@ -771,6 +773,7 @@ export type Database = {
           languages?: string[] | null
           portfolio_urls?: string[] | null
           response_time_hours?: number | null
+          search_text?: unknown | null
           service_areas?: string[]
           updated_at?: string
           user_id?: string
