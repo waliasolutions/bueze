@@ -1,10 +1,11 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx";
+import App from "./App-test.tsx";
 import "./index.css";
 
-createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// Add console log to verify React is loading properly
+console.log("React version:", React.version);
+console.log("React object:", React);
+
+const root = createRoot(document.getElementById("root")!);
+root.render(<App />);
