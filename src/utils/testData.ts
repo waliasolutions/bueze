@@ -81,6 +81,34 @@ export const testUsers: TestUser[] = [
       zip: "4001"
     }
   },
+  {
+    email: "claudia.meyer@test.ch",
+    password: "TestPass123!",
+    role: "homeowner",
+    profile: {
+      full_name: "Claudia Meyer",
+      first_name: "Claudia",
+      last_name: "Meyer",
+      phone: "+41 22 678 90 12",
+      canton: "GE",
+      city: "Genève",
+      zip: "1200"
+    }
+  },
+  {
+    email: "daniel.fischer@test.ch",
+    password: "TestPass123!",
+    role: "homeowner",
+    profile: {
+      full_name: "Daniel Fischer",
+      first_name: "Daniel",
+      last_name: "Fischer",
+      phone: "+41 71 456 78 90",
+      canton: "SG",
+      city: "St. Gallen",
+      zip: "9000"
+    }
+  },
 
   // Handwerker (Craftsmen)
   {
@@ -169,6 +197,94 @@ export const testUsers: TestUser[] = [
       bio: "Professioneller Maler und Renovationsspezialist. Hochwertige Ausführung von Innen- und Aussenarbeiten mit Fokus auf Nachhaltigkeit.",
       service_areas: ["Zürich", "Kloten", "Dübendorf"],
       languages: ["de", "it"]
+    }
+  },
+  {
+    email: "patrick.mueller@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Patrick Müller",
+      first_name: "Patrick",
+      last_name: "Müller",
+      phone: "+41 44 678 90 12",
+      canton: "ZH",
+      city: "Rüti",
+      zip: "8630"
+    },
+    handwerkerProfile: {
+      categories: ["maurer", "zimmermann"],
+      hourly_rate_min: 85,
+      hourly_rate_max: 125,
+      bio: "Maurermeister mit eigener Firma. 25 Jahre Erfahrung im Neubau und Renovation. Spezialisiert auf Einfamilienhäuser und Umbauten.",
+      service_areas: ["Zürich", "Rapperswil", "Rüti", "Uster"],
+      languages: ["de"]
+    }
+  },
+  {
+    email: "francois.dubois@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "François Dubois",
+      first_name: "François",
+      last_name: "Dubois",
+      phone: "+41 22 345 67 89",
+      canton: "GE",
+      city: "Genève",
+      zip: "1205"
+    },
+    handwerkerProfile: {
+      categories: ["kuechenbau", "schreiner"],
+      hourly_rate_min: 95,
+      hourly_rate_max: 150,
+      bio: "Ébéniste et cuisiniste haut de gamme. Créations sur mesure avec matériaux nobles. 18 ans d'expérience dans le luxe et la rénovation.",
+      service_areas: ["Genève", "Lausanne", "Nyon"],
+      languages: ["fr", "de", "en"]
+    }
+  },
+  {
+    email: "reto.huber@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Reto Huber",
+      first_name: "Reto",
+      last_name: "Huber",
+      phone: "+41 71 234 56 78",
+      canton: "SG",
+      city: "St. Gallen",
+      zip: "9016"
+    },
+    handwerkerProfile: {
+      categories: ["dachdecker", "zimmermann"],
+      hourly_rate_min: 75,
+      hourly_rate_max: 115,
+      bio: "Dachdeckermeister mit Fokus auf Steildach und Flachdach. Solarpanels Installation und energetische Sanierung. Zuverlässig seit 20 Jahren.",
+      service_areas: ["St. Gallen", "Appenzell", "Gossau"],
+      languages: ["de"]
+    }
+  },
+  {
+    email: "mario.bianchi@handwerk.ch",
+    password: "HandwerkTest123!",
+    role: "handwerker",
+    profile: {
+      full_name: "Mario Bianchi",
+      first_name: "Mario",
+      last_name: "Bianchi",
+      phone: "+41 91 567 89 01",
+      canton: "TI",
+      city: "Lugano",
+      zip: "6900"
+    },
+    handwerkerProfile: {
+      categories: ["gipser", "maler"],
+      hourly_rate_min: 65,
+      hourly_rate_max: 100,
+      bio: "Specialista in intonaci decorativi e pitture di pregio. Restauro e ristrutturazione con tecniche tradizionali e moderne. Qualità garantita.",
+      service_areas: ["Lugano", "Bellinzona", "Locarno"],
+      languages: ["it", "de", "fr"]
     }
   }
 ];
@@ -269,6 +385,126 @@ export const testLeads: TestLead[] = [
     city: "Uster",
     zip: "8610",
     status: "active"
+  },
+  {
+    title: "Terrassenbau mit Steinplatten",
+    description: "Neue Terrasse (8x6m) mit Natursteinplatten erstellen. Unterbau, Drainage und Verlegung. Anschluss an bestehende Hauswand und integrierte LED-Beleuchtung.",
+    category: "pflasterarbeiten",
+    budget_min: 12000,
+    budget_max: 18000,
+    urgency: "planning",
+    canton: "GE",
+    city: "Genève",
+    zip: "1200",
+    status: "active"
+  },
+  {
+    title: "Neues Dach für Einfamilienhaus",
+    description: "Komplette Dachsanierung eines 1960er Einfamilienhauses. Neue Ziegel, Isolation, Dachrinnen und Integration von 15 Solarpanels. Fläche ca. 180m².",
+    category: "dachdecker",
+    budget_min: 35000,
+    budget_max: 55000,
+    urgency: "this_month",
+    canton: "SG",
+    city: "St. Gallen",
+    zip: "9000",
+    status: "active"
+  },
+  {
+    title: "Alte Treppe renovieren",
+    description: "Holztreppe im Einfamilienhaus abschleifen, reparieren und neu lackieren. 14 Stufen mit Geländer. Soll wieder im ursprünglichen Eichenholz erstrahlen.",
+    category: "schreiner",
+    budget_min: 3500,
+    budget_max: 6000,
+    urgency: "planning",
+    canton: "TI",
+    city: "Lugano",
+    zip: "6900",
+    status: "active"
+  },
+  {
+    title: "Elektrische Rollläden installieren",
+    description: "Installation von 8 elektrischen Rollläden in Neubau-Einfamilienhaus. Steuerung via Smart Home System und manuelle Bedienung. Inklusive Verkabelung.",
+    category: "elektriker",
+    budget_min: 8000,
+    budget_max: 12000,
+    urgency: "this_week",
+    canton: "ZH",
+    city: "Rüti",
+    zip: "8630",
+    status: "active"
+  },
+  {
+    title: "Parkett im Wohnbereich verlegen",
+    description: "Eiche Parkett in Wohnzimmer, Esszimmer und Flur verlegen (ca. 65m²). Unterboden vorbereiten, verleimen und versiegeln. Hochwertige Qualität gewünscht.",
+    category: "bodenleger",
+    budget_min: 6500,
+    budget_max: 11000,
+    urgency: "planning",
+    canton: "BE",
+    city: "Bern",
+    zip: "3000",
+    status: "active"
+  },
+  {
+    title: "Garten neu gestalten",
+    description: "Komplette Neugestaltung eines 400m² Gartens. Rasen, Bepflanzung, Gehwege, kleiner Teich und automatische Bewässerung. Familiengarten mit Spielbereich.",
+    category: "gartenbau",
+    budget_min: 15000,
+    budget_max: 25000,
+    urgency: "planning",
+    canton: "BS",
+    city: "Basel",
+    zip: "4001",
+    status: "active"
+  },
+  {
+    title: "Fassade isolieren und verputzen",
+    description: "Aussenwärmedämmung für 1970er Einfamilienhaus. 220m² Fassadenfläche isolieren, verputzen und streichen. Minergie-Standard angestrebt.",
+    category: "gipser",
+    budget_min: 22000,
+    budget_max: 35000,
+    urgency: "planning",
+    canton: "GE",
+    city: "Nyon",
+    zip: "1260",
+    status: "active"
+  },
+  {
+    title: "Kleine Reparaturen Sanitär",
+    description: "Diverse kleinere Sanitärarbeiten: tropfender Wasserhahn, Spülkasten reparieren, Duschkopf austauschen. Schnelle Erledigung erwünscht.",
+    category: "sanitaer",
+    budget_min: 300,
+    budget_max: 800,
+    urgency: "today",
+    canton: "ZH",
+    city: "Zürich",
+    zip: "8003",
+    status: "active"
+  },
+  {
+    title: "Carport aus Holz bauen",
+    description: "Holzcarport für 2 Autos erstellen (7x6m). Flachdach mit leichter Neigung, offene Konstruktion. Fundament vorhanden, nur Holzkonstruktion benötigt.",
+    category: "zimmermann",
+    budget_min: 8000,
+    budget_max: 14000,
+    urgency: "this_month",
+    canton: "SG",
+    city: "Gossau",
+    zip: "9200",
+    status: "active"
+  },
+  {
+    title: "Kellerboden sanieren",
+    description: "Betonboden im Keller schleifen, grundieren und versiegeln. 45m² Fläche. Hohe Feuchtigkeit vorhanden, entsprechende Behandlung nötig.",
+    category: "gipser",
+    budget_min: 2200,
+    budget_max: 4000,
+    urgency: "planning",
+    canton: "TI",
+    city: "Bellinzona",
+    zip: "6500",
+    status: "active"
   }
 ];
 
@@ -338,7 +574,7 @@ export async function createHandwerkerProfile(userId: string, handwerkerData: Te
 }
 
 // Helper function to create test leads
-export async function createTestLead(lead: TestLead, ownerId: string) {
+export async function createTestLead(lead: TestLead, ownerId: string): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
     const { data, error } = await supabase
       .from('leads')
@@ -357,7 +593,8 @@ export async function createTestLead(lead: TestLead, ownerId: string) {
         quality_score: Math.floor(Math.random() * 40) + 60, // Random score 60-100
         max_purchases: 4,
         purchased_count: 0
-      });
+      })
+      .select();
 
     if (error) {
       console.error('Error creating test lead:', error);
@@ -372,34 +609,232 @@ export async function createTestLead(lead: TestLead, ownerId: string) {
   }
 }
 
-// Test data population function
+// Helper function to create lead purchases 
+export async function createLeadPurchase(leadId: string, buyerId: string, price: number) {
+  try {
+    const { data, error } = await supabase
+      .from('lead_purchases')
+      .insert({
+        lead_id: leadId,
+        buyer_id: buyerId,
+        price: price
+      });
+
+    if (error) {
+      console.error('Error creating lead purchase:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Created lead purchase');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception creating lead purchase:', error);
+    return { success: false, error: 'Unknown error' };
+  }
+}
+
+// Helper function to create conversations
+export async function createConversation(leadId: string, homeownerId: string, handwerkerId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({
+        lead_id: leadId,
+        homeowner_id: homeownerId,
+        handwerker_id: handwerkerId
+      });
+
+    if (error) {
+      console.error('Error creating conversation:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Created conversation');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception creating conversation:', error);
+    return { success: false, error: 'Unknown error' };
+  }
+}
+
+// Helper function to create reviews
+export async function createReview(leadId: string, reviewerId: string, reviewedId: string, rating: number, title: string, comment: string) {
+  try {
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert({
+        lead_id: leadId,
+        reviewer_id: reviewerId,
+        reviewed_id: reviewedId,
+        rating: rating,
+        title: title,
+        comment: comment
+      });
+
+    if (error) {
+      console.error('Error creating review:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Created review');
+    return { success: true, data };
+  } catch (error) {
+    console.error('Exception creating review:', error);
+    return { success: false, error: 'Unknown error' };
+  }
+}
+
+// Enhanced test data population function
 export async function populateTestData() {
-  console.log('🚀 Starting test data population...');
+  console.log('🚀 Starting comprehensive test data population...');
   
   const results = {
     users: [] as any[],
+    handwerkerProfiles: [] as any[],
     leads: [] as any[],
+    purchases: [] as any[],
+    conversations: [] as any[],
+    reviews: [] as any[],
     errors: [] as string[]
   };
 
-  // Create test users
+  // Step 1: Create test users
+  console.log('📝 Creating test users...');
   for (const testUser of testUsers) {
     const result = await createTestUser(testUser);
     if (result.success) {
+      const userId = result.user?.id;
       results.users.push({
         email: testUser.email,
         role: testUser.role,
-        userId: result.user?.id
+        userId: userId
       });
+
+      // Create handwerker profile if applicable
+      if (testUser.role === 'handwerker' && testUser.handwerkerProfile && userId) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const profileResult = await createHandwerkerProfile(userId, testUser.handwerkerProfile);
+        if (profileResult.success) {
+          results.handwerkerProfiles.push({
+            userId: userId,
+            email: testUser.email
+          });
+        } else {
+          results.errors.push(`Failed to create handwerker profile for ${testUser.email}: ${profileResult.error}`);
+        }
+      }
     } else {
       results.errors.push(`Failed to create user ${testUser.email}: ${result.error}`);
     }
     
-    // Wait a bit between requests to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait between requests to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 800));
   }
 
-  console.log(`Created ${results.users.length} users successfully`);
+  console.log(`✅ Created ${results.users.length} users, ${results.handwerkerProfiles.length} handwerker profiles`);
+
+  // Step 2: Create test leads
+  console.log('📋 Creating test leads...');
+  const homeowners = results.users.filter(u => testUsers.find(tu => tu.email === u.email)?.role === 'homeowner');
+  
+  for (let i = 0; i < testLeads.length; i++) {
+    const lead = testLeads[i];
+    const randomOwner = homeowners[i % homeowners.length];
+    
+    if (randomOwner?.userId) {
+      const leadResult = await createTestLead(lead, randomOwner.userId);
+      if (leadResult.success && leadResult.data) {
+        results.leads.push({
+          title: lead.title,
+          category: lead.category,
+          leadId: leadResult.data[0]?.id,
+          ownerId: randomOwner.userId
+        });
+      } else {
+        results.errors.push(`Failed to create lead ${lead.title}: ${leadResult.error}`);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+
+  console.log(`✅ Created ${results.leads.length} leads`);
+
+  // Step 3: Create realistic marketplace activity (purchases, conversations, reviews)
+  console.log('🛒 Creating marketplace activity...');
+  const handwerkers = results.users.filter(u => testUsers.find(tu => tu.email === u.email)?.role === 'handwerker');
+  
+  // Create purchases for some leads
+  for (let i = 0; i < Math.min(results.leads.length, 12); i++) {
+    const lead = results.leads[i];
+    const numPurchases = Math.floor(Math.random() * 3) + 1; // 1-3 purchases per lead
+    
+    for (let j = 0; j < numPurchases && j < handwerkers.length; j++) {
+      const handwerker = handwerkers[(i + j) % handwerkers.length];
+      const price = Math.floor(Math.random() * 30) + 20; // 20-50 CHF
+      
+      const purchaseResult = await createLeadPurchase(lead.leadId, handwerker.userId, price);
+      if (purchaseResult.success) {
+        results.purchases.push({
+          leadId: lead.leadId,
+          buyerId: handwerker.userId,
+          price: price
+        });
+
+        // Create conversation for this purchase
+        const conversationResult = await createConversation(lead.leadId, lead.ownerId, handwerker.userId);
+        if (conversationResult.success) {
+          results.conversations.push({
+            leadId: lead.leadId,
+            homeownerId: lead.ownerId,
+            handwerkerId: handwerker.userId
+          });
+        }
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 400));
+    }
+  }
+
+  // Create some reviews for completed work
+  console.log('⭐ Creating reviews...');
+  const sampleReviews = [
+    { rating: 5, title: "Ausgezeichnete Arbeit!", comment: "Sehr professionell und pünktlich. Die Qualität der Arbeit übertrifft meine Erwartungen. Gerne wieder!" },
+    { rating: 4, title: "Gute Leistung", comment: "Solide Arbeit, freundlicher Handwerker. Kleine Verzögerung beim Termin, aber Ergebnis stimmt." },
+    { rating: 5, title: "Perfekt ausgeführt", comment: "Sau präzis und schnell gearbeitet. Baustelle wurde sauber hinterlassen. Sehr zu empfehlen." },
+    { rating: 4, title: "Zuverlässig", comment: "Faire Preise und gute Qualität. Kommunikation war immer transparent und ehrlich." },
+    { rating: 5, title: "Top Handwerker!", comment: "Fachlich kompetent und lösungsorientiert. Hat sogar Verbesserungsvorschläge gemacht." }
+  ];
+
+  for (let i = 0; i < Math.min(results.purchases.length, 8); i++) {
+    const purchase = results.purchases[i];
+    const review = sampleReviews[i % sampleReviews.length];
+    const lead = results.leads.find(l => l.leadId === purchase.leadId);
+    
+    if (lead) {
+      await createReview(purchase.leadId, lead.ownerId, purchase.buyerId, review.rating, review.title, review.comment);
+      results.reviews.push({
+        leadId: purchase.leadId,
+        rating: review.rating
+      });
+      
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+
+  console.log('🎉 Test data population completed!');
+  console.log(`📊 Summary:
+    Users: ${results.users.length}
+    Handwerker Profiles: ${results.handwerkerProfiles.length}
+    Leads: ${results.leads.length}
+    Purchases: ${results.purchases.length}
+    Conversations: ${results.conversations.length}
+    Reviews: ${results.reviews.length}
+    Errors: ${results.errors.length}`);
+  
+  if (results.errors.length > 0) {
+    console.log('❌ Errors:', results.errors);
+  }
   
   return results;
 }
