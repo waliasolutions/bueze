@@ -837,6 +837,7 @@ export type Database = {
           owner_id: string
           purchased_count: number | null
           quality_score: number | null
+          search_text: unknown | null
           status: Database["public"]["Enums"]["lead_status"]
           title: string
           updated_at: string
@@ -862,6 +863,7 @@ export type Database = {
           owner_id: string
           purchased_count?: number | null
           quality_score?: number | null
+          search_text?: unknown | null
           status?: Database["public"]["Enums"]["lead_status"]
           title: string
           updated_at?: string
@@ -887,6 +889,7 @@ export type Database = {
           owner_id?: string
           purchased_count?: number | null
           quality_score?: number | null
+          search_text?: unknown | null
           status?: Database["public"]["Enums"]["lead_status"]
           title?: string
           updated_at?: string
@@ -1776,6 +1779,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      budget_ranges_overlap: {
+        Args: {
+          lead_max: number
+          lead_min: number
+          search_max: number
+          search_min: number
+        }
+        Returns: boolean
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]
