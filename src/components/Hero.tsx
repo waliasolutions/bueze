@@ -1,5 +1,6 @@
 import React from 'react';
 import { HeroSearch } from './HeroSearch';
+import { Button } from './ui/button';
 import heroCraftsman from '@/assets/hero-craftsman.jpg';
 
 export const Hero = () => {
@@ -19,16 +20,33 @@ export const Hero = () => {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Text Content */}
           <div className="space-y-8">
-            <div className="space-y-6">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
-                Geprüfte{' '}
-                <span className="text-brand-600">Handwerker</span>{' '}
-                in der Schweiz
-              </h1>
-              <p className="text-xl text-ink-700 leading-relaxed max-w-xl">
-                Schnell, vertrauenswürdig und transparent. Finden Sie den richtigen Experten für Ihr Projekt.
-              </p>
-            </div>
+              <div className="space-y-6">
+                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
+                  Geprüfte{' '}
+                  <span className="text-brand-600">Handwerker</span>{' '}
+                  in der Schweiz
+                </h1>
+                <p className="text-xl text-ink-700 leading-relaxed max-w-xl">
+                  Schnell, vertrauenswürdig und transparent. Finden Sie den richtigen Experten für Ihr Projekt.
+                </p>
+                <div className="flex gap-4">
+                  <Button 
+                    size="lg" 
+                    onClick={() => window.location.href = '/submit-lead'}
+                    className="bg-brand-600 text-white hover:bg-brand-700"
+                  >
+                    Auftrag erstellen
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    onClick={() => window.location.href = '/search'}
+                    className="border-brand-600 text-brand-600 hover:bg-brand-50"
+                  >
+                    Aufträge finden
+                  </Button>
+                </div>
+              </div>
 
             {/* Trust Signals */}
             <div className="flex flex-wrap gap-6 text-sm text-ink-500">

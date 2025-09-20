@@ -83,24 +83,28 @@ export const Header = () => {
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm text-ink-700">
-                  Hallo, {user.email}
-                </span>
+                <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+                  Dashboard
+                </Button>
+                <Button variant="outline" onClick={() => navigate('/submit-lead')}>
+                  Auftrag erstellen
+                </Button>
                 <Button variant="ghost" className="gap-2" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4" />
                   Abmelden
                 </Button>
               </div>
             ) : (
-              <Button variant="ghost" className="gap-2" onClick={() => navigate('/auth')}>
-                <User className="h-4 w-4" />
-                Anmelden
-              </Button>
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" className="gap-2" onClick={() => navigate('/auth')}>
+                  <User className="h-4 w-4" />
+                  Anmelden
+                </Button>
+                <Button onClick={() => navigate('/submit-lead')}>
+                  Auftrag erstellen
+                </Button>
+              </div>
             )}
-            <Button variant="default" className="gap-2">
-              <Settings className="h-4 w-4" />
-              Handwerker werden
-            </Button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -128,22 +132,31 @@ export const Header = () => {
             <div className="flex flex-col gap-3 pt-4 border-t border-line-200">
               {user ? (
                 <div className="space-y-3">
-                  <p className="text-sm text-ink-700">Hallo, {user.email}</p>
+                  <Button variant="ghost" className="justify-start gap-2" onClick={() => navigate('/dashboard')}>
+                    <User className="h-4 w-4" />
+                    Dashboard
+                  </Button>
+                  <Button variant="ghost" className="justify-start gap-2" onClick={() => navigate('/submit-lead')}>
+                    <Settings className="h-4 w-4" />
+                    Auftrag erstellen
+                  </Button>
                   <Button variant="ghost" className="justify-start gap-2" onClick={handleSignOut}>
                     <LogOut className="h-4 w-4" />
                     Abmelden
                   </Button>
                 </div>
               ) : (
-                <Button variant="ghost" className="justify-start gap-2" onClick={() => navigate('/auth')}>
-                  <User className="h-4 w-4" />
-                  Anmelden
-                </Button>
+                <div className="space-y-3">
+                  <Button variant="ghost" className="justify-start gap-2" onClick={() => navigate('/auth')}>
+                    <User className="h-4 w-4" />
+                    Anmelden
+                  </Button>
+                  <Button variant="default" className="justify-start gap-2" onClick={() => navigate('/submit-lead')}>
+                    <Settings className="h-4 w-4" />
+                    Auftrag erstellen
+                  </Button>
+                </div>
               )}
-              <Button variant="default" className="justify-start gap-2">
-                <Settings className="h-4 w-4" />
-                Handwerker werden
-              </Button>
             </div>
           </div>
         )}
