@@ -8,6 +8,8 @@ import { UserDropdown } from './UserDropdown';
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  
+  // Navigation function that works both inside and outside Router context
   const navigate = useNavigate();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
