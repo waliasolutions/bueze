@@ -333,6 +333,44 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          created_at: string
+          handwerker_id: string
+          homeowner_id: string
+          id: string
+          last_message_at: string | null
+          lead_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          handwerker_id: string
+          homeowner_id: string
+          id?: string
+          last_message_at?: string | null
+          lead_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          handwerker_id?: string
+          homeowner_id?: string
+          id?: string
+          last_message_at?: string | null
+          lead_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           created_at: string
@@ -861,6 +899,7 @@ export type Database = {
         Row: {
           attachments: string[] | null
           content: string
+          conversation_id: string | null
           created_at: string
           id: string
           lead_id: string
@@ -872,6 +911,7 @@ export type Database = {
         Insert: {
           attachments?: string[] | null
           content: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
           lead_id: string
@@ -883,6 +923,7 @@ export type Database = {
         Update: {
           attachments?: string[] | null
           content?: string
+          conversation_id?: string | null
           created_at?: string
           id?: string
           lead_id?: string
@@ -892,6 +933,13 @@ export type Database = {
           sender_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "messages_lead_id_fkey"
             columns: ["lead_id"]
