@@ -681,6 +681,226 @@ export type Database = {
         }
         Relationships: []
       }
+      handwerker_profiles: {
+        Row: {
+          bio: string | null
+          business_license: string | null
+          categories: Database["public"]["Enums"]["handwerker_category"][]
+          created_at: string
+          hourly_rate_max: number | null
+          hourly_rate_min: number | null
+          id: string
+          insurance_valid_until: string | null
+          is_verified: boolean | null
+          languages: string[] | null
+          portfolio_urls: string[] | null
+          response_time_hours: number | null
+          service_areas: string[]
+          updated_at: string
+          user_id: string
+          verification_documents: string[] | null
+          website: string | null
+        }
+        Insert: {
+          bio?: string | null
+          business_license?: string | null
+          categories?: Database["public"]["Enums"]["handwerker_category"][]
+          created_at?: string
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
+          id?: string
+          insurance_valid_until?: string | null
+          is_verified?: boolean | null
+          languages?: string[] | null
+          portfolio_urls?: string[] | null
+          response_time_hours?: number | null
+          service_areas?: string[]
+          updated_at?: string
+          user_id: string
+          verification_documents?: string[] | null
+          website?: string | null
+        }
+        Update: {
+          bio?: string | null
+          business_license?: string | null
+          categories?: Database["public"]["Enums"]["handwerker_category"][]
+          created_at?: string
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
+          id?: string
+          insurance_valid_until?: string | null
+          is_verified?: boolean | null
+          languages?: string[] | null
+          portfolio_urls?: string[] | null
+          response_time_hours?: number | null
+          service_areas?: string[]
+          updated_at?: string
+          user_id?: string
+          verification_documents?: string[] | null
+          website?: string | null
+        }
+        Relationships: []
+      }
+      lead_purchases: {
+        Row: {
+          buyer_id: string
+          contacted_at: string | null
+          id: string
+          lead_id: string
+          price: number
+          purchased_at: string
+          quote_submitted_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          contacted_at?: string | null
+          id?: string
+          lead_id: string
+          price: number
+          purchased_at?: string
+          quote_submitted_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          contacted_at?: string | null
+          id?: string
+          lead_id?: string
+          price?: number
+          purchased_at?: string
+          quote_submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_purchases_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          address: string | null
+          budget_max: number | null
+          budget_min: number | null
+          budget_type: Database["public"]["Enums"]["budget_type"]
+          canton: Database["public"]["Enums"]["canton"]
+          category: Database["public"]["Enums"]["handwerker_category"]
+          city: string
+          created_at: string
+          description: string
+          expires_at: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          max_purchases: number | null
+          media_urls: string[] | null
+          owner_id: string
+          purchased_count: number | null
+          quality_score: number | null
+          status: Database["public"]["Enums"]["lead_status"]
+          title: string
+          updated_at: string
+          urgency: Database["public"]["Enums"]["urgency_level"]
+          zip: string
+        }
+        Insert: {
+          address?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_type?: Database["public"]["Enums"]["budget_type"]
+          canton: Database["public"]["Enums"]["canton"]
+          category: Database["public"]["Enums"]["handwerker_category"]
+          city: string
+          created_at?: string
+          description: string
+          expires_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          max_purchases?: number | null
+          media_urls?: string[] | null
+          owner_id: string
+          purchased_count?: number | null
+          quality_score?: number | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          title: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["urgency_level"]
+          zip: string
+        }
+        Update: {
+          address?: string | null
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_type?: Database["public"]["Enums"]["budget_type"]
+          canton?: Database["public"]["Enums"]["canton"]
+          category?: Database["public"]["Enums"]["handwerker_category"]
+          city?: string
+          created_at?: string
+          description?: string
+          expires_at?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          max_purchases?: number | null
+          media_urls?: string[] | null
+          owner_id?: string
+          purchased_count?: number | null
+          quality_score?: number | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          title?: string
+          updated_at?: string
+          urgency?: Database["public"]["Enums"]["urgency_level"]
+          zip?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          attachments: string[] | null
+          content: string
+          created_at: string
+          id: string
+          lead_id: string
+          message_type: string | null
+          read_at: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          attachments?: string[] | null
+          content: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          message_type?: string | null
+          read_at?: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          attachments?: string[] | null
+          content?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          message_type?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       optimization_suggestions: {
         Row: {
           based_on_insights: string[] | null
@@ -972,28 +1192,64 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address: string | null
+          avatar_url: string | null
+          canton: Database["public"]["Enums"]["canton"] | null
+          city: string | null
+          company_name: string | null
           created_at: string
           email: string
+          first_name: string | null
           full_name: string | null
           hourly_rate: number | null
           id: string
+          languages: string[] | null
+          last_name: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string
+          verified_level: number | null
+          zip: string | null
         }
         Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          canton?: Database["public"]["Enums"]["canton"] | null
+          city?: string | null
+          company_name?: string | null
           created_at?: string
           email: string
+          first_name?: string | null
           full_name?: string | null
           hourly_rate?: number | null
           id: string
+          languages?: string[] | null
+          last_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
+          verified_level?: number | null
+          zip?: string | null
         }
         Update: {
+          address?: string | null
+          avatar_url?: string | null
+          canton?: Database["public"]["Enums"]["canton"] | null
+          city?: string | null
+          company_name?: string | null
           created_at?: string
           email?: string
+          first_name?: string | null
           full_name?: string | null
           hourly_rate?: number | null
           id?: string
+          languages?: string[] | null
+          last_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
+          verified_level?: number | null
+          zip?: string | null
         }
         Relationships: []
       }
@@ -1037,6 +1293,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          is_public: boolean | null
+          lead_id: string
+          rating: number
+          reviewed_id: string
+          reviewer_id: string
+          title: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          lead_id: string
+          rating: number
+          reviewed_id: string
+          reviewer_id: string
+          title?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_public?: boolean | null
+          lead_id?: string
+          rating?: number
+          reviewed_id?: string
+          reviewer_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          extra_lead_price: number
+          id: string
+          included_leads: number
+          plan: Database["public"]["Enums"]["subscription_plan"]
+          status: string
+          updated_at: string
+          used_leads: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end: string
+          current_period_start?: string
+          extra_lead_price?: number
+          id?: string
+          included_leads?: number
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          status?: string
+          updated_at?: string
+          used_leads?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          extra_lead_price?: number
+          id?: string
+          included_leads?: number
+          plan?: Database["public"]["Enums"]["subscription_plan"]
+          status?: string
+          updated_at?: string
+          used_leads?: number | null
+          user_id?: string
+        }
+        Relationships: []
       }
       task_media: {
         Row: {
@@ -1408,10 +1750,64 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "department_admin" | "user" | "super_admin"
+      budget_type: "fixed" | "hourly" | "estimate"
+      canton:
+        | "AG"
+        | "AI"
+        | "AR"
+        | "BE"
+        | "BL"
+        | "BS"
+        | "FR"
+        | "GE"
+        | "GL"
+        | "GR"
+        | "JU"
+        | "LU"
+        | "NE"
+        | "NW"
+        | "OW"
+        | "SG"
+        | "SH"
+        | "SO"
+        | "SZ"
+        | "TG"
+        | "TI"
+        | "UR"
+        | "VD"
+        | "VS"
+        | "ZG"
+        | "ZH"
       employment_status: "active" | "inactive" | "terminated"
       employment_type: "full_time" | "part_time" | "temporary" | "intern"
+      handwerker_category:
+        | "elektriker"
+        | "sanitaer"
+        | "heizung"
+        | "klimatechnik"
+        | "maler"
+        | "gipser"
+        | "bodenleger"
+        | "plattenleger"
+        | "schreiner"
+        | "maurer"
+        | "zimmermann"
+        | "dachdecker"
+        | "fassadenbauer"
+        | "gartenbau"
+        | "pflasterarbeiten"
+        | "zaun_torbau"
+        | "fenster_tueren"
+        | "kuechenbau"
+        | "badumbau"
+        | "umzug"
+        | "reinigung"
+        | "schlosserei"
+        | "spengler"
+      lead_status: "draft" | "active" | "closed" | "cancelled"
       payroll_period_type: "monthly" | "weekly" | "bi_weekly"
       payroll_status: "draft" | "calculated" | "approved" | "paid"
+      subscription_plan: "starter" | "professional" | "enterprise"
       swiss_canton:
         | "AG"
         | "AI"
@@ -1440,6 +1836,8 @@ export type Database = {
         | "ZG"
         | "ZH"
       time_entry_status: "draft" | "submitted" | "approved" | "rejected"
+      urgency_level: "today" | "this_week" | "this_month" | "planning"
+      user_role: "homeowner" | "handwerker" | "admin"
       vacation_status: "pending" | "approved" | "rejected"
       vacation_type: "annual" | "sick" | "maternity" | "paternity" | "unpaid"
     }
@@ -1570,10 +1968,66 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "department_admin", "user", "super_admin"],
+      budget_type: ["fixed", "hourly", "estimate"],
+      canton: [
+        "AG",
+        "AI",
+        "AR",
+        "BE",
+        "BL",
+        "BS",
+        "FR",
+        "GE",
+        "GL",
+        "GR",
+        "JU",
+        "LU",
+        "NE",
+        "NW",
+        "OW",
+        "SG",
+        "SH",
+        "SO",
+        "SZ",
+        "TG",
+        "TI",
+        "UR",
+        "VD",
+        "VS",
+        "ZG",
+        "ZH",
+      ],
       employment_status: ["active", "inactive", "terminated"],
       employment_type: ["full_time", "part_time", "temporary", "intern"],
+      handwerker_category: [
+        "elektriker",
+        "sanitaer",
+        "heizung",
+        "klimatechnik",
+        "maler",
+        "gipser",
+        "bodenleger",
+        "plattenleger",
+        "schreiner",
+        "maurer",
+        "zimmermann",
+        "dachdecker",
+        "fassadenbauer",
+        "gartenbau",
+        "pflasterarbeiten",
+        "zaun_torbau",
+        "fenster_tueren",
+        "kuechenbau",
+        "badumbau",
+        "umzug",
+        "reinigung",
+        "schlosserei",
+        "spengler",
+      ],
+      lead_status: ["draft", "active", "closed", "cancelled"],
       payroll_period_type: ["monthly", "weekly", "bi_weekly"],
       payroll_status: ["draft", "calculated", "approved", "paid"],
+      subscription_plan: ["starter", "professional", "enterprise"],
       swiss_canton: [
         "AG",
         "AI",
@@ -1603,6 +2057,8 @@ export const Constants = {
         "ZH",
       ],
       time_entry_status: ["draft", "submitted", "approved", "rejected"],
+      urgency_level: ["today", "this_week", "this_month", "planning"],
+      user_role: ["homeowner", "handwerker", "admin"],
       vacation_status: ["pending", "approved", "rejected"],
       vacation_type: ["annual", "sick", "maternity", "paternity", "unpaid"],
     },

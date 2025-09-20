@@ -36,8 +36,17 @@ export const HeroSearch = () => {
   const [urgency, setUrgency] = useState('');
 
   const handleSearch = () => {
-    // TODO: Implement search functionality
-    console.log('Search:', { searchQuery, category, location, budget, urgency });
+    // Build search URL with parameters
+    const searchParams = new URLSearchParams();
+    
+    if (searchQuery.trim()) searchParams.set('q', searchQuery.trim());
+    if (category) searchParams.set('category', category);
+    if (location.trim()) searchParams.set('location', location.trim());
+    if (budget) searchParams.set('budget', budget);
+    if (urgency) searchParams.set('urgency', urgency);
+    
+    // Navigate to search page
+    window.location.href = `/search?${searchParams.toString()}`;
   };
 
   return (

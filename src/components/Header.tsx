@@ -1,11 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Hammer, User, Settings } from 'lucide-react';
+import { Menu, X, Hammer, User, Settings, LogOut } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast({
+        title: 'Fehler',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Erfolgreich abgemeldet',
+        description: 'Sie wurden erfolgreich abgemeldet.',
+      });
+      navigate('/');
+    }
+  };
 
   const navItems = [
     { label: 'So funktioniert es', href: '#how-it-works' },
@@ -43,10 +81,22 @@ export const Header = () => {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-4">
-            <Button variant="ghost" className="gap-2">
-              <User className="h-4 w-4" />
-              Anmelden
-            </Button>
+            {user ? (
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-ink-700">
+                  Hallo, {user.email}
+                </span>
+                <Button variant="ghost" className="gap-2" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
+                  Abmelden
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" className="gap-2" onClick={() => navigate('/auth')}>
+                <User className="h-4 w-4" />
+                Anmelden
+              </Button>
+            )}
             <Button variant="default" className="gap-2">
               <Settings className="h-4 w-4" />
               Handwerker werden
@@ -76,10 +126,20 @@ export const Header = () => {
               </a>
             ))}
             <div className="flex flex-col gap-3 pt-4 border-t border-line-200">
-              <Button variant="ghost" className="justify-start gap-2">
-                <User className="h-4 w-4" />
-                Anmelden
-              </Button>
+              {user ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-ink-700">Hallo, {user.email}</p>
+                  <Button variant="ghost" className="justify-start gap-2" onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4" />
+                    Abmelden
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="ghost" className="justify-start gap-2" onClick={() => navigate('/auth')}>
+                  <User className="h-4 w-4" />
+                  Anmelden
+                </Button>
+              )}
               <Button variant="default" className="justify-start gap-2">
                 <Settings className="h-4 w-4" />
                 Handwerker werden
