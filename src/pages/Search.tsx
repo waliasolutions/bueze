@@ -167,7 +167,7 @@ export default function Search() {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-8 pt-24">
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-500 mx-auto"></div>
             <p className="mt-4 text-ink-700">Leads werden geladen...</p>
@@ -182,7 +182,7 @@ export default function Search() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-ink-900 mb-4">
             Suchergebnisse

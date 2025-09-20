@@ -214,7 +214,7 @@ const LeadDetails = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-8 pt-24">
           <div className="max-w-4xl mx-auto">
             <div className="animate-pulse space-y-4">
               <div className="h-8 bg-muted rounded w-1/2"></div>
@@ -231,7 +231,7 @@ const LeadDetails = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-8 pt-24">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-2xl font-bold text-foreground mb-4">Auftrag nicht gefunden</h1>
             <Button onClick={() => navigate('/search')}>Zurück zur Suche</Button>
@@ -245,7 +245,7 @@ const LeadDetails = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main content */}

@@ -127,7 +127,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20">
       <div className="w-full max-w-md space-y-6">
         <div className="flex items-center gap-4 mb-6">
           <Button
