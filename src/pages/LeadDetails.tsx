@@ -38,28 +38,43 @@ interface Profile {
 }
 
 const categoryLabels = {
-  plumbing: 'Sanitär',
-  electrical: 'Elektrik',
-  painting: 'Malerei',
-  carpentry: 'Schreinerei',
-  roofing: 'Dacharbeiten',
-  flooring: 'Bodenbeläge',
-  heating: 'Heizung',
-  garden: 'Garten',
+  elektriker: 'Elektriker',
+  sanitaer: 'Sanitär',
+  heizung: 'Heizungsinstallateur',
+  klimatechnik: 'Klimatechnik',
+  maler: 'Maler',
+  gipser: 'Gipser',
+  bodenleger: 'Bodenleger',
+  plattenleger: 'Plattenleger',
+  schreiner: 'Schreiner',
+  maurer: 'Maurer',
+  zimmermann: 'Zimmermann',
+  dachdecker: 'Dachdecker',
+  fassadenbauer: 'Fassadenbauer',
+  gartenbau: 'Gartenbau',
+  pflasterarbeiten: 'Pflasterarbeiten',
+  zaun_torbau: 'Zaun- und Torbau',
+  fenster_tueren: 'Fenster & Türen',
+  kuechenbau: 'Küchenbau',
+  badumbau: 'Badumbau',
+  umzug: 'Umzug & Transport',
+  reinigung: 'Reinigung',
+  schlosserei: 'Schlosserei',
+  spengler: 'Spengler'
 };
 
 const urgencyLabels = {
-  planning: 'Planung',
-  flexible: 'Flexibel',
-  soon: 'Bald',
-  urgent: 'Dringend',
+  today: 'Heute',
+  this_week: 'Diese Woche',
+  this_month: 'Dieser Monat',
+  planning: 'Planung'
 };
 
 const urgencyColors = {
-  planning: 'bg-blue-100 text-blue-800',
-  flexible: 'bg-green-100 text-green-800',
-  soon: 'bg-yellow-100 text-yellow-800',
-  urgent: 'bg-red-100 text-red-800',
+  today: 'bg-red-100 text-red-800',
+  this_week: 'bg-orange-100 text-orange-800',
+  this_month: 'bg-blue-100 text-blue-800',
+  planning: 'bg-gray-100 text-gray-800'
 };
 
 const LeadDetails = () => {
