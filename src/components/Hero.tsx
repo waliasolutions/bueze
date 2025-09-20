@@ -1,5 +1,4 @@
 import React from 'react';
-import { HeroSearch } from './HeroSearch';
 import { Button } from './ui/button';
 import heroCraftsman from '@/assets/hero-craftsman.jpg';
 
@@ -33,17 +32,16 @@ export const Hero = () => {
                   <Button 
                     size="lg" 
                     onClick={() => window.location.href = '/submit-lead'}
-                    className="bg-brand-600 text-white hover:bg-brand-700"
+                    variant="hero"
                   >
                     Auftrag erstellen
                   </Button>
                   <Button 
                     size="lg" 
                     variant="outline"
-                    onClick={() => window.location.href = '/search'}
-                    className="border-brand-600 text-brand-600 hover:bg-brand-50"
+                    onClick={() => window.location.href = '/auth'}
                   >
-                    Aufträge finden
+                    Für Handwerker
                   </Button>
                 </div>
               </div>
@@ -65,9 +63,36 @@ export const Hero = () => {
             </div>
           </div>
 
-          {/* Right Column - Search Form */}
+          {/* Right Column - Value Proposition */}
           <div className="flex justify-center lg:justify-end">
-            <HeroSearch />
+            <div className="bg-surface/80 backdrop-blur-sm rounded-3xl p-8 shadow-xl max-w-md">
+              <h3 className="text-2xl font-bold text-ink-900 mb-4">
+                Warum HandwerkerLeads?
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-brand-500 rounded-full mt-2"></div>
+                  <div>
+                    <h4 className="font-semibold text-ink-800">Kostenlos für Sie</h4>
+                    <p className="text-sm text-ink-600">Auftrag erstellen ist völlig kostenfrei</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-brand-500 rounded-full mt-2"></div>
+                  <div>
+                    <h4 className="font-semibold text-ink-800">Qualifizierte Angebote</h4>
+                    <p className="text-sm text-ink-600">Nur geprüfte Handwerker können Ihnen Offerten senden</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-brand-500 rounded-full mt-2"></div>
+                  <div>
+                    <h4 className="font-semibold text-ink-800">Schnelle Antworten</h4>
+                    <p className="text-sm text-ink-600">Erhalten Sie Angebote innerhalb von 24 Stunden</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
