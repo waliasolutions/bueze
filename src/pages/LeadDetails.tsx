@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Euro, User, Phone, Mail, Star } from 'lucide-react';
+import { MapPin, Clock, Coins, User, Phone, Mail, Star } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -71,15 +71,39 @@ const LeadDetails = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [hasPurchased, setHasPurchased] = useState(false);
 
   useEffect(() => {
     fetchLead();
     fetchUser();
   }, [id]);
 
+  useEffect(() => {
+    if (user && lead) {
+      checkPurchaseStatus();
+    }
+  }, [user, lead]);
+
   const fetchUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     setUser(user);
+  };
+
+  const checkPurchaseStatus = async () => {
+    if (!user || !lead) return;
+
+    try {
+      const { data: purchase } = await supabase
+        .from('lead_purchases')
+        .select('id')
+        .eq('lead_id', lead.id)
+        .eq('buyer_id', user.id)
+        .maybeSingle();
+
+      setHasPurchased(!!purchase);
+    } catch (error) {
+      console.error('Error checking purchase status:', error);
+    }
   };
 
   const fetchLead = async () => {
@@ -181,7 +205,8 @@ const LeadDetails = () => {
         description: "Sie haben den Auftrag erfolgreich gekauft. Die Kontaktdaten sind jetzt sichtbar.",
       });
 
-      // Refresh the page to show updated info
+      // Update purchase status and refresh lead data
+      setHasPurchased(true);
       fetchLead();
     } catch (error) {
       console.error('Error purchasing lead:', error);
@@ -280,7 +305,7 @@ const LeadDetails = () => {
 
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                     <div className="flex items-center gap-2">
-                      <Euro className="h-4 w-4 text-muted-foreground" />
+                      <Coins className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">{formatBudget(lead.budget_min, lead.budget_max)}</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -305,7 +330,7 @@ const LeadDetails = () => {
               </Card>
 
               {/* Contact information and message button - only show if purchased */}
-              {user && owner && (
+              {user && owner && hasPurchased && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Auftraggeber</CardTitle>
@@ -364,9 +389,10 @@ const LeadDetails = () => {
                     className="w-full" 
                     size="lg"
                     onClick={handlePurchase}
-                    disabled={purchasing || !user}
+                    disabled={purchasing || !user || hasPurchased}
+                    variant={hasPurchased ? "secondary" : "default"}
                   >
-                    {purchasing ? 'Wird gekauft...' : 'Jetzt kaufen'}
+                    {hasPurchased ? 'Bereits gekauft' : purchasing ? 'Wird gekauft...' : 'Jetzt kaufen'}
                   </Button>
 
                   {!user && (

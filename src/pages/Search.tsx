@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Euro, Star, Users } from 'lucide-react';
+import { MapPin, Clock, Coins, Star, Users } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -257,7 +257,7 @@ export default function Search() {
                     </div>
                     
                     <div className="flex items-center gap-2 text-sm text-ink-700">
-                      <Euro className="h-4 w-4" />
+                      <Coins className="h-4 w-4" />
                       {formatBudget(lead)}
                     </div>
                     

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, MapPin, Clock, Euro, Eye, Users, TrendingUp } from 'lucide-react';
+import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -213,7 +213,7 @@ const Dashboard = () => {
                 <CardTitle className="text-sm font-medium">
                   {isHandwerker ? 'Ausgaben' : 'Verkäufe'}
                 </CardTitle>
-                <Euro className="h-4 w-4 text-muted-foreground" />
+                <Coins className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -309,7 +309,7 @@ const Dashboard = () => {
                           
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
-                              <Euro className="h-4 w-4 text-muted-foreground" />
+                              <Coins className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">{formatBudget(lead.budget_min, lead.budget_max)}</span>
                             </div>
                             <div className="flex items-center gap-2">
@@ -403,7 +403,7 @@ const Dashboard = () => {
                           
                           <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
-                              <Euro className="h-4 w-4 text-muted-foreground" />
+                              <Coins className="h-4 w-4 text-muted-foreground" />
                               <span className="font-medium">{formatBudget(purchase.lead.budget_min, purchase.lead.budget_max)}</span>
                             </div>
                             <div className="text-sm text-muted-foreground">
