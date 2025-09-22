@@ -8,9 +8,11 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
+import { Progress } from './ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import heroCraftsman from '@/assets/hero-craftsman.jpg';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Simplified schema for hero form - only essential fields
 const heroLeadSchema = z.object({
@@ -21,7 +23,14 @@ const heroLeadSchema = z.object({
   zip: z.string().min(4, 'PLZ muss mindestens 4 Zeichen haben'),
   budget_min: z.number().min(100, 'Mindestbudget muss über 100 CHF sein'),
   budget_max: z.number().min(100, 'Maximalbudget muss über 100 CHF sein'),
+  urgency: z.string().min(1, 'Bitte wählen Sie die Dringlichkeit'),
 });
+
+const urgencyOptions = [
+  { value: 'urgent', label: 'Dringend (innerhalb 1 Woche)' },
+  { value: 'soon', label: 'Bald (innerhalb 1 Monat)' },
+  { value: 'flexible', label: 'Flexibel (innerhalb 3 Monate)' },
+];
 
 type HeroLeadFormData = z.infer<typeof heroLeadSchema>;
 
@@ -51,6 +60,7 @@ const cantons = [
 
 export const Hero = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -64,8 +74,37 @@ export const Hero = () => {
       zip: '',
       budget_min: 500,
       budget_max: 2000,
+      urgency: 'flexible',
     },
   });
+
+  const nextStep = async () => {
+    let fieldsToValidate: (keyof HeroLeadFormData)[] = [];
+    
+    if (currentStep === 1) {
+      fieldsToValidate = ['title', 'category', 'description'];
+    } else if (currentStep === 2) {
+      fieldsToValidate = ['budget_min', 'budget_max', 'urgency'];
+    }
+    
+    const isValid = await form.trigger(fieldsToValidate);
+    if (isValid) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
+
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 1: return 'Projekt Details';
+      case 2: return 'Budget & Dringlichkeit';
+      case 3: return 'Standort';
+      default: return '';
+    }
+  };
 
   const onSubmit = async (data: HeroLeadFormData) => {
     setIsSubmitting(true);
@@ -91,7 +130,7 @@ export const Hero = () => {
           category: data.category as any,
           budget_min: data.budget_min,
           budget_max: data.budget_max,
-          urgency: 'flexible' as any, // Default value
+          urgency: data.urgency as any,
           canton: data.canton as any,
           zip: data.zip,
           city: '', // Will be filled from zip lookup
@@ -180,175 +219,263 @@ export const Hero = () => {
             </div>
           </div>
 
-          {/* Right Column - Lead Creation Form */}
+          {/* Right Column - Multistep Lead Creation Form */}
           <div className="flex justify-center lg:justify-end">
             <div className="bg-surface/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl max-w-md w-full">
-              <h3 className="text-xl font-bold text-ink-900 mb-4">
-                Auftrag erstellen
-              </h3>
-              <p className="text-sm text-ink-600 mb-6">
-                Kostenfrei & unverbindlich
-              </p>
+              {/* Header */}
+              <div className="mb-6">
+                <h3 className="text-xl font-bold text-ink-900 mb-2">
+                  Auftrag erstellen
+                </h3>
+                <p className="text-sm text-ink-600 mb-4">
+                  Kostenfrei & unverbindlich
+                </p>
+                
+                {/* Progress Bar */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-ink-500">
+                    <span>Schritt {currentStep} von 3</span>
+                    <span>{Math.round((currentStep / 3) * 100)}%</span>
+                  </div>
+                  <Progress value={(currentStep / 3) * 100} className="h-1" />
+                  <p className="text-sm font-medium text-ink-700">{getStepTitle()}</p>
+                </div>
+              </div>
               
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                  <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Projekttitel</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="z.B. Badezimmer sanieren" 
-                            className="h-9"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Kategorie</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="Kategorie wählen" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {categories.map((category) => (
-                              <SelectItem key={category.value} value={category.value}>
-                                {category.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Beschreibung</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Kurze Projektbeschreibung..."
-                            className="min-h-[60px] text-sm"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name="canton"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm">Kanton</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  {/* Step 1: Project Basics */}
+                  {currentStep === 1 && (
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Projekttitel</FormLabel>
                             <FormControl>
-                              <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Kanton" />
-                              </SelectTrigger>
+                              <Input 
+                                placeholder="z.B. Badezimmer sanieren" 
+                                className="h-9"
+                                {...field} 
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {cantons.map((canton) => (
-                                <SelectItem key={canton.value} value={canton.value}>
-                                  {canton.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="zip"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm">PLZ</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="8000"
-                              className="h-9"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                      <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Kategorie</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Kategorie wählen" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {categories.map((category) => (
+                                  <SelectItem key={category.value} value={category.value}>
+                                    {category.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Beschreibung</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Kurze Projektbeschreibung..."
+                                className="min-h-[80px] text-sm"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* Step 2: Budget & Urgency */}
+                  {currentStep === 2 && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormField
+                          control={form.control}
+                          name="budget_min"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm">Budget von (CHF)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number"
+                                  placeholder="500"
+                                  className="h-9"
+                                  {...field} 
+                                  onChange={(e) => field.onChange(Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="budget_max"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-sm">Budget bis (CHF)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="number"
+                                  placeholder="2000"
+                                  className="h-9"
+                                  {...field} 
+                                  onChange={(e) => field.onChange(Number(e.target.value))}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="urgency"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Dringlichkeit</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Dringlichkeit wählen" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {urgencyOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  {/* Step 3: Location */}
+                  {currentStep === 3 && (
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="canton"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Kanton</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-9">
+                                  <SelectValue placeholder="Kanton wählen" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {cantons.map((canton) => (
+                                  <SelectItem key={canton.value} value={canton.value}>
+                                    {canton.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="zip"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm">Postleitzahl</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="8000"
+                                className="h-9"
+                                {...field} 
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="bg-pastel-blue-50 p-4 rounded-2xl">
+                        <h4 className="font-medium text-ink-900 mb-2">Zusammenfassung</h4>
+                        <div className="space-y-1 text-sm text-ink-600">
+                          <p><span className="font-medium">Projekt:</span> {form.watch('title') || 'Nicht angegeben'}</p>
+                          <p><span className="font-medium">Kategorie:</span> {categories.find(c => c.value === form.watch('category'))?.label || 'Nicht angegeben'}</p>
+                          <p><span className="font-medium">Budget:</span> CHF {form.watch('budget_min')} - {form.watch('budget_max')}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Navigation Buttons */}
+                  <div className="flex justify-between gap-3 pt-4">
+                    {currentStep > 1 && (
+                      <Button 
+                        type="button"
+                        variant="outline"
+                        onClick={prevStep}
+                        className="flex items-center gap-2"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        Zurück
+                      </Button>
+                    )}
+                    
+                    <div className="ml-auto">
+                      {currentStep < 3 ? (
+                        <Button 
+                          type="button"
+                          variant="hero"
+                          onClick={nextStep}
+                          className="flex items-center gap-2"
+                        >
+                          Weiter
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      ) : (
+                        <Button 
+                          type="submit" 
+                          variant="hero"
+                          disabled={isSubmitting}
+                          className="flex items-center gap-2"
+                        >
+                          {isSubmitting ? 'Wird erstellt...' : 'Auftrag erstellen'}
+                        </Button>
                       )}
-                    />
+                    </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name="budget_min"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm">Budget von</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number"
-                              placeholder="500"
-                              className="h-9"
-                              {...field} 
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="budget_max"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm">Budget bis</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number"
-                              placeholder="2000"
-                              className="h-9"
-                              {...field} 
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    variant="hero"
-                    size="lg"
-                    disabled={isSubmitting}
-                    className="w-full mt-6"
-                  >
-                    {isSubmitting ? 'Wird erstellt...' : 'Auftrag erstellen'}
-                  </Button>
                 </form>
               </Form>
             </div>
