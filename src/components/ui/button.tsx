@@ -9,14 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-brand-500 text-ink-900 shadow-lg shadow-brand-500/25 hover:bg-brand-600 hover:shadow-brand-600/30 active:bg-brand-700 active:scale-95",
+        default: "bg-brand-500 text-white shadow-lg shadow-brand-500/25 hover:bg-brand-600 hover:shadow-brand-600/30 active:bg-brand-700 active:scale-95",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
         outline: "border border-line-200 bg-surface text-ink-700 shadow-sm hover:bg-pastel-grey-50 hover:border-brand-500",
         secondary: "bg-pastel-blue-50 text-ink-700 shadow-sm hover:bg-pastel-blue-100",
         ghost: "text-ink-700 hover:bg-pastel-grey-50 hover:text-ink-900",
         link: "text-brand-600 underline-offset-4 hover:underline hover:text-brand-700",
-        hero: "bg-brand-500 text-ink-900 shadow-xl shadow-brand-500/30 hover:bg-brand-600 hover:shadow-brand-600/40 active:bg-brand-700 active:scale-95 text-base font-semibold px-8 py-4",
-        premium: "bg-gradient-to-r from-brand-500 to-brand-400 text-ink-900 shadow-xl shadow-brand-500/30 hover:from-brand-600 hover:to-brand-500 active:scale-95"
+        hero: "bg-brand-500 text-white shadow-xl shadow-brand-500/30 hover:bg-brand-600 hover:shadow-brand-600/40 active:bg-brand-700 active:scale-95 text-base font-semibold px-8 py-4",
+        premium: "bg-gradient-to-r from-brand-500 to-brand-400 text-white shadow-xl shadow-brand-500/30 hover:from-brand-600 hover:to-brand-500 active:scale-95"
       },
       size: {
         default: "h-9 px-4 py-2",
