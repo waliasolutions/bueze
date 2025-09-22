@@ -375,7 +375,7 @@ const Dashboard = () => {
               <TabsContent value="purchases" className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold">Gekaufte Aufträge</h2>
-                  <Button onClick={() => navigate('/search')}>
+                  <Button onClick={() => navigate('/')}>
                     Neue Aufträge finden
                   </Button>
                 </div>
@@ -386,7 +386,7 @@ const Dashboard = () => {
                       <p className="text-muted-foreground mb-4">
                         Sie haben noch keine Aufträge gekauft.
                       </p>
-                      <Button onClick={() => navigate('/search')}>
+                      <Button onClick={() => navigate('/')}>
                         Aufträge durchsuchen
                       </Button>
                     </CardContent>
