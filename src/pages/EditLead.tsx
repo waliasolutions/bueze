@@ -22,6 +22,7 @@ const leadSchema = z.object({
   budget_min: z.number().min(0, 'Budget muss positiv sein'),
   budget_max: z.number().min(0, 'Budget muss positiv sein'),
   urgency: z.string().min(1, 'Bitte wählen Sie eine Dringlichkeit'),
+  address: z.string().optional(),
   canton: z.string().min(1, 'Bitte wählen Sie einen Kanton'),
   zip: z.string().min(4, 'PLZ muss mindestens 4 Zeichen haben'),
   city: z.string().min(2, 'Stadt muss mindestens 2 Zeichen haben'),
@@ -65,6 +66,7 @@ const EditLead = () => {
       budget_min: 0,
       budget_max: 0,
       urgency: '',
+      address: '',
       canton: '',
       zip: '',
       city: '',
@@ -112,6 +114,7 @@ const EditLead = () => {
         budget_min: lead.budget_min,
         budget_max: lead.budget_max,
         urgency: lead.urgency,
+        address: lead.address || '',
         canton: lead.canton,
         zip: lead.zip,
         city: lead.city,
@@ -332,6 +335,20 @@ const EditLead = () => {
                       )}
                     />
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Adresse</FormLabel>
+                        <FormControl>
+                          <Input placeholder="z.B. Bahnhofstrasse 12" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <div className="grid grid-cols-3 gap-4">
                     <FormField
