@@ -76,6 +76,36 @@ export type Database = {
           },
         ]
       }
+      admin_profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          is_active: boolean | null
+          last_login: string | null
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          is_active?: boolean | null
+          last_login?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          is_active?: boolean | null
+          last_login?: string | null
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       canton_tax_defaults: {
         Row: {
           canton: Database["public"]["Enums"]["swiss_canton"]
@@ -333,6 +363,47 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_requests: {
+        Row: {
+          country_id: string
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_processed: boolean | null
+          name: string
+          phone: string
+          subject: string | null
+        }
+        Insert: {
+          country_id: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_processed?: boolean | null
+          name: string
+          phone: string
+          subject?: string | null
+        }
+        Update: {
+          country_id?: string
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_processed?: boolean | null
+          name?: string
+          phone?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_requests_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -370,6 +441,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      countries: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          emergency: string
+          hotline: string
+          id: string
+          is_active: boolean | null
+          locale: string
+          name: string
+          opening_hours: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          emergency: string
+          hotline: string
+          id: string
+          is_active?: boolean | null
+          locale: string
+          name: string
+          opening_hours?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          emergency?: string
+          hotline?: string
+          id?: string
+          is_active?: boolean | null
+          locale?: string
+          name?: string
+          opening_hours?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       documents: {
         Row: {
@@ -820,6 +930,35 @@ export type Database = {
           },
         ]
       }
+      lead_views: {
+        Row: {
+          id: string
+          lead_id: string
+          viewed_at: string
+          viewer_id: string
+        }
+        Insert: {
+          id?: string
+          lead_id: string
+          viewed_at?: string
+          viewer_id: string
+        }
+        Update: {
+          id?: string
+          lead_id?: string
+          viewed_at?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_views_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           address: string | null
@@ -900,6 +1039,44 @@ export type Database = {
           zip?: string
         }
         Relationships: []
+      }
+      legal_pages: {
+        Row: {
+          country_id: string
+          created_at: string | null
+          id: string
+          imprint: string
+          privacy_policy: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          country_id: string
+          created_at?: string | null
+          id?: string
+          imprint: string
+          privacy_policy: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          country_id?: string
+          created_at?: string | null
+          id?: string
+          imprint?: string
+          privacy_policy?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_pages_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: true
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {
@@ -1348,6 +1525,59 @@ export type Database = {
           },
         ]
       }
+      resources: {
+        Row: {
+          category: string
+          country_id: string
+          created_at: string | null
+          description: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          phone: string | null
+          priority: number | null
+          title: string
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          category?: string
+          country_id: string
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          phone?: string | null
+          priority?: number | null
+          title: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          category?: string
+          country_id?: string
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          phone?: string | null
+          priority?: number | null
+          title?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           comment: string | null
@@ -1392,44 +1622,94 @@ export type Database = {
           },
         ]
       }
+      snippets: {
+        Row: {
+          country_id: string
+          created_at: string | null
+          id: string
+          image_url: string | null
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: string
+        }
+        Insert: {
+          country_id: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: string
+        }
+        Update: {
+          country_id?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snippets_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
+          billing_cycle: string | null
           created_at: string
           current_period_end: string
           current_period_start: string
           extra_lead_price: number
           id: string
           included_leads: number
+          max_views: number
           plan: Database["public"]["Enums"]["subscription_plan"]
           status: string
           updated_at: string
           used_leads: number | null
+          used_views: number
           user_id: string
         }
         Insert: {
+          billing_cycle?: string | null
           created_at?: string
           current_period_end: string
           current_period_start?: string
           extra_lead_price?: number
           id?: string
           included_leads?: number
+          max_views?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           status?: string
           updated_at?: string
           used_leads?: number | null
+          used_views?: number
           user_id: string
         }
         Update: {
+          billing_cycle?: string | null
           created_at?: string
           current_period_end?: string
           current_period_start?: string
           extra_lead_price?: number
           id?: string
           included_leads?: number
+          max_views?: number
           plan?: Database["public"]["Enums"]["subscription_plan"]
           status?: string
           updated_at?: string
           used_leads?: number | null
+          used_views?: number
           user_id?: string
         }
         Relationships: []
@@ -1791,6 +2071,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      delete_expired_contact_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1867,10 +2151,24 @@ export type Database = {
         | "reinigung"
         | "schlosserei"
         | "spengler"
-      lead_status: "draft" | "active" | "closed" | "cancelled"
+      lead_status:
+        | "draft"
+        | "active"
+        | "closed"
+        | "cancelled"
+        | "paused"
+        | "completed"
+        | "deleted"
       payroll_period_type: "monthly" | "weekly" | "bi_weekly"
       payroll_status: "draft" | "calculated" | "approved" | "paid"
-      subscription_plan: "starter" | "professional" | "enterprise"
+      subscription_plan:
+        | "starter"
+        | "professional"
+        | "enterprise"
+        | "free"
+        | "monthly"
+        | "6_month"
+        | "annual"
       swiss_canton:
         | "AG"
         | "AI"
@@ -2087,10 +2385,26 @@ export const Constants = {
         "schlosserei",
         "spengler",
       ],
-      lead_status: ["draft", "active", "closed", "cancelled"],
+      lead_status: [
+        "draft",
+        "active",
+        "closed",
+        "cancelled",
+        "paused",
+        "completed",
+        "deleted",
+      ],
       payroll_period_type: ["monthly", "weekly", "bi_weekly"],
       payroll_status: ["draft", "calculated", "approved", "paid"],
-      subscription_plan: ["starter", "professional", "enterprise"],
+      subscription_plan: [
+        "starter",
+        "professional",
+        "enterprise",
+        "free",
+        "monthly",
+        "6_month",
+        "annual",
+      ],
       swiss_canton: [
         "AG",
         "AI",
