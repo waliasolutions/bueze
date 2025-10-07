@@ -6,10 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, ToggleLeft } from 'lucide-react';
+import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Eye } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
+import { trackLeadView, checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
+import { pauseLead, completeLead, deleteLead, reactivateLead, getLeadAnalytics } from '@/lib/leadHelpers';
+import { getLeadStatus } from '@/config/leadStatuses';
+import type { LeadAnalytics } from '@/lib/leadHelpers';
 
 interface Lead {
   id: string;
@@ -28,6 +33,7 @@ interface Lead {
   purchased_count: number;
   max_purchases: number;
   quality_score: number;
+  status: string;
 }
 
 interface Profile {
@@ -88,6 +94,8 @@ const LeadDetails = () => {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [hasPurchased, setHasPurchased] = useState(false);
+  const [analytics, setAnalytics] = useState<LeadAnalytics | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     fetchLead();
@@ -97,8 +105,25 @@ const LeadDetails = () => {
   useEffect(() => {
     if (user && lead) {
       checkPurchaseStatus();
+      trackView();
+      if (lead.owner_id === user.id) {
+        fetchAnalytics();
+      }
     }
   }, [user, lead]);
+
+  const trackView = async () => {
+    if (!user || !lead || lead.owner_id === user.id || hasPurchased) return;
+    
+    // Track view for non-owners who haven't purchased
+    await trackLeadView(user.id, lead.id);
+  };
+
+  const fetchAnalytics = async () => {
+    if (!user || !lead) return;
+    const data = await getLeadAnalytics(lead.id, user.id);
+    setAnalytics(data);
+  };
 
   const fetchUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -260,6 +285,49 @@ const LeadDetails = () => {
     }
   };
 
+  const handleStatusChange = async (action: 'pause' | 'complete' | 'delete' | 'reactivate') => {
+    if (!lead || !user) return;
+    
+    setUpdating(true);
+    let result;
+    
+    switch (action) {
+      case 'pause':
+        result = await pauseLead(lead.id, user.id);
+        break;
+      case 'complete':
+        result = await completeLead(lead.id, user.id);
+        break;
+      case 'delete':
+        result = await deleteLead(lead.id, user.id);
+        break;
+      case 'reactivate':
+        result = await reactivateLead(lead.id, user.id);
+        break;
+    }
+    
+    if (result.success) {
+      toast({
+        title: "Erfolg",
+        description: result.message,
+      });
+      
+      if (action === 'delete') {
+        navigate('/dashboard');
+      } else {
+        fetchLead(); // Refresh lead data
+      }
+    } else {
+      toast({
+        title: "Fehler",
+        description: result.message,
+        variant: "destructive",
+      });
+    }
+    
+    setUpdating(false);
+  };
+
   const formatBudget = (min: number, max: number) => {
     return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
   };
@@ -267,6 +335,7 @@ const LeadDetails = () => {
   const isOwnLead = user && lead && lead.owner_id === user.id;
   const shouldShowContactInfo = user && owner && (hasPurchased || isOwnLead);
   const shouldShowPurchaseSection = !isOwnLead;
+  const leadStatus = lead ? getLeadStatus(lead.status as any) : null;
 
   if (loading) {
     return (
@@ -311,7 +380,7 @@ const LeadDetails = () => {
               <Card>
                 <CardHeader>
                       <div className="flex items-start justify-between">
-                        <div className="space-y-2">
+                      <div className="space-y-2">
                           <CardTitle className="text-2xl">{lead.title}</CardTitle>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <MapPin className="h-4 w-4" />
@@ -325,7 +394,12 @@ const LeadDetails = () => {
                             <span>{formatTimeAgo(lead.created_at)}</span>
                           </div>
                         </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-1 items-end">
+                      {leadStatus && (
+                        <Badge className={leadStatus.color}>
+                          {leadStatus.label}
+                        </Badge>
+                      )}
                       <Badge className={urgencyColors[lead.urgency as keyof typeof urgencyColors]}>
                         {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
                       </Badge>
@@ -421,51 +495,135 @@ const LeadDetails = () => {
 
               {/* Manage own lead section */}
               {isOwnLead && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Auftrag verwalten</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-muted rounded-lg">
-                        <div className="text-2xl font-bold text-primary">{lead.purchased_count}</div>
-                        <div className="text-sm text-muted-foreground">Verkäufe</div>
+                <>
+                  {/* Analytics */}
+                  {analytics && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Performance</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="text-center p-3 bg-muted rounded-lg">
+                            <div className="text-2xl font-bold text-primary">{analytics.totalViews}</div>
+                            <div className="text-sm text-muted-foreground">Ansichten</div>
+                          </div>
+                          <div className="text-center p-3 bg-muted rounded-lg">
+                            <div className="text-2xl font-bold text-primary">{lead.purchased_count}</div>
+                            <div className="text-sm text-muted-foreground">Verkäufe</div>
+                          </div>
+                          <div className="text-center p-3 bg-muted rounded-lg">
+                            <div className="text-2xl font-bold text-primary">CHF {analytics.revenue}</div>
+                            <div className="text-sm text-muted-foreground">Umsatz</div>
+                          </div>
+                          <div className="text-center p-3 bg-muted rounded-lg">
+                            <div className="text-2xl font-bold text-primary">{analytics.conversionRate.toFixed(1)}%</div>
+                            <div className="text-sm text-muted-foreground">Conversion</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                  
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Auftrag verwalten</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <div className="text-2xl font-bold text-primary">{lead.purchased_count}</div>
+                          <div className="text-sm text-muted-foreground">Verkäufe</div>
+                        </div>
+                        <div className="text-center p-3 bg-muted rounded-lg">
+                          <div className="text-2xl font-bold text-primary">{lead.max_purchases - lead.purchased_count}</div>
+                          <div className="text-sm text-muted-foreground">Verfügbar</div>
+                        </div>
                       </div>
-                      <div className="text-center p-3 bg-muted rounded-lg">
-                        <div className="text-2xl font-bold text-primary">{lead.max_purchases - lead.purchased_count}</div>
-                        <div className="text-sm text-muted-foreground">Verfügbar</div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
+                      
                       <Button 
                         variant="outline" 
-                        className="flex-1"
-                        onClick={() => {
-                          toast({
-                            title: "In Entwicklung",
-                            description: "Bearbeitung wird bald verfügbar sein.",
-                          });
-                        }}
+                        className="w-full"
+                        onClick={() => navigate(`/lead/${lead.id}/edit`)}
                       >
                         <Edit2 className="h-4 w-4 mr-2" />
                         Bearbeiten
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => {
-                          toast({
-                            title: "In Entwicklung", 
-                            description: "Status ändern wird bald verfügbar sein.",
-                          });
-                        }}
-                      >
-                        <ToggleLeft className="h-4 w-4 mr-2" />
-                        Status
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        {lead.status === 'active' && (
+                          <Button 
+                            variant="outline" 
+                            onClick={() => handleStatusChange('pause')}
+                            disabled={updating}
+                          >
+                            <Pause className="h-4 w-4 mr-2" />
+                            Pausieren
+                          </Button>
+                        )}
+                        
+                        {lead.status === 'paused' && (
+                          <Button 
+                            variant="outline" 
+                            onClick={() => handleStatusChange('reactivate')}
+                            disabled={updating}
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Reaktivieren
+                          </Button>
+                        )}
+                        
+                        {(lead.status === 'active' || lead.status === 'paused') && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline">
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Erledigt
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Auftrag als erledigt markieren?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Der Auftrag wird als erledigt markiert und nicht mehr sichtbar sein.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleStatusChange('complete')}>
+                                  Bestätigen
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive" className="w-full" disabled={updating}>
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Löschen
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Auftrag wirklich löschen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Diese Aktion kann nicht rückgängig gemacht werden. Der Auftrag wird dauerhaft gelöscht.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleStatusChange('delete')}>
+                              Löschen
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </CardContent>
+                  </Card>
+                </>
               )}
             </div>
 

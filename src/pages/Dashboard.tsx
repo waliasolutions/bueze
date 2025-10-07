@@ -6,10 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp } from 'lucide-react';
+import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp, Crown, AlertCircle } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatCurrency } from '@/lib/swissTime';
+import { checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
+import { getLeadStatus } from '@/config/leadStatuses';
+import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
 
 interface Lead {
   id: string;
@@ -90,6 +94,7 @@ const Dashboard = () => {
   const [myLeads, setMyLeads] = useState<Lead[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -117,14 +122,21 @@ const Dashboard = () => {
 
       setProfile(profileData);
 
-      // Fetch user's leads
+      // Fetch user's leads (exclude deleted)
       const { data: leadsData } = await supabase
         .from('leads')
         .select('*')
         .eq('owner_id', user.id)
+        .neq('status', 'deleted')
         .order('created_at', { ascending: false });
 
       setMyLeads(leadsData || []);
+
+      // Check subscription for handwerker
+      if (profileData?.role === 'handwerker') {
+        const access = await checkSubscriptionAccess(user.id);
+        setSubscriptionAccess(access);
+      }
 
       // Fetch user's purchases
       const { data: purchasesData } = await supabase
@@ -287,7 +299,7 @@ const Dashboard = () => {
                     {myLeads.map((lead) => (
                       <Card key={lead.id} className="cursor-pointer hover:shadow-md transition-shadow">
                         <CardHeader>
-                          <div className="flex items-start justify-between">
+                            <div className="flex items-start justify-between">
                             <div className="space-y-1">
                               <CardTitle className="text-lg">{lead.title}</CardTitle>
                               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -298,6 +310,11 @@ const Dashboard = () => {
                               </div>
                             </div>
                             <div className="flex flex-col gap-1">
+                              {lead.status && (
+                                <Badge className={getLeadStatus(lead.status as any).color}>
+                                  {getLeadStatus(lead.status as any).label}
+                                </Badge>
+                              )}
                               <Badge className={urgencyColors[lead.urgency as keyof typeof urgencyColors]}>
                                 {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
                               </Badge>

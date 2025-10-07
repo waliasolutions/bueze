@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SubmitLead from "./pages/SubmitLead";
 import LeadDetails from "./pages/LeadDetails";
+import EditLead from "./pages/EditLead";
 import Dashboard from "./pages/Dashboard";
 import Messages from "./pages/Messages";
 import ConversationsList from "./pages/ConversationsList";
@@ -31,6 +32,7 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/submit-lead" element={<SubmitLead />} />
             <Route path="/lead/:id" element={<LeadDetails />} />
+            <Route path="/lead/:id/edit" element={<EditLead />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/conversations" element={<ConversationsList />} />
             <Route path="/messages/:conversationId" element={<Messages />} />

@@ -7,10 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, Search, ShoppingCart } from 'lucide-react';
+import { MapPin, Clock, Coins, Search, ShoppingCart, Crown, AlertCircle } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
+import { checkSubscriptionAccess, canPurchaseLeadWithPrice } from '@/lib/subscriptionHelpers';
+import { canViewLead as canViewLeadByStatus } from '@/config/leadStatuses';
+import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
 
 interface Lead {
   id: string;
@@ -83,16 +87,30 @@ const BrowseLeads = () => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedCanton, setSelectedCanton] = useState('');
   const [selectedUrgency, setSelectedUrgency] = useState('');
+  const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchLeads();
+    checkUserSubscription();
   }, []);
 
   useEffect(() => {
     filterLeads();
   }, [leads, searchTerm, selectedCategory, selectedCanton, selectedUrgency]);
+
+  const checkUserSubscription = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const access = await checkSubscriptionAccess(user.id);
+        setSubscriptionAccess(access);
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+  };
 
   const fetchLeads = async () => {
     try {
@@ -160,13 +178,26 @@ const BrowseLeads = () => {
         return;
       }
 
+      // Check subscription access
+      const { canPurchase, price } = await canPurchaseLeadWithPrice(user.id);
+
+      if (!canPurchase) {
+        toast({
+          title: "Upgrade erforderlich",
+          description: "Bitte upgraden Sie Ihr Abonnement, um Aufträge zu kaufen.",
+          variant: "destructive",
+        });
+        navigate('/profile?tab=subscription');
+        return;
+      }
+
       // Insert lead purchase
       const { error } = await supabase
         .from('lead_purchases')
         .insert({
           lead_id: leadId,
           buyer_id: user.id,
-          price: 2000 // 20 CHF in cents
+          price: price * 100 // Convert CHF to cents
         });
 
       if (error) {
@@ -178,14 +209,15 @@ const BrowseLeads = () => {
       } else {
         toast({
           title: "Auftrag gekauft!",
-          description: "Sie haben den Auftrag erfolgreich gekauft.",
+          description: `Sie haben den Auftrag für CHF ${price} erfolgreich gekauft.`,
         });
         
-        // Refresh leads
+        // Refresh leads and subscription status
         fetchLeads();
+        checkUserSubscription();
         
-        // Navigate to dashboard
-        navigate('/dashboard');
+        // Navigate to lead details
+        navigate(`/lead/${leadId}`);
       }
     } catch (error) {
       console.error('Error purchasing lead:', error);
@@ -233,6 +265,29 @@ const BrowseLeads = () => {
               Finden Sie passende Aufträge in Ihrer Region
             </p>
           </div>
+
+          {/* Subscription Status Banner */}
+          {subscriptionAccess && !subscriptionAccess.isUnlimited && (
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>
+                {subscriptionAccess.requiresUpgrade ? 'Upgrade erforderlich' : 'Ansichten verbleibend'}
+              </AlertTitle>
+              <AlertDescription className="flex items-center justify-between">
+                <span>
+                  {subscriptionAccess.requiresUpgrade
+                    ? 'Sie haben Ihr Anzeigelimit erreicht. Upgraden Sie für unbegrenzten Zugriff.'
+                    : `Sie haben noch ${subscriptionAccess.remainingViews} Ansicht${subscriptionAccess.remainingViews !== 1 ? 'en' : ''} in diesem Monat.`}
+                </span>
+                {subscriptionAccess.requiresUpgrade && (
+                  <Button size="sm" onClick={() => navigate('/checkout')}>
+                    <Crown className="h-4 w-4 mr-2" />
+                    Jetzt upgraden
+                  </Button>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Filters */}
           <Card className="mb-8">
@@ -349,7 +404,7 @@ const BrowseLeads = () => {
                         <span className="font-medium">{formatBudget(lead.budget_min, lead.budget_max)}</span>
                       </div>
                       <div className="text-sm text-primary font-medium">
-                        CHF 20
+                        CHF {subscriptionAccess?.leadPrice || 20}
                       </div>
                     </div>
 
