@@ -63,7 +63,7 @@ export const Categories = () => {
                 {/* Popular Badge */}
                 {category.popular && (
                   <div className="absolute -top-2 -right-2">
-                    <div className="bg-brand-500 text-ink-900 text-xs font-bold px-2 py-1 rounded-full">
+                    <div className="bg-brand-500 text-white text-xs font-bold px-2 py-1 rounded-full">
                       Beliebt
                     </div>
                   </div>

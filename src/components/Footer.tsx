@@ -1,5 +1,6 @@
 import React from 'react';
-import { Hammer, Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from 'lucide-react';
+import logo from '@/assets/bueze-logo.webp';
 
 export const Footer = () => {
   const footerSections = [
@@ -48,13 +49,8 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center">
-                <Hammer className="h-6 w-6 text-ink-900" />
-              </div>
-              <div className="font-bold text-xl">
-                Büeze
-              </div>
+            <div className="flex items-center">
+              <img src={logo} alt="Büeze.ch" className="h-10 w-auto" />
             </div>
             
             <p className="text-ink-500 leading-relaxed">
@@ -125,19 +121,19 @@ export const Footer = () => {
                 href="#" 
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
-                <Facebook className="h-5 w-5 text-ink-500 group-hover:text-ink-900" />
+                <Facebook className="h-5 w-5 text-ink-500 group-hover:text-white" />
               </a>
               <a 
                 href="#" 
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
-                <Instagram className="h-5 w-5 text-ink-500 group-hover:text-ink-900" />
+                <Instagram className="h-5 w-5 text-ink-500 group-hover:text-white" />
               </a>
               <a 
                 href="#" 
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
-                <Linkedin className="h-5 w-5 text-ink-500 group-hover:text-ink-900" />
+                <Linkedin className="h-5 w-5 text-ink-500 group-hover:text-white" />
               </a>
             </div>
           </div>

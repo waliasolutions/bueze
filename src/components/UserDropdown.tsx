@@ -137,7 +137,7 @@ export const UserDropdown = () => {
         <Button variant="ghost" className="flex items-center gap-2 h-auto p-2">
           <Avatar className="h-8 w-8">
             <AvatarImage src={profile?.avatar_url} />
-            <AvatarFallback className="bg-brand-500 text-ink-900 text-sm font-medium">
+            <AvatarFallback className="bg-brand-500 text-white text-sm font-medium">
               {getInitials(getUserDisplayName())}
             </AvatarFallback>
           </Avatar>

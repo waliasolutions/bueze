@@ -43,7 +43,7 @@ export const HowItWorks = () => {
               <Card key={index} className="relative p-8 text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-surface">
                 {/* Step Number */}
                 <div className="absolute -top-4 left-8">
-                  <div className="w-8 h-8 bg-brand-500 text-ink-900 rounded-full flex items-center justify-center font-bold text-sm">
+                  <div className="w-8 h-8 bg-brand-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
                     {step.step}
                   </div>
                 </div>
