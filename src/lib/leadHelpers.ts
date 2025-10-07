@@ -56,31 +56,65 @@ export async function updateLeadStatus(
 }
 
 /**
+ * Get status-specific success messages
+ */
+function getStatusSuccessMessage(status: LeadStatusType): string {
+  switch (status) {
+    case 'paused':
+      return 'Auftrag pausiert. Handwerker können ihn nicht mehr sehen.';
+    case 'active':
+      return 'Auftrag reaktiviert. Handwerker können ihn wieder finden.';
+    case 'completed':
+      return 'Auftrag als erledigt markiert. Vielen Dank!';
+    case 'deleted':
+      return 'Auftrag gelöscht.';
+    default:
+      return 'Status erfolgreich aktualisiert.';
+  }
+}
+
+/**
  * Pause a lead (hide from search)
  */
 export async function pauseLead(leadId: string, userId: string): Promise<LeadUpdateResult> {
-  return updateLeadStatus(leadId, userId, 'paused');
+  const result = await updateLeadStatus(leadId, userId, 'paused');
+  if (result.success) {
+    result.message = getStatusSuccessMessage('paused');
+  }
+  return result;
 }
 
 /**
  * Mark lead as completed
  */
 export async function completeLead(leadId: string, userId: string): Promise<LeadUpdateResult> {
-  return updateLeadStatus(leadId, userId, 'completed');
+  const result = await updateLeadStatus(leadId, userId, 'completed');
+  if (result.success) {
+    result.message = getStatusSuccessMessage('completed');
+  }
+  return result;
 }
 
 /**
  * Delete a lead (soft delete - status change)
  */
 export async function deleteLead(leadId: string, userId: string): Promise<LeadUpdateResult> {
-  return updateLeadStatus(leadId, userId, 'deleted');
+  const result = await updateLeadStatus(leadId, userId, 'deleted');
+  if (result.success) {
+    result.message = getStatusSuccessMessage('deleted');
+  }
+  return result;
 }
 
 /**
  * Reactivate a paused lead
  */
 export async function reactivateLead(leadId: string, userId: string): Promise<LeadUpdateResult> {
-  return updateLeadStatus(leadId, userId, 'active');
+  const result = await updateLeadStatus(leadId, userId, 'active');
+  if (result.success) {
+    result.message = getStatusSuccessMessage('active');
+  }
+  return result;
 }
 
 /**

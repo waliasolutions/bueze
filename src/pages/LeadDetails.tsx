@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Eye } from 'lucide-react';
+import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Eye, Users } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
 import { trackLeadView, checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
 import { pauseLead, completeLead, deleteLead, reactivateLead, getLeadAnalytics } from '@/lib/leadHelpers';
@@ -337,6 +337,16 @@ const LeadDetails = () => {
   const shouldShowPurchaseSection = !isOwnLead;
   const leadStatus = lead ? getLeadStatus(lead.status as any) : null;
 
+  // Helper to get status badge variant
+  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+      case 'active': return 'default';
+      case 'paused': return 'secondary';
+      case 'completed': return 'outline';
+      default: return 'secondary';
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -369,6 +379,227 @@ const LeadDetails = () => {
     );
   }
 
+  // Owner view - simplified
+  if (isOwnLead) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+          {/* Status Badge and Title */}
+          <div className="mb-6">
+            <Badge 
+              variant={getStatusVariant(lead.status)} 
+              className="mb-3 text-base px-4 py-2"
+            >
+              {leadStatus?.label}
+            </Badge>
+            <h1 className="text-4xl font-bold mb-2">{lead.title}</h1>
+            <div className="flex items-center text-muted-foreground text-sm space-x-4">
+              <div className="flex items-center">
+                <MapPin className="h-4 w-4 mr-1" />
+                {lead.city}, {lead.canton}
+              </div>
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-1" />
+                {formatTimeAgo(lead.created_at)}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons - Prominent */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={() => navigate(`/lead/${id}/edit`)}
+                  size="lg"
+                  className="flex-1 sm:flex-none"
+                >
+                  <Edit2 className="h-4 w-4 mr-2" />
+                  Bearbeiten
+                </Button>
+
+                {lead.status === 'active' && (
+                  <Button
+                    onClick={() => handleStatusChange('pause')}
+                    variant="outline"
+                    size="lg"
+                    disabled={updating}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <Pause className="h-4 w-4 mr-2" />
+                    Pausieren
+                  </Button>
+                )}
+
+                {lead.status === 'paused' && (
+                  <Button
+                    onClick={() => handleStatusChange('reactivate')}
+                    variant="outline"
+                    size="lg"
+                    disabled={updating}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Reaktivieren
+                  </Button>
+                )}
+
+                {(lead.status === 'active' || lead.status === 'paused') && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="lg" 
+                        disabled={updating}
+                        className="flex-1 sm:flex-none"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Als erledigt markieren
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Auftrag abschließen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Der Auftrag wird als erledigt markiert und ist nicht mehr für Handwerker sichtbar.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleStatusChange('complete')}>
+                          Bestätigen
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      size="lg" 
+                      disabled={updating}
+                      className="flex-1 sm:flex-none"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Löschen
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Auftrag löschen?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Diese Aktion kann nicht rückgängig gemacht werden. Der Auftrag wird dauerhaft gelöscht.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleStatusChange('delete')}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Löschen
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Simple Stats */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
+                  <p className="text-3xl font-bold">{lead.purchased_count}</p>
+                  <p className="text-sm text-muted-foreground">Handwerker interessiert</p>
+                </div>
+                <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <Eye className="h-8 w-8 mx-auto mb-2 text-primary" />
+                  <p className="text-3xl font-bold">{lead.max_purchases - lead.purchased_count}</p>
+                  <p className="text-sm text-muted-foreground">Plätze noch verfügbar</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lead Details */}
+          <Card className="mb-6">
+            <CardContent className="pt-6 space-y-6">
+              <div>
+                <h3 className="font-semibold mb-2 flex items-center text-lg">
+                  Beschreibung
+                </h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{lead.description}</p>
+              </div>
+
+              <div className="border-t pt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-semibold mb-2">Budget</h3>
+                  <p className="text-2xl font-bold text-primary">
+                    {formatBudget(lead.budget_min, lead.budget_max)}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Kategorie</h3>
+                  <Badge className={`${urgencyColors[lead.urgency as keyof typeof urgencyColors]} text-base px-3 py-1`}>
+                    {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
+                  </Badge>
+                  <p className="text-lg mt-2">{categoryLabels[lead.category as keyof typeof categoryLabels]}</p>
+                </div>
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="font-semibold mb-2 flex items-center">
+                  <MapPin className="h-5 w-5 mr-2" />
+                  Standort
+                </h3>
+                <p className="text-muted-foreground">
+                  {lead.address && `${lead.address}, `}
+                  {lead.zip} {lead.city}, {lead.canton}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Contact Information - Compact */}
+          {owner && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Ihre Kontaktdaten</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="font-semibold">{owner.full_name}</p>
+                <div className="space-y-2">
+                  <div className="flex items-center text-sm">
+                    <Mail className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                    <a href={`mailto:${owner.email}`} className="hover:underline">
+                      {owner.email}
+                    </a>
+                  </div>
+                  {owner.phone && (
+                    <div className="flex items-center text-sm">
+                      <Phone className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                      <a href={`tel:${owner.phone}`} className="hover:underline">
+                        {owner.phone}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Handwerker view (non-owner)
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -435,13 +666,11 @@ const LeadDetails = () => {
                 </CardContent>
               </Card>
 
-              {/* Contact information - show if purchased OR if it's user's own lead */}
+              {/* Contact information - show if purchased */}
               {shouldShowContactInfo && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>
-                      {isOwnLead ? 'Ihre Kontaktdaten' : 'Auftraggeber'}
-                    </CardTitle>
+                    <CardTitle>Auftraggeber</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-4 mb-4">
@@ -467,11 +696,10 @@ const LeadDetails = () => {
                         </div>
                       </div>
                     </div>
-                    {!isOwnLead && hasPurchased && (
+                    {hasPurchased && (
                       <Button 
                         className="w-full" 
                         onClick={async () => {
-                          // Find the conversation for this lead and user
                           const { data: conversation } = await supabase
                             .from('conversations')
                             .select('id')
@@ -492,235 +720,47 @@ const LeadDetails = () => {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Manage own lead section */}
-              {isOwnLead && (
-                <>
-                  {/* Analytics */}
-                  {analytics && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Performance</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="text-center p-3 bg-muted rounded-lg">
-                            <div className="text-2xl font-bold text-primary">{analytics.totalViews}</div>
-                            <div className="text-sm text-muted-foreground">Ansichten</div>
-                          </div>
-                          <div className="text-center p-3 bg-muted rounded-lg">
-                            <div className="text-2xl font-bold text-primary">{lead.purchased_count}</div>
-                            <div className="text-sm text-muted-foreground">Verkäufe</div>
-                          </div>
-                          <div className="text-center p-3 bg-muted rounded-lg">
-                            <div className="text-2xl font-bold text-primary">CHF {analytics.revenue}</div>
-                            <div className="text-sm text-muted-foreground">Umsatz</div>
-                          </div>
-                          <div className="text-center p-3 bg-muted rounded-lg">
-                            <div className="text-2xl font-bold text-primary">{analytics.conversionRate.toFixed(1)}%</div>
-                            <div className="text-sm text-muted-foreground">Conversion</div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Auftrag verwalten</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div className="text-center p-3 bg-muted rounded-lg">
-                          <div className="text-2xl font-bold text-primary">{lead.purchased_count}</div>
-                          <div className="text-sm text-muted-foreground">Verkäufe</div>
-                        </div>
-                        <div className="text-center p-3 bg-muted rounded-lg">
-                          <div className="text-2xl font-bold text-primary">{lead.max_purchases - lead.purchased_count}</div>
-                          <div className="text-sm text-muted-foreground">Verfügbar</div>
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        variant="outline" 
-                        className="w-full"
-                        onClick={() => navigate(`/lead/${lead.id}/edit`)}
-                      >
-                        <Edit2 className="h-4 w-4 mr-2" />
-                        Bearbeiten
-                      </Button>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        {lead.status === 'active' && (
-                          <Button 
-                            variant="outline" 
-                            onClick={() => handleStatusChange('pause')}
-                            disabled={updating}
-                          >
-                            <Pause className="h-4 w-4 mr-2" />
-                            Pausieren
-                          </Button>
-                        )}
-                        
-                        {lead.status === 'paused' && (
-                          <Button 
-                            variant="outline" 
-                            onClick={() => handleStatusChange('reactivate')}
-                            disabled={updating}
-                          >
-                            <Play className="h-4 w-4 mr-2" />
-                            Reaktivieren
-                          </Button>
-                        )}
-                        
-                        {(lead.status === 'active' || lead.status === 'paused') && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline">
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Erledigt
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Auftrag als erledigt markieren?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Der Auftrag wird als erledigt markiert und nicht mehr sichtbar sein.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleStatusChange('complete')}>
-                                  Bestätigen
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </div>
-
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="destructive" className="w-full" disabled={updating}>
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Löschen
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Auftrag wirklich löschen?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Diese Aktion kann nicht rückgängig gemacht werden. Der Auftrag wird dauerhaft gelöscht.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleStatusChange('delete')}>
-                              Löschen
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
             </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Purchase section - only show for other's leads */}
               {shouldShowPurchaseSection && (
-                <>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Auftrag kaufen</CardTitle>
-                      <CardDescription>
-                        Erhalten Sie Zugang zu den Kontaktdaten und können sich direkt bewerben.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="text-center">
-                        <div className="text-3xl font-bold text-primary">CHF 20</div>
-                        <div className="text-sm text-muted-foreground">einmalig</div>
-                      </div>
-                      
-                      <Button 
-                        className="w-full" 
-                        size="lg"
-                        onClick={handlePurchase}
-                        disabled={purchasing || !user || hasPurchased}
-                        variant={hasPurchased ? "secondary" : "default"}
-                      >
-                        {hasPurchased 
-                          ? 'Bereits gekauft' 
-                          : purchasing 
-                            ? 'Wird gekauft...' 
-                            : 'Jetzt kaufen'
-                        }
-                      </Button>
-
-                      {!user && (
-                        <p className="text-xs text-center text-muted-foreground">
-                          <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/auth')}>
-                            Anmelden
-                          </Button> um diesen Auftrag zu kaufen
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Was Sie erhalten</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-2 h-2 bg-primary rounded-full" />
-                        <span>Vollständige Kontaktdaten</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-2 h-2 bg-primary rounded-full" />
-                        <span>Direkte Bewerbung möglich</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-2 h-2 bg-primary rounded-full" />
-                        <span>Exklusiver Zugang (max. {lead.max_purchases} Handwerker)</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <div className="w-2 h-2 bg-primary rounded-full" />
-                        <span>Integriertes Messaging-System</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
-              )}
-
-              {/* Lead performance for own leads */}
-              {isOwnLead && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Auftrag-Performance</CardTitle>
+                    <CardTitle>Auftrag kaufen</CardTitle>
+                    <CardDescription>
+                      Erhalten Sie Zugang zu den Kontaktdaten und können sich direkt bewerben.
+                    </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Aufrufe</span>
-                        <span className="text-sm font-medium">247</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Interessenten</span>
-                        <span className="text-sm font-medium">{lead.purchased_count}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Verfügbare Plätze</span>
-                        <span className="text-sm font-medium">{lead.max_purchases - lead.purchased_count}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Qualitätsscore</span>
-                        <span className="text-sm font-medium">{lead.quality_score}/100</span>
-                      </div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-primary">CHF 20</div>
+                      <div className="text-sm text-muted-foreground">einmalig</div>
                     </div>
+                    
+                    <Button 
+                      className="w-full" 
+                      size="lg"
+                      onClick={handlePurchase}
+                      disabled={purchasing || !user || hasPurchased}
+                      variant={hasPurchased ? "secondary" : "default"}
+                    >
+                      {hasPurchased 
+                        ? 'Bereits gekauft' 
+                        : purchasing 
+                          ? 'Wird gekauft...' 
+                          : 'Jetzt kaufen'
+                      }
+                    </Button>
+
+                    {!user && (
+                      <p className="text-xs text-center text-muted-foreground">
+                        <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/auth')}>
+                          Anmelden
+                        </Button> um diesen Auftrag zu kaufen
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               )}

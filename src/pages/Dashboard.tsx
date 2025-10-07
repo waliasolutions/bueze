@@ -206,8 +206,8 @@ const Dashboard = () => {
             </Button>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Stats Cards - Simplified */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -217,7 +217,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {isHandwerker ? purchases.length : myLeads.length}
+                  {isHandwerker ? purchases.length : myLeads.filter(l => l.status === 'active').length}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {isHandwerker ? 'Total gekaufte Aufträge' : 'Aktive Aufträge'}
@@ -227,40 +227,18 @@ const Dashboard = () => {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  {isHandwerker ? 'Ausgaben' : 'Verkäufe'}
-                </CardTitle>
-                <Coins className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Interessenten</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {isHandwerker 
-                    ? formatCurrency(purchases.length * 20)
-                    : formatCurrency(myLeads.reduce((sum, lead) => sum + (lead.purchased_count * 20), 0))
+                    ? purchases.length
+                    : myLeads.reduce((sum, lead) => sum + lead.purchased_count, 0)
                   }
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isHandwerker ? 'Für Aufträge ausgegeben' : 'Durch Verkäufe verdient'}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Erfolgsrate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {isHandwerker 
-                    ? '85%'
-                    : myLeads.length > 0 
-                      ? Math.round((myLeads.filter(lead => lead.purchased_count > 0).length / myLeads.length) * 100)
-                      : 0
-                  }%
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {isHandwerker ? 'Erfolgreiche Bewerbungen' : 'Verkaufte Aufträge'}
+                  {isHandwerker ? 'Aufträge angefragt' : 'Handwerker interessiert'}
                 </p>
               </CardContent>
             </Card>
@@ -297,79 +275,55 @@ const Dashboard = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {myLeads.map((lead) => (
-                      <Card key={lead.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                      <Card key={lead.id} className="hover:shadow-lg transition-shadow">
                         <CardHeader>
-                            <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                              <CardTitle className="text-lg">{lead.title}</CardTitle>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <MapPin className="h-4 w-4" />
-                                <span>{lead.zip} {lead.city}</span>
-                                <Clock className="h-4 w-4 ml-2" />
-                                <span>{formatTimeAgo(lead.created_at)}</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              {lead.status && (
-                                <Badge className={getLeadStatus(lead.status as any).color}>
-                                  {getLeadStatus(lead.status as any).label}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant={
+                                  lead.status === 'active' ? 'default' : 
+                                  lead.status === 'paused' ? 'secondary' :
+                                  lead.status === 'completed' ? 'outline' : 'secondary'
+                                }>
+                                  {lead.status === 'active' ? 'Aktiv' :
+                                   lead.status === 'paused' ? 'Pausiert' :
+                                   lead.status === 'completed' ? 'Erledigt' : 'Entwurf'}
                                 </Badge>
-                              )}
-                              <Badge className={urgencyColors[lead.urgency as keyof typeof urgencyColors]}>
-                                {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
-                              </Badge>
-                              <Badge variant="secondary">
-                                {categoryLabels[lead.category as keyof typeof categoryLabels]}
-                              </Badge>
+                                <Badge className={`${urgencyColors[lead.urgency as keyof typeof urgencyColors]}`}>
+                                  {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
+                                </Badge>
+                              </div>
+                              <CardTitle className="text-xl mb-1">{lead.title}</CardTitle>
+                              <div className="flex items-center text-sm text-muted-foreground space-x-3">
+                                <span className="flex items-center">
+                                  <MapPin className="h-3 w-3 mr-1" />
+                                  {lead.city}
+                                </span>
+                                <span>{categoryLabels[lead.category as keyof typeof categoryLabels]}</span>
+                              </div>
                             </div>
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                            {lead.description}
-                          </p>
-                          
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                              <Coins className="h-4 w-4 text-muted-foreground" />
-                              <span className="font-medium">{formatBudget(lead.budget_min, lead.budget_max)}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{lead.purchased_count}/{lead.max_purchases}</span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
+                          <p className="text-muted-foreground mb-4 line-clamp-2">{lead.description}</p>
+                          <div className="space-y-3">
                             <div className="flex justify-between text-sm">
-                              <span>Verkaufte Plätze</span>
-                              <span>{lead.purchased_count}/{lead.max_purchases}</span>
+                              <span className="text-muted-foreground">Budget:</span>
+                              <span className="font-semibold">{formatBudget(lead.budget_min, lead.budget_max)}</span>
                             </div>
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <div 
-                                className="bg-primary h-2 rounded-full" 
-                                style={{ width: `${(lead.purchased_count / lead.max_purchases) * 100}%` }}
-                              />
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Interessenten:</span>
+                              <span className="font-semibold">{lead.purchased_count} interessiert</span>
                             </div>
                           </div>
-
-                          <div className="flex gap-2 mt-4">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => navigate(`/lead/${lead.id}`)}
-                            >
-                              Anzeigen
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => navigate(`/lead/${lead.id}/edit`)}
-                            >
-                              Bearbeiten
-                            </Button>
-                          </div>
+                        </CardContent>
+                        <CardContent className="pt-0">
+                          <Button
+                            className="w-full"
+                            onClick={() => navigate(`/lead/${lead.id}`)}
+                          >
+                            Verwalten
+                          </Button>
                         </CardContent>
                       </Card>
                     ))}
