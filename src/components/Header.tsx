@@ -4,7 +4,7 @@ import { Menu, X, User, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
-import logo from '@/assets/bueze-logo.webp';
+import logo from '@/assets/bueze-logo.png';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

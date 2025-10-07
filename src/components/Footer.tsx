@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from 'lucide-react';
-import logo from '@/assets/bueze-logo.webp';
+import logo from '@/assets/bueze-logo.png';
 
 export const Footer = () => {
   const footerSections = [
@@ -50,7 +50,7 @@ export const Footer = () => {
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center">
-              <img src={logo} alt="Büeze.ch" className="h-10 w-auto" />
+              <img src={logo} alt="Büeze.ch" className="h-30 w-auto" />
             </div>
             
             <p className="text-ink-500 leading-relaxed">
