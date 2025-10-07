@@ -14,6 +14,7 @@ import ConversationsList from "./pages/ConversationsList";
 import Profile from "./pages/Profile";
 import TestDashboard from "./pages/TestDashboard";
 import BrowseLeads from "./pages/BrowseLeads";
+import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => {
             <Route path="/profile" element={<Profile />} />
             <Route path="/test-dashboard" element={<TestDashboard />} />
             <Route path="/search" element={<BrowseLeads />} />
+            <Route path="/checkout" element={<Checkout />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
