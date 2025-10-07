@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Hammer, User, Plus } from 'lucide-react';
+import { Menu, X, User, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
+import logo from '@/assets/bueze-logo.webp';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -41,13 +42,8 @@ export const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center">
-              <Hammer className="h-6 w-6 text-ink-900" />
-            </div>
-            <div className="font-bold text-xl text-ink-900">
-              Büeze
-            </div>
+          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+            <img src={logo} alt="Büeze.ch" className="h-8 w-auto" />
           </div>
 
           {/* Desktop Navigation */}

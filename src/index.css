@@ -10,15 +10,15 @@ All colors MUST be HSL.
   :root {
     /* Swiss Büeze Design System */
     
-    /* Brand Colors - Dark Purple Accent */
-    --brand-50: 270 100% 97%;   /* Very light purple tint */
-    --brand-100: 270 100% 90%;  /* Light purple */
-    --brand-200: 270 100% 80%;  /* Medium-light purple */
-    --brand-300: 270 100% 70%;  /* Medium purple */
-    --brand-400: 270 95% 65%;   /* Medium-dark purple */
-    --brand-500: 270 85% 45%;   /* Core dark purple - Core Accent */
-    --brand-600: 270 85% 38%;   /* Darker purple - Hover/Focus */
-    --brand-700: 270 85% 30%;   /* Darkest purple - Active */
+    /* Brand Colors - Blue Accent (from Büeze logo) */
+    --brand-50: 197 71% 97%;   /* Very light blue tint */
+    --brand-100: 197 71% 90%;  /* Light blue */
+    --brand-200: 197 71% 80%;  /* Medium-light blue */
+    --brand-300: 197 71% 70%;  /* Medium blue */
+    --brand-400: 197 71% 60%;  /* Medium-dark blue */
+    --brand-500: 197 71% 47%;  /* Core brand blue - Core Accent */
+    --brand-600: 197 71% 38%;  /* Darker blue - Hover/Focus */
+    --brand-700: 197 71% 30%;  /* Darkest blue - Active */
     
     /* Pastel Backgrounds for calm surfaces */
     --pastel-blue-50: 212 100% 97%;   /* #EEF6FF */
