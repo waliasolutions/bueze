@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, ArrowLeft, User } from 'lucide-react';
+import { formatTime, formatDateRelative } from '@/lib/swissTime';
 
 interface Message {
   id: string;
@@ -190,29 +191,6 @@ const Messages = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('de-CH', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return 'Heute';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Gestern';
-    } else {
-      return date.toLocaleDateString('de-CH');
-    }
-  };
-
   const getOtherUser = () => {
     if (!conversation || !user) return null;
     return user.id === conversation.homeowner_id 
@@ -294,14 +272,14 @@ const Messages = () => {
                   messages.map((message, index) => {
                     const isOwnMessage = message.sender_id === user?.id;
                     const showDate = index === 0 || 
-                      formatDate(messages[index - 1]?.created_at) !== formatDate(message.created_at);
+                      formatDateRelative(messages[index - 1]?.created_at) !== formatDateRelative(message.created_at);
 
                     return (
                       <div key={message.id}>
                         {showDate && (
                           <div className="text-center my-4">
                             <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-                              {formatDate(message.created_at)}
+                              {formatDateRelative(message.created_at)}
                             </span>
                           </div>
                         )}

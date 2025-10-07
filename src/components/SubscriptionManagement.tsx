@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Crown, Users, Calendar, TrendingUp, AlertTriangle } from 'lucide-react';
+import { formatDate } from '@/lib/swissTime';
 
 interface SubscriptionPlan {
   id: string;
@@ -79,10 +80,6 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
   onCancelSubscription,
   loading = false
 }) => {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('de-CH');
-  };
-
   const getUsagePercentage = () => {
     if (!currentSubscription) return 0;
     return (currentSubscription.usedLeads / currentSubscription.plan.includedLeads) * 100;

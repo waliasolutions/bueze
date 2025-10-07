@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, ToggleLeft } from 'lucide-react';
+import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
 
 interface Lead {
   id: string;
@@ -260,18 +261,7 @@ const LeadDetails = () => {
   };
 
   const formatBudget = (min: number, max: number) => {
-    return `CHF ${min.toLocaleString()} - ${max.toLocaleString()}`;
-  };
-
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
-    if (diffInHours < 1) return 'vor wenigen Minuten';
-    if (diffInHours < 24) return `vor ${diffInHours}h`;
-    if (diffInHours < 168) return `vor ${Math.floor(diffInHours / 24)} Tagen`;
-    return `vor ${Math.floor(diffInHours / 168)} Wochen`;
+    return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
   };
 
   const isOwnLead = user && lead && lead.owner_id === user.id;
@@ -332,7 +322,7 @@ const LeadDetails = () => {
                               }
                             </span>
                             <Clock className="h-4 w-4 ml-4" />
-                            <span>{getTimeAgo(lead.created_at)}</span>
+                            <span>{formatTimeAgo(lead.created_at)}</span>
                           </div>
                         </div>
                     <div className="flex items-center gap-2">

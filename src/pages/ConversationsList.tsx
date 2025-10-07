@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle, User, Clock } from 'lucide-react';
+import { formatTime as formatTimeSwiss, formatTimeAgo } from '@/lib/swissTime';
 
 interface ConversationListItem {
   id: string;
@@ -127,20 +128,15 @@ const ConversationsList = () => {
       : conversation.homeowner;
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
+  const formatConversationTime = (dateString: string) => {
+    const diffInHours = Math.floor((Date.now() - new Date(dateString).getTime()) / (1000 * 60 * 60));
+    
     if (diffInHours < 24) {
-      return date.toLocaleTimeString('de-CH', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-    } else if (diffInHours < 168) { // Less than a week
-      return `vor ${Math.floor(diffInHours / 24)} Tagen`;
+      return formatTimeSwiss(dateString);
+    } else if (diffInHours < 168) {
+      return formatTimeAgo(dateString);
     } else {
-      return date.toLocaleDateString('de-CH');
+      return formatTimeSwiss(dateString);
     }
   };
 
@@ -239,7 +235,7 @@ const ConversationsList = () => {
                               {conversation.latest_message && (
                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
-                                  {formatTime(conversation.latest_message.created_at)}
+                                  {formatConversationTime(conversation.latest_message.created_at)}
                                 </span>
                               )}
                             </div>

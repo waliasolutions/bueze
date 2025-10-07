@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp } from 'lucide-react';
+import { formatTimeAgo, formatNumber, formatCurrency } from '@/lib/swissTime';
 
 interface Lead {
   id: string;
@@ -149,18 +150,7 @@ const Dashboard = () => {
   };
 
   const formatBudget = (min: number, max: number) => {
-    return `CHF ${min.toLocaleString()} - ${max.toLocaleString()}`;
-  };
-
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-
-    if (diffInHours < 1) return 'vor wenigen Minuten';
-    if (diffInHours < 24) return `vor ${diffInHours}h`;
-    if (diffInHours < 168) return `vor ${Math.floor(diffInHours / 24)} Tagen`;
-    return `vor ${Math.floor(diffInHours / 168)} Wochen`;
+    return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
   };
 
   const isHandwerker = profile?.role === 'handwerker';
@@ -232,9 +222,9 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  CHF {isHandwerker 
-                    ? (purchases.length * 20).toLocaleString()
-                    : (myLeads.reduce((sum, lead) => sum + (lead.purchased_count * 20), 0)).toLocaleString()
+                  {isHandwerker 
+                    ? formatCurrency(purchases.length * 20)
+                    : formatCurrency(myLeads.reduce((sum, lead) => sum + (lead.purchased_count * 20), 0))
                   }
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -304,7 +294,7 @@ const Dashboard = () => {
                                 <MapPin className="h-4 w-4" />
                                 <span>{lead.zip} {lead.city}</span>
                                 <Clock className="h-4 w-4 ml-2" />
-                                <span>{getTimeAgo(lead.created_at)}</span>
+                                <span>{formatTimeAgo(lead.created_at)}</span>
                               </div>
                             </div>
                             <div className="flex flex-col gap-1">
@@ -403,7 +393,7 @@ const Dashboard = () => {
                                 <MapPin className="h-4 w-4" />
                                 <span>{purchase.lead.zip} {purchase.lead.city}</span>
                                 <Clock className="h-4 w-4 ml-2" />
-                                <span>Gekauft {getTimeAgo(purchase.purchased_at)}</span>
+                                <span>Gekauft {formatTimeAgo(purchase.purchased_at)}</span>
                               </div>
                             </div>
                             <Badge variant="secondary">
