@@ -50,24 +50,24 @@ export const Footer = () => {
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center">
-              <img src={logo} alt="Büeze.ch" className="h-30 w-auto" />
+              <img src={logo} alt="Büeze.ch" className="h-10 w-auto" />
             </div>
             
-            <p className="text-ink-500 leading-relaxed">
+            <p className="text-ink-300 leading-relaxed">
               Die führende Plattform für Handwerker-Vermittlung in der Schweiz. 
               Verbinden Sie sich mit geprüften Profis für Ihr nächstes Projekt.
             </p>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-3 text-sm text-ink-500">
+              <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Mail className="h-4 w-4" />
                 <span>info@büeze.ch</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-ink-500">
+              <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Phone className="h-4 w-4" />
                 <span>+41 44 123 45 67</span>
               </div>
-              <div className="flex items-center gap-3 text-sm text-ink-500">
+              <div className="flex items-center gap-3 text-sm text-ink-300">
                 <MapPin className="h-4 w-4" />
                 <span>Zürich, Schweiz</span>
               </div>
@@ -85,7 +85,7 @@ export const Footer = () => {
                   <li key={linkIndex}>
                     <a 
                       href="#" 
-                      className="text-ink-500 hover:text-brand-400 transition-colors text-sm"
+                      className="text-ink-300 hover:text-brand-400 transition-colors text-sm"
                     >
                       {link}
                     </a>
@@ -100,7 +100,7 @@ export const Footer = () => {
         <div className="border-t border-ink-700 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             {/* Legal Links */}
-            <div className="flex flex-wrap gap-6 text-sm text-ink-500">
+            <div className="flex flex-wrap gap-6 text-sm text-ink-300">
               <a href="#" className="hover:text-brand-400 transition-colors">
                 Datenschutz
               </a>
@@ -121,27 +121,27 @@ export const Footer = () => {
                 href="#" 
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
-                <Facebook className="h-5 w-5 text-ink-500 group-hover:text-white" />
+                <Facebook className="h-5 w-5 text-ink-300 group-hover:text-white" />
               </a>
               <a 
                 href="#" 
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
-                <Instagram className="h-5 w-5 text-ink-500 group-hover:text-white" />
+                <Instagram className="h-5 w-5 text-ink-300 group-hover:text-white" />
               </a>
               <a 
                 href="#" 
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
-                <Linkedin className="h-5 w-5 text-ink-500 group-hover:text-white" />
+                <Linkedin className="h-5 w-5 text-ink-300 group-hover:text-white" />
               </a>
             </div>
           </div>
 
           {/* Copyright */}
           <div className="text-center mt-8 pt-6 border-t border-ink-700">
-            <p className="text-sm text-ink-500">
-              © 2024 Büeze AG. Alle Rechte vorbehalten.
+            <p className="text-sm text-ink-300">
+              © 2025 Büeze AG. Alle Rechte vorbehalten.
             </p>
           </div>
         </div>
