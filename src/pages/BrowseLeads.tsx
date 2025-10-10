@@ -127,10 +127,14 @@ const BrowseLeads = () => {
         .select('*')
         .eq('status', 'active')
         .neq('owner_id', user.id)
-        .lt('purchased_count', 'max_purchases')
         .order('created_at', { ascending: false });
 
-      setLeads(leadsData || []);
+      // Filter out leads that have reached max purchases
+      const availableLeads = (leadsData || []).filter(
+        lead => lead.purchased_count < lead.max_purchases
+      );
+
+      setLeads(availableLeads);
     } catch (error) {
       console.error('Error fetching leads:', error);
       toast({
