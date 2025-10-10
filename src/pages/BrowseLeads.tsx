@@ -84,9 +84,9 @@ const BrowseLeads = () => {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedCanton, setSelectedCanton] = useState('');
-  const [selectedUrgency, setSelectedUrgency] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCanton, setSelectedCanton] = useState('all');
+  const [selectedUrgency, setSelectedUrgency] = useState('all');
   const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -154,15 +154,15 @@ const BrowseLeads = () => {
       );
     }
 
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'all') {
       filtered = filtered.filter(lead => lead.category === selectedCategory);
     }
 
-    if (selectedCanton) {
+    if (selectedCanton && selectedCanton !== 'all') {
       filtered = filtered.filter(lead => lead.canton === selectedCanton);
     }
 
-    if (selectedUrgency) {
+    if (selectedUrgency && selectedUrgency !== 'all') {
       filtered = filtered.filter(lead => lead.urgency === selectedUrgency);
     }
 
@@ -310,7 +310,7 @@ const BrowseLeads = () => {
                     <SelectValue placeholder="Kategorie" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle Kategorien</SelectItem>
+                    <SelectItem value="all">Alle Kategorien</SelectItem>
                     {Object.entries(categoryLabels).map(([key, label]) => (
                       <SelectItem key={key} value={key}>{label}</SelectItem>
                     ))}
@@ -322,7 +322,7 @@ const BrowseLeads = () => {
                     <SelectValue placeholder="Kanton" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle Kantone</SelectItem>
+                    <SelectItem value="all">Alle Kantone</SelectItem>
                     {cantons.map((canton) => (
                       <SelectItem key={canton} value={canton}>{canton}</SelectItem>
                     ))}
@@ -334,7 +334,7 @@ const BrowseLeads = () => {
                     <SelectValue placeholder="Dringlichkeit" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Alle</SelectItem>
+                    <SelectItem value="all">Alle</SelectItem>
                     {Object.entries(urgencyLabels).map(([key, label]) => (
                       <SelectItem key={key} value={key}>{label}</SelectItem>
                     ))}
@@ -359,9 +359,9 @@ const BrowseLeads = () => {
                   variant="outline" 
                   onClick={() => {
                     setSearchTerm('');
-                    setSelectedCategory('');
-                    setSelectedCanton('');
-                    setSelectedUrgency('');
+                    setSelectedCategory('all');
+                    setSelectedCanton('all');
+                    setSelectedUrgency('all');
                   }}
                 >
                   Filter zurücksetzen
