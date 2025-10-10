@@ -1,34 +1,25 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { 
   Zap, 
   Droplets, 
   Paintbrush, 
   Hammer, 
   TreePine, 
-  Wrench,
   Flame,
-  Wind,
-  Square,
   Layers,
-  Scissors,
-  Building,
-  Home,
-  DoorOpen,
-  ChefHat,
-  Truck
+  Home
 } from 'lucide-react';
 
 const categories = [
-  { icon: Zap, name: 'Elektriker', popular: true },
-  { icon: Droplets, name: 'Sanitär', popular: true },
-  { icon: Paintbrush, name: 'Maler', popular: true },
-  { icon: Hammer, name: 'Zimmermann', popular: false },
-  { icon: Flame, name: 'Heizung', popular: false },
-  { icon: Scissors, name: 'Schreiner', popular: false },
-  { icon: TreePine, name: 'Gartenbau', popular: true },
-  { icon: Wrench, name: 'Allgemeine Arbeiten', popular: true }
+  { icon: Droplets, name: 'Sanitär' },
+  { icon: Zap, name: 'Elektrik' },
+  { icon: Paintbrush, name: 'Malerei' },
+  { icon: Hammer, name: 'Schreinerei' },
+  { icon: Home, name: 'Dacharbeiten' },
+  { icon: Layers, name: 'Bodenbeläge' },
+  { icon: Flame, name: 'Heizung' },
+  { icon: TreePine, name: 'Garten' }
 ];
 
 export const Categories = () => {
@@ -50,17 +41,8 @@ export const Categories = () => {
             return (
               <Card 
                 key={index} 
-                className="relative p-6 text-center border-0 shadow-sm hover:shadow-lg transition-all duration-300 bg-surface hover:bg-pastel-blue-50 cursor-pointer group"
+                className="p-6 text-center border-0 shadow-sm hover:shadow-lg transition-all duration-300 bg-surface hover:bg-pastel-blue-50 cursor-pointer group"
               >
-                {/* Popular Badge */}
-                {category.popular && (
-                  <div className="absolute -top-2 -right-2">
-                    <div className="bg-brand-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      Beliebt
-                    </div>
-                  </div>
-                )}
-
                 {/* Icon */}
                 <div className="w-12 h-12 bg-brand-100 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:bg-brand-200 transition-colors">
                   <IconComponent className="h-6 w-6 text-brand-600" />
@@ -73,12 +55,6 @@ export const Categories = () => {
               </Card>
             );
           })}
-        </div>
-
-        <div className="text-center mt-12">
-          <Button variant="outline" size="lg">
-            Alle Kategorien anzeigen
-          </Button>
         </div>
       </div>
     </section>
