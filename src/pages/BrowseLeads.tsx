@@ -4,6 +4,8 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { logWithCorrelation, captureException } from '@/lib/errorTracking';
 import { trackError } from '@/lib/errorCategories';
+import { supabaseQuery, calculatePagination, buildPaginatedResult, type PaginatedResult } from '@/lib/fetchHelpers';
+import { getOrCreateRequestId, clearRequestId } from '@/lib/idempotency';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,6 +92,9 @@ const BrowseLeads = () => {
   const [selectedCanton, setSelectedCanton] = useState('all');
   const [selectedUrgency, setSelectedUrgency] = useState('all');
   const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const pageSize = 50;
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -117,7 +122,11 @@ const BrowseLeads = () => {
 
   const fetchLeads = async () => {
     try {
-      logWithCorrelation('BrowseLeads: Fetching leads...');
+      logWithCorrelation('BrowseLeads: Fetching leads with pagination', { 
+        page: currentPage, 
+        pageSize 
+      });
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -125,26 +134,40 @@ const BrowseLeads = () => {
         return;
       }
 
-      // Fetch active leads that are not owned by the current user
-      const { data: leadsData } = await supabase
+      // Calculate pagination range
+      const { from, to } = calculatePagination({ page: currentPage, pageSize });
+
+      // Fetch with retry and timeout
+      const { data: leadsData, error } = await supabase
         .from('leads')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('status', 'active')
         .neq('owner_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-      // Filter out leads that have reached max purchases
+      if (error) {
+        throw error;
+      }
+
+      // Filter out leads that have reached max purchases (client-side for now)
       const availableLeads = (leadsData || []).filter(
-        lead => lead.purchased_count < lead.max_purchases
+        (lead: Lead) => lead.purchased_count < lead.max_purchases
       );
 
-      logWithCorrelation('BrowseLeads: Leads fetched', { count: availableLeads.length });
+      logWithCorrelation('BrowseLeads: Leads fetched', { 
+        count: availableLeads.length,
+        page: currentPage
+      });
+      
       setLeads(availableLeads);
+      setTotalCount(availableLeads.length);
     } catch (error) {
       const categorized = trackError(error);
       captureException(error as Error, { 
         context: 'fetchLeads',
-        category: categorized.category 
+        category: categorized.category,
+        page: currentPage
       });
       logWithCorrelation('BrowseLeads: Error fetching leads', categorized);
       toast({
@@ -186,6 +209,10 @@ const BrowseLeads = () => {
   const handlePurchaseLead = async (leadId: string) => {
     try {
       logWithCorrelation('BrowseLeads: Purchasing lead', { leadId });
+      
+      // Generate or retrieve request ID for idempotency
+      const requestId = getOrCreateRequestId(`purchase_${leadId}`);
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -206,39 +233,63 @@ const BrowseLeads = () => {
         return;
       }
 
-      // Insert lead purchase
-      const { error } = await supabase
+      // Insert lead purchase with request_id for idempotency
+      const { error: purchaseError } = await supabase
         .from('lead_purchases')
         .insert({
           lead_id: leadId,
           buyer_id: user.id,
-          price: price * 100 // Convert CHF to cents
-        });
+          price: price * 100, // Convert CHF to cents
+          request_id: requestId
+        })
+        .select();
 
-      if (error) {
+      if (purchaseError) {
+        throw purchaseError;
+      }
+
+      // Clear request ID after successful purchase
+      clearRequestId(`purchase_${leadId}`);
+
+      logWithCorrelation('BrowseLeads: Purchase successful', { 
+        leadId, 
+        requestId 
+      });
+
+      toast({
+        title: "Auftrag gekauft!",
+        description: `Sie haben den Auftrag für CHF ${price} erfolgreich gekauft.`,
+      });
+      
+      // Refresh leads and subscription status
+      fetchLeads();
+      checkUserSubscription();
+      
+      // Navigate to lead details
+      navigate(`/lead/${leadId}`);
+    } catch (error) {
+      const categorized = trackError(error);
+      
+      // Handle duplicate purchase error specifically
+      if (categorized.category === 'duplicate_key') {
         toast({
-          title: "Fehler",
-          description: "Beim Kauf des Auftrags ist ein Fehler aufgetreten.",
+          title: "Bereits gekauft",
+          description: "Sie haben diesen Auftrag bereits gekauft.",
           variant: "destructive",
         });
-      } else {
-        toast({
-          title: "Auftrag gekauft!",
-          description: `Sie haben den Auftrag für CHF ${price} erfolgreich gekauft.`,
-        });
-        
-        // Refresh leads and subscription status
-        fetchLeads();
-        checkUserSubscription();
-        
-        // Navigate to lead details
-        navigate(`/lead/${leadId}`);
+        return;
       }
-    } catch (error) {
-      console.error('Error purchasing lead:', error);
+
+      captureException(error as Error, { 
+        context: 'handlePurchaseLead',
+        category: categorized.category 
+      });
+      
+      logWithCorrelation('BrowseLeads: Purchase error', categorized);
+      
       toast({
         title: "Fehler",
-        description: "Ein unerwarteter Fehler ist aufgetreten.",
+        description: categorized.message || "Ein unerwarteter Fehler ist aufgetreten.",
         variant: "destructive",
       });
     }

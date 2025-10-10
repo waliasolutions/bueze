@@ -901,6 +901,7 @@ export type Database = {
           price: number
           purchased_at: string
           quote_submitted_at: string | null
+          request_id: string | null
         }
         Insert: {
           buyer_id: string
@@ -910,6 +911,7 @@ export type Database = {
           price: number
           purchased_at?: string
           quote_submitted_at?: string | null
+          request_id?: string | null
         }
         Update: {
           buyer_id?: string
@@ -919,6 +921,7 @@ export type Database = {
           price?: number
           purchased_at?: string
           quote_submitted_at?: string | null
+          request_id?: string | null
         }
         Relationships: [
           {
