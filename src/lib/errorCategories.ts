@@ -37,6 +37,43 @@ export const categorizeError = (error: any): CategorizedError => {
     };
   }
 
+  // File upload errors
+  if (message.includes('file size') || message.includes('zu groß') || message.includes('3mb')) {
+    return {
+      category: ErrorCategory.FILE_TOO_LARGE,
+      originalError: error,
+      message: 'File size exceeds maximum allowed (3MB)',
+      severity: 'low'
+    };
+  }
+
+  if (message.includes('file type') || message.includes('dateityp') || message.includes('nicht erlaubt')) {
+    return {
+      category: ErrorCategory.INVALID_FILE_TYPE,
+      originalError: error,
+      message: 'Invalid file type. Only images allowed.',
+      severity: 'low'
+    };
+  }
+
+  if (message.includes('maximum') || message.includes('maximal') || message.includes('2 bilder')) {
+    return {
+      category: ErrorCategory.FILE_UPLOAD,
+      originalError: error,
+      message: 'Maximum number of files exceeded (2 images max)',
+      severity: 'low'
+    };
+  }
+
+  if (message.includes('storage') || message.includes('quota')) {
+    return {
+      category: ErrorCategory.STORAGE_QUOTA,
+      originalError: error,
+      message: 'Storage quota exceeded',
+      severity: 'high'
+    };
+  }
+
   // Auth errors
   if (message.includes('jwt') || code === '401' || status === 401 || message.includes('unauthorized')) {
     return {
@@ -56,18 +93,28 @@ export const categorizeError = (error: any): CategorizedError => {
     };
   }
 
-  // RLS policy violations
-  if (message.includes('policy') || message.includes('row level security') || message.includes('rls')) {
+  // RLS Policy violations
+  if (message.includes('row-level security') || message.includes('rls') || message.includes('policy')) {
     return {
       category: ErrorCategory.RLS_POLICY,
       originalError: error,
-      message: 'Permission denied by security policy',
-      severity: 'critical'
+      message: 'Row-level security policy violation',
+      severity: 'high'
+    };
+  }
+
+  // Race conditions
+  if (message.includes('race') || message.includes('concurrent')) {
+    return {
+      category: ErrorCategory.RACE_CONDITION,
+      originalError: error,
+      message: 'Concurrent operation detected',
+      severity: 'medium'
     };
   }
 
   // Duplicate key errors
-  if (message.includes('duplicate key') || message.includes('unique constraint')) {
+  if (message.includes('duplicate') || message.includes('unique') || code === '23505') {
     return {
       category: ErrorCategory.DUPLICATE_KEY,
       originalError: error,
@@ -77,7 +124,7 @@ export const categorizeError = (error: any): CategorizedError => {
   }
 
   // Network errors
-  if (message.includes('network') || message.includes('fetch failed') || message.includes('connection')) {
+  if (message.includes('network') || message.includes('fetch') || message.includes('connection')) {
     return {
       category: ErrorCategory.NETWORK,
       originalError: error,
@@ -86,64 +133,27 @@ export const categorizeError = (error: any): CategorizedError => {
     };
   }
 
-  // Empty fetch results (not always an error)
-  if (message.includes('no rows') || message.includes('not found')) {
+  // Empty responses
+  if (message.includes('empty') || message.includes('no data')) {
     return {
       category: ErrorCategory.FETCH_EMPTY,
       originalError: error,
-      message: 'No data found',
+      message: 'No data returned',
       severity: 'low'
-    };
-  }
-
-  // File upload errors
-  if (message.includes('file') || message.includes('upload') || message.includes('datei')) {
-    return {
-      category: ErrorCategory.FILE_UPLOAD,
-      originalError: error,
-      message: 'File upload error',
-      severity: 'medium'
-    };
-  }
-
-  if (message.includes('size') || message.includes('10mb') || message.includes('groß')) {
-    return {
-      category: ErrorCategory.FILE_TOO_LARGE,
-      originalError: error,
-      message: 'File too large',
-      severity: 'low'
-    };
-  }
-
-  if (message.includes('type') || message.includes('allowed') || message.includes('erlaubt')) {
-    return {
-      category: ErrorCategory.INVALID_FILE_TYPE,
-      originalError: error,
-      message: 'Invalid file type',
-      severity: 'low'
-    };
-  }
-
-  if (message.includes('quota') || message.includes('storage')) {
-    return {
-      category: ErrorCategory.STORAGE_QUOTA,
-      originalError: error,
-      message: 'Storage quota exceeded',
-      severity: 'high'
     };
   }
 
   // Validation errors
-  if (message.includes('validation') || message.includes('invalid')) {
+  if (message.includes('validation') || message.includes('invalid') || message.includes('required')) {
     return {
       category: ErrorCategory.VALIDATION,
       originalError: error,
-      message: 'Validation failed',
-      severity: 'medium'
+      message: 'Validation error',
+      severity: 'low'
     };
   }
 
-  // Unknown errors
+  // Default unknown error
   return {
     category: ErrorCategory.UNKNOWN,
     originalError: error,

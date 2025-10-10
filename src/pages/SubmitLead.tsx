@@ -30,11 +30,17 @@ const leadSchema = z.object({
   zip: z.string().min(4, 'PLZ muss mindestens 4 Zeichen haben'),
   city: z.string().min(2, 'Stadt muss mindestens 2 Zeichen haben'),
   address: z.string().optional(),
-  contactEmail: z.string().email('Gültige E-Mail erforderlich').optional(),
-  contactPhone: z.string().min(10, 'Telefonnummer muss mindestens 10 Zeichen haben').optional(),
-  contactFirstName: z.string().min(2, 'Vorname muss mindestens 2 Zeichen haben').optional(),
-  contactLastName: z.string().min(2, 'Nachname muss mindestens 2 Zeichen haben').optional(),
-  contactPassword: z.string().min(6, 'Passwort muss mindestens 6 Zeichen haben').optional(),
+  contactEmail: z.string().email('Gültige E-Mail erforderlich').optional().or(z.literal('')),
+  contactPhone: z.string().optional().or(z.literal('')),
+  contactFirstName: z.string().optional().or(z.literal('')),
+  contactLastName: z.string().optional().or(z.literal('')),
+  contactPassword: z.string().optional().or(z.literal('')),
+}).refine((data) => {
+  // Budget validation: max should be greater than min
+  return data.budget_max >= data.budget_min;
+}, {
+  message: 'Maximalbudget muss größer oder gleich dem Mindestbudget sein',
+  path: ['budget_max'],
 });
 
 type LeadFormData = z.infer<typeof leadSchema>;
@@ -161,15 +167,33 @@ const SubmitLead = () => {
         setUploadedUrls(prev => [...prev, ...successes.map(r => r.url)]);
         setUploadedPaths(prev => [...prev, ...successes.map(r => r.path)]);
         toast({
-          title: "Dateien hochgeladen",
-          description: `${successes.length} Datei(en) erfolgreich hochgeladen.`,
+          title: "Bilder hochgeladen",
+          description: `${successes.length} Bild(er) erfolgreich hochgeladen.`,
+        });
+        
+        logWithCorrelation('Files uploaded successfully', { 
+          count: successes.length, 
+          userId: userId 
         });
       }
     } catch (error) {
       captureException(error as Error, { context: 'handleFileUpload' });
+      
+      // Enhanced error messaging for file uploads
+      let errorMsg = "Ein unerwarteter Fehler ist aufgetreten.";
+      if (error instanceof Error) {
+        if (error.message.includes('3MB') || error.message.includes('groß')) {
+          errorMsg = "Datei zu groß. Maximum: 3MB pro Bild.";
+        } else if (error.message.includes('2 Bilder')) {
+          errorMsg = "Sie können maximal 2 Bilder hochladen.";
+        } else if (error.message.includes('Dateityp')) {
+          errorMsg = "Nur Bilddateien sind erlaubt (JPG, PNG, WEBP, GIF).";
+        }
+      }
+      
       toast({
         title: "Upload fehlgeschlagen",
-        description: "Ein unerwarteter Fehler ist aufgetreten.",
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -230,15 +254,29 @@ const SubmitLead = () => {
     try {
       let { data: { user } } = await supabase.auth.getUser();
       
-      // If user is not authenticated, create account first
+      // If user is not authenticated, validate contact details and create account
       if (!user) {
+        // Validate contact details are provided
         if (!data.contactEmail || !data.contactFirstName || !data.contactLastName || !data.contactPassword) {
           toast({
             title: "Kontaktdaten fehlen",
-            description: "Bitte füllen Sie alle Kontaktdaten aus oder melden Sie sich an.",
+            description: "Bitte füllen Sie alle erforderlichen Kontaktdaten aus oder melden Sie sich an.",
             variant: "destructive",
           });
           setIsSubmitting(false);
+          setStep(4); // Go to contact details step
+          return;
+        }
+
+        // Validate password length
+        if (data.contactPassword.length < 6) {
+          toast({
+            title: "Passwort zu kurz",
+            description: "Das Passwort muss mindestens 6 Zeichen lang sein.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          setStep(4);
           return;
         }
 
@@ -257,10 +295,25 @@ const SubmitLead = () => {
               full_name: `${data.contactFirstName} ${data.contactLastName}`,
               phone: data.contactPhone || '',
             },
+            emailRedirectTo: `${window.location.origin}/dashboard`,
           },
         });
 
-        if (signUpError) throw signUpError;
+        if (signUpError) {
+          if (signUpError.message.includes('already registered')) {
+            toast({
+              title: "E-Mail bereits registriert",
+              description: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.",
+              variant: "destructive",
+            });
+            setShowLoginForm(true);
+            setStep(4);
+          } else {
+            throw signUpError;
+          }
+          setIsSubmitting(false);
+          return;
+        }
 
         clearRequestId('create-account');
 
@@ -326,9 +379,24 @@ const SubmitLead = () => {
     } catch (error) {
       captureException(error as Error, { context: 'submitLead' });
       logWithCorrelation('Lead creation failed', { error });
+      
+      // Enhanced error messaging
+      const errorMessage = error instanceof Error ? error.message : 'Ein unerwarteter Fehler ist aufgetreten.';
+      let userFriendlyMessage = errorMessage;
+      
+      if (errorMessage.includes('email')) {
+        userFriendlyMessage = 'Problem mit der E-Mail-Adresse. Bitte überprüfen Sie Ihre Eingabe.';
+      } else if (errorMessage.includes('password')) {
+        userFriendlyMessage = 'Problem mit dem Passwort. Es muss mindestens 6 Zeichen lang sein.';
+      } else if (errorMessage.includes('network')) {
+        userFriendlyMessage = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
+      } else if (errorMessage.includes('timeout')) {
+        userFriendlyMessage = 'Die Anfrage hat zu lange gedauert. Bitte versuchen Sie es erneut.';
+      }
+      
       toast({
-        title: "Fehler",
-        description: "Beim Erstellen des Auftrags ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+        title: "Fehler beim Erstellen",
+        description: userFriendlyMessage,
         variant: "destructive",
       });
     } finally {
@@ -336,8 +404,27 @@ const SubmitLead = () => {
     }
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     const maxStep = isAuthenticated ? 3 : 4;
+    
+    // Validate current step before proceeding
+    if (step === 1) {
+      const titleValid = await form.trigger('title');
+      const descValid = await form.trigger('description');
+      const catValid = await form.trigger('category');
+      if (!titleValid || !descValid || !catValid) return;
+    } else if (step === 2) {
+      const budgetMinValid = await form.trigger('budget_min');
+      const budgetMaxValid = await form.trigger('budget_max');
+      const urgencyValid = await form.trigger('urgency');
+      if (!budgetMinValid || !budgetMaxValid || !urgencyValid) return;
+    } else if (step === 3) {
+      const cantonValid = await form.trigger('canton');
+      const zipValid = await form.trigger('zip');
+      const cityValid = await form.trigger('city');
+      if (!cantonValid || !zipValid || !cityValid) return;
+    }
+    
     if (step < maxStep) setStep(step + 1);
   };
 
