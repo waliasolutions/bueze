@@ -8,6 +8,10 @@ export enum ErrorCategory {
   DUPLICATE_KEY = 'duplicate_key',
   NETWORK = 'network',
   VALIDATION = 'validation',
+  FILE_UPLOAD = 'file_upload',
+  FILE_TOO_LARGE = 'file_too_large',
+  INVALID_FILE_TYPE = 'invalid_file_type',
+  STORAGE_QUOTA = 'storage_quota',
   UNKNOWN = 'unknown'
 }
 
@@ -89,6 +93,43 @@ export const categorizeError = (error: any): CategorizedError => {
       originalError: error,
       message: 'No data found',
       severity: 'low'
+    };
+  }
+
+  // File upload errors
+  if (message.includes('file') || message.includes('upload') || message.includes('datei')) {
+    return {
+      category: ErrorCategory.FILE_UPLOAD,
+      originalError: error,
+      message: 'File upload error',
+      severity: 'medium'
+    };
+  }
+
+  if (message.includes('size') || message.includes('10mb') || message.includes('groß')) {
+    return {
+      category: ErrorCategory.FILE_TOO_LARGE,
+      originalError: error,
+      message: 'File too large',
+      severity: 'low'
+    };
+  }
+
+  if (message.includes('type') || message.includes('allowed') || message.includes('erlaubt')) {
+    return {
+      category: ErrorCategory.INVALID_FILE_TYPE,
+      originalError: error,
+      message: 'Invalid file type',
+      severity: 'low'
+    };
+  }
+
+  if (message.includes('quota') || message.includes('storage')) {
+    return {
+      category: ErrorCategory.STORAGE_QUOTA,
+      originalError: error,
+      message: 'Storage quota exceeded',
+      severity: 'high'
     };
   }
 

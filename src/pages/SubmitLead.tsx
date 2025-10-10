@@ -13,7 +13,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronRight, Upload } from 'lucide-react';
+import { ChevronRight, Upload, X, FileIcon } from 'lucide-react';
+import { uploadMultipleFiles, deleteLeadMedia } from '@/lib/fileUpload';
+import { supabaseQuery } from '@/lib/fetchHelpers';
+import { getOrCreateRequestId, clearRequestId } from '@/lib/idempotency';
+import { captureException, logWithCorrelation } from '@/lib/errorTracking';
 
 const leadSchema = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
@@ -64,6 +68,10 @@ const urgencyLevels = [
 const SubmitLead = () => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -83,6 +91,95 @@ const SubmitLead = () => {
     },
   });
 
+  const handleFileUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Anmeldung erforderlich",
+        description: "Sie müssen angemeldet sein, um Dateien hochzuladen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const filesArray = Array.from(files);
+    
+    // Check total file count
+    if (uploadedUrls.length + filesArray.length > 10) {
+      toast({
+        title: "Zu viele Dateien",
+        description: "Sie können maximal 10 Dateien hochladen.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      logWithCorrelation('Starting file upload', { count: filesArray.length });
+
+      const results = await uploadMultipleFiles(
+        filesArray,
+        user.id,
+        (completed, total) => setUploadProgress((completed / total) * 100)
+      );
+
+      const errors = results.filter(r => r.error);
+      const successes = results.filter(r => !r.error);
+
+      if (errors.length > 0) {
+        toast({
+          title: "Einige Uploads fehlgeschlagen",
+          description: errors.map(e => e.error).join(', '),
+          variant: "destructive",
+        });
+      }
+
+      if (successes.length > 0) {
+        setUploadedUrls(prev => [...prev, ...successes.map(r => r.url)]);
+        setUploadedPaths(prev => [...prev, ...successes.map(r => r.path)]);
+        toast({
+          title: "Dateien hochgeladen",
+          description: `${successes.length} Datei(en) erfolgreich hochgeladen.`,
+        });
+      }
+    } catch (error) {
+      captureException(error as Error, { context: 'handleFileUpload' });
+      toast({
+        title: "Upload fehlgeschlagen",
+        description: "Ein unerwarteter Fehler ist aufgetreten.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleRemoveFile = async (index: number) => {
+    const path = uploadedPaths[index];
+    const success = await deleteLeadMedia(path);
+
+    if (success) {
+      setUploadedUrls(prev => prev.filter((_, i) => i !== index));
+      setUploadedPaths(prev => prev.filter((_, i) => i !== index));
+      toast({
+        title: "Datei entfernt",
+        description: "Die Datei wurde erfolgreich entfernt.",
+      });
+    } else {
+      toast({
+        title: "Fehler",
+        description: "Die Datei konnte nicht entfernt werden.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const onSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
     try {
@@ -98,25 +195,36 @@ const SubmitLead = () => {
         return;
       }
 
-      const { error } = await supabase
-        .from('leads')
-        .insert({
-          title: data.title,
-          description: data.description,
-          category: data.category as any,
-          budget_min: data.budget_min,
-          budget_max: data.budget_max,
-          urgency: data.urgency as any,
-          canton: data.canton as any,
-          zip: data.zip,
-          city: data.city,
-          address: data.address,
-          owner_id: user.id,
-          status: 'active' as any,
-          budget_type: 'estimate' as any,
-        });
+      const requestId = getOrCreateRequestId('create-lead');
+      
+      logWithCorrelation('Creating lead', { requestId, mediaCount: uploadedUrls.length });
 
-      if (error) throw error;
+      // Use supabaseQuery wrapper with retry logic
+      await supabaseQuery(async () => {
+        return await supabase
+          .from('leads')
+          .insert({
+            title: data.title,
+            description: data.description,
+            category: data.category as any,
+            budget_min: data.budget_min,
+            budget_max: data.budget_max,
+            urgency: data.urgency as any,
+            canton: data.canton as any,
+            zip: data.zip,
+            city: data.city,
+            address: data.address,
+            owner_id: user.id,
+            status: 'active' as any,
+            budget_type: 'estimate' as any,
+            media_urls: uploadedUrls,
+            request_id: requestId,
+          });
+      });
+
+      clearRequestId('create-lead');
+      
+      logWithCorrelation('Lead created successfully', { requestId });
 
       toast({
         title: "Auftrag erstellt",
@@ -125,10 +233,11 @@ const SubmitLead = () => {
 
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error creating lead:', error);
+      captureException(error as Error, { context: 'submitLead' });
+      logWithCorrelation('Lead creation failed', { error });
       toast({
         title: "Fehler",
-        description: "Beim Erstellen des Auftrags ist ein Fehler aufgetreten.",
+        description: "Beim Erstellen des Auftrags ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {
@@ -238,6 +347,87 @@ const SubmitLead = () => {
                         </FormItem>
                       )}
                     />
+
+                    {/* File Upload Section */}
+                    <div className="space-y-4">
+                      <div>
+                        <FormLabel>Dateien & Bilder (optional)</FormLabel>
+                        <FormDescription className="mb-2">
+                          Laden Sie bis zu 10 Bilder oder Dateien hoch (max. 10MB pro Datei)
+                        </FormDescription>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => document.getElementById('file-upload')?.click()}
+                            disabled={isUploading || uploadedUrls.length >= 10}
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            {isUploading ? 'Wird hochgeladen...' : 'Dateien auswählen'}
+                          </Button>
+                          <Input
+                            id="file-upload"
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,application/pdf,video/mp4,video/quicktime"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e.target.files)}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {uploadedUrls.length}/10
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Upload Progress */}
+                      {isUploading && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Upload läuft...</span>
+                            <span>{Math.round(uploadProgress)}%</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full transition-all duration-300" 
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Uploaded Files Preview */}
+                      {uploadedUrls.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {uploadedUrls.map((url, index) => (
+                            <div 
+                              key={index} 
+                              className="relative group border rounded-lg overflow-hidden aspect-video"
+                            >
+                              {url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                <img 
+                                  src={url} 
+                                  alt={`Upload ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <FileIcon className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                              )}
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleRemoveFile(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}

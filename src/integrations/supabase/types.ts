@@ -982,6 +982,7 @@ export type Database = {
           owner_id: string
           purchased_count: number | null
           quality_score: number | null
+          request_id: string | null
           search_text: unknown | null
           status: Database["public"]["Enums"]["lead_status"]
           title: string
@@ -1008,6 +1009,7 @@ export type Database = {
           owner_id: string
           purchased_count?: number | null
           quality_score?: number | null
+          request_id?: string | null
           search_text?: unknown | null
           status?: Database["public"]["Enums"]["lead_status"]
           title: string
@@ -1034,6 +1036,7 @@ export type Database = {
           owner_id?: string
           purchased_count?: number | null
           quality_score?: number | null
+          request_id?: string | null
           search_text?: unknown | null
           status?: Database["public"]["Enums"]["lead_status"]
           title?: string
