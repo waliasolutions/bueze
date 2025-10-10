@@ -21,22 +21,14 @@ import {
 } from 'lucide-react';
 
 const categories = [
-  { icon: Zap, name: 'Elektriker', count: '850+ Betriebe', popular: true },
-  { icon: Droplets, name: 'Sanitär', count: '720+ Betriebe', popular: true },
-  { icon: Paintbrush, name: 'Maler', count: '1\'200+ Betriebe', popular: true },
-  { icon: Hammer, name: 'Zimmermann', count: '650+ Betriebe', popular: false },
-  { icon: Flame, name: 'Heizung', count: '480+ Betriebe', popular: false },
-  { icon: Wind, name: 'Klimatechnik', count: '320+ Betriebe', popular: false },
-  { icon: Square, name: 'Gipser', count: '590+ Betriebe', popular: false },
-  { icon: Layers, name: 'Bodenleger', count: '430+ Betriebe', popular: false },
-  { icon: Scissors, name: 'Schreiner', count: '680+ Betriebe', popular: false },
-  { icon: Building, name: 'Maurer', count: '520+ Betriebe', popular: false },
-  { icon: Home, name: 'Dachdecker', count: '380+ Betriebe', popular: false },
-  { icon: TreePine, name: 'Gartenbau', count: '890+ Betriebe', popular: true },
-  { icon: DoorOpen, name: 'Fenster & Türen', count: '290+ Betriebe', popular: false },
-  { icon: ChefHat, name: 'Küchenbau', count: '180+ Betriebe', popular: false },
-  { icon: Truck, name: 'Umzug', count: '350+ Betriebe', popular: false },
-  { icon: Wrench, name: 'Allgemeine Arbeiten', count: '1\'500+ Betriebe', popular: true }
+  { icon: Zap, name: 'Elektriker', popular: true },
+  { icon: Droplets, name: 'Sanitär', popular: true },
+  { icon: Paintbrush, name: 'Maler', popular: true },
+  { icon: Hammer, name: 'Zimmermann', popular: false },
+  { icon: Flame, name: 'Heizung', popular: false },
+  { icon: Scissors, name: 'Schreiner', popular: false },
+  { icon: TreePine, name: 'Gartenbau', popular: true },
+  { icon: Wrench, name: 'Allgemeine Arbeiten', popular: true }
 ];
 
 export const Categories = () => {
@@ -78,9 +70,6 @@ export const Categories = () => {
                 <h3 className="font-semibold text-ink-900 mb-2 text-sm md:text-base">
                   {category.name}
                 </h3>
-                <p className="text-ink-500 text-xs md:text-sm">
-                  {category.count}
-                </p>
               </Card>
             );
           })}
