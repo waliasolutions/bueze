@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,11 @@ const leadSchema = z.object({
   zip: z.string().min(4, 'PLZ muss mindestens 4 Zeichen haben'),
   city: z.string().min(2, 'Stadt muss mindestens 2 Zeichen haben'),
   address: z.string().optional(),
+  contactEmail: z.string().email('Gültige E-Mail erforderlich').optional(),
+  contactPhone: z.string().min(10, 'Telefonnummer muss mindestens 10 Zeichen haben').optional(),
+  contactFirstName: z.string().min(2, 'Vorname muss mindestens 2 Zeichen haben').optional(),
+  contactLastName: z.string().min(2, 'Nachname muss mindestens 2 Zeichen haben').optional(),
+  contactPassword: z.string().min(6, 'Passwort muss mindestens 6 Zeichen haben').optional(),
 });
 
 type LeadFormData = z.infer<typeof leadSchema>;
@@ -72,6 +77,11 @@ const SubmitLead = () => {
   const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -88,33 +98,41 @@ const SubmitLead = () => {
       zip: '',
       city: '',
       address: '',
+      contactEmail: '',
+      contactPhone: '',
+      contactFirstName: '',
+      contactLastName: '',
+      contactPassword: '',
     },
   });
+
+  // Check authentication status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsAuthenticated(!!user);
+    };
+    checkAuth();
+  }, []);
 
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const filesArray = Array.from(files);
+    
+    // Check total file count (max 2)
+    if (uploadedUrls.length + filesArray.length > 2) {
       toast({
-        title: "Anmeldung erforderlich",
-        description: "Sie müssen angemeldet sein, um Dateien hochzuladen.",
+        title: "Zu viele Dateien",
+        description: "Sie können maximal 2 Bilder hochladen.",
         variant: "destructive",
       });
       return;
     }
 
-    const filesArray = Array.from(files);
-    
-    // Check total file count
-    if (uploadedUrls.length + filesArray.length > 10) {
-      toast({
-        title: "Zu viele Dateien",
-        description: "Sie können maximal 10 Dateien hochladen.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // For guests, store files temporarily in state
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id || sessionStorage.getItem('correlation_id') || 'guest';
 
     setIsUploading(true);
     setUploadProgress(0);
@@ -180,19 +198,92 @@ const SubmitLead = () => {
     }
   };
 
+  const handleLogin = async () => {
+    setIsLoggingIn(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password: loginPassword,
+      });
+
+      if (error) throw error;
+
+      setIsAuthenticated(true);
+      setShowLoginForm(false);
+      toast({
+        title: "Anmeldung erfolgreich",
+        description: "Sie können jetzt Ihren Auftrag abschließen.",
+      });
+    } catch (error) {
+      toast({
+        title: "Anmeldung fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Bitte prüfen Sie Ihre Eingaben.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   const onSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      let { data: { user } } = await supabase.auth.getUser();
       
+      // If user is not authenticated, create account first
       if (!user) {
-        toast({
-          title: "Anmeldung erforderlich",
-          description: "Sie müssen angemeldet sein, um einen Auftrag zu erstellen.",
-          variant: "destructive",
+        if (!data.contactEmail || !data.contactFirstName || !data.contactLastName || !data.contactPassword) {
+          toast({
+            title: "Kontaktdaten fehlen",
+            description: "Bitte füllen Sie alle Kontaktdaten aus oder melden Sie sich an.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+
+        const accountRequestId = getOrCreateRequestId('create-account');
+        
+        logWithCorrelation('Creating new account for guest', { email: data.contactEmail, accountRequestId });
+
+        // Create new account
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: data.contactEmail,
+          password: data.contactPassword,
+          options: {
+            data: {
+              first_name: data.contactFirstName,
+              last_name: data.contactLastName,
+              full_name: `${data.contactFirstName} ${data.contactLastName}`,
+              phone: data.contactPhone || '',
+            },
+          },
         });
-        navigate('/auth');
-        return;
+
+        if (signUpError) throw signUpError;
+
+        clearRequestId('create-account');
+
+        // Sign in the newly created user
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.contactEmail,
+          password: data.contactPassword,
+        });
+
+        if (signInError) throw signInError;
+
+        user = signInData.user;
+        
+        toast({
+          title: "Konto erstellt",
+          description: "Ihr Auftrag wird jetzt gespeichert...",
+        });
+
+        logWithCorrelation('Account created successfully', { userId: user?.id });
+      }
+
+      if (!user) {
+        throw new Error('User authentication failed');
       }
 
       const requestId = getOrCreateRequestId('create-lead');
@@ -246,7 +337,8 @@ const SubmitLead = () => {
   };
 
   const nextStep = () => {
-    if (step < 3) setStep(step + 1);
+    const maxStep = isAuthenticated ? 3 : 4;
+    if (step < maxStep) setStep(step + 1);
   };
 
   const prevStep = () => {
@@ -268,13 +360,17 @@ const SubmitLead = () => {
           {/* Progress indicator */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Schritt {step} von 3</span>
-              <span className="text-sm text-muted-foreground">{Math.round((step / 3) * 100)}%</span>
+              <span className="text-sm font-medium">
+                Schritt {step} von {isAuthenticated ? 3 : 4}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {Math.round((step / (isAuthenticated ? 3 : 4)) * 100)}%
+              </span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div 
                 className="bg-primary h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${(step / 3) * 100}%` }}
+                style={{ width: `${(step / (isAuthenticated ? 3 : 4)) * 100}%` }}
               />
             </div>
           </div>
@@ -351,30 +447,30 @@ const SubmitLead = () => {
                     {/* File Upload Section */}
                     <div className="space-y-4">
                       <div>
-                        <FormLabel>Dateien & Bilder (optional)</FormLabel>
+                        <FormLabel>Bilder (optional)</FormLabel>
                         <FormDescription className="mb-2">
-                          Laden Sie bis zu 10 Bilder oder Dateien hoch (max. 10MB pro Datei)
+                          Laden Sie bis zu 2 Bilder hoch (max. 3MB pro Bild)
                         </FormDescription>
                         <div className="flex items-center gap-2">
                           <Button
                             type="button"
                             variant="outline"
                             onClick={() => document.getElementById('file-upload')?.click()}
-                            disabled={isUploading || uploadedUrls.length >= 10}
+                            disabled={isUploading || uploadedUrls.length >= 2}
                           >
                             <Upload className="mr-2 h-4 w-4" />
-                            {isUploading ? 'Wird hochgeladen...' : 'Dateien auswählen'}
+                            {isUploading ? 'Wird hochgeladen...' : 'Bilder auswählen'}
                           </Button>
                           <Input
                             id="file-upload"
                             type="file"
                             multiple
-                            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,application/pdf,video/mp4,video/quicktime"
+                            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
                             className="hidden"
                             onChange={(e) => handleFileUpload(e.target.files)}
                           />
                           <span className="text-sm text-muted-foreground">
-                            {uploadedUrls.length}/10
+                            {uploadedUrls.length}/2
                           </span>
                         </div>
                       </div>
@@ -587,6 +683,182 @@ const SubmitLead = () => {
                 </Card>
               )}
 
+              {step === 4 && !isAuthenticated && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Kontaktdaten</CardTitle>
+                    <CardDescription>
+                      Um Ihren Auftrag zu erstellen, benötigen wir Ihre Kontaktdaten
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {!showLoginForm ? (
+                      <>
+                        <div className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Haben Sie bereits ein Konto?
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowLoginForm(true)}
+                            className="w-full"
+                          >
+                            Anmelden
+                          </Button>
+                          
+                          <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-background px-2 text-muted-foreground">
+                                Oder neues Konto erstellen
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                              control={form.control}
+                              name="contactFirstName"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Vorname</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Max" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+
+                            <FormField
+                              control={form.control}
+                              name="contactLastName"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Nachname</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Mustermann" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+
+                          <FormField
+                            control={form.control}
+                            name="contactEmail"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>E-Mail</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="email" 
+                                    placeholder="max.mustermann@example.com" 
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="contactPhone"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Telefon (optional)</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="tel" 
+                                    placeholder="+41 79 123 45 67" 
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="contactPassword"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Passwort</FormLabel>
+                                <FormControl>
+                                  <Input 
+                                    type="password" 
+                                    placeholder="Mindestens 6 Zeichen" 
+                                    {...field} 
+                                  />
+                                </FormControl>
+                                <FormDescription>
+                                  Wählen Sie ein sicheres Passwort für Ihr Konto
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="space-y-4">
+                          <p className="text-sm text-muted-foreground">
+                            Melden Sie sich mit Ihrem bestehenden Konto an
+                          </p>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <FormLabel>E-Mail</FormLabel>
+                              <Input
+                                type="email"
+                                placeholder="ihre@email.com"
+                                value={loginEmail}
+                                onChange={(e) => setLoginEmail(e.target.value)}
+                              />
+                            </div>
+
+                            <div>
+                              <FormLabel>Passwort</FormLabel>
+                              <Input
+                                type="password"
+                                placeholder="Ihr Passwort"
+                                value={loginPassword}
+                                onChange={(e) => setLoginPassword(e.target.value)}
+                              />
+                            </div>
+
+                            <Button
+                              type="button"
+                              onClick={handleLogin}
+                              disabled={isLoggingIn}
+                              className="w-full"
+                            >
+                              {isLoggingIn ? 'Wird angemeldet...' : 'Anmelden'}
+                            </Button>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              onClick={() => setShowLoginForm(false)}
+                              className="w-full"
+                            >
+                              Zurück zur Registrierung
+                            </Button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="flex justify-between">
                 {step > 1 && (
                   <Button type="button" variant="outline" onClick={prevStep}>
@@ -594,7 +866,7 @@ const SubmitLead = () => {
                   </Button>
                 )}
                 
-                {step < 3 ? (
+                {step < (isAuthenticated ? 3 : 4) ? (
                   <Button type="button" onClick={nextStep} className="ml-auto">
                     Weiter
                     <ChevronRight className="ml-2 h-4 w-4" />

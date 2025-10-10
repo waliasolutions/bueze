@@ -1,16 +1,14 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logWithCorrelation, captureException } from './errorTracking';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
+const MAX_FILE_COUNT = 2;
 const ALLOWED_TYPES = [
   'image/jpeg',
   'image/jpg',
   'image/png',
   'image/webp',
-  'image/gif',
-  'application/pdf',
-  'video/mp4',
-  'video/quicktime'
+  'image/gif'
 ];
 
 export interface UploadResult {
@@ -30,12 +28,12 @@ export async function uploadLeadMedia(
   try {
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
-      throw new Error(`Datei zu groß. Maximum: 10MB (aktuell: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+      throw new Error(`Datei zu groß. Maximum: 3MB (aktuell: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
     }
 
     // Validate file type
     if (!ALLOWED_TYPES.includes(file.type)) {
-      throw new Error(`Dateityp ${file.type} nicht erlaubt. Erlaubt: Bilder, PDF, MP4, MOV`);
+      throw new Error(`Dateityp ${file.type} nicht erlaubt. Nur Bilder erlaubt`);
     }
 
     // Generate unique filename
@@ -105,6 +103,11 @@ export async function uploadMultipleFiles(
   userId: string,
   onProgress?: (completed: number, total: number) => void
 ): Promise<UploadResult[]> {
+  // Validate file count
+  if (files.length > MAX_FILE_COUNT) {
+    throw new Error(`Maximum ${MAX_FILE_COUNT} Bilder erlaubt`);
+  }
+
   const results: UploadResult[] = [];
   
   for (let i = 0; i < files.length; i++) {
