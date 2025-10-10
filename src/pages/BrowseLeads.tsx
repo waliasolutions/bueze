@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { logWithCorrelation, captureException } from '@/lib/errorTracking';
+import { trackError } from '@/lib/errorCategories';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -92,6 +94,7 @@ const BrowseLeads = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    logWithCorrelation('BrowseLeads: Page loaded');
     fetchLeads();
     checkUserSubscription();
   }, []);
@@ -114,6 +117,7 @@ const BrowseLeads = () => {
 
   const fetchLeads = async () => {
     try {
+      logWithCorrelation('BrowseLeads: Fetching leads...');
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
@@ -134,9 +138,15 @@ const BrowseLeads = () => {
         lead => lead.purchased_count < lead.max_purchases
       );
 
+      logWithCorrelation('BrowseLeads: Leads fetched', { count: availableLeads.length });
       setLeads(availableLeads);
     } catch (error) {
-      console.error('Error fetching leads:', error);
+      const categorized = trackError(error);
+      captureException(error as Error, { 
+        context: 'fetchLeads',
+        category: categorized.category 
+      });
+      logWithCorrelation('BrowseLeads: Error fetching leads', categorized);
       toast({
         title: "Fehler",
         description: "Beim Laden der Aufträge ist ein Fehler aufgetreten.",
@@ -175,6 +185,7 @@ const BrowseLeads = () => {
 
   const handlePurchaseLead = async (leadId: string) => {
     try {
+      logWithCorrelation('BrowseLeads: Purchasing lead', { leadId });
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
