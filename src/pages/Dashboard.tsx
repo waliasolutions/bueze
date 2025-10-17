@@ -47,7 +47,7 @@ interface UserProfile {
   id: string;
   full_name: string;
   email: string;
-  role: string;
+  role?: string;
 }
 
 const categoryLabels = {
@@ -135,8 +135,14 @@ const Dashboard = () => {
 
       setMyLeads(leadsData || []);
 
-      // Check subscription for handwerker
-      if (profileData?.role === 'handwerker') {
+      // Check if user is handwerker by checking handwerker_profiles table
+      const { data: handwerkerProfile } = await supabase
+        .from('handwerker_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (handwerkerProfile) {
         const access = await checkSubscriptionAccess(user.id);
         setSubscriptionAccess(access);
       }

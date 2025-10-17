@@ -140,13 +140,14 @@ const Profile = () => {
           canton: profileData.canton || '',
         });
 
-        // If handwerker, fetch handwerker profile and subscription
-        if (profileData.role === 'handwerker') {
-          const { data: handwerkerData } = await supabase
-            .from('handwerker_profiles')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
+        // Check if user is handwerker by checking handwerker_profiles table
+        const { data: handwerkerData } = await supabase
+          .from('handwerker_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (handwerkerData) {
 
           if (handwerkerData) {
             setHandwerkerProfile(handwerkerData);

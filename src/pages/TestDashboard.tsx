@@ -113,8 +113,8 @@ export default function TestDashboard() {
         return;
       }
 
-      // Create test leads for the first homeowner
-      const homeowner = profiles.find(p => p.role === 'homeowner');
+      // Create test leads for the first profile (homeowner check removed as role is in user_roles table)
+      const homeowner = profiles[0];
       if (homeowner) {
         const leadResults = [];
         for (let i = 0; i < Math.min(3, testLeads.length); i++) {
@@ -173,11 +173,21 @@ export default function TestDashboard() {
     updateTestResult('handwerker-profiles', 'running', 'Testing handwerker profiles...');
     
     try {
-      // Get handwerker users
+      // Get handwerker users by checking handwerker_profiles table
+      const { data: handwerkerProfiles, error: hError } = await supabase
+        .from('handwerker_profiles')
+        .select('user_id');
+
+      if (hError || !handwerkerProfiles || handwerkerProfiles.length === 0) {
+        updateTestResult('handwerker-profiles', 'error', 'No handwerker profiles found');
+        return;
+      }
+
+      const handwerkerIds = handwerkerProfiles.map(h => h.user_id);
       const { data: handwerkers, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('role', 'handwerker');
+        .in('id', handwerkerIds);
 
       if (error || !handwerkers || handwerkers.length === 0) {
         updateTestResult('handwerker-profiles', 'error', 'No handwerker profiles found');
