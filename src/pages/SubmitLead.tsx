@@ -759,9 +759,9 @@ const SubmitLead = () => {
                                 }}
                               />
                             </FormControl>
-                            <FormDescription>
-                              Stadt und Kanton werden automatisch ausgefüllt
-                            </FormDescription>
+              <FormDescription>
+                Stadt und Kanton können automatisch ausgefüllt werden
+              </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -775,14 +775,10 @@ const SubmitLead = () => {
                             <FormLabel>Stadt</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder=""
-                  {...field} 
-                  readOnly={!!form.watch('city')}
-                  className={cn(
-                    !!form.watch('city') && "bg-muted cursor-not-allowed"
-                  )}
+                  placeholder="z.B. Zürich"
+                  {...field}
                 />
-                            </FormControl>
+              </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
