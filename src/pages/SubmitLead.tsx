@@ -777,9 +777,9 @@ const SubmitLead = () => {
                 <Input 
                   placeholder=""
                   {...field} 
-                  readOnly={!!form.watch('zip') && form.watch('zip').length === 4}
+                  readOnly={!!form.watch('city')}
                   className={cn(
-                    form.watch('zip')?.length === 4 && "bg-muted cursor-not-allowed"
+                    !!form.watch('city') && "bg-muted cursor-not-allowed"
                   )}
                 />
                             </FormControl>

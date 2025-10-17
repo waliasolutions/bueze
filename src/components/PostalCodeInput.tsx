@@ -89,7 +89,7 @@ export const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
         }
       });
     }
-  }, [value]);
+  }, [value, open, onAddressSelect]);
 
   return (
     <div className="relative">
