@@ -773,15 +773,15 @@ const SubmitLead = () => {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Stadt</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Zürich" 
-                                {...field} 
-                                readOnly={!!form.watch('zip') && form.watch('zip').length === 4}
-                                className={cn(
-                                  form.watch('zip')?.length === 4 && "bg-muted cursor-not-allowed"
-                                )}
-                              />
+              <FormControl>
+                <Input 
+                  placeholder=""
+                  {...field} 
+                  readOnly={!!form.watch('zip') && form.watch('zip').length === 4}
+                  className={cn(
+                    form.watch('zip')?.length === 4 && "bg-muted cursor-not-allowed"
+                  )}
+                />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
