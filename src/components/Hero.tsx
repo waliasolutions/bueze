@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import heroCraftsman from '@/assets/hero-craftsman.jpg';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { SWISS_CANTONS } from '@/config/cantons';
 
 // Simplified schema for hero form - only essential fields
 const heroLeadSchema = z.object({
@@ -45,18 +46,6 @@ const categories = [
   { value: 'garden', label: 'Garten' },
 ];
 
-const cantons = [
-  { value: 'AG', label: 'Aargau' },
-  { value: 'ZH', label: 'Zürich' },
-  { value: 'BE', label: 'Bern' },
-  { value: 'LU', label: 'Luzern' },
-  { value: 'SG', label: 'St. Gallen' },
-  { value: 'VS', label: 'Wallis' },
-  { value: 'TI', label: 'Tessin' },
-  { value: 'VD', label: 'Waadt' },
-  { value: 'GE', label: 'Genf' },
-  { value: 'BS', label: 'Basel-Stadt' },
-];
 
 export const Hero = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -398,7 +387,7 @@ export const Hero = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {cantons.map((canton) => (
+                                {SWISS_CANTONS.map((canton) => (
                                   <SelectItem key={canton.value} value={canton.value}>
                                     {canton.label}
                                   </SelectItem>

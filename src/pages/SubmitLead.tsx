@@ -18,6 +18,9 @@ import { uploadMultipleFiles, deleteLeadMedia } from '@/lib/fileUpload';
 import { supabaseQuery } from '@/lib/fetchHelpers';
 import { getOrCreateRequestId, clearRequestId } from '@/lib/idempotency';
 import { captureException, logWithCorrelation } from '@/lib/errorTracking';
+import { SWISS_CANTONS } from '@/config/cantons';
+import { PostalCodeInput } from '@/components/PostalCodeInput';
+import { cn } from '@/lib/utils';
 
 const leadSchema = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
@@ -62,18 +65,6 @@ const categories = [
   { value: 'gipser', label: 'Gipser' },
 ];
 
-const cantons = [
-  { value: 'AG', label: 'Aargau' },
-  { value: 'ZH', label: 'Zürich' },
-  { value: 'BE', label: 'Bern' },
-  { value: 'LU', label: 'Luzern' },
-  { value: 'SG', label: 'St. Gallen' },
-  { value: 'VS', label: 'Wallis' },
-  { value: 'TI', label: 'Tessin' },
-  { value: 'VD', label: 'Waadt' },
-  { value: 'GE', label: 'Genf' },
-  { value: 'BS', label: 'Basel-Stadt' },
-];
 
 const urgencyLevels = [
   { value: 'today', label: 'Heute / Sofort' },
@@ -739,7 +730,7 @@ const SubmitLead = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {cantons.map((canton) => (
+                              {SWISS_CANTONS.map((canton) => (
                                 <SelectItem key={canton.value} value={canton.value}>
                                   {canton.label}
                                 </SelectItem>
@@ -759,8 +750,18 @@ const SubmitLead = () => {
                           <FormItem>
                             <FormLabel>PLZ</FormLabel>
                             <FormControl>
-                              <Input placeholder="8000" {...field} />
+                              <PostalCodeInput
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                onAddressSelect={(address) => {
+                                  form.setValue('city', address.city);
+                                  form.setValue('canton', address.canton as any);
+                                }}
+                              />
                             </FormControl>
+                            <FormDescription>
+                              Stadt und Kanton werden automatisch ausgefüllt
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -773,7 +774,14 @@ const SubmitLead = () => {
                           <FormItem>
                             <FormLabel>Stadt</FormLabel>
                             <FormControl>
-                              <Input placeholder="Zürich" {...field} />
+                              <Input 
+                                placeholder="Zürich" 
+                                {...field} 
+                                readOnly={!!form.watch('zip') && form.watch('zip').length === 4}
+                                className={cn(
+                                  form.watch('zip')?.length === 4 && "bg-muted cursor-not-allowed"
+                                )}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

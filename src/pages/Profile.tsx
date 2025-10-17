@@ -19,6 +19,7 @@ import { PaymentMethodCard } from '@/components/PaymentMethodCard';
 import { SubscriptionManagement } from '@/components/SubscriptionManagement';
 import { AddPaymentMethodDialog } from '@/components/AddPaymentMethodDialog';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
+import { SWISS_CANTONS } from '@/config/cantons';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name muss mindestens 2 Zeichen haben'),
@@ -52,18 +53,6 @@ const categories = [
   { value: 'garden', label: 'Garten' },
 ];
 
-const cantons = [
-  { value: 'AG', label: 'Aargau' },
-  { value: 'ZH', label: 'Zürich' },
-  { value: 'BE', label: 'Bern' },
-  { value: 'LU', label: 'Luzern' },
-  { value: 'SG', label: 'St. Gallen' },
-  { value: 'VS', label: 'Wallis' },
-  { value: 'TI', label: 'Tessin' },
-  { value: 'VD', label: 'Waadt' },
-  { value: 'GE', label: 'Genf' },
-  { value: 'BS', label: 'Basel-Stadt' },
-];
 
 const languages = [
   { value: 'de', label: 'Deutsch' },
@@ -485,7 +474,7 @@ const Profile = () => {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {cantons.map((canton) => (
+                                {SWISS_CANTONS.map((canton) => (
                                   <SelectItem key={canton.value} value={canton.value}>
                                     {canton.label}
                                   </SelectItem>

@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Save } from 'lucide-react';
+import { SWISS_CANTONS, CANTON_CODES } from '@/config/cantons';
 
 const leadSchema = z.object({
   title: z.string().min(10, 'Titel muss mindestens 10 Zeichen haben'),
@@ -45,10 +46,6 @@ const urgencies = [
   { value: 'planning', label: 'Planung' },
 ];
 
-const cantons = [
-  'AG', 'AI', 'AR', 'BE', 'BL', 'BS', 'FR', 'GE', 'GL', 'GR', 'JU',
-  'LU', 'NE', 'NW', 'OW', 'SG', 'SH', 'SO', 'SZ', 'TG', 'TI', 'UR', 'VD', 'VS', 'ZG', 'ZH'
-];
 
 const EditLead = () => {
   const { id } = useParams<{ id: string }>();
@@ -364,9 +361,9 @@ const EditLead = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {cantons.map((canton) => (
-                                <SelectItem key={canton} value={canton}>
-                                  {canton}
+                              {SWISS_CANTONS.map((canton) => (
+                                <SelectItem key={canton.value} value={canton.value}>
+                                  {canton.label}
                                 </SelectItem>
                               ))}
                             </SelectContent>

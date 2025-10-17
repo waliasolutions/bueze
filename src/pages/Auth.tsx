@@ -9,11 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import { CANTON_CODES } from '@/config/cantons';
 
-const cantons = [
-  'AG', 'AI', 'AR', 'BE', 'BL', 'BS', 'FR', 'GE', 'GL', 'GR', 'JU', 
-  'LU', 'NE', 'NW', 'OW', 'SG', 'SH', 'SO', 'SZ', 'TG', 'TI', 'UR', 'VD', 'VS', 'ZG', 'ZH'
-];
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -279,7 +276,7 @@ export default function Auth() {
                           <SelectValue placeholder="Wählen" />
                         </SelectTrigger>
                         <SelectContent>
-                          {cantons.map((canton) => (
+                          {CANTON_CODES.map((canton) => (
                             <SelectItem key={canton} value={canton}>{canton}</SelectItem>
                           ))}
                         </SelectContent>

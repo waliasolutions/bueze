@@ -19,6 +19,7 @@ import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
 import { checkSubscriptionAccess, canPurchaseLeadWithPrice } from '@/lib/subscriptionHelpers';
 import { canViewLead as canViewLeadByStatus } from '@/config/leadStatuses';
 import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
+import { SWISS_CANTONS } from '@/config/cantons';
 
 interface Lead {
   id: string;
@@ -78,10 +79,6 @@ const urgencyColors = {
   planning: 'bg-gray-100 text-gray-800'
 };
 
-const cantons = [
-  'AG', 'AI', 'AR', 'BE', 'BL', 'BS', 'FR', 'GE', 'GL', 'GR', 'JU', 
-  'LU', 'NE', 'NW', 'OW', 'SG', 'SH', 'SO', 'SZ', 'TG', 'TI', 'UR', 'VD', 'VS', 'ZG', 'ZH'
-];
 
 const BrowseLeads = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -389,8 +386,8 @@ const BrowseLeads = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle Kantone</SelectItem>
-                    {cantons.map((canton) => (
-                      <SelectItem key={canton} value={canton}>{canton}</SelectItem>
+                    {SWISS_CANTONS.map((canton) => (
+                      <SelectItem key={canton.value} value={canton.value}>{canton.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
