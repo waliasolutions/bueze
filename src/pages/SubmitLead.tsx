@@ -46,14 +46,20 @@ const leadSchema = z.object({
 type LeadFormData = z.infer<typeof leadSchema>;
 
 const categories = [
-  { value: 'plumbing', label: 'Sanitär' },
-  { value: 'electrical', label: 'Elektrik' },
-  { value: 'painting', label: 'Malerei' },
-  { value: 'carpentry', label: 'Schreinerei' },
-  { value: 'roofing', label: 'Dacharbeiten' },
-  { value: 'flooring', label: 'Bodenbeläge' },
-  { value: 'heating', label: 'Heizung' },
-  { value: 'garden', label: 'Garten' },
+  { value: 'elektriker', label: 'Elektrik' },
+  { value: 'sanitaer', label: 'Sanitär' },
+  { value: 'heizung', label: 'Heizung' },
+  { value: 'maler', label: 'Malerei' },
+  { value: 'schreiner', label: 'Schreinerei' },
+  { value: 'bodenleger', label: 'Bodenbeläge' },
+  { value: 'dachdecker', label: 'Dacharbeiten' },
+  { value: 'gartenbau', label: 'Gartenbau' },
+  { value: 'kuechenbau', label: 'Küchenbau' },
+  { value: 'badumbau', label: 'Badumbau' },
+  { value: 'zimmermann', label: 'Zimmermann' },
+  { value: 'maurer', label: 'Maurer' },
+  { value: 'plattenleger', label: 'Plattenleger' },
+  { value: 'gipser', label: 'Gipser' },
 ];
 
 const cantons = [
@@ -83,7 +89,7 @@ const SubmitLead = () => {
   const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -148,7 +154,7 @@ const SubmitLead = () => {
 
       const results = await uploadMultipleFiles(
         filesArray,
-        user.id,
+        userId,
         (completed, total) => setUploadProgress((completed / total) * 100)
       );
 
