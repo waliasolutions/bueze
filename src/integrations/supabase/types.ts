@@ -481,6 +481,51 @@ export type Database = {
         }
         Relationships: []
       }
+      customers: {
+        Row: {
+          active: boolean | null
+          address: string | null
+          city: string | null
+          contact_person: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          postal_code: string | null
+          updated_at: string
+          vat_rate: number
+        }
+        Insert: {
+          active?: boolean | null
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          vat_rate?: number
+        }
+        Update: {
+          active?: boolean | null
+          address?: string | null
+          city?: string | null
+          contact_person?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          vat_rate?: number
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -1427,6 +1472,63 @@ export type Database = {
         }
         Relationships: []
       }
+      pricing_rules: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          customer_id: string | null
+          fixed_price_rappen: number
+          freight_surcharge_multiplier: number
+          id: string
+          price_per_km_rappen: number
+          project_id: string | null
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          customer_id?: string | null
+          fixed_price_rappen?: number
+          freight_surcharge_multiplier?: number
+          id?: string
+          price_per_km_rappen?: number
+          project_id?: string | null
+          updated_at?: string
+          valid_from: string
+          valid_until?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          customer_id?: string | null
+          fixed_price_rappen?: number
+          freight_surcharge_multiplier?: number
+          id?: string
+          price_per_km_rappen?: number
+          project_id?: string | null
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rules_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_rules_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -1443,7 +1545,6 @@ export type Database = {
           languages: string[] | null
           last_name: string | null
           phone: string | null
-          role: Database["public"]["Enums"]["user_role"] | null
           updated_at: string
           verified_level: number | null
           zip: string | null
@@ -1463,7 +1564,6 @@ export type Database = {
           languages?: string[] | null
           last_name?: string | null
           phone?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
           verified_level?: number | null
           zip?: string | null
@@ -1483,7 +1583,6 @@ export type Database = {
           languages?: string[] | null
           last_name?: string | null
           phone?: string | null
-          role?: Database["public"]["Enums"]["user_role"] | null
           updated_at?: string
           verified_level?: number | null
           zip?: string | null
@@ -1891,6 +1990,42 @@ export type Database = {
           },
         ]
       }
+      trucks: {
+        Row: {
+          active: boolean | null
+          brand: string | null
+          capacity_kg: number | null
+          created_at: string
+          id: string
+          model: string | null
+          plate_number: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          brand?: string | null
+          capacity_kg?: number | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          plate_number: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          brand?: string | null
+          capacity_kg?: number | null
+          created_at?: string
+          id?: string
+          model?: string | null
+          plate_number?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2095,6 +2230,13 @@ export type Database = {
           role: string
           user_id: string
         }[]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
       }
       setup_admin_user: {
         Args: { user_email: string; user_name: string }

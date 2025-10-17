@@ -257,6 +257,15 @@ const SubmitLead = () => {
 
   const onSubmit = async (data: LeadFormData) => {
     setIsSubmitting(true);
+    
+    // Add timeout warning after 15 seconds
+    const timeoutId = setTimeout(() => {
+      toast({
+        title: "Dauert länger als erwartet...",
+        description: "Bitte haben Sie noch einen Moment Geduld. Falls es nicht funktioniert, laden Sie die Seite neu.",
+      });
+    }, 15000);
+    
     try {
       let { data: { user } } = await supabase.auth.getUser();
       
@@ -331,6 +340,12 @@ const SubmitLead = () => {
 
         if (signInError) throw signInError;
 
+        // Add explicit session refresh
+        await supabase.auth.refreshSession();
+
+        // Small delay to ensure session is propagated
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         user = signInData.user;
         
         toast({
@@ -349,7 +364,7 @@ const SubmitLead = () => {
       
       logWithCorrelation('Creating lead', { requestId, mediaCount: uploadedUrls.length });
 
-      // Use supabaseQuery wrapper with retry logic
+      // Use supabaseQuery wrapper with reduced retry config
       await supabaseQuery(async () => {
         return await supabase
           .from('leads')
@@ -370,6 +385,10 @@ const SubmitLead = () => {
             media_urls: uploadedUrls,
             request_id: requestId,
           });
+      }, {
+        maxAttempts: 2,  // Reduce from 4 to 2
+        timeout: 8000,   // Reduce from 10s to 8s
+        baseDelay: 500,  // Increase initial delay for session propagation
       });
 
       clearRequestId('create-lead');
@@ -390,7 +409,12 @@ const SubmitLead = () => {
       const errorMessage = error instanceof Error ? error.message : 'Ein unerwarteter Fehler ist aufgetreten.';
       let userFriendlyMessage = errorMessage;
       
-      if (errorMessage.includes('email')) {
+      // Add RLS-specific error handling
+      if (errorMessage.includes('row-level security') || 
+          errorMessage.includes('policy') ||
+          errorMessage.includes('permission denied')) {
+        userFriendlyMessage = 'Authentifizierungsfehler. Bitte laden Sie die Seite neu und versuchen Sie es erneut.';
+      } else if (errorMessage.includes('email')) {
         userFriendlyMessage = 'Problem mit der E-Mail-Adresse. Bitte überprüfen Sie Ihre Eingabe.';
       } else if (errorMessage.includes('password')) {
         userFriendlyMessage = 'Problem mit dem Passwort. Es muss mindestens 6 Zeichen lang sein.';
@@ -406,6 +430,7 @@ const SubmitLead = () => {
         variant: "destructive",
       });
     } finally {
+      clearTimeout(timeoutId);
       setIsSubmitting(false);
     }
   };
