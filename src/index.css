@@ -31,6 +31,7 @@ All colors MUST be HSL.
     --ink-900: 217 91% 7%;    /* #111827 - Primary text */
     --ink-700: 217 19% 25%;   /* #374151 - Secondary text */
     --ink-500: 217 9% 45%;    /* #6B7280 - Meta text */
+    --ink-300: 217 15% 70%;   /* #B4B9C2 - Light muted text */
     --line-200: 217 13% 90%;  /* #E5E7EB - Dividers */
     --surface: 0 0% 100%;     /* #FFFFFF - Cards/blocks */
     
@@ -100,6 +101,8 @@ All colors MUST be HSL.
 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
+
+    --ink-300: 217 15% 60%;
 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;

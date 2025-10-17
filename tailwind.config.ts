@@ -52,6 +52,7 @@ export default {
           900: "hsl(var(--ink-900))",
           700: "hsl(var(--ink-700))",
           500: "hsl(var(--ink-500))",
+          300: "hsl(var(--ink-300))",
         },
         line: {
           200: "hsl(var(--line-200))",

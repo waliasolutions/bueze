@@ -187,7 +187,7 @@ export const Hero = () => {
                 <div className="flex gap-4">
                   <Button 
                     size="lg" 
-                    onClick={() => window.location.href = '/submit-lead'}
+                    onClick={() => navigate('/submit-lead')}
                     variant="hero"
                   >
                     Auftrag erstellen
@@ -195,7 +195,7 @@ export const Hero = () => {
                   <Button 
                     size="lg" 
                     variant="outline"
-                    onClick={() => window.location.href = '/auth'}
+                    onClick={() => navigate('/auth')}
                   >
                     Für Handwerker
                   </Button>
