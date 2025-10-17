@@ -76,10 +76,10 @@ const cantons = [
 ];
 
 const urgencyLevels = [
-  { value: 'planning', label: 'Planung (4+ Wochen)' },
-  { value: 'flexible', label: 'Flexibel (2-4 Wochen)' },
-  { value: 'soon', label: 'Bald (1-2 Wochen)' },
-  { value: 'urgent', label: 'Dringend (unter 1 Woche)' },
+  { value: 'today', label: 'Heute / Sofort' },
+  { value: 'this_week', label: 'Diese Woche' },
+  { value: 'this_month', label: 'Diesen Monat' },
+  { value: 'planning', label: 'Planung (nächste Monate)' },
 ];
 
 const SubmitLead = () => {
