@@ -3,9 +3,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Add console log to verify React is loading properly
-console.log("React version:", React.version);
-console.log("React object:", React);
-
+// Force Vite cache invalidation - React 18.3.1
 const root = createRoot(document.getElementById("root")!);
-root.render(<App />);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
