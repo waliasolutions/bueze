@@ -637,6 +637,76 @@ export type Database = {
           },
         ]
       }
+      employee_vacation_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          employee_id: string
+          end_date: string
+          id: string
+          reason: string | null
+          request_type: Database["public"]["Enums"]["vacation_request_type"]
+          start_date: string
+          status: Database["public"]["Enums"]["vacation_request_status"]
+          total_days: number
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id: string
+          end_date: string
+          id?: string
+          reason?: string | null
+          request_type?: Database["public"]["Enums"]["vacation_request_type"]
+          start_date: string
+          status?: Database["public"]["Enums"]["vacation_request_status"]
+          total_days: number
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          employee_id?: string
+          end_date?: string
+          id?: string
+          reason?: string | null
+          request_type?: Database["public"]["Enums"]["vacation_request_type"]
+          start_date?: string
+          status?: Database["public"]["Enums"]["vacation_request_status"]
+          total_days?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_vacation_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_vacation_requests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_vacation_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_vacation_settings: {
         Row: {
           carry_over_days: number | null
@@ -693,6 +763,10 @@ export type Database = {
           date_of_birth: string | null
           department: string | null
           email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_phone_2: string | null
+          emergency_contact_relationship: string | null
           employee_number: string | null
           employment_status:
             | Database["public"]["Enums"]["employment_status"]
@@ -732,6 +806,10 @@ export type Database = {
           date_of_birth?: string | null
           department?: string | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_phone_2?: string | null
+          emergency_contact_relationship?: string | null
           employee_number?: string | null
           employment_status?:
             | Database["public"]["Enums"]["employment_status"]
@@ -773,6 +851,10 @@ export type Database = {
           date_of_birth?: string | null
           department?: string | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_phone_2?: string | null
+          emergency_contact_relationship?: string | null
           employee_number?: string | null
           employment_status?:
             | Database["public"]["Enums"]["employment_status"]
@@ -888,7 +970,7 @@ export type Database = {
           languages: string[] | null
           portfolio_urls: string[] | null
           response_time_hours: number | null
-          search_text: unknown | null
+          search_text: unknown
           service_areas: string[]
           updated_at: string
           user_id: string
@@ -908,7 +990,7 @@ export type Database = {
           languages?: string[] | null
           portfolio_urls?: string[] | null
           response_time_hours?: number | null
-          search_text?: unknown | null
+          search_text?: unknown
           service_areas?: string[]
           updated_at?: string
           user_id: string
@@ -928,7 +1010,7 @@ export type Database = {
           languages?: string[] | null
           portfolio_urls?: string[] | null
           response_time_hours?: number | null
-          search_text?: unknown | null
+          search_text?: unknown
           service_areas?: string[]
           updated_at?: string
           user_id?: string
@@ -1028,7 +1110,7 @@ export type Database = {
           purchased_count: number | null
           quality_score: number | null
           request_id: string | null
-          search_text: unknown | null
+          search_text: unknown
           status: Database["public"]["Enums"]["lead_status"]
           title: string
           updated_at: string
@@ -1055,7 +1137,7 @@ export type Database = {
           purchased_count?: number | null
           quality_score?: number | null
           request_id?: string | null
-          search_text?: unknown | null
+          search_text?: unknown
           status?: Database["public"]["Enums"]["lead_status"]
           title: string
           updated_at?: string
@@ -1082,7 +1164,7 @@ export type Database = {
           purchased_count?: number | null
           quality_score?: number | null
           request_id?: string | null
-          search_text?: unknown | null
+          search_text?: unknown
           status?: Database["public"]["Enums"]["lead_status"]
           title?: string
           updated_at?: string
@@ -2212,16 +2294,13 @@ export type Database = {
         }
         Returns: boolean
       }
-      delete_expired_contact_requests: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      delete_expired_contact_requests: { Args: never; Returns: undefined }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_users_with_roles: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           company_assignments: Json
           created_at: string
@@ -2347,6 +2426,14 @@ export type Database = {
       time_entry_status: "draft" | "submitted" | "approved" | "rejected"
       urgency_level: "today" | "this_week" | "this_month" | "planning"
       user_role: "homeowner" | "handwerker" | "admin"
+      vacation_request_status: "pending" | "approved" | "rejected" | "cancelled"
+      vacation_request_type:
+        | "vacation"
+        | "sick_leave"
+        | "unpaid_leave"
+        | "personal_day"
+        | "maternity"
+        | "paternity"
       vacation_status: "pending" | "approved" | "rejected"
       vacation_type: "annual" | "sick" | "maternity" | "paternity" | "unpaid"
     }
@@ -2584,6 +2671,15 @@ export const Constants = {
       time_entry_status: ["draft", "submitted", "approved", "rejected"],
       urgency_level: ["today", "this_week", "this_month", "planning"],
       user_role: ["homeowner", "handwerker", "admin"],
+      vacation_request_status: ["pending", "approved", "rejected", "cancelled"],
+      vacation_request_type: [
+        "vacation",
+        "sick_leave",
+        "unpaid_leave",
+        "personal_day",
+        "maternity",
+        "paternity",
+      ],
       vacation_status: ["pending", "approved", "rejected"],
       vacation_type: ["annual", "sick", "maternity", "paternity", "unpaid"],
     },
