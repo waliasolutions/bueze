@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -63,6 +63,7 @@ const categories = [
   { value: 'maurer', label: 'Maurer' },
   { value: 'plattenleger', label: 'Plattenleger' },
   { value: 'gipser', label: 'Gipser' },
+  { value: 'transport', label: 'Transport & Umzug' },
 ];
 
 
@@ -87,13 +88,15 @@ const SubmitLead = () => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
+  const preselectedCategory = searchParams.get('category');
 
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
     defaultValues: {
       title: '',
       description: '',
-      category: '',
+      category: preselectedCategory || '',
       budget_min: 500,
       budget_max: 2000,
       urgency: '',

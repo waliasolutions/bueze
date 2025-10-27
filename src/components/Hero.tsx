@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { TreePine, Layers, Zap, Paintbrush, Truck, MoreHorizontal, Search } from 'lucide-react';
+import { TreePine, Layers, Zap, Paintbrush, Truck, MoreHorizontal, ArrowRight } from 'lucide-react';
 
 const categories = [
   { value: 'garden', label: 'Garten', icon: TreePine },
@@ -14,25 +13,14 @@ const categories = [
 ];
 
 export const Hero = () => {
-  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
-
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      navigate(`/browse-leads?search=${encodeURIComponent(searchQuery)}`);
-    }
-  };
 
   const handleCategoryClick = (categoryValue: string) => {
     if (categoryValue === 'all') {
-      navigate('/browse-leads');
+      navigate('/submit-lead');
     } else {
-      navigate(`/browse-leads?category=${categoryValue}`);
+      navigate(`/category/${categoryValue}`);
     }
-  };
-
-  const handleExampleClick = () => {
-    setSearchQuery('Montage Küche');
   };
 
   return (
@@ -52,40 +40,16 @@ export const Hero = () => {
             </p>
           </div>
 
-          {/* Search Bar - PROMINENT */}
-          <div className="max-w-2xl mx-auto space-y-3 py-8">
-            <div className="flex gap-3 p-1 rounded-full bg-white shadow-xl">
-              <div className="relative flex-1">
-                <Input
-                  type="text"
-                  placeholder="Welche Arbeit soll erledigt werden?"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearch();
-                    }
-                  }}
-                  className="h-16 pl-6 pr-12 text-lg rounded-full border-0 focus-visible:ring-2 focus-visible:ring-brand-500"
-                />
-                <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-ink-400" />
-              </div>
-              <Button
-                onClick={handleSearch}
-                size="lg"
-                className="h-16 px-10 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
-              >
-                Suchen
-              </Button>
-            </div>
-            
-            {/* Example Search */}
-            <button
-              onClick={handleExampleClick}
-              className="text-sm text-ink-600 hover:text-brand-600 transition-colors"
+          {/* Primary CTA */}
+          <div className="py-10">
+            <Button
+              onClick={() => navigate('/submit-lead')}
+              size="lg"
+              className="h-16 px-12 text-xl rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_40px_rgba(79,70,229,0.6)] ring-4 ring-brand-400/30 hover:ring-brand-500/40 transition-all duration-300"
             >
-              Zum Beispiel: <span className="font-medium underline">Montage Küche</span>
-            </button>
+              Auftrag erstellen
+              <ArrowRight className="ml-3 w-6 h-6" />
+            </Button>
           </div>
 
           {/* Category Icons - Below Search */}
