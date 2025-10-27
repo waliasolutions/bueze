@@ -52,30 +52,9 @@ export const Hero = () => {
             </p>
           </div>
 
-          {/* Category Icons */}
-          <div className="flex flex-wrap justify-center gap-4 md:gap-6">
-            {categories.map((category) => {
-              const Icon = category.icon;
-              return (
-                <button
-                  key={category.value}
-                  onClick={() => handleCategoryClick(category.value)}
-                  className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-surface/80 transition-all duration-200 group min-w-[120px]"
-                >
-                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-200 shadow-md">
-                    <Icon className="w-7 h-7" />
-                  </div>
-                  <span className="text-sm font-medium text-ink-800 text-center leading-tight">
-                    {category.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto space-y-3">
-            <div className="flex gap-3">
+          {/* Search Bar - PROMINENT */}
+          <div className="max-w-2xl mx-auto space-y-3 py-8">
+            <div className="flex gap-3 p-1 rounded-full bg-white shadow-xl">
               <div className="relative flex-1">
                 <Input
                   type="text"
@@ -87,14 +66,14 @@ export const Hero = () => {
                       handleSearch();
                     }
                   }}
-                  className="h-14 pl-5 pr-12 text-base rounded-full border-2 border-border focus-visible:border-brand-500 shadow-sm"
+                  className="h-16 pl-6 pr-12 text-lg rounded-full border-0 focus-visible:ring-2 focus-visible:ring-brand-500"
                 />
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-400" />
+                <Search className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-ink-400" />
               </div>
               <Button
                 onClick={handleSearch}
                 size="lg"
-                className="h-14 px-8 rounded-full bg-[#FDB71A] hover:bg-[#E5A616] text-ink-900 font-semibold shadow-md"
+                className="h-16 px-10 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
               >
                 Suchen
               </Button>
@@ -107,6 +86,27 @@ export const Hero = () => {
             >
               Zum Beispiel: <span className="font-medium underline">Montage Küche</span>
             </button>
+          </div>
+
+          {/* Category Icons - Below Search */}
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4 pt-4">
+            {categories.map((category) => {
+              const Icon = category.icon;
+              return (
+                <button
+                  key={category.value}
+                  onClick={() => handleCategoryClick(category.value)}
+                  className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-surface/80 transition-all duration-200 group min-w-[110px]"
+                >
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-200 shadow-md">
+                    <Icon className="w-6 h-6" />
+                  </div>
+                  <span className="text-xs font-medium text-ink-800 text-center leading-tight">
+                    {category.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Trust Signals */}
