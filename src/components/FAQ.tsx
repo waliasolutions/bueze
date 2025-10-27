@@ -66,7 +66,7 @@ const faqData = [
     },
     {
       q: 'Muss ich auf jede Anfrage reagieren?',
-      a: 'Nein. Sie entscheiden selbst, welche Projekte für Sie interessant sind. Es gibt keine Verpflichtung, auf jede Anfrage zu antworten – Sie behalten volle Flexibilität.'
+      a: 'Nein. Sie entscheiden selbst, welche Projekte für Sie interessant sind – es gibt keine Verpflichtung, auf jede Anfrage zu antworten. Beachten Sie jedoch: Wenn Sie nicht zeitnah reagieren, kann Ihre Anfrage je nach Dringlichkeit des Auftrags innerhalb weniger Stunden oder Tage an weitere Anbieter weitergeleitet werden. Im Dashboard sehen Sie auch die Dringlichkeit der einzelnen Aufträge, damit Sie selbst einschätzen können, welche Projekte Sie bevorzugt bearbeiten möchten. So behalten Sie volle Flexibilität, ohne Chancen zu verpassen.'
     }
   ]
 }
