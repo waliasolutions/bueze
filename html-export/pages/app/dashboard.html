@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - HandwerkerLeads.ch</title>
+  
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <link rel="stylesheet" href="../../css/pages.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  
+  <!-- Header -->
+  <header class="header">
+    <div class="header-container">
+      <a href="../../index.html">
+        <img src="../../assets/bueze-logo.webp" alt="HandwerkerLeads.ch" class="header-logo">
+      </a>
+      
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="color: hsl(var(--ink-700)); font-weight: 500;">Thomas Handwerker</span>
+        <div class="avatar">
+          <div class="avatar-fallback">TH</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dashboard Layout -->
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+      <nav>
+        <ul class="sidebar-nav">
+          <li>
+            <a href="dashboard.html" class="active">
+              <i data-lucide="layout-dashboard"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="browse-leads.html">
+              <i data-lucide="search"></i>
+              <span>Leads durchsuchen</span>
+            </a>
+          </li>
+          <li>
+            <a href="submit-lead.html">
+              <i data-lucide="plus-circle"></i>
+              <span>Lead erstellen</span>
+            </a>
+          </li>
+          <li>
+            <a href="messages.html">
+              <i data-lucide="message-square"></i>
+              <span>Nachrichten</span>
+              <span class="badge badge-default" style="margin-left: auto;">2</span>
+            </a>
+          </li>
+          <li>
+            <a href="profile.html">
+              <i data-lucide="user"></i>
+              <span>Profil</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      
+      <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid hsl(var(--border));">
+        <a href="../../index.html" style="display: flex; align-items: center; gap: 0.75rem; color: hsl(var(--destructive)); text-decoration: none; padding: 0.75rem; border-radius: 0.5rem;">
+          <i data-lucide="log-out"></i>
+          <span>Abmelden</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem; font-weight: 700; color: hsl(var(--ink-900)); margin-bottom: 0.5rem;">
+          Willkommen zurück, Thomas
+        </h1>
+        <p style="color: hsl(var(--ink-600));">
+          Hier ist eine Übersicht Ihrer aktuellen Aktivitäten
+        </p>
+      </div>
+
+      <!-- Stats Cards -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="card">
+          <div class="card-content" style="padding: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <p style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.5rem;">Aktive Leads</p>
+                <p style="font-size: 2rem; font-weight: 700; color: hsl(var(--ink-900));">12</p>
+              </div>
+              <div style="width: 3rem; height: 3rem; border-radius: 0.75rem; background-color: hsl(var(--pastel-blue-50)); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="briefcase" style="color: hsl(var(--brand-500));"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-content" style="padding: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <p style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.5rem;">Neue Anfragen</p>
+                <p style="font-size: 2rem; font-weight: 700; color: hsl(var(--ink-900));">5</p>
+              </div>
+              <div style="width: 3rem; height: 3rem; border-radius: 0.75rem; background-color: hsl(var(--pastel-green-50)); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="users" style="color: #10b981;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-content" style="padding: 1.5rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <p style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.5rem;">Ungelesene Nachrichten</p>
+                <p style="font-size: 2rem; font-weight: 700; color: hsl(var(--ink-900));">2</p>
+              </div>
+              <div style="width: 3rem; height: 3rem; border-radius: 0.75rem; background-color: hsl(var(--pastel-yellow-50)); display: flex; align-items: center; justify-content: center;">
+                <i data-lucide="message-square" style="color: #f59e0b;"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Leads -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Aktuelle Leads</h2>
+          <p class="card-description">Ihre neuesten Projektanfragen</p>
+        </div>
+        <div class="card-content">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Titel</th>
+                  <th>Kategorie</th>
+                  <th>Ort</th>
+                  <th>Budget</th>
+                  <th>Status</th>
+                  <th>Aktionen</th>
+                </tr>
+              </thead>
+              <tbody id="leads-table">
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; color: hsl(var(--ink-900));">Badezimmer Renovation</div>
+                    <div style="font-size: 0.875rem; color: hsl(var(--ink-600));">Vor 2 Tagen</div>
+                  </td>
+                  <td>
+                    <span class="badge badge-secondary">Sanitär</span>
+                  </td>
+                  <td>Zürich, 8001</td>
+                  <td>CHF 5'000 - 10'000</td>
+                  <td>
+                    <span class="badge badge-default">Aktiv</span>
+                  </td>
+                  <td>
+                    <a href="lead-details.html?id=1" class="btn btn-sm btn-outline">Details</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; color: hsl(var(--ink-900));">Elektroinstallation Neubau</div>
+                    <div style="font-size: 0.875rem; color: hsl(var(--ink-600));">Vor 5 Tagen</div>
+                  </td>
+                  <td>
+                    <span class="badge badge-secondary">Elektriker</span>
+                  </td>
+                  <td>Bern, 3000</td>
+                  <td>CHF 15'000 - 25'000</td>
+                  <td>
+                    <span class="badge badge-default">Aktiv</span>
+                  </td>
+                  <td>
+                    <a href="lead-details.html?id=2" class="btn btn-sm btn-outline">Details</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style="font-weight: 600; color: hsl(var(--ink-900));">Wohnzimmer streichen</div>
+                    <div style="font-size: 0.875rem; color: hsl(var(--ink-600));">Vor 1 Woche</div>
+                  </td>
+                  <td>
+                    <span class="badge badge-secondary">Maler</span>
+                  </td>
+                  <td>Basel, 4000</td>
+                  <td>CHF 2'000 - 4'000</td>
+                  <td>
+                    <span class="badge badge-default">Aktiv</span>
+                  </td>
+                  <td>
+                    <a href="lead-details.html?id=3" class="btn btn-sm btn-outline">Details</a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a href="browse-leads.html" class="btn btn-default">Alle Leads anzeigen</a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../../js/mock-data.js"></script>
+  <script src="../../js/main.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

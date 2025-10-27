@@ -1,0 +1,359 @@
+/* ===================================
+   REUSABLE UI COMPONENTS
+   =================================== */
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.3s;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  height: 2.25rem;
+  padding: 0.5rem 1rem;
+}
+
+.btn:focus-visible {
+  outline: none;
+  ring: 2px solid hsl(var(--brand-500));
+  ring-offset: 2px;
+}
+
+.btn:disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.btn-default {
+  background-color: hsl(var(--brand-500));
+  color: white;
+  box-shadow: 0 10px 15px -3px rgba(79,70,229,0.25);
+}
+
+.btn-default:hover {
+  background-color: hsl(var(--brand-600));
+  box-shadow: 0 10px 15px -3px rgba(79,70,229,0.3);
+}
+
+.btn-default:active {
+  background-color: hsl(var(--brand-700));
+  transform: scale(0.95);
+}
+
+.btn-outline {
+  border: 1px solid hsl(var(--line-200));
+  background-color: hsl(var(--surface));
+  color: hsl(var(--ink-700));
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+}
+
+.btn-outline:hover {
+  background-color: hsl(var(--pastel-grey-50));
+  border-color: hsl(var(--brand-500));
+}
+
+.btn-secondary {
+  background-color: hsl(var(--pastel-blue-50));
+  color: hsl(var(--ink-700));
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+}
+
+.btn-secondary:hover {
+  background-color: hsl(var(--pastel-blue-100));
+}
+
+.btn-ghost {
+  color: hsl(var(--ink-700));
+}
+
+.btn-ghost:hover {
+  background-color: hsl(var(--pastel-grey-50));
+  color: hsl(var(--ink-900));
+}
+
+.btn-hero {
+  background-color: hsl(var(--brand-500));
+  color: white;
+  box-shadow: 0 25px 50px -12px rgba(79,70,229,0.3);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 1rem 2rem;
+  height: 4rem;
+  border-radius: 9999px;
+}
+
+.btn-hero:hover {
+  background-color: hsl(var(--brand-600));
+  box-shadow: 0 25px 50px -12px rgba(79,70,229,0.4);
+  transform: scale(1.05);
+}
+
+.btn-hero:active {
+  background-color: hsl(var(--brand-700));
+  transform: scale(0.95);
+}
+
+.btn-sm {
+  height: 2rem;
+  border-radius: 0.75rem;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+}
+
+.btn-lg {
+  height: 2.5rem;
+  border-radius: 1rem;
+  padding: 0 2rem;
+}
+
+.btn-xl {
+  height: 3rem;
+  border-radius: 1rem;
+  padding: 0 3rem;
+  font-size: 1rem;
+}
+
+/* Cards */
+.card {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+}
+
+.card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 1.5rem;
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.card-description {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.card-content {
+  padding: 1.5rem;
+  padding-top: 0;
+}
+
+.card-footer {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  padding-top: 0;
+}
+
+/* Inputs */
+.input {
+  display: flex;
+  height: 2.5rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--input));
+  background-color: hsl(var(--background));
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  ring: 2px solid hsl(var(--ring));
+  ring-offset: 2px;
+}
+
+.input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.textarea {
+  min-height: 5rem;
+  resize: vertical;
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+/* Select */
+.select {
+  display: flex;
+  height: 2.5rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--input));
+  background-color: hsl(var(--background));
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.select:focus {
+  outline: none;
+  ring: 2px solid hsl(var(--ring));
+  ring-offset: 2px;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: colors 0.2s;
+}
+
+.badge:focus {
+  outline: none;
+  ring: 2px solid hsl(var(--ring));
+  ring-offset: 2px;
+}
+
+.badge-default {
+  border-color: transparent;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.badge-default:hover {
+  background-color: hsl(var(--primary) / 0.8);
+}
+
+.badge-secondary {
+  border-color: transparent;
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+}
+
+.badge-destructive {
+  border-color: transparent;
+  background-color: hsl(var(--destructive));
+  color: hsl(var(--destructive-foreground));
+}
+
+.badge-outline {
+  color: hsl(var(--foreground));
+}
+
+/* Alert */
+.alert {
+  position: relative;
+  width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid hsl(var(--border));
+  padding: 1rem;
+}
+
+.alert-title {
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.025em;
+}
+
+.alert-description {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+/* Avatar */
+.avatar {
+  position: relative;
+  display: flex;
+  height: 2.5rem;
+  width: 2.5rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 9999px;
+}
+
+.avatar-image {
+  aspect-ratio: 1 / 1;
+  height: 100%;
+  width: 100%;
+}
+
+.avatar-fallback {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: hsl(var(--muted));
+}
+
+/* Separator */
+.separator {
+  flex-shrink: 0;
+  background-color: hsl(var(--border));
+  height: 1px;
+  width: 100%;
+}
+
+.separator-vertical {
+  height: 100%;
+  width: 1px;
+}
+
+/* Skeleton Loader */
+.skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  border-radius: 0.5rem;
+  background-color: hsl(var(--muted));
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Animations */
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Hover Effects */
+.hover-scale {
+  transition: transform 0.2s;
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}

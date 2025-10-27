@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leads durchsuchen - HandwerkerLeads.ch</title>
+  
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <link rel="stylesheet" href="../../css/pages.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  
+  <!-- Header -->
+  <header class="header">
+    <div class="header-container">
+      <a href="../../index.html">
+        <img src="../../assets/bueze-logo.webp" alt="HandwerkerLeads.ch" class="header-logo">
+      </a>
+      
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="color: hsl(var(--ink-700)); font-weight: 500;">Thomas Handwerker</span>
+        <div class="avatar">
+          <div class="avatar-fallback">TH</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dashboard Layout -->
+  <div class="dashboard-layout">
+    <!-- Sidebar -->
+    <aside class="dashboard-sidebar">
+      <nav>
+        <ul class="sidebar-nav">
+          <li>
+            <a href="dashboard.html">
+              <i data-lucide="layout-dashboard"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li>
+            <a href="browse-leads.html" class="active">
+              <i data-lucide="search"></i>
+              <span>Leads durchsuchen</span>
+            </a>
+          </li>
+          <li>
+            <a href="submit-lead.html">
+              <i data-lucide="plus-circle"></i>
+              <span>Lead erstellen</span>
+            </a>
+          </li>
+          <li>
+            <a href="messages.html">
+              <i data-lucide="message-square"></i>
+              <span>Nachrichten</span>
+              <span class="badge badge-default" style="margin-left: auto;">2</span>
+            </a>
+          </li>
+          <li>
+            <a href="profile.html">
+              <i data-lucide="user"></i>
+              <span>Profil</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem; font-weight: 700; color: hsl(var(--ink-900)); margin-bottom: 0.5rem;">
+          Leads durchsuchen
+        </h1>
+        <p style="color: hsl(var(--ink-600));">
+          Finden Sie passende Projekte in Ihrer Region
+        </p>
+      </div>
+
+      <!-- Filters -->
+      <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-content" style="padding: 1.5rem;">
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="label">Suche</label>
+              <input type="text" class="input" placeholder="Lead suchen..." onkeyup="filterTable(this, 'leads-table')">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="label">Kategorie</label>
+              <select class="select">
+                <option value="">Alle Kategorien</option>
+                <option value="elektriker">Elektriker</option>
+                <option value="sanitaer">Sanitär</option>
+                <option value="maler">Maler</option>
+                <option value="schreiner">Schreiner</option>
+                <option value="gartenbau">Gartenbau</option>
+                <option value="reinigung">Reinigung</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-row" style="margin-top: 1rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="label">Kanton</label>
+              <select class="select">
+                <option value="">Alle Kantone</option>
+                <option value="ZH">Zürich</option>
+                <option value="BE">Bern</option>
+                <option value="LU">Luzern</option>
+                <option value="BS">Basel-Stadt</option>
+                <option value="AG">Aargau</option>
+              </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="label">Status</label>
+              <select class="select">
+                <option value="">Alle Status</option>
+                <option value="active">Aktiv</option>
+                <option value="pending">Ausstehend</option>
+                <option value="in_progress">In Bearbeitung</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+            <button class="btn btn-default">Filter anwenden</button>
+            <button class="btn btn-outline">Zurücksetzen</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Leads Grid -->
+      <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+        <!-- Lead Card 1 -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <h3 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; color: hsl(var(--ink-900));">
+                  Badezimmer Renovation
+                </h3>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <span class="badge badge-secondary">Sanitär</span>
+                  <span class="badge badge-outline">Zürich, 8001</span>
+                </div>
+              </div>
+              <span class="badge badge-default">Aktiv</span>
+            </div>
+          </div>
+          <div class="card-content">
+            <p style="color: hsl(var(--ink-600)); line-height: 1.625; margin-bottom: 1rem;">
+              Komplette Badezimmerrenovation in Zürich. Neues Waschbecken, Dusche und Fliesen. 
+              Erfahrener Handwerker mit Referenzen gesucht.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+              <div>
+                <div style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.25rem;">Budget</div>
+                <div style="font-weight: 600; color: hsl(var(--ink-900));">CHF 5'000 - 10'000</div>
+              </div>
+              <div>
+                <div style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.25rem;">Deadline</div>
+                <div style="font-weight: 600; color: hsl(var(--ink-900));">15. Nov 2025</div>
+              </div>
+            </div>
+            
+            <div style="font-size: 0.875rem; color: hsl(var(--ink-500));">
+              Erstellt vor 2 Tagen
+            </div>
+          </div>
+          <div class="card-footer" style="gap: 0.5rem;">
+            <a href="lead-details.html?id=1" class="btn btn-default">Details anzeigen</a>
+            <button class="btn btn-outline">
+              <i data-lucide="bookmark"></i>
+              Merken
+            </button>
+          </div>
+        </div>
+
+        <!-- Lead Card 2 -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <h3 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; color: hsl(var(--ink-900));">
+                  Elektroinstallation Neubau
+                </h3>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <span class="badge badge-secondary">Elektriker</span>
+                  <span class="badge badge-outline">Bern, 3000</span>
+                </div>
+              </div>
+              <span class="badge badge-default">Aktiv</span>
+            </div>
+          </div>
+          <div class="card-content">
+            <p style="color: hsl(var(--ink-600)); line-height: 1.625; margin-bottom: 1rem;">
+              Komplette Elektroinstallation für Einfamilienhaus-Neubau in Bern. Alle Elektroarbeiten 
+              inklusive Verteilerkasten und Smart Home Vorbereitung.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+              <div>
+                <div style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.25rem;">Budget</div>
+                <div style="font-weight: 600; color: hsl(var(--ink-900));">CHF 15'000 - 25'000</div>
+              </div>
+              <div>
+                <div style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.25rem;">Deadline</div>
+                <div style="font-weight: 600; color: hsl(var(--ink-900));">1. Dez 2025</div>
+              </div>
+            </div>
+            
+            <div style="font-size: 0.875rem; color: hsl(var(--ink-500));">
+              Erstellt vor 5 Tagen
+            </div>
+          </div>
+          <div class="card-footer" style="gap: 0.5rem;">
+            <a href="lead-details.html?id=2" class="btn btn-default">Details anzeigen</a>
+            <button class="btn btn-outline">
+              <i data-lucide="bookmark"></i>
+              Merken
+            </button>
+          </div>
+        </div>
+
+        <!-- Lead Card 3 -->
+        <div class="card">
+          <div class="card-header">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div>
+                <h3 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; color: hsl(var(--ink-900));">
+                  Wohnzimmer streichen
+                </h3>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                  <span class="badge badge-secondary">Maler</span>
+                  <span class="badge badge-outline">Basel, 4000</span>
+                </div>
+              </div>
+              <span class="badge badge-default">Aktiv</span>
+            </div>
+          </div>
+          <div class="card-content">
+            <p style="color: hsl(var(--ink-600)); line-height: 1.625; margin-bottom: 1rem;">
+              Wohnzimmer und Flur streichen, ca. 40m². Alte Tapeten entfernen und Wände vorbereiten. 
+              Farbauswahl bereits erfolgt.
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1rem;">
+              <div>
+                <div style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.25rem;">Budget</div>
+                <div style="font-weight: 600; color: hsl(var(--ink-900));">CHF 2'000 - 4'000</div>
+              </div>
+              <div>
+                <div style="font-size: 0.875rem; color: hsl(var(--ink-600)); margin-bottom: 0.25rem;">Deadline</div>
+                <div style="font-weight: 600; color: hsl(var(--ink-900));">10. Nov 2025</div>
+              </div>
+            </div>
+            
+            <div style="font-size: 0.875rem; color: hsl(var(--ink-500));">
+              Erstellt vor 1 Woche
+            </div>
+          </div>
+          <div class="card-footer" style="gap: 0.5rem;">
+            <a href="lead-details.html?id=3" class="btn btn-default">Details anzeigen</a>
+            <button class="btn btn-outline">
+              <i data-lucide="bookmark"></i>
+              Merken
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../../js/mock-data.js"></script>
+  <script src="../../js/main.js"></script>
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

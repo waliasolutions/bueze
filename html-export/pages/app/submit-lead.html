@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auftrag erstellen - HandwerkerLeads.ch</title>
+  
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <link rel="stylesheet" href="../../css/pages.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  
+  <!-- Header -->
+  <header class="header">
+    <div class="header-container">
+      <a href="../../index.html">
+        <img src="../../assets/bueze-logo.webp" alt="HandwerkerLeads.ch" class="header-logo">
+      </a>
+      
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="../../index.html" class="btn btn-outline btn-sm">
+          <i data-lucide="arrow-left"></i>
+          Zurück
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main style="padding-top: 5rem; padding-bottom: 3rem; background-color: hsl(var(--pastel-grey-50)); min-height: 100vh;">
+    <div class="container" style="max-width: 56rem;">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-size: 2.5rem; font-weight: 700; color: hsl(var(--ink-900)); margin-bottom: 0.5rem;">
+          Auftrag erstellen
+        </h1>
+        <p style="color: hsl(var(--ink-600)); font-size: 1.125rem;">
+          Beschreiben Sie Ihr Projekt und erhalten Sie Angebote von qualifizierten Handwerkern
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="card-content" style="padding: 2rem;">
+          <form id="lead-form">
+            <!-- Step 1: Basic Info -->
+            <div style="margin-bottom: 2rem;">
+              <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: hsl(var(--ink-900));">
+                Projektdetails
+              </h2>
+              
+              <div class="form-group">
+                <label class="label">Titel *</label>
+                <input type="text" class="input" placeholder="z.B. Badezimmer Renovation" required>
+              </div>
+              
+              <div class="form-group">
+                <label class="label">Kategorie *</label>
+                <select class="select" required>
+                  <option value="">Bitte wählen</option>
+                  <option value="elektriker">Elektriker</option>
+                  <option value="sanitaer">Sanitär</option>
+                  <option value="maler">Maler</option>
+                  <option value="schreiner">Schreiner</option>
+                  <option value="gartenbau">Gartenbau</option>
+                  <option value="reinigung">Reinigung</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label class="label">Beschreibung *</label>
+                <textarea class="input textarea" rows="5" placeholder="Beschreiben Sie Ihr Projekt so detailliert wie möglich..." required></textarea>
+                <p style="font-size: 0.875rem; color: hsl(var(--ink-500)); margin-top: 0.5rem;">
+                  Je mehr Details, desto besser können Handwerker Ihr Projekt einschätzen
+                </p>
+              </div>
+            </div>
+
+            <!-- Step 2: Location -->
+            <div style="margin-bottom: 2rem; padding-top: 2rem; border-top: 1px solid hsl(var(--border));">
+              <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: hsl(var(--ink-900));">
+                Standort
+              </h2>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label">Postleitzahl *</label>
+                  <input type="text" class="input" placeholder="z.B. 8001" pattern="[0-9]{4}" required>
+                </div>
+                
+                <div class="form-group">
+                  <label class="label">Ort *</label>
+                  <input type="text" class="input" placeholder="z.B. Zürich" required>
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="label">Kanton *</label>
+                <select class="select" required>
+                  <option value="">Bitte wählen</option>
+                  <option value="ZH">Zürich</option>
+                  <option value="BE">Bern</option>
+                  <option value="LU">Luzern</option>
+                  <option value="BS">Basel-Stadt</option>
+                  <option value="BL">Basel-Landschaft</option>
+                  <option value="AG">Aargau</option>
+                  <option value="SG">St. Gallen</option>
+                  <option value="GR">Graubünden</option>
+                  <option value="VD">Vaud</option>
+                  <option value="GE">Genève</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Step 3: Budget & Timeline -->
+            <div style="margin-bottom: 2rem; padding-top: 2rem; border-top: 1px solid hsl(var(--border));">
+              <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: hsl(var(--ink-900));">
+                Budget & Zeitplan
+              </h2>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label">Budget von (CHF)</label>
+                  <input type="number" class="input" placeholder="5000" min="0" step="100">
+                </div>
+                
+                <div class="form-group">
+                  <label class="label">Budget bis (CHF)</label>
+                  <input type="number" class="input" placeholder="10000" min="0" step="100">
+                </div>
+              </div>
+              
+              <div class="form-group">
+                <label class="label">Gewünschter Starttermin</label>
+                <input type="date" class="input">
+              </div>
+              
+              <div class="form-group">
+                <label class="label">Deadline</label>
+                <input type="date" class="input">
+              </div>
+            </div>
+
+            <!-- Step 4: Contact Info -->
+            <div style="margin-bottom: 2rem; padding-top: 2rem; border-top: 1px solid hsl(var(--border));">
+              <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: hsl(var(--ink-900));">
+                Kontaktinformationen
+              </h2>
+              
+              <div class="form-group">
+                <label class="label">Ihr Name *</label>
+                <input type="text" class="input" placeholder="Hans Müller" required>
+              </div>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="label">E-Mail *</label>
+                  <input type="email" class="input" placeholder="hans@example.ch" required>
+                </div>
+                
+                <div class="form-group">
+                  <label class="label">Telefon *</label>
+                  <input type="tel" class="input" placeholder="+41 79 123 45 67" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 5: Media Upload -->
+            <div style="margin-bottom: 2rem; padding-top: 2rem; border-top: 1px solid hsl(var(--border));">
+              <h2 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; color: hsl(var(--ink-900));">
+                Bilder & Dokumente (optional)
+              </h2>
+              
+              <div style="border: 2px dashed hsl(var(--border)); border-radius: 0.5rem; padding: 2rem; text-align: center; cursor: pointer;" onclick="document.getElementById('file-input').click()">
+                <i data-lucide="upload" style="width: 3rem; height: 3rem; margin: 0 auto 1rem; color: hsl(var(--ink-400));"></i>
+                <p style="color: hsl(var(--ink-600)); margin-bottom: 0.5rem;">
+                  Klicken Sie hier, um Dateien hochzuladen
+                </p>
+                <p style="font-size: 0.875rem; color: hsl(var(--ink-500));">
+                  Max. 10 Dateien, je max. 10MB (JPG, PNG, PDF)
+                </p>
+                <input type="file" id="file-input" multiple accept="image/*,.pdf" style="display: none;" onchange="previewFile(this, 'file-preview')">
+              </div>
+              
+              <div id="file-preview" style="margin-top: 1rem;"></div>
+            </div>
+
+            <!-- Submit -->
+            <div style="display: flex; gap: 1rem; justify-content: center; padding-top: 2rem;">
+              <button type="submit" class="btn btn-default btn-lg">
+                Auftrag erstellen
+                <i data-lucide="arrow-right"></i>
+              </button>
+              <button type="button" class="btn btn-outline btn-lg" onclick="window.history.back()">
+                Abbrechen
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../../js/mock-data.js"></script>
+  <script src="../../js/main.js"></script>
+  <script>
+    lucide.createIcons();
+    
+    // Form submission handler
+    document.getElementById('lead-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // In Laravel, this would submit to backend
+      showToast('Auftrag erfolgreich erstellt!', 'success');
+      
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 1500);
+    });
+  </script>
+</body>
+</html>

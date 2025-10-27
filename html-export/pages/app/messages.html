@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nachrichten - HandwerkerLeads.ch</title>
+  <link rel="stylesheet" href="../../css/design-system.css">
+  <link rel="stylesheet" href="../../css/components.css">
+  <link rel="stylesheet" href="../../css/pages.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="header-container">
+      <a href="../../index.html"><img src="../../assets/bueze-logo.webp" alt="HandwerkerLeads.ch" class="header-logo"></a>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="color: hsl(var(--ink-700)); font-weight: 500;">Thomas Handwerker</span>
+        <div class="avatar"><div class="avatar-fallback">TH</div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-layout">
+    <aside class="dashboard-sidebar">
+      <nav><ul class="sidebar-nav">
+        <li><a href="dashboard.html"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></a></li>
+        <li><a href="browse-leads.html"><i data-lucide="search"></i><span>Leads durchsuchen</span></a></li>
+        <li><a href="submit-lead.html"><i data-lucide="plus-circle"></i><span>Lead erstellen</span></a></li>
+        <li><a href="messages.html" class="active"><i data-lucide="message-square"></i><span>Nachrichten</span></a></li>
+        <li><a href="profile.html"><i data-lucide="user"></i><span>Profil</span></a></li>
+      </ul></nav>
+    </aside>
+
+    <main class="dashboard-main">
+      <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 2rem;">Nachrichten</h1>
+      
+      <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
+        <div class="card" style="cursor: pointer;" onclick="window.location.href='lead-details.html?id=1'">
+          <div class="card-content" style="padding: 1.5rem;">
+            <div style="display: flex; gap: 1rem; align-items: start;">
+              <div class="avatar" style="width: 3rem; height: 3rem;"><div class="avatar-fallback">HM</div></div>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: between; align-items: start; margin-bottom: 0.5rem;">
+                  <div>
+                    <div style="font-weight: 600; color: hsl(var(--ink-900));">Hans Müller</div>
+                    <div style="font-size: 0.875rem; color: hsl(var(--ink-600));">Badezimmer Renovation</div>
+                  </div>
+                  <span class="badge badge-default">2</span>
+                </div>
+                <p style="color: hsl(var(--ink-600)); font-size: 0.875rem;">Ich würde gerne einen Besichtigungstermin vereinbaren.</p>
+                <div style="font-size: 0.75rem; color: hsl(var(--ink-500)); margin-top: 0.5rem;">Vor 2 Stunden</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="../../js/mock-data.js"></script>
+  <script src="../../js/main.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HandwerkerLeads.ch - Geprüfte Handwerker in der Schweiz finden</title>
+  <meta name="description" content="Finden Sie schnell und einfach geprüfte Handwerker in der Schweiz. Kostenlos für Auftraggeber. Über 5'000 verifizierte Betriebe.">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  
+  <!-- Header -->
+  <header class="header">
+    <div class="header-container">
+      <a href="index.html">
+        <img src="assets/bueze-logo.webp" alt="HandwerkerLeads.ch Logo" class="header-logo">
+      </a>
+      
+      <nav class="header-nav">
+        <a href="index.html">Home</a>
+        <a href="pages/public/kategorien.html">Kategorien</a>
+        <a href="pages/public/handwerker.html">Für Handwerker</a>
+        <a href="pages/public/pricing.html">Preise</a>
+        <a href="pages/app/dashboard.html" class="btn btn-default btn-sm">Anmelden</a>
+      </nav>
+      
+      <button class="mobile-menu-btn btn btn-ghost btn-icon" onclick="toggleMobileMenu()">
+        <i data-lucide="menu"></i>
+      </button>
+    </div>
+    
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden" style="background: white; padding: 1rem; border-top: 1px solid hsl(var(--border));">
+      <nav style="display: flex; flex-direction: column; gap: 0.5rem;">
+        <a href="index.html" style="padding: 0.75rem; text-decoration: none; color: hsl(var(--ink-700));">Home</a>
+        <a href="pages/public/kategorien.html" style="padding: 0.75rem; text-decoration: none; color: hsl(var(--ink-700));">Kategorien</a>
+        <a href="pages/public/handwerker.html" style="padding: 0.75rem; text-decoration: none; color: hsl(var(--ink-700));">Für Handwerker</a>
+        <a href="pages/public/pricing.html" style="padding: 0.75rem; text-decoration: none; color: hsl(var(--ink-700));">Preise</a>
+        <a href="pages/app/dashboard.html" class="btn btn-default btn-sm">Anmelden</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          Finden Sie den perfekten Handwerker in Ihrer Nähe
+        </h1>
+        
+        <p class="hero-description">
+          Über 5'000 verifizierte Handwerker in der ganzen Schweiz. Kostenlos für Auftraggeber. 
+          Schnell, einfach und zuverlässig.
+        </p>
+        
+        <!-- Primary CTA with Animation -->
+        <div class="hero-cta-wrapper">
+          <div class="pulse-ring pulse-ring-1"></div>
+          <div class="pulse-ring pulse-ring-2"></div>
+          
+          <a href="pages/app/submit-lead.html" class="btn btn-hero animate-glow-pulse">
+            <span style="position: relative; z-index: 10;">Auftrag erstellen</span>
+            <i data-lucide="arrow-right" style="position: relative; z-index: 10; margin-left: 0.75rem; width: 1.5rem; height: 1.5rem;"></i>
+          </a>
+        </div>
+        
+        <!-- Category Icons -->
+        <div class="category-grid">
+          <a href="pages/public/kategorien.html?cat=elektriker" class="category-card">
+            <div class="category-icon">
+              <i data-lucide="zap"></i>
+            </div>
+            <span class="category-name">Elektriker</span>
+          </a>
+          
+          <a href="pages/public/kategorien.html?cat=sanitaer" class="category-card">
+            <div class="category-icon">
+              <i data-lucide="droplet"></i>
+            </div>
+            <span class="category-name">Sanitär</span>
+          </a>
+          
+          <a href="pages/public/kategorien.html?cat=maler" class="category-card">
+            <div class="category-icon">
+              <i data-lucide="paintbrush"></i>
+            </div>
+            <span class="category-name">Maler</span>
+          </a>
+          
+          <a href="pages/public/kategorien.html?cat=schreiner" class="category-card">
+            <div class="category-icon">
+              <i data-lucide="hammer"></i>
+            </div>
+            <span class="category-name">Schreiner</span>
+          </a>
+          
+          <a href="pages/public/kategorien.html?cat=gartenbau" class="category-card">
+            <div class="category-icon">
+              <i data-lucide="leaf"></i>
+            </div>
+            <span class="category-name">Gartenbau</span>
+          </a>
+          
+          <a href="pages/public/kategorien.html?cat=reinigung" class="category-card">
+            <div class="category-icon">
+              <i data-lucide="sparkles"></i>
+            </div>
+            <span class="category-name">Reinigung</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="how-it-works">
+    <div class="container">
+      <h2 class="how-it-works-title">So funktioniert's</h2>
+      
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number">1</div>
+          <h3 class="step-title">Auftrag erstellen</h3>
+          <p class="step-description">
+            Beschreiben Sie Ihr Projekt und was Sie benötigen. Kostenlos und unverbindlich.
+          </p>
+        </div>
+        
+        <div class="step-card">
+          <div class="step-number">2</div>
+          <h3 class="step-title">Angebote erhalten</h3>
+          <p class="step-description">
+            Verifizierte Handwerker aus Ihrer Region melden sich bei Ihnen.
+          </p>
+        </div>
+        
+        <div class="step-card">
+          <div class="step-number">3</div>
+          <h3 class="step-title">Handwerker wählen</h3>
+          <p class="step-description">
+            Vergleichen Sie Profile und wählen Sie den besten Handwerker für Ihr Projekt.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="faq-section">
+    <div class="container">
+      <h2 class="faq-title">Häufig gestellte Fragen</h2>
+      
+      <div class="accordion">
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>Wie funktioniert HandwerkerLeads.ch?</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+          <div class="accordion-content" style="display: none;">
+            Sie erstellen einen Auftrag mit Ihren Anforderungen. Verifizierte Handwerker können Ihr Projekt sehen und Sie direkt kontaktieren. Sie wählen den besten Handwerker für Ihr Projekt aus.
+          </div>
+        </div>
+        
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>Ist die Nutzung für Auftraggeber kostenlos?</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+          <div class="accordion-content" style="display: none;">
+            Ja, für Auftraggeber ist HandwerkerLeads.ch komplett kostenlos. Sie zahlen nur die vereinbarte Summe an den Handwerker für die ausgeführte Arbeit.
+          </div>
+        </div>
+        
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>Wie werden Handwerker verifiziert?</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+          <div class="accordion-content" style="display: none;">
+            Jeder Handwerker muss seine Geschäftslizenz, Versicherung und Referenzen vorlegen. Unser Team prüft alle Dokumente vor der Freischaltung des Profils.
+          </div>
+        </div>
+        
+        <div class="accordion-item">
+          <button class="accordion-trigger" onclick="toggleAccordion(this)">
+            <span>Wie schnell erhalte ich Angebote?</span>
+            <i data-lucide="chevron-down"></i>
+          </button>
+          <div class="accordion-content" style="display: none;">
+            In der Regel erhalten Sie innerhalb von 24 Stunden die ersten Kontaktanfragen von interessierten Handwerkern.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-section">
+          <img src="assets/bueze-logo.webp" alt="HandwerkerLeads.ch" style="height: 5rem; margin-bottom: 1rem;">
+          <p style="color: hsl(var(--ink-300)); margin-top: 1rem;">
+            Die führende Plattform für Handwerker-Vermittlung in der Schweiz.
+          </p>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Für Auftraggeber</h3>
+          <ul>
+            <li><a href="pages/app/submit-lead.html">Auftrag erstellen</a></li>
+            <li><a href="pages/public/kategorien.html">Kategorien</a></li>
+            <li><a href="pages/app/browse-leads.html">Handwerker suchen</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Für Handwerker</h3>
+          <ul>
+            <li><a href="pages/public/handwerker.html">Übersicht</a></li>
+            <li><a href="pages/public/pricing.html">Preise</a></li>
+            <li><a href="pages/app/dashboard.html">Anmelden</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-section">
+          <h3>Rechtliches</h3>
+          <ul>
+            <li><a href="pages/public/agb.html">AGB</a></li>
+            <li><a href="pages/public/pricing.html">Preise</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; <span class="current-year">2025</span> HandwerkerLeads.ch. Alle Rechte vorbehalten.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/mock-data.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+  </script>
+</body>
+</html>
