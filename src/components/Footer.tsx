@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from 'lucide-react';
 import logo from '@/assets/bueze-logo.png';
 
@@ -7,37 +8,23 @@ export const Footer = () => {
     {
       title: 'Für Auftraggeber',
       links: [
-        'Projekt erstellen',
-        'Handwerker finden',
-        'Preise vergleichen',
-        'Bewertungen lesen'
+        { label: 'Auftrag erstellen', href: '/submit-lead' },
+        { label: 'Kategorien', href: '/kategorien' },
       ]
     },
     {
       title: 'Für Handwerker',
       links: [
-        'Profil erstellen',
-        'Leads kaufen',
-        'Preise & Abos',
-        'Erfolgstipps'
+        { label: 'Handwerker-Infos', href: '/handwerker' },
+        { label: 'Leads durchsuchen', href: '/search' },
+        { label: 'Preise & Abos', href: '/legal/pricing' },
       ]
     },
     {
-      title: 'Kategorien',
+      title: 'Rechtliches',
       links: [
-        'Elektriker',
-        'Sanitär',
-        'Maler',
-        'Gartenbau'
-      ]
-    },
-    {
-      title: 'Unternehmen',
-      links: [
-        'Über uns',
-        'Karriere',
-        'Presse',
-        'Partner'
+        { label: 'AGB', href: '/legal/agb' },
+        { label: 'Preise', href: '/legal/pricing' },
       ]
     }
   ];
@@ -50,7 +37,7 @@ export const Footer = () => {
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center">
-              <img src={logo} alt="Büeze.ch" className="h-10 w-auto" />
+              <img src={logo} alt="Büeze.ch" className="h-20 w-auto" />
             </div>
             
             <p className="text-ink-300 leading-relaxed">
@@ -83,12 +70,12 @@ export const Footer = () => {
               <ul className="space-y-2">
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
-                    <a 
-                      href="#" 
+                    <Link 
+                      to={link.href} 
                       className="text-ink-300 hover:text-brand-400 transition-colors text-sm"
                     >
-                      {link}
-                    </a>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -101,18 +88,12 @@ export const Footer = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             {/* Legal Links */}
             <div className="flex flex-wrap gap-6 text-sm text-ink-300">
-              <a href="#" className="hover:text-brand-400 transition-colors">
-                Datenschutz
-              </a>
-              <a href="#" className="hover:text-brand-400 transition-colors">
+              <Link to="/legal/agb" className="hover:text-brand-400 transition-colors">
                 AGB
-              </a>
-              <a href="#" className="hover:text-brand-400 transition-colors">
-                Impressum
-              </a>
-              <a href="#" className="hover:text-brand-400 transition-colors">
-                Cookie-Einstellungen
-              </a>
+              </Link>
+              <Link to="/legal/pricing" className="hover:text-brand-400 transition-colors">
+                Preise
+              </Link>
             </div>
 
             {/* Social Links */}
