@@ -20,6 +20,7 @@ import Checkout from "./pages/Checkout";
 import CategoryLanding from "./pages/CategoryLanding";
 import KategorienLanding from "./pages/KategorienLanding";
 import HandwerkerLanding from "./pages/HandwerkerLanding";
+import HandwerkerApprovals from "./pages/admin/HandwerkerApprovals";
 import AGB from "./pages/legal/AGB";
 import PricingPage from "./pages/legal/PricingPage";
 import NotFound from "./pages/NotFound";
@@ -55,6 +56,7 @@ const App = () => {
             <Route path="/kategorien" element={<KategorienLanding />} />
             <Route path="/category/:categorySlug" element={<CategoryLanding />} />
             <Route path="/handwerker" element={<HandwerkerLanding />} />
+            <Route path="/admin/approvals" element={<HandwerkerApprovals />} />
             <Route path="/legal/agb" element={<AGB />} />
             <Route path="/legal/pricing" element={<PricingPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

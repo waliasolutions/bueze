@@ -18,7 +18,8 @@ import {
   Plus, 
   Search,
   FileText,
-  Heart
+  Heart,
+  ShieldCheck
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -38,6 +39,7 @@ export const UserDropdown = () => {
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -55,6 +57,15 @@ export const UserDropdown = () => {
             .single();
           
           setProfile(profileData);
+
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+          
+          setIsAdmin(!!roleData);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -76,8 +87,18 @@ export const UserDropdown = () => {
           .single();
         
         setProfile(profileData);
+
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        
+        setIsAdmin(!!roleData);
       } else {
         setProfile(null);
+        setIsAdmin(false);
       }
     });
 
@@ -204,6 +225,16 @@ export const UserDropdown = () => {
         </DropdownMenuItem>
         
         <DropdownMenuSeparator className="bg-line-200" />
+
+        {isAdmin && (
+          <>
+            <DropdownMenuItem onClick={() => navigate('/admin/approvals')} className="cursor-pointer">
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              <span>Handwerker-Freigaben</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-line-200" />
+          </>
+        )}
         
         <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
           <Settings className="mr-2 h-4 w-4" />
