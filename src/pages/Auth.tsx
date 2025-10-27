@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { CANTON_CODES } from '@/config/cantons';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 export default function Auth() {
@@ -109,7 +111,9 @@ export default function Auth() {
       } else {
         toast({
           title: 'Registrierung erfolgreich!',
-          description: 'Bitte prüfen Sie Ihre E-Mail für den Bestätigungslink.',
+          description: signUpData.role === 'handwerker' 
+            ? 'Ihr Profil wird geprüft. Sie erhalten eine E-Mail, sobald Sie freigeschaltet sind.'
+            : 'Bitte prüfen Sie Ihre E-Mail für den Bestätigungslink.',
         });
       }
     } catch (error) {
@@ -302,6 +306,39 @@ export default function Auth() {
                       onChange={(e) => setSignUpData({ ...signUpData, city: e.target.value })}
                     />
                   </div>
+
+                  {signUpData.role === 'handwerker' && (
+                    <>
+                      <div className="space-y-3 pt-4 border-t border-border">
+                        <div className="flex items-start gap-2">
+                          <Checkbox 
+                            id="agb-accept" 
+                            required 
+                            className="mt-1"
+                          />
+                          <label htmlFor="agb-accept" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
+                            Ich akzeptiere die{' '}
+                            <a href="/legal/agb" className="text-brand-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                              Allgemeinen Geschäftsbedingungen
+                            </a>
+                            {' '}und habe die{' '}
+                            <a href="/legal/pricing" className="text-brand-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                              Preisübersicht
+                            </a>
+                            {' '}gelesen.
+                          </label>
+                        </div>
+                        
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Manuelle Freigabe erforderlich</AlertTitle>
+                          <AlertDescription>
+                            Ihr Profil wird nach der Registrierung von uns geprüft. Dies dient dem Schutz der Kundendaten und dauert in der Regel 1-2 Werktage.
+                          </AlertDescription>
+                        </Alert>
+                      </div>
+                    </>
+                  )}
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

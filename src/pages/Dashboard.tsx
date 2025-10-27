@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp, Crown, AlertCircle } from 'lucide-react';
+import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp, Crown, AlertCircle, ShieldCheck } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatCurrency } from '@/lib/swissTime';
 import { checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
 import { getLeadStatus } from '@/config/leadStatuses';
@@ -48,6 +48,11 @@ interface UserProfile {
   full_name: string;
   email: string;
   role?: string;
+}
+
+interface HandwerkerProfile {
+  id: string;
+  is_verified: boolean;
 }
 
 const categoryLabels = {
@@ -97,6 +102,7 @@ const Dashboard = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
+  const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfile | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -136,13 +142,14 @@ const Dashboard = () => {
       setMyLeads(leadsData || []);
 
       // Check if user is handwerker by checking handwerker_profiles table
-      const { data: handwerkerProfile } = await supabase
+      const { data: handwerkerProfileData } = await supabase
         .from('handwerker_profiles')
-        .select('id')
+        .select('id, is_verified')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (handwerkerProfile) {
+      if (handwerkerProfileData) {
+        setHandwerkerProfile(handwerkerProfileData);
         const access = await checkSubscriptionAccess(user.id);
         setSubscriptionAccess(access);
       }
@@ -220,6 +227,18 @@ const Dashboard = () => {
               Neuen Auftrag erstellen
             </Button>
           </div>
+
+          {/* Verification Status Banner for Handwerkers */}
+          {isHandwerker && handwerkerProfile && !handwerkerProfile.is_verified && (
+            <Alert className="mb-6 border-brand-600 bg-brand-50">
+              <ShieldCheck className="h-4 w-4 text-brand-600" />
+              <AlertTitle className="text-brand-900">Profil wird geprüft</AlertTitle>
+              <AlertDescription className="text-brand-800">
+                Ihr Profil wird derzeit von unserem Team überprüft. Sie können noch keine Aufträge einsehen oder kaufen. 
+                Wir benachrichtigen Sie per E-Mail, sobald Ihr Profil freigeschaltet ist. Dies dauert in der Regel 1-2 Werktage.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Stats Cards - Simplified */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

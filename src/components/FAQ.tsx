@@ -39,12 +39,37 @@ const faqData = [
         q: 'Wie nehme oder lehne ich eine Offerte an?',
         a: 'Wenn Ihnen eine Offerte zusagt, können Sie dem Handwerker direkt über die Nachrichtenfunktion zusagen. Wir empfehlen, die Details persönlich zu besprechen und einen schriftlichen Vertrag abzuschließen. Falls Sie sich für ein anderes Angebot entscheiden, können Sie den Handwerkern einfach kurz und freundlich absagen – das wird geschätzt, ist aber nicht zwingend erforderlich.'
       },
-      {
-        q: 'Bin ich verpflichtet, über Büeze.ch einen Handwerker zu wählen?',
-        a: 'Nein. Büeze.ch ist für Sie komplett unverbindlich. Sie entscheiden selbst, ob und mit wem Sie zusammenarbeiten möchten. Erst durch den direkten Vertragsabschluss mit einem Handwerker entsteht ein rechtsgültiger Auftrag.'
-      }
-    ]
-  }
+    {
+      q: 'Bin ich verpflichtet, über Büeze.ch einen Handwerker zu wählen?',
+      a: 'Nein. Büeze.ch ist für Sie komplett unverbindlich. Sie entscheiden selbst, ob und mit wem Sie zusammenarbeiten möchten. Erst durch den direkten Vertragsabschluss mit einem Handwerker entsteht ein rechtsgültiger Auftrag.'
+    }
+  ]
+},
+{
+  category: 'Für Handwerker',
+  questions: [
+    {
+      q: 'Wie werde ich als Handwerker verifiziert?',
+      a: 'Nach Ihrer Registrierung prüfen wir Ihre Angaben manuell, um sicherzustellen, dass nur vertrauenswürdige und qualifizierte Fachbetriebe Zugang zu den Kundenanfragen erhalten. Diese Überprüfung dient dem Schutz unserer Auftraggeber und stärkt die Qualität auf der Plattform. In der Regel dauert sie 1–2 Werktage. Nach der Freischaltung erhalten Sie eine Bestätigungs-E-Mail und können direkt loslegen.'
+    },
+    {
+      q: 'Wie funktioniert die Preisgestaltung für Handwerker?',
+      a: 'Die Registrierung ist kostenlos. Nach Ihrer Freischaltung können Sie erste Projektanfragen einsehen, inklusive Angaben zu Ort, Postleitzahl, Anliegen und Budget. Wenn Sie künftig mehr passende Leads erhalten und direkt mit Auftraggebern in Kontakt treten möchten, können Sie ein Abo abschliessen. Alle Details und Preise sind transparent im Login-Bereich sichtbar – erst nach der Freischaltung.'
+    },
+    {
+      q: 'Welche Informationen sehen Auftraggeber von mir?',
+      a: 'Ihr Profil wird erst nach der Überprüfung für passende Anfragen freigeschaltet. Ihre Kontaktdaten bleiben geschützt, bis Sie selbst den Kontakt zu einem Auftraggeber aufnehmen. So behalten Sie jederzeit die Kontrolle über Ihre Sichtbarkeit und Anfragen.'
+    },
+    {
+      q: 'Kann ich mein Profil später anpassen?',
+      a: 'Ja. In Ihrem Dashboard können Sie Ihre Angaben jederzeit aktualisieren – etwa Fachbereiche, Einsatzgebiete oder Stundensätze. So bleibt Ihr Profil immer auf dem neuesten Stand.'
+    },
+    {
+      q: 'Muss ich auf jede Anfrage reagieren?',
+      a: 'Nein. Sie entscheiden selbst, welche Projekte für Sie interessant sind. Es gibt keine Verpflichtung, auf jede Anfrage zu antworten – Sie behalten volle Flexibilität.'
+    }
+  ]
+}
 ];
 
 export const FAQ = () => {

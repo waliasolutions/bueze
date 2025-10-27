@@ -18,6 +18,9 @@ import TestDashboard from "./pages/TestDashboard";
 import BrowseLeads from "./pages/BrowseLeads";
 import Checkout from "./pages/Checkout";
 import CategoryLanding from "./pages/CategoryLanding";
+import HandwerkerLanding from "./pages/HandwerkerLanding";
+import AGB from "./pages/legal/AGB";
+import PricingPage from "./pages/legal/PricingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +52,9 @@ const App = () => {
             <Route path="/search" element={<BrowseLeads />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/category/:categorySlug" element={<CategoryLanding />} />
+            <Route path="/handwerker" element={<HandwerkerLanding />} />
+            <Route path="/legal/agb" element={<AGB />} />
+            <Route path="/legal/pricing" element={<PricingPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
