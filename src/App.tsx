@@ -18,6 +18,7 @@ import TestDashboard from "./pages/TestDashboard";
 import BrowseLeads from "./pages/BrowseLeads";
 import Checkout from "./pages/Checkout";
 import CategoryLanding from "./pages/CategoryLanding";
+import KategorienLanding from "./pages/KategorienLanding";
 import HandwerkerLanding from "./pages/HandwerkerLanding";
 import AGB from "./pages/legal/AGB";
 import PricingPage from "./pages/legal/PricingPage";
@@ -51,6 +52,7 @@ const App = () => {
             <Route path="/test-dashboard" element={<TestDashboard />} />
             <Route path="/search" element={<BrowseLeads />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/kategorien" element={<KategorienLanding />} />
             <Route path="/category/:categorySlug" element={<CategoryLanding />} />
             <Route path="/handwerker" element={<HandwerkerLanding />} />
             <Route path="/legal/agb" element={<AGB />} />

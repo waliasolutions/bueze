@@ -42,7 +42,7 @@ const CategoryLanding = () => {
           <p className="text-xl text-ink-700 leading-relaxed max-w-3xl mx-auto">
             {content.description}
           </p>
-          <div className="pt-6">
+          <div className="pt-6 space-y-3">
             <Button
               onClick={handleCTA}
               size="lg"
@@ -51,6 +51,9 @@ const CategoryLanding = () => {
               Jetzt Offerten einholen
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
+            <p className="text-sm text-ink-600">
+              <strong className="text-brand-600">Kostenlos & unverbindlich</strong> für Auftraggeber
+            </p>
           </div>
         </div>
       </section>
@@ -131,7 +134,7 @@ const CategoryLanding = () => {
           <p className="text-xl text-ink-700 max-w-2xl mx-auto">
             Erstellen Sie jetzt Ihre kostenlose Anfrage und erhalten Sie mehrere Offerten von qualifizierten Handwerkern.
           </p>
-          <div className="pt-4">
+          <div className="pt-4 space-y-3">
             <Button
               onClick={handleCTA}
               size="lg"
@@ -140,6 +143,9 @@ const CategoryLanding = () => {
               Jetzt Auftrag erstellen
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
+            <p className="text-sm text-ink-600">
+              <strong className="text-brand-600">Kostenlos & unverbindlich</strong> für Auftraggeber
+            </p>
           </div>
         </div>
       </section>

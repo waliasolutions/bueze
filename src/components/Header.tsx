@@ -31,10 +31,9 @@ export const Header = () => {
   }, []);
 
   const navItems = [
-    { label: 'So funktioniert es', href: '#how-it-works' },
-    { label: 'Kategorien', href: '#categories' },
+    { label: 'So funktioniert es', href: '/#how-it-works' },
+    { label: 'Kategorien', href: '/kategorien' },
     { label: 'Für Handwerker', href: '/handwerker' },
-    { label: 'Preise', href: '#pricing' },
   ];
 
   return (

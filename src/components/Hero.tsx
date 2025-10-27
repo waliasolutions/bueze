@@ -20,7 +20,7 @@ export const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[85vh] flex items-center bg-gradient-to-b from-pastel-blue-50 via-surface to-pastel-grey-50">
+    <section id="hero" className="relative min-h-[85vh] flex items-center bg-gradient-to-b from-pastel-blue-50 via-surface to-pastel-grey-50">
       <div className="container mx-auto px-4 py-20">
         {/* Main Content - Centered */}
         <div className="max-w-4xl mx-auto text-center space-y-12">
@@ -77,7 +77,7 @@ export const Hero = () => {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
-              <span>Kostenlos für Auftraggeber</span>
+              <span><strong className="text-brand-600">Kostenlos & unverbindlich</strong> für Auftraggeber</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-brand-500 rounded-full"></div>

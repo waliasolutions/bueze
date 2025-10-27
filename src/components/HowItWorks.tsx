@@ -8,7 +8,8 @@ const steps = [
   {
     icon: Search,
     title: 'Projekt beschreiben',
-    description: 'Teilen Sie uns mit, wobei Sie Hilfe brauchen. Kostenlos und unverbindlich.',
+    description: 'Teilen Sie uns mit, wobei Sie Hilfe brauchen.',
+    highlight: 'Kostenlos & unverbindlich.',
     step: '01'
   },
   {
@@ -29,7 +30,7 @@ export const HowItWorks = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-20 bg-white">
+    <section id="how-it-works" className="py-20 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
@@ -64,6 +65,11 @@ export const HowItWorks = () => {
                 <p className="text-ink-700 leading-relaxed">
                   {step.description}
                 </p>
+                {step.highlight && (
+                  <p className="text-brand-600 font-bold mt-2">
+                    {step.highlight}
+                  </p>
+                )}
 
                 {/* Connector Line */}
                 {index < steps.length - 1 && (
