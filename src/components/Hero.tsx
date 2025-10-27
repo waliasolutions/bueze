@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { TreePine, Layers, Zap, Paintbrush, Truck, MoreHorizontal, ArrowRight } from 'lucide-react';
+import { TreePine, Layers, Zap, Paintbrush, Truck, ChefHat, ArrowRight } from 'lucide-react';
 
 const categories = [
   { value: 'garden', label: 'Garten', icon: TreePine },
@@ -9,18 +9,14 @@ const categories = [
   { value: 'electrical', label: 'Elektro', icon: Zap },
   { value: 'painting', label: 'Malerarbeiten', icon: Paintbrush },
   { value: 'moving', label: 'Transport & Umzugsarbeiten', icon: Truck },
-  { value: 'all', label: 'Alle Kategorien', icon: MoreHorizontal },
+  { value: 'kitchen', label: 'Küchenbau', icon: ChefHat },
 ];
 
 export const Hero = () => {
   const navigate = useNavigate();
 
   const handleCategoryClick = (categoryValue: string) => {
-    if (categoryValue === 'all') {
-      navigate('/submit-lead');
-    } else {
-      navigate(`/category/${categoryValue}`);
-    }
+    navigate(`/category/${categoryValue}`);
   };
 
   return (
@@ -77,15 +73,15 @@ export const Hero = () => {
           <div className="flex flex-wrap justify-center gap-8 text-sm text-ink-600 pt-8">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
-              <span>Über 5'000 geprüfte Betriebe</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
-              <span>Schweizweit verfügbar</span>
+              <span>Über 100 geprüfte Betriebe</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
               <span>Kostenlos für Auftraggeber</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
+              <span>Geprüfte Fachbetriebe</span>
             </div>
           </div>
         </div>

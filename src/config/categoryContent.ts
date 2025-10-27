@@ -1,4 +1,4 @@
-import { TreePine, Layers, Zap, Paintbrush, Truck, Grid3x3, Package, Sprout, Lightbulb, Palette, Box, Home } from 'lucide-react';
+import { TreePine, Layers, Zap, Paintbrush, Truck, Grid3x3, Package, Sprout, Lightbulb, Palette, Box, Home, ChefHat, Wrench } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface ServiceType {
@@ -216,5 +216,48 @@ export const categoryContent: Record<string, CategoryContent> = {
     ],
     metaTitle: 'Transport & Umzug',
     metaDescription: 'Professionelle Umzugsunternehmen für Privatumzüge, Möbeltransport und Räumungen. Kostenlose Offerten aus Ihrer Region.',
+  },
+  
+  kitchen: {
+    formCategory: 'kuechenbau',
+    title: 'Küchenbau – Ihre Traumküche professionell umgesetzt',
+    description: 'Von der Planung bis zur Montage: Erfahrene Küchenbauer realisieren Ihre Wunschküche. Ob moderne Einbauküche oder individuelle Massanfertigung – holen Sie kostenlos mehrere Offerten ein.',
+    services: [
+      {
+        icon: ChefHat,
+        title: 'Küchenplanung & -montage',
+        description: 'Professionelle Planung und fachgerechte Montage Ihrer neuen Küche. Von der ersten Skizze bis zur Installation aller Geräte – unsere Küchenbauer begleiten Sie durch den gesamten Prozess.',
+      },
+      {
+        icon: Box,
+        title: 'Massküchen & Einbauküchen',
+        description: 'Ob standardisierte Einbauküche oder massgeschneiderte Lösung – finden Sie den passenden Experten für Ihr Projekt. Hochwertige Materialien und präzise Verarbeitung garantiert.',
+      },
+      {
+        icon: Wrench,
+        title: 'Küchenrenovation',
+        description: 'Ihre Küche braucht eine Auffrischung? Von der Erneuerung der Fronten bis zur kompletten Umgestaltung – erfahrene Handwerker verleihen Ihrer Küche neues Leben.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Wie lange dauert eine Küchenmontage?',
+        answer: 'Eine durchschnittliche Küche ist in 2-4 Tagen komplett montiert und einsatzbereit. Der genaue Zeitrahmen hängt von der Grösse und Komplexität ab. Die Handwerker informieren Sie vorab über den Ablauf.',
+      },
+      {
+        question: 'Muss ich meine alte Küche selbst ausbauen?',
+        answer: 'Die meisten Küchenbauer bieten den Ausbau der alten Küche als Teil ihrer Leistung an. Das ist praktisch und stellt sicher, dass der Raum optimal für die neue Küche vorbereitet wird.',
+      },
+      {
+        question: 'Was kostet eine neue Küche?',
+        answer: 'Die Kosten variieren stark je nach Grösse, Ausstattung und Material. Eine Standardküche ist günstiger als eine Massanfertigung. Mit Büeze.ch erhalten Sie mehrere Offerten und können Preise transparent vergleichen.',
+      },
+      {
+        question: 'Sind die Geräte in der Offerte enthalten?',
+        answer: 'Das kommt auf den Anbieter an. Manche Küchenbauer liefern Komplettlösungen inklusive Geräte, andere nur die Möbel. Klären Sie dies direkt in der Offerte.',
+      },
+    ],
+    metaTitle: 'Küchenbau & Küchenmontage',
+    metaDescription: 'Professionelle Küchenbauer für Planung, Montage und Renovation. Kostenlose Offerten aus Ihrer Region.',
   },
 };

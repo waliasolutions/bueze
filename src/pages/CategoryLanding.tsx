@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { categoryContent } from '@/config/categoryContent';
 import { Header } from '@/components/Header';
@@ -13,6 +13,11 @@ import NotFound from './NotFound';
 const CategoryLanding = () => {
   const { categorySlug } = useParams<{ categorySlug: string }>();
   const navigate = useNavigate();
+  
+  // Scroll to top when category changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [categorySlug]);
   
   const content = categorySlug ? categoryContent[categorySlug] : null;
   
