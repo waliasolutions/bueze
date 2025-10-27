@@ -37,15 +37,30 @@ export const Hero = () => {
           </div>
 
           {/* Primary CTA */}
-          <div className="py-10">
-            <Button
-              onClick={() => navigate('/submit-lead')}
-              size="lg"
-              className="h-16 px-12 text-xl rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_40px_rgba(79,70,229,0.6)] ring-4 ring-brand-400/30 hover:ring-brand-500/40 transition-all duration-300"
-            >
-              Auftrag erstellen
-              <ArrowRight className="ml-3 w-6 h-6" />
-            </Button>
+          <div className="py-10 flex justify-center">
+            <div className="relative inline-block">
+              {/* Pulsating ring 1 */}
+              <div className="absolute -inset-2 rounded-full bg-brand-500/30 blur-md animate-pulse-ring" />
+              
+              {/* Pulsating ring 2 - delayed */}
+              <div className="absolute -inset-2 rounded-full bg-brand-500/20 blur-md animate-pulse-ring [animation-delay:1s]" />
+              
+              {/* Actual button with glow pulse */}
+              <Button
+                onClick={() => navigate('/submit-lead')}
+                size="lg"
+                className="relative h-16 px-12 text-xl rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold 
+                  shadow-[0_0_30px_rgba(79,70,229,0.4)] hover:shadow-[0_0_60px_rgba(79,70,229,0.8)] 
+                  ring-4 ring-brand-400/40 hover:ring-brand-500/60 
+                  transition-all duration-300 
+                  animate-glow-pulse hover:animate-none
+                  hover:scale-105 active:scale-95
+                  group"
+              >
+                <span className="relative z-10">Auftrag erstellen</span>
+                <ArrowRight className="relative z-10 ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
           </div>
 
           {/* Category Icons - Below Search */}
