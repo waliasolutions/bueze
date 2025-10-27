@@ -2,6 +2,7 @@ import React from 'react';
 import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
 import { HowItWorks } from '@/components/HowItWorks';
+import { FAQ } from '@/components/FAQ';
 import { Footer } from '@/components/Footer';
 
 const Index = () => {
@@ -12,6 +13,7 @@ const Index = () => {
       <main className="pt-16">
         <Hero />
         <HowItWorks />
+        <FAQ />
       </main>
       <Footer />
     </div>
