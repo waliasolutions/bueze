@@ -1,8 +1,8 @@
-# HandwerkerLeads.ch
+# Büeze.ch
 
 **Die führende Plattform für Handwerker-Vermittlung in der Schweiz**
 
-HandwerkerLeads.ch verbindet Auftraggeber mit geprüften Handwerkern in der ganzen Schweiz. Kostenlos für Auftraggeber, transparent für Handwerker.
+Büeze.ch verbindet Auftraggeber mit geprüften Handwerkern in der ganzen Schweiz. Kostenlos für Auftraggeber, transparent für Handwerker.
 
 ## 🛠️ Technologie-Stack
 
@@ -31,7 +31,7 @@ Dieses Projekt basiert auf modernen Web-Technologien:
 ```bash
 # Repository klonen
 git clone <YOUR_GIT_URL>
-cd handwerkerleads
+cd bueze
 
 # Dependencies installieren
 npm install
@@ -167,12 +167,12 @@ npm run test:e2e
 
 ## 📄 Lizenz
 
-Proprietäre Software - Alle Rechte vorbehalten bei HandwerkerLeads AG
+Proprietäre Software - Alle Rechte vorbehalten bei Büeze AG
 
 ## 📞 Support
 
 Bei Fragen oder Problemen:
-- **Email**: support@handwerkerleads.ch
+- **Email**: support@büeze.ch
 - **Dokumentation**: Siehe `/docs` (falls vorhanden)
 
 ---

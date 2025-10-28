@@ -1,6 +1,6 @@
-# HTML/CSS/JS Export - HandwerkerLeads.ch
+# HTML/CSS/JS Export - Büeze.ch
 
-This folder contains a static HTML/CSS/JS version of the entire HandwerkerLeads.ch application, designed for rebuilding in Laravel or other backend frameworks.
+This folder contains a static HTML/CSS/JS version of the entire Büeze.ch application, designed for rebuilding in Laravel or other backend frameworks.
 
 ## Structure
 
