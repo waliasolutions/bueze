@@ -48,13 +48,13 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     features: [
       'Unbegrenzte Lead-Ansichten',
       'Alle Kontaktdaten sichtbar',
-      'Leads inklusive',
+      'CHF 20 pro Lead',
       'Keine versteckten Kosten',
       'Monatlich kündbar',
     ],
     viewsLimit: -1,
     leadsIncluded: -1,
-    leadPrice: 0,
+    leadPrice: 20,
     popular: true,
   },
   '6_month': {
@@ -67,13 +67,13 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     features: [
       'Unbegrenzte Lead-Ansichten',
       'Alle Kontaktdaten sichtbar',
-      'Leads inklusive',
+      'CHF 20 pro Lead',
       'CHF 5/Monat gespart',
       '6 Monate Laufzeit',
     ],
     viewsLimit: -1,
     leadsIncluded: -1,
-    leadPrice: 0,
+    leadPrice: 20,
     savings: 'Spare CHF 30',
   },
   annual: {
@@ -86,13 +86,13 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     features: [
       'Unbegrenzte Lead-Ansichten',
       'Alle Kontaktdaten sichtbar',
-      'Leads inklusive',
+      'CHF 20 pro Lead',
       'CHF 10/Monat gespart',
       'Beste Preis-Leistung',
     ],
     viewsLimit: -1,
     leadsIncluded: -1,
-    leadPrice: 0,
+    leadPrice: 20,
     savings: 'Spare CHF 120',
   },
 };
