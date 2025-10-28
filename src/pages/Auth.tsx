@@ -126,9 +126,16 @@ export default function Auth() {
         toast({
           title: 'Registrierung erfolgreich!',
           description: signUpData.role === 'handwerker' 
-            ? 'Ihr Profil wird geprüft. Sie erhalten eine E-Mail, sobald Sie freigeschaltet sind.'
+            ? 'Bitte vervollständigen Sie Ihr Profil im nächsten Schritt.'
             : 'Bitte prüfen Sie Ihre E-Mail für den Bestätigungslink.',
         });
+        
+        // For handwerker, immediately redirect to onboarding
+        if (signUpData.role === 'handwerker') {
+          setTimeout(() => {
+            navigate('/handwerker-onboarding');
+          }, 1000);
+        }
       }
     } catch (error) {
       toast({

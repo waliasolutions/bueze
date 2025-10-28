@@ -130,7 +130,15 @@ const HandwerkerOnboarding = () => {
     setIsLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      if (!user) {
+        toast({
+          title: "Nicht angemeldet",
+          description: "Bitte melden Sie sich zuerst an.",
+          variant: "destructive",
+        });
+        navigate('/auth?role=handwerker');
+        return;
+      }
 
       // Get user's personal address from profile if using same address
       let businessAddress = formData.businessAddress;
