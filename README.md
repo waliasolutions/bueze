@@ -1,73 +1,180 @@
-# Welcome to your Lovable project
+# HandwerkerLeads.ch
 
-## Project info
+**Die führende Plattform für Handwerker-Vermittlung in der Schweiz**
 
-**URL**: https://lovable.dev/projects/c3925526-0718-45ee-98c5-5672613b617e
+HandwerkerLeads.ch verbindet Auftraggeber mit geprüften Handwerkern in der ganzen Schweiz. Kostenlos für Auftraggeber, transparent für Handwerker.
 
-## How can I edit this code?
+## 🛠️ Technologie-Stack
 
-There are several ways of editing your application.
+Dieses Projekt basiert auf modernen Web-Technologien:
 
-**Use Lovable**
+- **Frontend Framework**: React 18 mit TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS mit Custom Design System
+- **UI Components**: Radix UI & shadcn/ui
+- **Backend**: Supabase (Database, Auth, Storage, Edge Functions)
+- **Routing**: React Router DOM
+- **Form Handling**: React Hook Form mit Zod Validation
+- **State Management**: TanStack Query
+- **Internationalization**: Zeitzone CET/CEST (Schweiz)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c3925526-0718-45ee-98c5-5672613b617e) and start prompting.
+## 📋 Voraussetzungen
 
-Changes made via Lovable will be committed automatically to this repo.
+- Node.js (v18 oder höher)
+- npm oder bun als Package Manager
+- Ein Supabase-Projekt (für Backend-Funktionalität)
 
-**Use your preferred IDE**
+## 🚀 Lokale Entwicklung
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+```bash
+# Repository klonen
 git clone <YOUR_GIT_URL>
+cd handwerkerleads
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Dependencies installieren
+npm install
+# oder
+bun install
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Umgebungsvariablen konfigurieren
+# .env Datei erstellen und Supabase-Credentials hinzufügen
+cp .env.example .env
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Development Server starten
 npm run dev
+# oder
+bun run dev
 ```
 
-**Edit a file directly in GitHub**
+Der Development Server läuft standardmäßig auf `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Verfügbare Scripts
 
-**Use GitHub Codespaces**
+```bash
+npm run dev          # Development Server starten
+npm run build        # Production Build erstellen
+npm run preview      # Production Build lokal testen
+npm run lint         # Code Linting durchführen
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 📁 Projektstruktur
 
-## What technologies are used for this project?
+```
+handwerkerleads/
+├── src/
+│   ├── components/        # Wiederverwendbare UI-Komponenten
+│   │   ├── ui/           # shadcn/ui Basis-Komponenten
+│   │   └── ...           # Feature-spezifische Komponenten
+│   ├── pages/            # Route-Komponenten
+│   │   ├── admin/        # Admin-spezifische Seiten
+│   │   └── legal/        # Rechtliche Seiten (AGB, etc.)
+│   ├── config/           # Konfigurationsdateien
+│   ├── hooks/            # Custom React Hooks
+│   ├── lib/              # Utility-Funktionen & Helpers
+│   ├── integrations/     # Externe Service-Integrationen
+│   └── index.css         # Design System Tokens
+├── supabase/
+│   ├── functions/        # Edge Functions
+│   └── migrations/       # Datenbank-Migrationen
+├── public/               # Statische Assets
+└── html-export/          # Static HTML Export (für Laravel Migration)
+```
 
-This project is built with:
+## 🎨 Design System
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Das Design System basiert auf einem konsistenten Token-System definiert in `src/index.css` und `tailwind.config.ts`:
 
-## How can I deploy this project?
+- **Farben**: Semantische Farb-Tokens (primary, secondary, brand, pastel, neutral)
+- **Typografie**: Swiss-optimiertes Font-System
+- **Spacing**: Konsistentes Spacing-Schema
+- **Animationen**: Vordefinierte Animationen für UX
 
-Simply open [Lovable](https://lovable.dev/projects/c3925526-0718-45ee-98c5-5672613b617e) and click on Share -> Publish.
+### Design-Prinzipien
 
-## Can I connect a custom domain to my Lovable project?
+1. **Semantic Tokens**: Verwendung von CSS Custom Properties
+2. **Dark/Light Mode**: Vollständige Theme-Unterstützung
+3. **Responsive**: Mobile-First Ansatz
+4. **Accessibility**: WCAG 2.1 AA konform
 
-Yes, you can!
+## 🔐 Authentifizierung & Autorisierung
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- **User Types**: Clients (Auftraggeber) und Handwerker
+- **Auth Provider**: Supabase Auth
+- **Protected Routes**: Rollenbasierte Zugriffskontrolle
+- **RLS Policies**: Row Level Security in Supabase
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🗄️ Datenbank
+
+### Haupttabellen
+- `profiles`: Benutzerprofile
+- `leads`: Aufträge/Leads
+- `lead_purchases`: Handwerker Lead-Käufe
+- `conversations` & `messages`: Messaging-System
+- `subscriptions`: Abonnement-Verwaltung
+
+### Zeitzone
+Alle Timestamps verwenden die Schweizer Zeitzone (CET/CEST).
+
+## 📦 Deployment
+
+### Production Build
+
+```bash
+npm run build
+```
+
+Die Build-Artefakte befinden sich im `dist/` Verzeichnis.
+
+### Hosting-Optionen
+
+- **Empfohlen**: Vercel, Netlify, oder Cloudflare Pages
+- **Traditionell**: Eigener Server mit nginx/Apache
+- **Supabase Storage**: Kann als einfaches Static Hosting dienen
+
+### Umgebungsvariablen
+
+Folgende Environment Variables müssen gesetzt werden:
+
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+## 🧪 Testing
+
+```bash
+# Unit Tests (falls konfiguriert)
+npm run test
+
+# E2E Tests (falls konfiguriert)
+npm run test:e2e
+```
+
+## 📝 Weitere Dokumentation
+
+- **HTML Export**: Siehe `html-export/README.md` für Laravel-Migration
+- **Supabase Setup**: Siehe `supabase/README.md` (falls vorhanden)
+- **Component Library**: Siehe Storybook (falls konfiguriert)
+
+## 🤝 Beitragen
+
+1. Feature Branch erstellen (`git checkout -b feature/AmazingFeature`)
+2. Änderungen committen (`git commit -m 'Add some AmazingFeature'`)
+3. Branch pushen (`git push origin feature/AmazingFeature`)
+4. Pull Request erstellen
+
+## 📄 Lizenz
+
+Proprietäre Software - Alle Rechte vorbehalten bei HandwerkerLeads AG
+
+## 📞 Support
+
+Bei Fragen oder Problemen:
+- **Email**: support@handwerkerleads.ch
+- **Dokumentation**: Siehe `/docs` (falls vorhanden)
+
+---
+
+**Entwickelt mit ❤️ in der Schweiz**
