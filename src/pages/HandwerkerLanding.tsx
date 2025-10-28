@@ -89,7 +89,7 @@ const HandwerkerLanding = () => {
               Erreichen Sie neue Kunden in Ihrer Region – einfach, transparent und fair.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button size="lg" onClick={() => navigate('/auth')} className="gap-2">
+              <Button size="lg" onClick={() => navigate('/auth?role=handwerker')} className="gap-2">
                 Jetzt kostenlos registrieren
                 <ArrowRight className="h-5 w-5" />
               </Button>
@@ -235,7 +235,7 @@ const HandwerkerLanding = () => {
             <p className="text-xl text-ink-700 mb-8">
               Registrieren Sie sich jetzt kostenlos und werden Sie Teil unserer Handwerker-Community.
             </p>
-            <Button size="lg" onClick={() => navigate('/auth')} className="gap-2 bg-white text-brand-600 hover:bg-white/90">
+            <Button size="lg" onClick={() => navigate('/auth?role=handwerker')} className="gap-2 bg-white text-brand-600 hover:bg-white/90">
               Jetzt kostenlos registrieren
               <ArrowRight className="h-5 w-5" />
             </Button>

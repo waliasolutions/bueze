@@ -37,10 +37,24 @@ export default function Auth() {
     zip: ''
   });
 
+  const [hideRoleSelector, setHideRoleSelector] = useState(false);
+
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const roleParam = params.get('role');
+    
+    if (roleParam === 'handwerker') {
+      setSignUpData(prev => ({ ...prev, role: 'handwerker' }));
+      setHideRoleSelector(true);
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        navigate('/dashboard');
+        if (roleParam === 'handwerker') {
+          navigate('/handwerker-onboarding');
+        } else {
+          navigate('/dashboard');
+        }
       }
     });
 
@@ -248,18 +262,20 @@ export default function Auth() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Ich bin...</Label>
-                    <Select value={signUpData.role} onValueChange={(value: 'homeowner' | 'handwerker') => setSignUpData({ ...signUpData, role: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="homeowner">Auftraggeber (brauche Handwerker)</SelectItem>
-                        <SelectItem value="handwerker">Handwerker (biete Dienstleistungen)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {!hideRoleSelector && (
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Ich bin...</Label>
+                      <Select value={signUpData.role} onValueChange={(value: 'homeowner' | 'handwerker') => setSignUpData({ ...signUpData, role: value })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="homeowner">Auftraggeber (brauche Handwerker)</SelectItem>
+                          <SelectItem value="handwerker">Handwerker (biete Dienstleistungen)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefon (optional)</Label>
