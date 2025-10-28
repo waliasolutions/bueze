@@ -156,7 +156,7 @@ const HandwerkerOnboarding = () => {
       // Insert or update handwerker_profile
       const { error } = await supabase
         .from("handwerker_profiles")
-        .upsert({
+        .upsert([{
           user_id: user.id,
           company_name: formData.companyName || null,
           company_legal_form: formData.companyLegalForm || null,
@@ -173,12 +173,12 @@ const HandwerkerOnboarding = () => {
           trade_license_number: formData.tradeLicenseNumber || null,
           insurance_valid_until: formData.insuranceValidUntil,
           bio: formData.bio || null,
-          categories: formData.categories.length > 0 ? formData.categories : [],
+          categories: formData.categories as any[],
           service_areas: formData.serviceAreas.length > 0 ? formData.serviceAreas : [],
           hourly_rate_min: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
           hourly_rate_max: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
           is_verified: false, // Will be verified by admin
-        });
+        }]);
 
       if (error) throw error;
 
