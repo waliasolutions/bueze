@@ -140,6 +140,18 @@ const HandwerkerOnboarding = () => {
         return;
       }
 
+      // Verify user is actually a handwerker
+      const userRole = user.user_metadata?.role;
+      if (userRole !== 'handwerker') {
+        toast({
+          title: "Zugriff verweigert",
+          description: "Diese Seite ist nur für Handwerker verfügbar.",
+          variant: "destructive",
+        });
+        navigate('/dashboard');
+        return;
+      }
+
       // Get user's personal address from profile if using same address
       let businessAddress = formData.businessAddress;
       let businessZip = formData.businessZip;

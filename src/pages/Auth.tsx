@@ -49,8 +49,11 @@ export default function Auth() {
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        if (roleParam === 'handwerker') {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Check role from user metadata (single source of truth)
+        const userRole = session.user.user_metadata?.role;
+        
+        if (userRole === 'handwerker') {
           navigate('/handwerker-onboarding');
         } else {
           navigate('/dashboard');
@@ -129,13 +132,6 @@ export default function Auth() {
             ? 'Bitte vervollständigen Sie Ihr Profil im nächsten Schritt.'
             : 'Bitte prüfen Sie Ihre E-Mail für den Bestätigungslink.',
         });
-        
-        // For handwerker, immediately redirect to onboarding
-        if (signUpData.role === 'handwerker') {
-          setTimeout(() => {
-            navigate('/handwerker-onboarding');
-          }, 1000);
-        }
       }
     } catch (error) {
       toast({
