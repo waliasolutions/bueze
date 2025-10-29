@@ -794,8 +794,8 @@ const HandwerkerLanding = () => {
 
             {/* Form Card */}
             <div className="max-w-3xl mx-auto">
-              <Card className="border-2 border-brand-200 shadow-2xl">
-                <CardHeader className="bg-gradient-to-r from-brand-50 to-pastel-blue-50 border-b-2 border-brand-100">
+              <Card className="border-2 border-brand-200 shadow-2xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-brand-50 to-pastel-blue-50 border-b-2 border-brand-200">
                   <CardTitle className="text-2xl">Als Handwerker registrieren</CardTitle>
                   <CardDescription className="text-base">
                     Schritt {currentStep} von {totalSteps}
@@ -806,7 +806,7 @@ const HandwerkerLanding = () => {
                 <CardContent className="pt-8 pb-8">
                   {renderStepContent()}
 
-                  <div className="flex justify-between mt-8 pt-6 border-t-2 border-border">
+                  <div className="flex justify-between mt-8 pt-6 border-t-2 border-brand-200">
                     <Button
                       variant="outline"
                       size="lg"
