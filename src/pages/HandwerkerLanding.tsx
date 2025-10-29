@@ -561,7 +561,7 @@ const HandwerkerLanding = () => {
     {
       icon: Coins,
       title: 'Transparente Kosten',
-      description: 'Zahlen Sie nur für die Leads, die Sie wirklich interessieren. Keine versteckten Gebühren, keine Überraschungen.'
+      description: 'Durchsuchen Sie unbegrenzt Anfragen mit einem Abo und kaufen Sie nur die Leads, die Sie wirklich interessieren. CHF 25 pro Lead – transparent und fair.'
     },
     {
       icon: LayoutDashboard,
@@ -600,7 +600,7 @@ const HandwerkerLanding = () => {
     },
     {
       question: 'Wie funktioniert die Preisgestaltung für Handwerker?',
-      answer: 'Die Registrierung ist kostenlos. Nach Ihrer Freischaltung können Sie erste Projektanfragen einsehen, inklusive Angaben zu Ort, Postleitzahl, Anliegen und Budget. Wenn Sie künftig mehr passende Leads erhalten und direkt mit Auftraggebern in Kontakt treten möchten, können Sie ein Abo abschliessen. Alle Details und Preise sind transparent im Login-Bereich sichtbar – erst nach der Freischaltung.'
+      answer: 'Die Registrierung ist komplett kostenlos. Im kostenlosen Plan können Sie monatlich 2 Anfragen anschauen – Sie sehen dabei Ort, PLZ, Kategorie und Budget, jedoch keine Kontaktdaten. Mit einem Abo (ab CHF 80/Monat) erhalten Sie unbegrenzten Zugriff auf alle Anfragen und können alle verfügbaren Projekte durchsuchen. Um die vollständigen Kontaktdaten eines Auftraggebers zu erhalten, kaufen Sie den Lead für CHF 25. So zahlen Sie nur für die Anfragen, die Sie wirklich interessieren.'
     },
     {
       question: 'Welche Informationen sehen Auftraggeber von mir?',
@@ -767,27 +767,9 @@ const HandwerkerLanding = () => {
         </div>
       </section>
 
-      {/* Final CTA Section */}
-      <section className="py-20 bg-gradient-to-b from-pastel-blue-50 to-brand-600">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-6">
-              Bereit, neue Aufträge zu erhalten?
-            </h2>
-            <p className="text-xl text-ink-700 mb-8">
-              Registrieren Sie sich jetzt kostenlos und werden Sie Teil unserer Handwerker-Community.
-            </p>
-            <Button size="lg" onClick={scrollToForm} className="gap-2 bg-white text-brand-600 hover:bg-white/90">
-              Jetzt kostenlos registrieren
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </section>
-
       {/* Registration Form Section */}
       {showForm && (
-        <section ref={formRef} className="py-20 bg-background">
+        <section ref={formRef} className="py-20 bg-pastel-blue-50">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto">
               <Card>
@@ -827,6 +809,24 @@ const HandwerkerLanding = () => {
           </div>
         </section>
       )}
+
+      {/* Final CTA Section */}
+      <section className="py-20 bg-gradient-to-b from-pastel-blue-50 to-brand-600">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-6">
+              Bereit, neue Aufträge zu erhalten?
+            </h2>
+            <p className="text-xl text-ink-700 mb-8">
+              Registrieren Sie sich jetzt kostenlos und werden Sie Teil unserer Handwerker-Community.
+            </p>
+            <Button size="lg" onClick={scrollToForm} className="gap-2 bg-white text-brand-600 hover:bg-white/90">
+              Jetzt kostenlos registrieren
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </div>

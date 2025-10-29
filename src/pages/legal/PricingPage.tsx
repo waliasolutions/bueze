@@ -22,9 +22,29 @@ const PricingPage = () => {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-ink-900 mb-4">Preise für Handwerker</h1>
             <p className="text-xl text-ink-700">
-              Transparente Preise – zahlen Sie nur für das, was Sie wirklich nutzen
+              Wählen Sie Ihr Abo und zahlen Sie nur für die Leads, die Sie kaufen
             </p>
           </div>
+
+          <Card className="mb-8 bg-pastel-blue-50 border-brand-600">
+            <CardContent className="pt-6">
+              <h3 className="text-xl font-bold text-ink-900 mb-4">So funktioniert unser Preismodell</h3>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold text-brand-600 mb-2">1. Abo wählen</h4>
+                  <p className="text-ink-700">
+                    Entscheiden Sie, wie viele Anfragen Sie durchsuchen möchten. Mit dem kostenlosen Plan sehen Sie 2 Anfragen pro Monat. Mit einem Abo haben Sie unbegrenzten Zugriff auf alle verfügbaren Projekte.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-brand-600 mb-2">2. Leads kaufen</h4>
+                  <p className="text-ink-700">
+                    Interessiert Sie eine Anfrage? Kaufen Sie den Lead für CHF 25 und erhalten Sie sofort die vollständigen Kontaktdaten des Auftraggebers. So zahlen Sie nur für echte Geschäftsmöglichkeiten.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {plans.map((plan) => (
@@ -82,17 +102,21 @@ const PricingPage = () => {
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Was bedeutet "Lead-Ansichten"?</h3>
                 <p className="text-ink-700">
-                  Lead-Ansichten sind die Anzahl der Kundenanfragen, die Sie im Detail ansehen können. 
-                  Im kostenlosen Plan sehen Sie Basis-Informationen (Ort, PLZ, Kategorie, Budget). 
-                  Mit einem Abo erhalten Sie Zugang zu vollständigen Kontaktdaten.
+                  Lead-Ansichten sind die Anzahl der Kundenanfragen, die Sie durchsuchen können. Im kostenlosen Plan können Sie 2 Anfragen pro Monat anschauen und sehen dabei Ort, PLZ, Kategorie und Budget – jedoch keine Kontaktdaten. Mit einem Abo haben Sie unbegrenzten Zugriff auf alle verfügbaren Anfragen und können diese ohne Limit durchsuchen.
                 </p>
               </div>
 
               <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Was passiert, wenn ich mein Limit erreiche?</h3>
+                <h3 className="font-semibold text-ink-900 mb-2">Wie erhalte ich die Kontaktdaten?</h3>
                 <p className="text-ink-700">
-                  Sie können jederzeit zusätzliche Leads einzeln kaufen oder auf ein höheres Abo upgraden. 
-                  Die Preise für zusätzliche Leads sind im jeweiligen Plan aufgeführt.
+                  Um die vollständigen Kontaktdaten eines Auftraggebers zu erhalten, kaufen Sie den Lead für CHF 25. Dies gilt für alle Pläne – auch mit einem Abo zahlen Sie CHF 25 pro Lead, den Sie tatsächlich kontaktieren möchten. So haben Sie volle Kontrolle über Ihre Kosten und zahlen nur für die Anfragen, die Sie wirklich interessieren.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-ink-900 mb-2">Was ist der Unterschied zwischen Ansehen und Kaufen?</h3>
+                <p className="text-ink-700">
+                  <strong>Ansehen:</strong> Sie sehen die Projektbeschreibung, den Ort, die PLZ, die Kategorie und das Budget. <strong>Kaufen:</strong> Nach dem Kauf für CHF 25 erhalten Sie die vollständigen Kontaktdaten (Name, Telefonnummer, E-Mail) und können den Auftraggeber direkt kontaktieren.
                 </p>
               </div>
 
@@ -106,16 +130,14 @@ const PricingPage = () => {
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Gibt es versteckte Kosten?</h3>
                 <p className="text-ink-700">
-                  Nein. Alle Preise sind transparent und werden Ihnen vor jedem Kauf klar angezeigt. 
-                  Sie zahlen nur für das, was Sie auswählen.
+                  Nein. Alle Preise sind transparent und werden Ihnen vor jedem Kauf klar angezeigt. Sie zahlen nur für das, was Sie auswählen.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Wie funktioniert die Zahlung?</h3>
                 <p className="text-ink-700">
-                  Zahlungen erfolgen sicher per Kreditkarte. Ihr Abo wird automatisch verlängert, 
-                  Sie können aber jederzeit kündigen.
+                  Zahlungen erfolgen sicher per Kreditkarte. Ihr Abo wird automatisch verlängert, Sie können aber jederzeit kündigen.
                 </p>
               </div>
             </CardContent>

@@ -54,7 +54,7 @@ const faqData = [
     },
     {
       q: 'Wie funktioniert die Preisgestaltung für Handwerker?',
-      a: 'Die Registrierung ist kostenlos. Nach Ihrer Freischaltung können Sie erste Projektanfragen einsehen, inklusive Angaben zu Ort, Postleitzahl, Anliegen und Budget. Wenn Sie künftig mehr passende Leads erhalten und direkt mit Auftraggebern in Kontakt treten möchten, können Sie ein Abo abschliessen. Alle Details und Preise sind transparent im Login-Bereich sichtbar – erst nach der Freischaltung.'
+      a: 'Die Registrierung ist komplett kostenlos. Im kostenlosen Plan können Sie monatlich 2 Anfragen anschauen – Sie sehen dabei Ort, PLZ, Kategorie und Budget, jedoch keine Kontaktdaten. Mit einem Abo (ab CHF 80/Monat) erhalten Sie unbegrenzten Zugriff auf alle Anfragen und können alle verfügbaren Projekte durchsuchen. Um die vollständigen Kontaktdaten eines Auftraggebers zu erhalten, kaufen Sie den Lead für CHF 25. So zahlen Sie nur für die Anfragen, die Sie wirklich interessieren.'
     },
     {
       q: 'Welche Informationen sehen Auftraggeber von mir?',
