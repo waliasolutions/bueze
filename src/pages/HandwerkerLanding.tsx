@@ -630,13 +630,18 @@ const HandwerkerLanding = () => {
             <p className="text-xl md:text-2xl text-ink-700 mb-8">
               Erreichen Sie neue Kunden in Ihrer Region – einfach, transparent und fair.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button size="lg" onClick={scrollToForm} className="gap-2">
-                Jetzt kostenlos registrieren
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-              <Button size="lg" variant="outline" onClick={() => navigate('/auth')}>
-                Anmelden
+            <div className="py-10 flex justify-center mb-12">
+              <Button
+                onClick={scrollToForm}
+                size="lg"
+                className="relative h-16 px-12 text-xl rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold 
+                  shadow-lg hover:shadow-xl 
+                  transition-all duration-300 
+                  hover:scale-105 active:scale-95
+                  group"
+              >
+                <span className="relative z-10">Jetzt kostenlos registrieren</span>
+                <ArrowRight className="relative z-10 ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
             
