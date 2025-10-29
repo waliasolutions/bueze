@@ -741,10 +741,7 @@ const HandwerkerLanding = () => {
 
       {/* Registration Form Section */}
       {showForm && (
-        <section ref={formRef} className="py-24 bg-gradient-to-br from-brand-50 via-pastel-blue-50 to-brand-100 relative">
-          {/* Decorative Background */}
-          <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-          
+        <section ref={formRef} className="py-24 bg-background relative">
           <div className="container mx-auto px-4 relative z-10">
             {/* Section Header */}
             <div className="text-center mb-12">
