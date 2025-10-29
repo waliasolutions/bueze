@@ -774,36 +774,55 @@ const HandwerkerLanding = () => {
 
       {/* Registration Form Section */}
       {showForm && (
-        <section ref={formRef} className="py-20 bg-pastel-blue-50">
-          <div className="container mx-auto px-4">
-            <div className="max-w-2xl mx-auto">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Als Handwerker registrieren</CardTitle>
-                  <CardDescription>
+        <section ref={formRef} className="py-24 bg-gradient-to-br from-brand-50 via-pastel-blue-50 to-brand-100 relative">
+          {/* Decorative Background */}
+          <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+          
+          <div className="container mx-auto px-4 relative z-10">
+            {/* Section Header */}
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-600 mb-6">
+                <UserPlus className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
+                Jetzt registrieren
+              </h2>
+              <p className="text-lg text-ink-700 max-w-2xl mx-auto">
+                Füllen Sie das Formular aus, um Zugang zu qualifizierten Kundenanfragen zu erhalten
+              </p>
+            </div>
+
+            {/* Form Card */}
+            <div className="max-w-3xl mx-auto">
+              <Card className="border-2 border-brand-200 shadow-2xl">
+                <CardHeader className="bg-gradient-to-r from-brand-50 to-pastel-blue-50 border-b-2 border-brand-100">
+                  <CardTitle className="text-2xl">Als Handwerker registrieren</CardTitle>
+                  <CardDescription className="text-base">
                     Schritt {currentStep} von {totalSteps}
                   </CardDescription>
-                  <Progress value={progress} className="mt-2" />
+                  <Progress value={progress} className="mt-4 h-3" />
                 </CardHeader>
 
-                <CardContent>
+                <CardContent className="pt-8 pb-8">
                   {renderStepContent()}
 
-                  <div className="flex justify-between mt-8 pt-6 border-t">
+                  <div className="flex justify-between mt-8 pt-6 border-t-2 border-border">
                     <Button
                       variant="outline"
+                      size="lg"
                       onClick={handleBack}
                       disabled={currentStep === 1 || isLoading}
+                      className="min-w-[120px]"
                     >
                       Zurück
                     </Button>
 
                     {currentStep < totalSteps ? (
-                      <Button onClick={handleNext} disabled={isLoading}>
+                      <Button size="lg" onClick={handleNext} disabled={isLoading} className="min-w-[120px]">
                         Weiter
                       </Button>
                     ) : (
-                      <Button onClick={handleSubmit} disabled={isLoading}>
+                      <Button size="lg" onClick={handleSubmit} disabled={isLoading} className="min-w-[160px]">
                         {isLoading ? "Wird gespeichert..." : "Profil einreichen"}
                       </Button>
                     )}
