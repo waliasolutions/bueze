@@ -834,24 +834,6 @@ const HandwerkerLanding = () => {
         </section>
       )}
 
-      {/* Final CTA Section */}
-      <section className="py-20 bg-gradient-to-b from-pastel-blue-50 to-brand-600">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-6">
-              Bereit, neue Aufträge zu erhalten?
-            </h2>
-            <p className="text-xl text-ink-700 mb-8">
-              Registrieren Sie sich jetzt kostenlos und werden Sie Teil unserer Handwerker-Community.
-            </p>
-            <Button size="lg" onClick={scrollToForm} className="gap-2 bg-white text-brand-600 hover:bg-white/90">
-              Jetzt kostenlos registrieren
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </section>
-
       <Footer />
     </div>
   );
