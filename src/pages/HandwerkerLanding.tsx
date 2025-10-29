@@ -779,7 +779,7 @@ const HandwerkerLanding = () => {
             <div className="max-w-2xl mx-auto">
               <Card>
                 <CardHeader>
-                  <CardTitle>Handwerkerprofil vervollständigen</CardTitle>
+                  <CardTitle>Als Handwerker registrieren</CardTitle>
                   <CardDescription>
                     Schritt {currentStep} von {totalSteps}
                   </CardDescription>
