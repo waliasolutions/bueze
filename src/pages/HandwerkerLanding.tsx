@@ -27,6 +27,12 @@ const HandwerkerLanding = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
+    fullName: "",
+    personalAddress: "",
+    personalZip: "",
+    personalCity: "",
+    personalCanton: "",
+    phone: "",
     companyName: "",
     companyLegalForm: "einzelfirma",
     uidNumber: "",
@@ -51,7 +57,7 @@ const HandwerkerLanding = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = (currentStep / totalSteps) * 100;
 
   const scrollToForm = () => {
@@ -65,6 +71,25 @@ const HandwerkerLanding = () => {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
+      if (!formData.fullName.trim()) {
+        newErrors.fullName = "Vollständiger Name ist erforderlich";
+      }
+      if (!formData.personalAddress.trim()) {
+        newErrors.personalAddress = "Persönliche Adresse ist erforderlich";
+      }
+      if (!formData.personalZip) {
+        newErrors.personalZip = "PLZ ist erforderlich";
+      }
+      if (!formData.personalCity.trim()) {
+        newErrors.personalCity = "Ort ist erforderlich";
+      }
+      if (!formData.personalCanton) {
+        newErrors.personalCanton = "Kanton ist erforderlich";
+      }
+      if (!formData.phone.trim()) {
+        newErrors.phone = "Telefonnummer ist erforderlich";
+      }
+    } else if (step === 2) {
       if (!formData.companyName.trim()) {
         newErrors.companyName = "Firmenname ist erforderlich";
       }
@@ -76,7 +101,7 @@ const HandwerkerLanding = () => {
       if (formData.mwstNumber && !validateMWST(formData.mwstNumber)) {
         newErrors.mwstNumber = "Ungültiges Format. Beispiel: CHE-123.456.789 MWST";
       }
-    } else if (step === 2) {
+    } else if (step === 3) {
       if (!formData.sameAsPersonal) {
         if (!formData.businessAddress.trim()) {
           newErrors.businessAddress = "Geschäftsadresse ist erforderlich";
@@ -100,7 +125,7 @@ const HandwerkerLanding = () => {
       if (!formData.bankName.trim()) {
         newErrors.bankName = "Bankname ist erforderlich";
       }
-    } else if (step === 3) {
+    } else if (step === 4) {
       if (!formData.liabilityInsuranceProvider.trim()) {
         newErrors.liabilityInsuranceProvider = "Versicherungsanbieter ist erforderlich";
       }
@@ -150,24 +175,31 @@ const HandwerkerLanding = () => {
         return;
       }
 
+      // Update profile with personal information
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({
+          full_name: formData.fullName,
+          address: formData.personalAddress,
+          zip: formData.personalZip,
+          city: formData.personalCity,
+          canton: formData.personalCanton as any,
+          phone: formData.phone,
+        })
+        .eq("id", user.id);
+
+      if (profileError) throw profileError;
+
       let businessAddress = formData.businessAddress;
       let businessZip = formData.businessZip;
       let businessCity = formData.businessCity;
       let businessCanton = formData.businessCanton;
 
       if (formData.sameAsPersonal) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("address, zip, city, canton")
-          .eq("id", user.id)
-          .single();
-
-        if (profile) {
-          businessAddress = profile.address || "";
-          businessZip = profile.zip || "";
-          businessCity = profile.city || "";
-          businessCanton = profile.canton || "";
-        }
+        businessAddress = formData.personalAddress;
+        businessZip = formData.personalZip;
+        businessCity = formData.personalCity;
+        businessCanton = formData.personalCanton;
       }
 
       const { error } = await supabase
@@ -219,6 +251,107 @@ const HandwerkerLanding = () => {
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <UserPlus className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Persönliche Informationen</h3>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Vollständiger Name *</Label>
+              <Input
+                id="fullName"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                placeholder="Max Muster"
+              />
+              {errors.fullName && (
+                <p className="text-sm text-destructive">{errors.fullName}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="personalAddress">Persönliche Adresse *</Label>
+              <Input
+                id="personalAddress"
+                value={formData.personalAddress}
+                onChange={(e) => setFormData({ ...formData, personalAddress: e.target.value })}
+                placeholder="Strasse & Hausnummer"
+              />
+              {errors.personalAddress && (
+                <p className="text-sm text-destructive">{errors.personalAddress}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="personalZip">PLZ *</Label>
+                <Input
+                  id="personalZip"
+                  value={formData.personalZip}
+                  onChange={(e) => setFormData({ ...formData, personalZip: e.target.value })}
+                  placeholder="8000"
+                  maxLength={4}
+                />
+                {errors.personalZip && (
+                  <p className="text-sm text-destructive">{errors.personalZip}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="personalCity">Ort *</Label>
+                <Input
+                  id="personalCity"
+                  value={formData.personalCity}
+                  onChange={(e) => setFormData({ ...formData, personalCity: e.target.value })}
+                  placeholder="Zürich"
+                />
+                {errors.personalCity && (
+                  <p className="text-sm text-destructive">{errors.personalCity}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="personalCanton">Kanton *</Label>
+              <Select
+                value={formData.personalCanton}
+                onValueChange={(value) => setFormData({ ...formData, personalCanton: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Kanton wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SWISS_CANTONS.map((canton) => (
+                    <SelectItem key={canton.value} value={canton.value}>
+                      {canton.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.personalCanton && (
+                <p className="text-sm text-destructive">{errors.personalCanton}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefonnummer *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+41 79 123 45 67"
+              />
+              {errors.phone && (
+                <p className="text-sm text-destructive">{errors.phone}</p>
+              )}
+            </div>
+          </div>
+        );
+
+      case 2:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -296,7 +429,7 @@ const HandwerkerLanding = () => {
           </div>
         );
 
-      case 2:
+      case 3:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -419,7 +552,7 @@ const HandwerkerLanding = () => {
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
@@ -487,7 +620,7 @@ const HandwerkerLanding = () => {
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
