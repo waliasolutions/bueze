@@ -739,39 +739,6 @@ const HandwerkerLanding = () => {
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-20 bg-background">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
-              Häufig gestellte Fragen
-            </h2>
-            <p className="text-xl text-ink-700">
-              Alles, was Sie wissen müssen
-            </p>
-          </div>
-          
-          <div className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="space-y-4">
-              {faqItems.map((item, index) => (
-                <AccordionItem
-                  key={index}
-                  value={`item-${index}`}
-                  className="bg-white rounded-lg shadow-sm border border-border px-6"
-                >
-                  <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
-                    {item.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-ink-700 leading-relaxed pb-5">
-                    {item.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
-        </div>
-      </section>
-
       {/* Registration Form Section */}
       {showForm && (
         <section ref={formRef} className="py-24 bg-gradient-to-br from-brand-50 via-pastel-blue-50 to-brand-100 relative">
@@ -833,6 +800,39 @@ const HandwerkerLanding = () => {
           </div>
         </section>
       )}
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
+              Häufig gestellte Fragen
+            </h2>
+            <p className="text-xl text-ink-700">
+              Alles, was Sie wissen müssen
+            </p>
+          </div>
+          
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="space-y-4">
+              {faqItems.map((item, index) => (
+                <AccordionItem
+                  key={index}
+                  value={`item-${index}`}
+                  className="bg-white rounded-lg shadow-sm border border-border px-6"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-ink-700 leading-relaxed pb-5">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </div>
