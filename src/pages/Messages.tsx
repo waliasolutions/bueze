@@ -70,11 +70,12 @@ const Messages = () => {
   }, [messages]);
 
   const fetchUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    if (!user) {
-      navigate('/auth');
-    }
+    // DEMO MODE: Mock user for pitch presentation
+    const mockUser = { id: 'demo-user-123', email: 'demo@bueze.ch' };
+    setUser(mockUser);
+    // if (!user) {
+    //   navigate('/auth');
+    // }
   };
 
   const fetchConversation = async () => {

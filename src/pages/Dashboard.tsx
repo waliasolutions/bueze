@@ -113,31 +113,32 @@ const Dashboard = () => {
 
   const fetchUserData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      // DEMO MODE: Mock user for pitch presentation
+      const mockUser = { id: 'demo-user-123', email: 'demo@bueze.ch' };
       
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
+      // if (!user) {
+      //   navigate('/auth');
+      //   return;
+      // }
 
-      setUser(user);
+      setUser(mockUser);
 
       // Fetch user profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', mockUser.id)
         .single();
 
-      setProfile(profileData);
+      setProfile(profileData || { id: mockUser.id, full_name: 'Demo User', email: mockUser.email, role: 'user' });
 
-      // Fetch user's leads (exclude deleted)
+      // Fetch user's leads (exclude deleted) - show all for demo
       const { data: leadsData } = await supabase
         .from('leads')
         .select('*')
-        .eq('owner_id', user.id)
         .neq('status', 'deleted')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(10);
 
       setMyLeads(leadsData || []);
 
@@ -145,24 +146,32 @@ const Dashboard = () => {
       const { data: handwerkerProfileData } = await supabase
         .from('handwerker_profiles')
         .select('id, is_verified')
-        .eq('user_id', user.id)
+        .eq('user_id', mockUser.id)
         .maybeSingle();
 
       if (handwerkerProfileData) {
         setHandwerkerProfile(handwerkerProfileData);
-        const access = await checkSubscriptionAccess(user.id);
-        setSubscriptionAccess(access);
+        // Mock subscription access for demo
+        setSubscriptionAccess({ 
+          canViewLead: true, 
+          canPurchaseLead: true, 
+          isUnlimited: true, 
+          remainingViews: 999, 
+          requiresUpgrade: false, 
+          leadPrice: 20,
+          planType: 'annual' 
+        });
       }
 
-      // Fetch user's purchases
+      // Fetch user's purchases - show all for demo
       const { data: purchasesData } = await supabase
         .from('lead_purchases')
         .select(`
           *,
           lead:leads(*)
         `)
-        .eq('buyer_id', user.id)
-        .order('purchased_at', { ascending: false });
+        .order('purchased_at', { ascending: false })
+        .limit(10);
 
       setPurchases(purchasesData || []);
       logWithCorrelation('Dashboard: User data loaded', { leadsCount: leadsData?.length, purchasesCount: purchasesData?.length });

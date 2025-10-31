@@ -107,11 +107,16 @@ const BrowseLeads = () => {
 
   const checkUserSubscription = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const access = await checkSubscriptionAccess(user.id);
-        setSubscriptionAccess(access);
-      }
+      // DEMO MODE: Mock subscription access for pitch
+      setSubscriptionAccess({ 
+        canViewLead: true, 
+        canPurchaseLead: true, 
+        isUnlimited: true, 
+        remainingViews: 999, 
+        requiresUpgrade: false, 
+        leadPrice: 20,
+        planType: 'annual' 
+      });
     } catch (error) {
       console.error('Error checking subscription:', error);
     }
@@ -124,22 +129,22 @@ const BrowseLeads = () => {
         pageSize 
       });
       
-      const { data: { user } } = await supabase.auth.getUser();
+      // DEMO MODE: Mock user for pitch presentation
+      const mockUser = { id: 'demo-user-123', email: 'demo@bueze.ch' };
       
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
+      // if (!user) {
+      //   navigate('/auth');
+      //   return;
+      // }
 
       // Calculate pagination range
       const { from, to } = calculatePagination({ page: currentPage, pageSize });
 
-      // Fetch with retry and timeout
+      // Fetch with retry and timeout - show all for demo
       const { data: leadsData, error } = await supabase
         .from('leads')
         .select('*', { count: 'exact' })
         .eq('status', 'active')
-        .neq('owner_id', user.id)
         .order('created_at', { ascending: false })
         .range(from, to);
 
