@@ -41,7 +41,7 @@ export const Footer = () => {
             </div>
             
             <p className="text-ink-300 leading-relaxed">
-              Die führende Plattform für Handwerker-Vermittlung in der Schweiz. 
+              Die Plattform für Handwerker-Vermittlung in der Schweiz. 
               Verbinden Sie sich mit geprüften Profis für Ihr nächstes Projekt.
             </p>
 
