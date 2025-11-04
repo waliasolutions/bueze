@@ -48,15 +48,11 @@ export const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Mail className="h-4 w-4" />
-                <span>info@büeze.ch</span>
-              </div>
-              <div className="flex items-center gap-3 text-sm text-ink-300">
-                <Phone className="h-4 w-4" />
-                <span>+41 44 123 45 67</span>
+                <span>info@bueeze.ch</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <MapPin className="h-4 w-4" />
-                <span>Zürich, Schweiz</span>
+                <span>Gotthardstrasse 37, 6410 Goldau</span>
               </div>
             </div>
           </div>
@@ -122,7 +118,7 @@ export const Footer = () => {
           {/* Copyright */}
           <div className="text-center mt-8 pt-6 border-t border-ink-700">
             <p className="text-sm text-ink-300">
-              © 2025 Büeze AG. Alle Rechte vorbehalten.
+              © 2025 Büeze GmbH. Alle Rechte vorbehalten.
             </p>
           </div>
         </div>
