@@ -56,12 +56,18 @@ const PricingPage = () => {
                   {plan.id === 'monthly' && (
                     <Badge className="w-fit mb-2">Beliebt</Badge>
                   )}
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <CardTitle className="text-2xl">{plan.displayName}</CardTitle>
                   <CardDescription>
                     <span className="text-3xl font-bold text-ink-900">
                       {plan.price === 0 ? 'Gratis' : `CHF ${plan.price}`}
                     </span>
-                    {plan.price > 0 && <span className="text-muted-foreground">/Monat</span>}
+                    {plan.price > 0 && (
+                      <span className="text-muted-foreground">
+                        {plan.billingCycle === 'monthly' && '/Monat'}
+                        {plan.billingCycle === '6_month' && ' für 6 Monate'}
+                        {plan.billingCycle === 'annual' && ' für 12 Monate'}
+                      </span>
+                    )}
                   </CardDescription>
                   {plan.id === '6_month' && (
                     <p className="text-sm text-brand-600 font-medium">Sparen Sie 10%</p>
