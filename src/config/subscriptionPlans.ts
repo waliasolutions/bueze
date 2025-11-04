@@ -31,8 +31,7 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     features: [
       '5 Lead-Ansichten pro Monat',
       'Ort, PLZ, Kategorie & Budget sichtbar',
-      'Kontaktdaten nur nach Kauf',
-      'CHF 25 pro Lead-Kauf',
+      'Kein Abo erforderlich',
     ],
     viewsLimit: 5,
     leadsIncluded: 0,
@@ -48,8 +47,6 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     features: [
       'Unbegrenzte Lead-Ansichten',
       'Alle Anfragen durchsuchen',
-      'Kontaktdaten nur nach Kauf',
-      'CHF 25 pro Lead-Kauf',
       'Monatlich kündbar',
     ],
     viewsLimit: -1,
@@ -67,14 +64,12 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     features: [
       'Unbegrenzte Lead-Ansichten',
       'Alle Anfragen durchsuchen',
-      'Kontaktdaten nur nach Kauf',
-      'CHF 25 pro Lead-Kauf',
       'CHF 5/Monat gespart',
     ],
     viewsLimit: -1,
     leadsIncluded: -1,
     leadPrice: 25,
-    savings: 'Spare CHF 30',
+    savings: 'Sparen Sie CHF 30',
   },
   annual: {
     id: 'annual',
@@ -86,14 +81,12 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     features: [
       'Unbegrenzte Lead-Ansichten',
       'Alle Anfragen durchsuchen',
-      'Kontaktdaten nur nach Kauf',
-      'CHF 25 pro Lead-Kauf',
       'Beste Preis-Leistung',
     ],
     viewsLimit: -1,
     leadsIncluded: -1,
     leadPrice: 25,
-    savings: 'Spare CHF 120',
+    savings: 'Sparen Sie CHF 120',
   },
 };
 

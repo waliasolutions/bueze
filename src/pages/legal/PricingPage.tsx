@@ -24,6 +24,9 @@ const PricingPage = () => {
             <p className="text-xl text-ink-700">
               Wählen Sie Ihr Abo und zahlen Sie nur für die Leads, die Sie kaufen
             </p>
+            <p className="text-lg text-brand-600 font-semibold mt-4">
+              Alle Pläne: CHF 25 pro Lead-Kauf
+            </p>
           </div>
 
           <Card className="mb-8 bg-pastel-blue-50 border-brand-600">
@@ -61,10 +64,10 @@ const PricingPage = () => {
                     {plan.price > 0 && <span className="text-muted-foreground">/Monat</span>}
                   </CardDescription>
                   {plan.id === '6_month' && (
-                    <p className="text-sm text-brand-600 font-medium">Spare 10%</p>
+                    <p className="text-sm text-brand-600 font-medium">Sparen Sie 10%</p>
                   )}
                   {plan.id === 'annual' && (
-                    <p className="text-sm text-brand-600 font-medium">Spare 20%</p>
+                    <p className="text-sm text-brand-600 font-medium">Sparen Sie 20%</p>
                   )}
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -75,19 +78,6 @@ const PricingPage = () => {
                         <span className="text-sm text-ink-700">{feature}</span>
                       </div>
                     ))}
-                  </div>
-                  
-                  <div className="pt-4 border-t border-border space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Lead-Ansichten:</span>
-                      <span className="font-semibold text-ink-900">
-                        {plan.viewsLimit === -1 ? 'Unbegrenzt' : plan.viewsLimit}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Preis pro Lead:</span>
-                      <span className="font-semibold text-ink-900">CHF {plan.leadPrice}</span>
-                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -102,21 +92,21 @@ const PricingPage = () => {
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Was bedeutet "Lead-Ansichten"?</h3>
                 <p className="text-ink-700">
-                  Lead-Ansichten sind die Anzahl der Kundenanfragen, die Sie durchsuchen können. Im kostenlosen Plan können Sie 5 Anfragen pro Monat anschauen und sehen dabei Ort, PLZ, Kategorie und Budget – jedoch keine Kontaktdaten. Mit einem Abo haben Sie unbegrenzten Zugriff auf alle verfügbaren Anfragen und können diese ohne Limit durchsuchen.
+                  Lead-Ansichten sind Kundenanfragen, die Sie durchsuchen können. Sie sehen dabei Ort, PLZ, Kategorie und Budget – jedoch keine Kontaktdaten. Im kostenlosen Plan: 5 pro Monat. Mit Abo: unbegrenzt.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Wie erhalte ich die Kontaktdaten?</h3>
                 <p className="text-ink-700">
-                  Um die vollständigen Kontaktdaten eines Auftraggebers zu erhalten, kaufen Sie den Lead für CHF 25. Dies gilt für alle Pläne – auch mit einem Abo zahlen Sie CHF 25 pro Lead, den Sie tatsächlich kontaktieren möchten. So haben Sie volle Kontrolle über Ihre Kosten und zahlen nur für die Anfragen, die Sie wirklich interessieren.
+                  Kaufen Sie den Lead und erhalten Sie sofort die vollständigen Kontaktdaten. So zahlen Sie nur für Anfragen, die Sie wirklich interessieren.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Was ist der Unterschied zwischen Ansehen und Kaufen?</h3>
                 <p className="text-ink-700">
-                  <strong>Ansehen:</strong> Sie sehen die Projektbeschreibung, den Ort, die PLZ, die Kategorie und das Budget. <strong>Kaufen:</strong> Nach dem Kauf für CHF 25 erhalten Sie die vollständigen Kontaktdaten (Name, Telefonnummer, E-Mail) und können den Auftraggeber direkt kontaktieren.
+                  <strong>Ansehen:</strong> Projektbeschreibung, Ort, PLZ, Kategorie und Budget. <strong>Kaufen:</strong> Vollständige Kontaktdaten (Name, Telefonnummer, E-Mail) zum direkten Kontakt.
                 </p>
               </div>
 
