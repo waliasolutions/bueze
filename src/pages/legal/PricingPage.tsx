@@ -33,7 +33,7 @@ const PricingPage = () => {
                 <div>
                   <h4 className="font-semibold text-brand-600 mb-2">1. Abo wählen</h4>
                   <p className="text-ink-700">
-                    Entscheiden Sie, wie viele Anfragen Sie durchsuchen möchten. Mit dem kostenlosen Plan sehen Sie 2 Anfragen pro Monat. Mit einem Abo haben Sie unbegrenzten Zugriff auf alle verfügbaren Projekte.
+                    Entscheiden Sie, wie viele Anfragen Sie durchsuchen möchten. Mit dem kostenlosen Plan sehen Sie 5 Anfragen pro Monat. Mit einem Abo haben Sie unbegrenzten Zugriff auf alle verfügbaren Projekte.
                   </p>
                 </div>
                 <div>
@@ -102,7 +102,7 @@ const PricingPage = () => {
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Was bedeutet "Lead-Ansichten"?</h3>
                 <p className="text-ink-700">
-                  Lead-Ansichten sind die Anzahl der Kundenanfragen, die Sie durchsuchen können. Im kostenlosen Plan können Sie 2 Anfragen pro Monat anschauen und sehen dabei Ort, PLZ, Kategorie und Budget – jedoch keine Kontaktdaten. Mit einem Abo haben Sie unbegrenzten Zugriff auf alle verfügbaren Anfragen und können diese ohne Limit durchsuchen.
+                  Lead-Ansichten sind die Anzahl der Kundenanfragen, die Sie durchsuchen können. Im kostenlosen Plan können Sie 5 Anfragen pro Monat anschauen und sehen dabei Ort, PLZ, Kategorie und Budget – jedoch keine Kontaktdaten. Mit einem Abo haben Sie unbegrenzten Zugriff auf alle verfügbaren Anfragen und können diese ohne Limit durchsuchen.
                 </p>
               </div>
 
