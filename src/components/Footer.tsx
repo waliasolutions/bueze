@@ -51,6 +51,10 @@ export const Footer = () => {
                 <span>info@bueeze.ch</span>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
+                <Phone className="h-4 w-4" />
+                <span>+41 41 558 22 33</span>
+              </div>
+              <div className="flex items-center gap-3 text-sm text-ink-300">
                 <MapPin className="h-4 w-4" />
                 <span>Gotthardstrasse 37, 6410 Goldau</span>
               </div>

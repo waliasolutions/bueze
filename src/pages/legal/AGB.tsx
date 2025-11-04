@@ -181,7 +181,8 @@ const AGB = () => {
                   Büeze GmbH<br />
                   Gotthardstrasse 37<br />
                   6410 Goldau SZ<br />
-                  info@bueeze.ch<br />
+                  Telefon: +41 41 558 22 33<br />
+                  E-Mail: info@bueeze.ch<br />
                   www.bueeze.ch
                 </p>
               </section>
