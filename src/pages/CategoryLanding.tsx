@@ -7,7 +7,10 @@ import { HowItWorks } from '@/components/HowItWorks';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { ArrowRight } from 'lucide-react';
+import { getMajorCategoryBySubcategory } from '@/config/majorCategories';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
 import NotFound from './NotFound';
 
 const CategoryLanding = () => {
@@ -25,6 +28,14 @@ const CategoryLanding = () => {
     return <NotFound />;
   }
 
+  // Get major category for breadcrumbs
+  const subcategoryInfo = Object.values(subcategoryLabels).find(
+    sub => sub.slug === categorySlug
+  );
+  const majorCategory = subcategoryInfo 
+    ? getMajorCategoryBySubcategory(subcategoryInfo.value)
+    : null;
+
   const handleCTA = () => {
     navigate(`/submit-lead?category=${content.formCategory}`);
   };
@@ -33,8 +44,35 @@ const CategoryLanding = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
+      {/* Breadcrumbs */}
+      {majorCategory && (
+        <div className="container mx-auto px-4 py-4 pt-24">
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href="/kategorien">Kategorien</BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href={`/kategorien/${majorCategory.slug}`}>
+                  {majorCategory.label}
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{subcategoryInfo?.label}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+        </div>
+      )}
+      
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-pastel-blue-50 via-surface to-pastel-grey-50 py-20 pt-32">
+      <section className="relative bg-gradient-to-b from-pastel-blue-50 via-surface to-pastel-grey-50 py-20 pt-12">
         <div className="container mx-auto px-4 max-w-4xl text-center space-y-8">
           <h1 className="text-4xl md:text-5xl font-bold text-ink-900 leading-tight">
             {content.title}

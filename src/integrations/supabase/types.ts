@@ -2423,6 +2423,60 @@ export type Database = {
         | "reinigung"
         | "schlosserei"
         | "spengler"
+        | "metallbau"
+        | "holzbau"
+        | "mauerarbeit"
+        | "betonarbeiten"
+        | "fundament"
+        | "kernbohrungen"
+        | "abbruch_durchbruch"
+        | "renovierung_sonstige"
+        | "garage_carport"
+        | "aussenarbeiten_sonstige"
+        | "parkett_laminat"
+        | "teppich_pvc_linoleum"
+        | "bodenfliese"
+        | "bodenbelag_sonstige"
+        | "elektro_hausinstallationen"
+        | "elektro_unterverteilung"
+        | "elektro_stoerung_notfall"
+        | "elektro_beleuchtung"
+        | "elektro_geraete_anschliessen"
+        | "elektro_netzwerk_multimedia"
+        | "elektro_sprechanlage"
+        | "elektro_smart_home"
+        | "elektro_wallbox"
+        | "elektro_bauprovisorium"
+        | "elektro_erdung_blitzschutz"
+        | "elektro_sicherheitsnachweis"
+        | "elektro_zaehler_anmeldung"
+        | "elektro_notstrom"
+        | "elektro_kleinauftraege"
+        | "fussbodenheizung"
+        | "boiler"
+        | "klimaanlage_lueftung"
+        | "waermepumpen"
+        | "cheminee_kamin_ofen"
+        | "solarheizung"
+        | "photovoltaik"
+        | "batteriespeicher"
+        | "heizung_sonstige"
+        | "badezimmer"
+        | "badewanne_dusche"
+        | "klempnerarbeiten"
+        | "sanitaer_sonstige"
+        | "kuechenplanung"
+        | "kuechengeraete"
+        | "arbeitsplatten"
+        | "kueche_sonstige"
+        | "moebelbau"
+        | "moebelrestauration"
+        | "holzarbeiten_innen"
+        | "metallarbeiten_innen"
+        | "treppen"
+        | "innenausbau_sonstige"
+        | "aufloesung_entsorgung"
+        | "individuelle_anfrage"
       lead_status:
         | "draft"
         | "active"
@@ -2664,6 +2718,60 @@ export const Constants = {
         "reinigung",
         "schlosserei",
         "spengler",
+        "metallbau",
+        "holzbau",
+        "mauerarbeit",
+        "betonarbeiten",
+        "fundament",
+        "kernbohrungen",
+        "abbruch_durchbruch",
+        "renovierung_sonstige",
+        "garage_carport",
+        "aussenarbeiten_sonstige",
+        "parkett_laminat",
+        "teppich_pvc_linoleum",
+        "bodenfliese",
+        "bodenbelag_sonstige",
+        "elektro_hausinstallationen",
+        "elektro_unterverteilung",
+        "elektro_stoerung_notfall",
+        "elektro_beleuchtung",
+        "elektro_geraete_anschliessen",
+        "elektro_netzwerk_multimedia",
+        "elektro_sprechanlage",
+        "elektro_smart_home",
+        "elektro_wallbox",
+        "elektro_bauprovisorium",
+        "elektro_erdung_blitzschutz",
+        "elektro_sicherheitsnachweis",
+        "elektro_zaehler_anmeldung",
+        "elektro_notstrom",
+        "elektro_kleinauftraege",
+        "fussbodenheizung",
+        "boiler",
+        "klimaanlage_lueftung",
+        "waermepumpen",
+        "cheminee_kamin_ofen",
+        "solarheizung",
+        "photovoltaik",
+        "batteriespeicher",
+        "heizung_sonstige",
+        "badezimmer",
+        "badewanne_dusche",
+        "klempnerarbeiten",
+        "sanitaer_sonstige",
+        "kuechenplanung",
+        "kuechengeraete",
+        "arbeitsplatten",
+        "kueche_sonstige",
+        "moebelbau",
+        "moebelrestauration",
+        "holzarbeiten_innen",
+        "metallarbeiten_innen",
+        "treppen",
+        "innenausbau_sonstige",
+        "aufloesung_entsorgung",
+        "individuelle_anfrage",
       ],
       lead_status: [
         "draft",

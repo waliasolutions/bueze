@@ -5,46 +5,8 @@ import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { TreePine, Layers, Zap, Paintbrush, Truck, ChefHat, ArrowRight, CheckCircle, Clipboard, Users, Shield, Clock, Award, MapPin } from 'lucide-react';
-
-const categories = [
-  { 
-    value: 'garden', 
-    label: 'Garten', 
-    icon: TreePine,
-    description: 'Gartengestaltung, Pflege und Landschaftsbau von erfahrenen Experten.'
-  },
-  { 
-    value: 'flooring', 
-    label: 'Parkett & Boden', 
-    icon: Layers,
-    description: 'Professionelle Bodenverlegung für jeden Raum und Stil.'
-  },
-  { 
-    value: 'electrical', 
-    label: 'Elektro', 
-    icon: Zap,
-    description: 'Sichere Elektroinstallationen und Reparaturen vom Fachmann.'
-  },
-  { 
-    value: 'painting', 
-    label: 'Malerarbeiten', 
-    icon: Paintbrush,
-    description: 'Innen- und Aussenanstriche für frischen Glanz.'
-  },
-  { 
-    value: 'moving', 
-    label: 'Transport & Umzugsarbeiten', 
-    icon: Truck,
-    description: 'Zuverlässige Umzugs- und Transportdienstleistungen.'
-  },
-  { 
-    value: 'kitchen', 
-    label: 'Küchenbau', 
-    icon: ChefHat,
-    description: 'Massgeschneiderte Küchenplanung und -montage.'
-  },
-];
+import { ArrowRight, CheckCircle, Clipboard, Users, Shield, Clock, Award, MapPin } from 'lucide-react';
+import { majorCategories } from '@/config/majorCategories';
 
 const KategorienLanding = () => {
   const navigate = useNavigate();
@@ -68,25 +30,28 @@ const KategorienLanding = () => {
       {/* Categories Grid */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 max-w-6xl">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {categories.map((category) => {
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Object.values(majorCategories).map((category) => {
               const Icon = category.icon;
               return (
                 <Card 
-                  key={category.value} 
+                  key={category.id} 
                   className="border-border hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                  onClick={() => navigate(`/category/${category.value}`)}
+                  onClick={() => navigate(`/kategorien/${category.slug}`)}
                 >
                   <CardHeader>
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white mb-4 shadow-md group-hover:scale-110 transition-transform duration-300">
+                    <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${category.color} flex items-center justify-center text-white mb-4 shadow-md group-hover:scale-110 transition-transform duration-300`}>
                       <Icon className="w-8 h-8" />
                     </div>
-                    <CardTitle className="text-2xl text-ink-900">{category.label}</CardTitle>
+                    <CardTitle className="text-xl text-ink-900">{category.label}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <CardDescription className="text-ink-700 leading-relaxed text-base">
+                    <CardDescription className="text-ink-700 leading-relaxed text-sm">
                       {category.description}
                     </CardDescription>
+                    <div className="text-sm text-brand-600 font-medium">
+                      {category.subcategories.length} Dienstleistungen
+                    </div>
                     <Button
                       variant="outline"
                       className="w-full border-brand-500 text-brand-600 hover:bg-brand-50 group-hover:bg-brand-50"

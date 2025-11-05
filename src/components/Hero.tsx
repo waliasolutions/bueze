@@ -1,22 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { TreePine, Layers, Zap, Paintbrush, Truck, ChefHat, ArrowRight } from 'lucide-react';
+import { ArrowRight, ChevronRight } from 'lucide-react';
+import { majorCategories } from '@/config/majorCategories';
 
-const categories = [
-  { value: 'garden', label: 'Garten', icon: TreePine },
-  { value: 'flooring', label: 'Parkett & Boden', icon: Layers },
-  { value: 'electrical', label: 'Elektro', icon: Zap },
-  { value: 'painting', label: 'Malerarbeiten', icon: Paintbrush },
-  { value: 'moving', label: 'Transport & Umzugsarbeiten', icon: Truck },
-  { value: 'kitchen', label: 'Küchenbau', icon: ChefHat },
-];
+const homeCategories = Object.values(majorCategories)
+  .filter(cat => cat.showOnHome)
+  .slice(0, 6);
 
 export const Hero = () => {
   const navigate = useNavigate();
 
-  const handleCategoryClick = (categoryValue: string) => {
-    navigate(`/category/${categoryValue}`);
+  const handleCategoryClick = (categorySlug: string) => {
+    navigate(`/kategorien/${categorySlug}`);
   };
 
   return (
@@ -54,15 +50,15 @@ export const Hero = () => {
 
           {/* Category Icons - Below Search */}
           <div className="flex flex-wrap justify-center gap-3 md:gap-4 pt-4">
-            {categories.map((category) => {
+            {homeCategories.map((category) => {
               const Icon = category.icon;
               return (
                 <button
-                  key={category.value}
-                  onClick={() => handleCategoryClick(category.value)}
+                  key={category.id}
+                  onClick={() => handleCategoryClick(category.slug)}
                   className="flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-surface/80 transition-all duration-200 group min-w-[110px]"
                 >
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-200 shadow-md">
+                  <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${category.color} flex items-center justify-center text-white group-hover:scale-110 transition-transform duration-200 shadow-md`}>
                     <Icon className="w-6 h-6" />
                   </div>
                   <span className="text-xs font-medium text-ink-800 text-center leading-tight">
@@ -71,6 +67,19 @@ export const Hero = () => {
                 </button>
               );
             })}
+          </div>
+
+          {/* "All Categories" Button */}
+          <div className="flex justify-center pt-8">
+            <Button
+              onClick={() => navigate('/kategorien')}
+              variant="outline"
+              size="lg"
+              className="text-brand-600 border-brand-600 hover:bg-brand-50 border-2"
+            >
+              Alle Kategorien ansehen
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
 
           {/* Trust Signals */}
