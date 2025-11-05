@@ -237,16 +237,36 @@ const Dashboard = () => {
             </Button>
           </div>
 
-          {/* Verification Status Banner for Handwerkers */}
-          {isHandwerker && handwerkerProfile && !handwerkerProfile.is_verified && (
-            <Alert className="mb-6 border-brand-600 bg-brand-50">
-              <ShieldCheck className="h-4 w-4 text-brand-600" />
-              <AlertTitle className="text-brand-900">Profil wird geprüft</AlertTitle>
-              <AlertDescription className="text-brand-800">
-                Ihr Profil wird derzeit von unserem Team überprüft. Sie können noch keine Aufträge einsehen oder kaufen. 
-                Wir benachrichtigen Sie per E-Mail, sobald Ihr Profil freigeschaltet ist. Dies dauert in der Regel 1-2 Werktage.
-              </AlertDescription>
-            </Alert>
+          {/* Verification Status Card for Handwerkers */}
+          {isHandwerker && handwerkerProfile && (
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Verifizierungs-Status</CardTitle>
+                    <CardDescription>
+                      {handwerkerProfile.is_verified 
+                        ? 'Ihr Profil ist verifiziert' 
+                        : 'Verfolgen Sie den Fortschritt Ihrer Verifizierung'}
+                    </CardDescription>
+                  </div>
+                  <Badge variant={handwerkerProfile.is_verified ? 'default' : 'secondary'}>
+                    {handwerkerProfile.is_verified ? 'Verifiziert' : 'In Prüfung'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {handwerkerProfile.is_verified
+                    ? 'Sie können jetzt Aufträge durchsuchen und kaufen.'
+                    : 'Ihr Profil wird überprüft. Laden Sie fehlende Dokumente hoch für eine schnellere Verifizierung.'}
+                </p>
+                <Button onClick={() => navigate('/handwerker-dashboard')}>
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Status & Dokumente verwalten
+                </Button>
+              </CardContent>
+            </Card>
           )}
 
           {/* Stats Cards - Simplified */}

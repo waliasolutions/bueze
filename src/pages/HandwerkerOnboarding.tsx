@@ -303,7 +303,7 @@ const HandwerkerOnboarding = () => {
         description: "Ihr Handwerkerprofil wird innerhalb von 1-2 Werktagen überprüft.",
       });
 
-      navigate("/dashboard");
+      navigate("/handwerker-dashboard");
     } catch (error) {
       console.error("Error saving profile:", error);
       toast({
@@ -337,6 +337,9 @@ const HandwerkerOnboarding = () => {
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Benötigte Informationen</CardTitle>
+                <CardDescription className="text-xs">
+                  Diese Informationen sind für die Aktivierung Ihres Profils erforderlich
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-2 text-sm">
@@ -365,6 +368,13 @@ const HandwerkerOnboarding = () => {
                     <span>Firmenname & Rechtsform</span>
                   </div>
                 </div>
+                <Alert className="mt-4 bg-blue-50 border-blue-200">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-xs text-blue-900">
+                    💡 Dokumente können jetzt hochgeladen werden für schnellere Verifizierung, 
+                    oder später in Ihrem Dashboard nachgereicht werden.
+                  </AlertDescription>
+                </Alert>
               </CardContent>
             </Card>
 
@@ -377,9 +387,9 @@ const HandwerkerOnboarding = () => {
                   className="flex items-center justify-between w-full text-left hover:opacity-70 transition-opacity"
                 >
                   <div>
-                    <CardTitle className="text-base">Dokumente bereits zur Hand?</CardTitle>
+                    <CardTitle className="text-base">⚡ Schnellere Verifizierung</CardTitle>
                     <CardDescription className="mt-1">
-                      Laden Sie jetzt schon UID-Zertifikat und Versicherungsnachweis hoch (optional)
+                      Laden Sie Dokumente bereits jetzt hoch, oder reichen Sie später nach
                     </CardDescription>
                   </div>
                   <Badge variant="secondary">Optional</Badge>
@@ -480,11 +490,13 @@ const HandwerkerOnboarding = () => {
                     </p>
                   </div>
 
-                  <Alert>
-                    <FileText className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      Diese Dokumente helfen bei der schnelleren Verifizierung Ihres Profils, 
-                      sind aber in diesem Schritt optional. Sie können sie auch später hochladen.
+                  <Alert className="bg-green-50 border-green-200">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-xs text-green-900">
+                      <strong>Vorteile des frühen Hochladens:</strong><br />
+                      • Schnellere Profilaktivierung (oft innerhalb 24h)<br />
+                      • Weniger Schritte später<br />
+                      • Sofort loslegen nach Verifizierung
                     </AlertDescription>
                   </Alert>
                 </CardContent>
@@ -492,11 +504,12 @@ const HandwerkerOnboarding = () => {
             </Card>
 
             {/* Streamlined Info Alert */}
-            <Alert className="bg-amber-50 border-amber-200">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-sm text-amber-900">
-                <strong>Wichtig:</strong> Ihr Profil wird erst nach Überprüfung der UID-Nummer 
-                und Haftpflichtversicherung durch unser Team aktiviert (1-2 Werktage).
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>Profil-Aktivierung:</strong> Dokumente werden innerhalb 1-2 Werktagen geprüft. 
+                Sie können fehlende Dokumente jederzeit in Ihrem Dashboard hochladen und den Status 
+                in Echtzeit verfolgen.
               </AlertDescription>
             </Alert>
           </div>
