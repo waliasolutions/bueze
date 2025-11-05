@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram } from 'lucide-react';
 import logo from '@/assets/bueze-logo.png';
 
 export const Footer = () => {
@@ -85,36 +85,26 @@ export const Footer = () => {
 
         {/* Bottom Footer */}
         <div className="border-t border-ink-700 mt-12 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            {/* Legal Links */}
-            <div className="flex flex-wrap gap-6 text-sm text-ink-300">
-              <Link to="/legal/agb" className="hover:text-brand-400 transition-colors">
-                AGB
-              </Link>
-              <Link to="/legal/pricing" className="hover:text-brand-400 transition-colors">
-                Preise
-              </Link>
-            </div>
-
+          <div className="flex justify-center items-center">
             {/* Social Links */}
             <div className="flex items-center gap-4">
               <a 
-                href="#" 
+                href="https://m.facebook.com/profile.php?id=61582960604117"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
                 <Facebook className="h-5 w-5 text-ink-300 group-hover:text-white" />
               </a>
               <a 
-                href="#" 
+                href="https://www.instagram.com/bueeze.ch/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
                 <Instagram className="h-5 w-5 text-ink-300 group-hover:text-white" />
-              </a>
-              <a 
-                href="#" 
-                className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
-              >
-                <Linkedin className="h-5 w-5 text-ink-300 group-hover:text-white" />
               </a>
             </div>
           </div>
