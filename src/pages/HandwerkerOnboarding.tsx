@@ -36,6 +36,11 @@ const HandwerkerOnboarding = () => {
     insuranceDocument?: string;
     tradeLicense?: string;
   }>({});
+  const [step0Uploads, setStep0Uploads] = useState<{
+    uidCertificate?: File;
+    insuranceDocument?: File;
+  }>({});
+  const [showUploadSection, setShowUploadSection] = useState(false);
 
   const [formData, setFormData] = useState({
     // Company Information
@@ -230,20 +235,34 @@ const HandwerkerOnboarding = () => {
         }
       }
 
-      // Collect uploaded document URLs
+      // Collect all uploaded files (merge Step 0 uploads with later uploads)
+      const allUploads = {
+        uidCertificate: uploadedFiles.uidCertificate || step0Uploads.uidCertificate,
+        insuranceDocument: uploadedFiles.insuranceDocument || step0Uploads.insuranceDocument,
+        tradeLicense: uploadedFiles.tradeLicense,
+      };
+
+      // Upload files to Supabase storage and collect URLs
       const verificationDocuments: string[] = [];
-      const documentTypes = ['uidCertificate', 'insuranceDocument', 'tradeLicense'] as const;
       
-      for (const type of documentTypes) {
-        if (uploadedFiles[type]) {
-          const fileExt = uploadedFiles[type]!.name.split('.').pop();
+      for (const [type, file] of Object.entries(allUploads)) {
+        if (file) {
+          const fileExt = file.name.split('.').pop();
           const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
-          const { data } = supabase.storage
-            .from('handwerker-documents')
-            .getPublicUrl(fileName);
           
-          if (data?.publicUrl) {
-            verificationDocuments.push(data.publicUrl);
+          // Upload file if not already uploaded
+          const { error: uploadError } = await supabase.storage
+            .from('handwerker-documents')
+            .upload(fileName, file);
+          
+          if (!uploadError) {
+            const { data } = supabase.storage
+              .from('handwerker-documents')
+              .getPublicUrl(fileName);
+            
+            if (data?.publicUrl) {
+              verificationDocuments.push(data.publicUrl);
+            }
           }
         }
       }
@@ -302,80 +321,182 @@ const HandwerkerOnboarding = () => {
       case 0:
         return (
           <div className="space-y-6">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold mb-2">Willkommen bei Büeze.ch</h2>
+            {/* Compact Header */}
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold">Willkommen bei Büeze.ch</h2>
               <p className="text-muted-foreground">
-                Bevor Sie starten, halten Sie bitte folgende Dokumente bereit:
+                Erstellen Sie Ihr Handwerkerprofil in 4 einfachen Schritten
               </p>
+              <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                <AlertCircle className="h-4 w-4" />
+                <span>Geschätzte Zeit: 10-15 Minuten</span>
+              </div>
             </div>
 
-            <Alert className="bg-info/10 border-primary">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Geschätzte Zeit:</strong> 10-15 Minuten
-              </AlertDescription>
-            </Alert>
-
-            <Card className="bg-card">
-              <CardHeader>
-                <CardTitle className="text-lg">Erforderliche Dokumente</CardTitle>
+            {/* Compact Checklist */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Benötigte Informationen</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <Shield className="h-5 w-5 text-primary" />
+              <CardContent>
+                <div className="grid gap-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Shield className="h-3 w-3 text-primary" />
+                    </div>
+                    <span>UID-Nummer (CHE-123.456.789)</span>
                   </div>
-                  <div>
-                    <h4 className="font-semibold">UID-Nummer</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Unternehmens-Identifikationsnummer vom BFS (Format: CHE-123.456.789)
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Shield className="h-3 w-3 text-primary" />
+                    </div>
+                    <span>Haftpflichtversicherung (Anbieter & Gültigkeit)</span>
                   </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <Shield className="h-5 w-5 text-primary" />
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Wallet className="h-3 w-3 text-primary" />
+                    </div>
+                    <span>IBAN & Bankname</span>
                   </div>
-                  <div>
-                    <h4 className="font-semibold">Haftpflichtversicherung</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Name des Versicherungsanbieters und <strong>Gültigkeitsdatum</strong> (Ablaufdatum)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <Wallet className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Bankinformationen</h4>
-                    <p className="text-sm text-muted-foreground">
-                      IBAN und Name Ihrer Bank für Zahlungsabwicklung
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="mt-1">
-                    <Building2 className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Firmeninformationen</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Rechtsform, Firmenname, MWST-Nummer (falls vorhanden)
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Building2 className="h-3 w-3 text-primary" />
+                    </div>
+                    <span>Firmenname & Rechtsform</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Alert className="bg-warning/10 border-warning">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Wichtig:</strong> Ohne gültige UID-Nummer und Haftpflichtversicherung 
-                kann Ihr Profil nicht aktiviert werden.
+            {/* Optional Upload Section - Collapsible */}
+            <Card className="border-dashed">
+              <CardHeader className="pb-3">
+                <button
+                  type="button"
+                  onClick={() => setShowUploadSection(!showUploadSection)}
+                  className="flex items-center justify-between w-full text-left hover:opacity-70 transition-opacity"
+                >
+                  <div>
+                    <CardTitle className="text-base">Dokumente bereits zur Hand?</CardTitle>
+                    <CardDescription className="mt-1">
+                      Laden Sie jetzt schon UID-Zertifikat und Versicherungsnachweis hoch (optional)
+                    </CardDescription>
+                  </div>
+                  <Badge variant="secondary">Optional</Badge>
+                </button>
+              </CardHeader>
+              
+              {showUploadSection && (
+                <CardContent className="space-y-4 pt-0">
+                  {/* UID Certificate Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="step0-uid">UID-Zertifikat</Label>
+                    {step0Uploads.uidCertificate ? (
+                      <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm flex-1">{step0Uploads.uidCertificate.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setStep0Uploads(prev => ({ ...prev, uidCertificate: undefined }))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Input
+                          id="step0-uid"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setStep0Uploads(prev => ({ ...prev, uidCertificate: file }));
+                            }
+                          }}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('step0-uid')?.click()}
+                          className="w-full"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          UID-Zertifikat hochladen
+                        </Button>
+                      </>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      PDF, JPG oder PNG · Max. 10MB · Kann später nachgereicht werden
+                    </p>
+                  </div>
+
+                  {/* Insurance Document Upload */}
+                  <div className="space-y-2">
+                    <Label htmlFor="step0-insurance">Versicherungsnachweis</Label>
+                    {step0Uploads.insuranceDocument ? (
+                      <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span className="text-sm flex-1">{step0Uploads.insuranceDocument.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setStep0Uploads(prev => ({ ...prev, insuranceDocument: undefined }))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <Input
+                          id="step0-insurance"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              setStep0Uploads(prev => ({ ...prev, insuranceDocument: file }));
+                            }
+                          }}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('step0-insurance')?.click()}
+                          className="w-full"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Versicherungsnachweis hochladen
+                        </Button>
+                      </>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      PDF, JPG oder PNG · Max. 10MB · Kann später nachgereicht werden
+                    </p>
+                  </div>
+
+                  <Alert>
+                    <FileText className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Diese Dokumente helfen bei der schnelleren Verifizierung Ihres Profils, 
+                      sind aber in diesem Schritt optional. Sie können sie auch später hochladen.
+                    </AlertDescription>
+                  </Alert>
+                </CardContent>
+              )}
+            </Card>
+
+            {/* Streamlined Info Alert */}
+            <Alert className="bg-amber-50 border-amber-200">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-sm text-amber-900">
+                <strong>Wichtig:</strong> Ihr Profil wird erst nach Überprüfung der UID-Nummer 
+                und Haftpflichtversicherung durch unser Team aktiviert (1-2 Werktage).
               </AlertDescription>
             </Alert>
           </div>
@@ -462,41 +583,65 @@ const HandwerkerOnboarding = () => {
 
             <div className="space-y-2 pt-4 border-t">
               <Label htmlFor="uidCertificate">UID-Zertifikat hochladen</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="uidCertificate"
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file, 'uidCertificate');
-                  }}
-                  className="hidden"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById('uidCertificate')?.click()}
-                  className="w-full"
-                  disabled={uploadProgress.uidCertificate === 'uploading'}
-                >
-                  {uploadProgress.uidCertificate === 'uploading' ? (
-                    <>Wird hochgeladen...</>
-                  ) : uploadProgress.uidCertificate === 'success' ? (
-                    <>
-                      <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                      {uploadedFiles.uidCertificate?.name}
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="mr-2 h-4 w-4" />
-                      UID-Zertifikat auswählen
-                    </>
-                  )}
-                </Button>
-              </div>
+              
+              {step0Uploads.uidCertificate && !uploadedFiles.uidCertificate ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Bereits hochgeladen</p>
+                      <p className="text-xs text-muted-foreground">{step0Uploads.uidCertificate.name}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setUploadedFiles(prev => ({ ...prev, uidCertificate: step0Uploads.uidCertificate }));
+                      }}
+                    >
+                      Ersetzen
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="uidCertificate"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, 'uidCertificate');
+                    }}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('uidCertificate')?.click()}
+                    className="w-full"
+                    disabled={uploadProgress.uidCertificate === 'uploading'}
+                  >
+                    {uploadProgress.uidCertificate === 'uploading' ? (
+                      <>Wird hochgeladen...</>
+                    ) : uploadProgress.uidCertificate === 'success' ? (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                        {uploadedFiles.uidCertificate?.name}
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        UID-Zertifikat auswählen
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 PDF, JPG oder PNG (max. 10MB)
+                {step0Uploads.uidCertificate && " · Bereits in Schritt 0 hochgeladen"}
               </p>
             </div>
           </div>
@@ -692,39 +837,66 @@ const HandwerkerOnboarding = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="insuranceDocument">Haftpflichtversicherung</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="insuranceDocument"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file, 'insuranceDocument');
-                    }}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('insuranceDocument')?.click()}
-                    className="w-full"
-                    disabled={uploadProgress.insuranceDocument === 'uploading'}
-                  >
-                    {uploadProgress.insuranceDocument === 'uploading' ? (
-                      <>Wird hochgeladen...</>
-                    ) : uploadProgress.insuranceDocument === 'success' ? (
-                      <>
-                        <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
-                        {uploadedFiles.insuranceDocument?.name}
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="mr-2 h-4 w-4" />
-                        Versicherungspolice auswählen
-                      </>
-                    )}
-                  </Button>
-                </div>
+                
+                {step0Uploads.insuranceDocument && !uploadedFiles.insuranceDocument ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Bereits hochgeladen</p>
+                        <p className="text-xs text-muted-foreground">{step0Uploads.insuranceDocument.name}</p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setUploadedFiles(prev => ({ ...prev, insuranceDocument: step0Uploads.insuranceDocument }));
+                        }}
+                      >
+                        Ersetzen
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="insuranceDocument"
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file, 'insuranceDocument');
+                      }}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('insuranceDocument')?.click()}
+                      className="w-full"
+                      disabled={uploadProgress.insuranceDocument === 'uploading'}
+                    >
+                      {uploadProgress.insuranceDocument === 'uploading' ? (
+                        <>Wird hochgeladen...</>
+                      ) : uploadProgress.insuranceDocument === 'success' ? (
+                        <>
+                          <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                          {uploadedFiles.insuranceDocument?.name}
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="mr-2 h-4 w-4" />
+                          Versicherungspolice auswählen
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  PDF, JPG oder PNG (max. 10MB)
+                  {step0Uploads.insuranceDocument && " · Bereits in Schritt 0 hochgeladen"}
+                </p>
               </div>
 
               <div className="space-y-2">
