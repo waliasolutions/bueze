@@ -14,12 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, Search, ShoppingCart, Crown, AlertCircle } from 'lucide-react';
+import { MapPin, Clock, Coins, Search, ShoppingCart, Crown, AlertCircle, Filter, X } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
 import { checkSubscriptionAccess, canPurchaseLeadWithPrice } from '@/lib/subscriptionHelpers';
 import { canViewLead as canViewLeadByStatus } from '@/config/leadStatuses';
 import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
 import { SWISS_CANTONS } from '@/config/cantons';
+import { majorCategories } from '@/config/majorCategories';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
 
 interface Lead {
   id: string;
@@ -85,6 +87,7 @@ const BrowseLeads = () => {
   const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMajorCategory, setSelectedMajorCategory] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCanton, setSelectedCanton] = useState('all');
   const [selectedUrgency, setSelectedUrgency] = useState('all');
@@ -95,6 +98,13 @@ const BrowseLeads = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Get subcategories for selected major category
+  const availableSubcategories = selectedMajorCategory !== 'all'
+    ? Object.values(subcategoryLabels).filter(
+        (sub) => sub.majorCategoryId === selectedMajorCategory
+      )
+    : Object.values(subcategoryLabels);
+
   useEffect(() => {
     logWithCorrelation('BrowseLeads: Page loaded');
     fetchLeads();
@@ -103,7 +113,14 @@ const BrowseLeads = () => {
 
   useEffect(() => {
     filterLeads();
-  }, [leads, searchTerm, selectedCategory, selectedCanton, selectedUrgency]);
+  }, [leads, searchTerm, selectedMajorCategory, selectedCategory, selectedCanton, selectedUrgency]);
+
+  // Reset subcategory when major category changes
+  useEffect(() => {
+    if (selectedMajorCategory !== 'all') {
+      setSelectedCategory('all');
+    }
+  }, [selectedMajorCategory]);
 
   const checkUserSubscription = async () => {
     try {
@@ -193,6 +210,18 @@ const BrowseLeads = () => {
       );
     }
 
+    // Filter by major category first
+    if (selectedMajorCategory && selectedMajorCategory !== 'all') {
+      const majorCatSubcategories = Object.values(subcategoryLabels)
+        .filter((sub) => sub.majorCategoryId === selectedMajorCategory)
+        .map((sub) => sub.value);
+      
+      filtered = filtered.filter(lead => 
+        majorCatSubcategories.includes(lead.category)
+      );
+    }
+
+    // Then filter by specific subcategory
     if (selectedCategory && selectedCategory !== 'all') {
       filtered = filtered.filter(lead => lead.category === selectedCategory);
     }
@@ -207,6 +236,16 @@ const BrowseLeads = () => {
 
     setFilteredLeads(filtered);
   };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedMajorCategory('all');
+    setSelectedCategory('all');
+    setSelectedCanton('all');
+    setSelectedUrgency('all');
+  };
+
+  const hasActiveFilters = searchTerm || selectedMajorCategory !== 'all' || selectedCategory !== 'all' || selectedCanton !== 'all' || selectedUrgency !== 'all';
 
   const handlePurchaseLead = async (leadId: string) => {
     try {
@@ -360,80 +399,196 @@ const BrowseLeads = () => {
           {/* Filters */}
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Filter
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="h-5 w-5" />
+                  Filter
+                </CardTitle>
+                {hasActiveFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={clearFilters}
+                    className="text-muted-foreground"
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Zurücksetzen
+                  </Button>
+                )}
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <CardContent className="space-y-4">
+              {/* Search */}
+              <div>
                 <Input
-                  placeholder="Suchen..."
+                  placeholder="Nach Auftrag, Ort oder Beschreibung suchen..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
                 />
-                
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Kategorie" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle Kategorien</SelectItem>
-                    {Object.entries(categoryLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedCanton} onValueChange={setSelectedCanton}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Kanton" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle Kantone</SelectItem>
-                    {SWISS_CANTONS.map((canton) => (
-                      <SelectItem key={canton.value} value={canton.value}>{canton.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedUrgency} onValueChange={setSelectedUrgency}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Dringlichkeit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle</SelectItem>
-                    {Object.entries(urgencyLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
+
+              {/* Category Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Hauptkategorie</label>
+                  <Select value={selectedMajorCategory} onValueChange={setSelectedMajorCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Alle Bereiche" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Bereiche</SelectItem>
+                      {Object.values(majorCategories).map((major) => (
+                        <SelectItem key={major.id} value={major.id}>
+                          {major.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Unterkategorie</label>
+                  <Select 
+                    value={selectedCategory} 
+                    onValueChange={setSelectedCategory}
+                    disabled={availableSubcategories.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Spezifischer Bereich" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Unterkategorien</SelectItem>
+                      {availableSubcategories.map((sub) => (
+                        <SelectItem key={sub.value} value={sub.value}>
+                          {sub.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Location and Urgency */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Kanton</label>
+                  <Select value={selectedCanton} onValueChange={setSelectedCanton}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Region wählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Kantone</SelectItem>
+                      {SWISS_CANTONS.map((canton) => (
+                        <SelectItem key={canton.value} value={canton.value}>
+                          {canton.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Dringlichkeit</label>
+                  <Select value={selectedUrgency} onValueChange={setSelectedUrgency}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Zeitrahmen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Zeitrahmen</SelectItem>
+                      {Object.entries(urgencyLabels).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>{label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Active Filters Display */}
+              {hasActiveFilters && (
+                <div className="flex flex-wrap gap-2 pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">Aktive Filter:</span>
+                  {selectedMajorCategory !== 'all' && (
+                    <Badge variant="secondary" className="gap-1">
+                      {Object.values(majorCategories).find(c => c.id === selectedMajorCategory)?.label}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => setSelectedMajorCategory('all')}
+                      />
+                    </Badge>
+                  )}
+                  {selectedCategory !== 'all' && (
+                    <Badge variant="secondary" className="gap-1">
+                      {subcategoryLabels[selectedCategory]?.label}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => setSelectedCategory('all')}
+                      />
+                    </Badge>
+                  )}
+                  {selectedCanton !== 'all' && (
+                    <Badge variant="secondary" className="gap-1">
+                      {SWISS_CANTONS.find(c => c.value === selectedCanton)?.label}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => setSelectedCanton('all')}
+                      />
+                    </Badge>
+                  )}
+                  {selectedUrgency !== 'all' && (
+                    <Badge variant="secondary" className="gap-1">
+                      {urgencyLabels[selectedUrgency as keyof typeof urgencyLabels]}
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => setSelectedUrgency('all')}
+                      />
+                    </Badge>
+                  )}
+                  {searchTerm && (
+                    <Badge variant="secondary" className="gap-1">
+                      Suche: "{searchTerm}"
+                      <X 
+                        className="h-3 w-3 cursor-pointer" 
+                        onClick={() => setSearchTerm('')}
+                      />
+                    </Badge>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Results */}
-          <div className="mb-4 text-sm text-muted-foreground">
-            {filteredLeads.length} Aufträge gefunden
+          <div className="mb-4 flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{filteredLeads.length}</span> {filteredLeads.length === 1 ? 'Auftrag' : 'Aufträge'} gefunden
+            </div>
+            {filteredLeads.length > 0 && (
+              <div className="text-sm text-muted-foreground">
+                Zeige {Math.min(filteredLeads.length, pageSize)} von {filteredLeads.length}
+              </div>
+            )}
           </div>
 
           {filteredLeads.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
-                <p className="text-muted-foreground mb-4">
-                  Keine Aufträge gefunden. Versuchen Sie andere Filter.
+                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-lg font-medium mb-2">
+                  Keine Aufträge gefunden
                 </p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCategory('all');
-                    setSelectedCanton('all');
-                    setSelectedUrgency('all');
-                  }}
-                >
-                  Filter zurücksetzen
-                </Button>
+                <p className="text-muted-foreground mb-6">
+                  {hasActiveFilters 
+                    ? 'Versuchen Sie andere Filter oder setzen Sie die Suche zurück.'
+                    : 'Zurzeit gibt es keine verfügbaren Aufträge.'
+                  }
+                </p>
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={clearFilters}>
+                    <X className="h-4 w-4 mr-2" />
+                    Alle Filter zurücksetzen
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
@@ -455,8 +610,8 @@ const BrowseLeads = () => {
                         <Badge className={urgencyColors[lead.urgency as keyof typeof urgencyColors]}>
                           {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
                         </Badge>
-                        <Badge variant="secondary">
-                          {categoryLabels[lead.category as keyof typeof categoryLabels]}
+                        <Badge variant="secondary" className="text-xs">
+                          {subcategoryLabels[lead.category]?.label || categoryLabels[lead.category as keyof typeof categoryLabels] || lead.category}
                         </Badge>
                       </div>
                     </div>
