@@ -168,26 +168,25 @@ const HandwerkerApprovals = () => {
 
       if (updateError) throw updateError;
 
-      // Optionally send rejection email if they have an account
-      if (handwerker.user_id) {
-        const { error: emailError } = await supabase.functions.invoke('send-approval-email', {
-          body: { 
-            userId: handwerker.user_id,
-            userName: `${handwerker.first_name} ${handwerker.last_name}`,
-            userEmail: handwerker.email,
-            type: 'rejected',
-            reason: reason || undefined
-          }
-        });
-
-        if (emailError) {
-          console.error('Email sending error:', emailError);
+      // Send rejection email
+      const { error: emailError } = await supabase.functions.invoke('send-rejection-email', {
+        body: { 
+          email: handwerker.email,
+          firstName: handwerker.first_name,
+          lastName: handwerker.last_name,
+          companyName: handwerker.company_name,
+          reason: reason || undefined
         }
+      });
+
+      if (emailError) {
+        console.error('Email sending error:', emailError);
+        // Don't throw - still mark as rejected even if email fails
       }
 
       toast({
         title: 'Handwerker abgelehnt',
-        description: `${handwerker.first_name} ${handwerker.last_name} wurde abgelehnt.`,
+        description: `${handwerker.first_name} ${handwerker.last_name} wurde abgelehnt und per E-Mail informiert.`,
       });
 
       await fetchPendingHandwerkers();

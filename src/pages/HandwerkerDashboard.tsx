@@ -1,395 +1,358 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { ProposalsList } from "@/components/ProposalsList";
-import { SubscriptionManager } from "@/components/SubscriptionManager";
 import { 
-  CheckCircle, 
-  XCircle, 
+  Search, 
+  MapPin, 
+  Euro, 
   Clock, 
-  AlertCircle, 
-  Upload, 
-  Eye, 
-  Shield, 
-  Wallet, 
-  Building2, 
+  Send, 
+  Eye,
   FileText,
-  X,
-  HelpCircle,
-  Crown
+  User,
+  Building2,
+  Mail,
+  Phone,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Loader2
 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+interface Lead {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  budget_min: number | null;
+  budget_max: number | null;
+  urgency: string;
+  city: string;
+  canton: string;
+  zip: string;
+  created_at: string;
+  proposals_count: number;
+}
+
+interface Proposal {
+  id: string;
+  lead_id: string;
+  price_min: number;
+  price_max: number;
+  message: string;
+  estimated_duration_days: number | null;
+  status: string;
+  submitted_at: string;
+  leads: {
+    title: string;
+    city: string;
+    canton: string;
+  };
+}
 
 interface HandwerkerProfile {
   id: string;
-  user_id: string;
-  verification_status: string;
-  verification_notes: string | null;
-  verified_by: string | null;
-  verified_at: string | null;
-  verification_documents: string[] | null;
-  uid_number: string | null;
-  insurance_valid_until: string | null;
-  liability_insurance_provider: string | null;
-  iban: string | null;
-  bank_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone_number: string | null;
   company_name: string | null;
-  created_at: string;
-  updated_at: string;
+  bio: string | null;
+  categories: string[];
+  service_areas: string[];
+  hourly_rate_min: number | null;
+  hourly_rate_max: number | null;
+  verification_status: string;
 }
-
-interface DocumentUploadCardProps {
-  title: string;
-  description: string;
-  documentUrl?: string;
-  documentType: 'uidCertificate' | 'insuranceDocument' | 'tradeLicense';
-  onUpload: (file: File, type: string) => void;
-  uploadProgress?: number;
-  required?: boolean;
-}
-
-const DocumentUploadCard: React.FC<DocumentUploadCardProps> = ({
-  title,
-  description,
-  documentUrl,
-  documentType,
-  onUpload,
-  uploadProgress = 0,
-  required = false,
-}) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      onUpload(selectedFile, documentType);
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base">{title}</CardTitle>
-          {required && <Badge variant="destructive" className="text-xs">Erforderlich</Badge>}
-        </div>
-        <CardDescription className="text-xs">{description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {documentUrl ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50">
-              <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-green-900">Hochgeladen</p>
-                <p className="text-xs text-green-700 truncate">
-                  {documentUrl.split('/').pop()}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => window.open(documentUrl, '_blank')}
-              >
-                <Eye className="h-4 w-4 mr-2" />
-                Ansehen
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Ersetzen
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadProgress > 0 && uploadProgress < 100}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {uploadProgress > 0 && uploadProgress < 100 
-                ? `${Math.round(uploadProgress)}%` 
-                : 'Dokument hochladen'}
-            </Button>
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <Progress value={uploadProgress} className="h-2" />
-            )}
-            <p className="text-xs text-muted-foreground">
-              PDF, JPG oder PNG · Max. 10MB
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
 
 const HandwerkerDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
-  const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [uploadProgress, setUploadProgress] = useState<{
-    uidCertificate?: number;
-    insuranceDocument?: number;
-    tradeLicense?: number;
-  }>({});
+  const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfile | null>(null);
+  
+  // Browse Leads Tab
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  
+  // Proposals Tab
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [proposalsLoading, setProposalsLoading] = useState(false);
+  
+  // Profile Tab
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileData, setProfileData] = useState({
+    bio: "",
+    hourly_rate_min: "",
+    hourly_rate_max: "",
+    phone_number: "",
+  });
+
+  // Proposal Form
+  const [proposalForm, setProposalForm] = useState({
+    price_min: "",
+    price_max: "",
+    message: "",
+    estimated_duration_days: "",
+  });
+  const [submittingProposal, setSubmittingProposal] = useState(false);
 
   useEffect(() => {
-    fetchUserData();
+    checkAuth();
   }, []);
 
-  useEffect(() => {
-    if (!user?.id) return;
-
-    // Subscribe to handwerker_profiles changes for real-time updates
-    const channel = supabase
-      .channel('handwerker-verification-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'handwerker_profiles',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Profile updated:', payload);
-          setHandwerkerProfile(payload.new as HandwerkerProfile);
-          
-          // Show toast notification if status changed
-          if (payload.new.verification_status !== payload.old.verification_status) {
-            toast({
-              title: "Status aktualisiert",
-              description: getStatusConfig(payload.new.verification_status).message,
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id]);
-
-  const fetchUserData = async () => {
+  const checkAuth = async () => {
     try {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       if (!currentUser) {
-        navigate('/auth');
+        navigate('/auth?role=handwerker');
         return;
       }
 
       setUser(currentUser);
+      await fetchHandwerkerProfile(currentUser.id);
+    } catch (error) {
+      console.error('Auth error:', error);
+      navigate('/auth');
+    }
+  };
 
-      // Fetch handwerker profile
-      const { data: profileData, error } = await supabase
+  const fetchHandwerkerProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
         .from('handwerker_profiles')
         .select('*')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', userId)
         .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        toast({
-          title: "Fehler",
-          description: "Profil konnte nicht geladen werden.",
-          variant: "destructive",
-        });
-        return;
-      }
+      if (error) throw error;
 
-      setHandwerkerProfile(profileData);
+      setHandwerkerProfile(data);
+      setProfileData({
+        bio: data.bio || "",
+        hourly_rate_min: data.hourly_rate_min?.toString() || "",
+        hourly_rate_max: data.hourly_rate_max?.toString() || "",
+        phone_number: data.phone_number || "",
+      });
+
+      // Fetch leads and proposals
+      await Promise.all([
+        fetchLeads(data.categories, data.service_areas),
+        fetchProposals(userId)
+      ]);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Fehler",
+        description: "Profil konnte nicht geladen werden.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDocumentUpload = async (file: File, documentType: string) => {
-    if (!user?.id || !handwerkerProfile?.id) return;
-
-    // Validate file size
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "Datei zu groß",
-        description: "Maximale Dateigröße: 10MB",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate file type
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Ungültiger Dateityp",
-        description: "Nur PDF, JPG und PNG erlaubt",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setUploadProgress(prev => ({ ...prev, [documentType]: 0 }));
-
+  const fetchLeads = async (categories: string[], serviceAreas: string[]) => {
+    setLeadsLoading(true);
     try {
-      // Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${documentType}-${Date.now()}.${fileExt}`;
-      
-      const { data, error: uploadError } = await supabase.storage
-        .from('handwerker-documents')
-        .upload(fileName, file, {
-          upsert: true,
+      let query = supabase
+        .from('leads')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      // Filter by service areas if available
+      if (serviceAreas.length > 0) {
+        // Cast to any to avoid TypeScript canton enum issues
+        query = query.in('canton', serviceAreas as any);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Filter by categories on client side
+      const filteredLeads = data?.filter(lead => 
+        categories.includes(lead.category)
+      ) || [];
+
+      setLeads(filteredLeads);
+    } catch (error) {
+      console.error('Error fetching leads:', error);
+    } finally {
+      setLeadsLoading(false);
+    }
+  };
+
+  const fetchProposals = async (userId: string) => {
+    setProposalsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('lead_proposals')
+        .select(`
+          *,
+          leads (
+            title,
+            city,
+            canton
+          )
+        `)
+        .eq('handwerker_id', userId)
+        .order('submitted_at', { ascending: false });
+
+      if (error) throw error;
+
+      setProposals(data || []);
+    } catch (error) {
+      console.error('Error fetching proposals:', error);
+    } finally {
+      setProposalsLoading(false);
+    }
+  };
+
+  const handleSubmitProposal = async () => {
+    if (!selectedLead || !user?.id) return;
+
+    // Validate form
+    if (!proposalForm.price_min || !proposalForm.price_max || !proposalForm.message) {
+      toast({
+        title: "Fehlende Angaben",
+        description: "Bitte füllen Sie alle Pflichtfelder aus.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSubmittingProposal(true);
+    try {
+      const { error } = await supabase
+        .from('lead_proposals')
+        .insert({
+          lead_id: selectedLead.id,
+          handwerker_id: user.id,
+          price_min: parseInt(proposalForm.price_min),
+          price_max: parseInt(proposalForm.price_max),
+          message: proposalForm.message,
+          estimated_duration_days: proposalForm.estimated_duration_days ? 
+            parseInt(proposalForm.estimated_duration_days) : null,
+          status: 'pending',
         });
 
-      if (uploadError) throw uploadError;
+      if (error) throw error;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('handwerker-documents')
-        .getPublicUrl(fileName);
+      toast({
+        title: "Angebot gesendet",
+        description: "Ihr Angebot wurde erfolgreich übermittelt.",
+      });
 
-      // Update handwerker_profiles with new document URL
-      const currentDocs = handwerkerProfile.verification_documents || [];
-      const updatedDocs = [...currentDocs, urlData.publicUrl];
+      // Reset form and close dialog
+      setProposalForm({
+        price_min: "",
+        price_max: "",
+        message: "",
+        estimated_duration_days: "",
+      });
+      setSelectedLead(null);
 
-      const { error: updateError } = await supabase
+      // Refresh proposals
+      await fetchProposals(user.id);
+    } catch (error: any) {
+      console.error('Error submitting proposal:', error);
+      toast({
+        title: "Fehler",
+        description: error.message || "Angebot konnte nicht gesendet werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmittingProposal(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!handwerkerProfile?.id) return;
+
+    setProfileEditing(true);
+    try {
+      const { error } = await supabase
         .from('handwerker_profiles')
         .update({
-          verification_documents: updatedDocs,
+          bio: profileData.bio,
+          hourly_rate_min: profileData.hourly_rate_min ? parseInt(profileData.hourly_rate_min) : null,
+          hourly_rate_max: profileData.hourly_rate_max ? parseInt(profileData.hourly_rate_max) : null,
+          phone_number: profileData.phone_number,
           updated_at: new Date().toISOString(),
         })
         .eq('id', handwerkerProfile.id);
 
-      if (updateError) throw updateError;
+      if (error) throw error;
 
       toast({
-        title: "Dokument hochgeladen",
-        description: "Das Dokument wurde erfolgreich hochgeladen und wird überprüft.",
+        title: "Profil aktualisiert",
+        description: "Ihre Änderungen wurden gespeichert.",
       });
 
-      // Refresh profile data
-      fetchUserData();
+      // Refresh profile
+      await fetchHandwerkerProfile(user.id);
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Error updating profile:', error);
       toast({
-        title: "Upload fehlgeschlagen",
-        description: "Bitte versuchen Sie es erneut.",
+        title: "Fehler",
+        description: "Profil konnte nicht aktualisiert werden.",
         variant: "destructive",
       });
     } finally {
-      setUploadProgress(prev => ({ ...prev, [documentType]: 100 }));
-      setTimeout(() => {
-        setUploadProgress(prev => ({ ...prev, [documentType]: 0 }));
-      }, 1000);
+      setProfileEditing(false);
     }
   };
 
-  const getStatusConfig = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return {
-          variant: 'secondary' as const,
-          label: 'Überprüfung ausstehend',
-          icon: Clock,
-          message: 'Ihr Profil wird derzeit überprüft. Dies dauert in der Regel 1-2 Werktage.',
-          color: 'amber',
-          bgClass: 'bg-amber-50 border-amber-200',
-          textClass: 'text-amber-900',
-        };
-      case 'approved':
-        return {
-          variant: 'default' as const,
-          label: 'Verifiziert',
-          icon: CheckCircle,
-          message: 'Ihr Profil wurde verifiziert! Sie können jetzt Leads durchsuchen und Angebote abgeben.',
-          color: 'green',
-          bgClass: 'bg-green-50 border-green-200',
-          textClass: 'text-green-900',
-        };
+        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Ausstehend</Badge>;
+      case 'accepted':
+        return <Badge variant="default" className="bg-green-600"><CheckCircle className="h-3 w-3 mr-1" />Angenommen</Badge>;
       case 'rejected':
-        return {
-          variant: 'destructive' as const,
-          label: 'Abgelehnt',
-          icon: XCircle,
-          message: 'Ihr Profil wurde abgelehnt. Bitte überprüfen Sie die Notizen und laden Sie die korrekten Dokumente hoch.',
-          color: 'red',
-          bgClass: 'bg-red-50 border-red-200',
-          textClass: 'text-red-900',
-        };
-      case 'needs_review':
-        return {
-          variant: 'outline' as const,
-          label: 'Weitere Informationen erforderlich',
-          icon: AlertCircle,
-          message: 'Wir benötigen zusätzliche Informationen. Bitte überprüfen Sie die Notizen und laden Sie die angeforderten Dokumente hoch.',
-          color: 'orange',
-          bgClass: 'bg-orange-50 border-orange-200',
-          textClass: 'text-orange-900',
-        };
+        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Abgelehnt</Badge>;
+      case 'withdrawn':
+        return <Badge variant="outline">Zurückgezogen</Badge>;
       default:
-        return {
-          variant: 'secondary' as const,
-          label: 'Unbekannt',
-          icon: HelpCircle,
-          message: 'Status unbekannt',
-          color: 'gray',
-          bgClass: 'bg-gray-50 border-gray-200',
-          textClass: 'text-gray-900',
-        };
+        return <Badge>{status}</Badge>;
+    }
+  };
+
+  const getUrgencyBadge = (urgency: string) => {
+    switch (urgency) {
+      case 'urgent':
+        return <Badge variant="destructive">Dringend</Badge>;
+      case 'soon':
+        return <Badge variant="default" className="bg-orange-600">Bald</Badge>;
+      case 'planning':
+        return <Badge variant="secondary">In Planung</Badge>;
+      default:
+        return <Badge variant="outline">{urgency}</Badge>;
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8 pt-24">
-          <div className="max-w-6xl mx-auto">
-            <div className="animate-pulse space-y-4">
-              <div className="h-8 bg-muted rounded w-1/3"></div>
-              <div className="h-32 bg-muted rounded"></div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="h-48 bg-muted rounded"></div>
-                <div className="h-48 bg-muted rounded"></div>
-                <div className="h-48 bg-muted rounded"></div>
-              </div>
-            </div>
-          </div>
-        </main>
-        <Footer />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
       </div>
     );
   }
@@ -398,16 +361,53 @@ const HandwerkerDashboard = () => {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto px-4 py-8 pt-24">
-          <div className="max-w-6xl mx-auto">
-            <Card>
-              <CardContent className="text-center py-12">
-                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  Kein Handwerkerprofil gefunden.
+        <main className="container mx-auto px-4 py-24">
+          <Card>
+            <CardContent className="text-center py-12">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">
+                Kein Handwerkerprofil gefunden.
+              </p>
+              <Button onClick={() => navigate('/handwerker-onboarding')}>
+                Profil erstellen
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Check verification status
+  if (handwerkerProfile.verification_status !== 'approved') {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-24">
+          <div className="max-w-2xl mx-auto">
+            <Card className="border-amber-200 bg-amber-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-amber-900">
+                  <Clock className="h-5 w-5" />
+                  Profil wird überprüft
+                </CardTitle>
+                <CardDescription className="text-amber-800">
+                  Ihr Handwerkerprofil wird derzeit von unserem Team überprüft. 
+                  Dies dauert in der Regel 1-2 Werktage. Sie erhalten eine E-Mail mit Ihren Zugangsdaten, 
+                  sobald Ihr Profil freigeschaltet wurde.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-amber-700">
+                  Status: <strong>{handwerkerProfile.verification_status}</strong>
                 </p>
-                <Button onClick={() => navigate('/handwerker-onboarding')}>
-                  Profil erstellen
+                <Button 
+                  variant="outline" 
+                  className="mt-4"
+                  onClick={() => navigate('/')}
+                >
+                  Zurück zur Startseite
                 </Button>
               </CardContent>
             </Card>
@@ -418,214 +418,407 @@ const HandwerkerDashboard = () => {
     );
   }
 
-  const statusConfig = getStatusConfig(handwerkerProfile.verification_status);
-  const StatusIcon = statusConfig.icon;
-
-  // Check profile completeness
-  const hasUidNumber = !!handwerkerProfile.uid_number;
-  const hasInsurance = !!handwerkerProfile.liability_insurance_provider && !!handwerkerProfile.insurance_valid_until;
-  const hasBankDetails = !!handwerkerProfile.iban && !!handwerkerProfile.bank_name;
-  const hasCompanyInfo = !!handwerkerProfile.company_name;
+  const filteredLeads = leads.filter(lead =>
+    lead.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lead.city.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Handwerker Dashboard</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Willkommen, {handwerkerProfile.first_name || 'Handwerker'}!
+            </h1>
             <p className="text-muted-foreground">
-              Verwalten Sie Ihre Offerten, Dokumente und Abo
+              Verwalten Sie Ihre Leads, Angebote und Profil
             </p>
           </div>
 
-          <Tabs defaultValue="verification" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="verification">Verifizierung</TabsTrigger>
-              <TabsTrigger value="proposals">Meine Offerten</TabsTrigger>
-              <TabsTrigger value="subscription">
-                <Crown className="h-4 w-4 mr-2" />
-                Abo verwalten
+          <Tabs defaultValue="leads" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="leads">
+                <Search className="h-4 w-4 mr-2" />
+                Aufträge durchsuchen
+              </TabsTrigger>
+              <TabsTrigger value="proposals">
+                <FileText className="h-4 w-4 mr-2" />
+                Meine Angebote ({proposals.length})
+              </TabsTrigger>
+              <TabsTrigger value="profile">
+                <User className="h-4 w-4 mr-2" />
+                Profil
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="verification" className="space-y-6">
-
-          {/* Status Overview Card */}
-          <Card className={`mb-6 ${statusConfig.bgClass}`}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className={statusConfig.textClass}>Verifizierungsstatus</CardTitle>
-                  <CardDescription className={statusConfig.textClass}>
-                    {statusConfig.message}
+            {/* Browse Leads Tab */}
+            <TabsContent value="leads" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Verfügbare Aufträge</CardTitle>
+                  <CardDescription>
+                    Durchsuchen Sie Aufträge, die zu Ihren Fähigkeiten passen
                   </CardDescription>
-                </div>
-                <Badge variant={statusConfig.variant} className="flex items-center gap-2">
-                  <StatusIcon className="h-4 w-4" />
-                  {statusConfig.label}
-                </Badge>
-              </div>
-            </CardHeader>
-            {handwerkerProfile.verified_at && (
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Zuletzt aktualisiert: {new Date(handwerkerProfile.verified_at).toLocaleDateString('de-CH')}
-                </p>
-              </CardContent>
-            )}
-          </Card>
-
-          {/* Admin Notes */}
-          {handwerkerProfile.verification_notes && (
-            <Alert className="mb-6 border-blue-200 bg-blue-50">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertTitle className="text-blue-900">Nachricht vom Verifizierungs-Team</AlertTitle>
-              <AlertDescription className="text-blue-800 whitespace-pre-wrap">
-                {handwerkerProfile.verification_notes}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Document Upload Grid */}
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-4">Dokumente</h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              <DocumentUploadCard
-                title="UID-Zertifikat"
-                description="Offizielles UID-Register Zertifikat"
-                documentUrl={handwerkerProfile.verification_documents?.[0]}
-                documentType="uidCertificate"
-                onUpload={handleDocumentUpload}
-                uploadProgress={uploadProgress.uidCertificate}
-                required={true}
-              />
-              <DocumentUploadCard
-                title="Haftpflichtversicherung"
-                description="Nachweis der gültigen Versicherung"
-                documentUrl={handwerkerProfile.verification_documents?.[1]}
-                documentType="insuranceDocument"
-                onUpload={handleDocumentUpload}
-                uploadProgress={uploadProgress.insuranceDocument}
-                required={true}
-              />
-              <DocumentUploadCard
-                title="Gewerbebewilligung"
-                description="Falls erforderlich für Ihre Branche"
-                documentUrl={handwerkerProfile.verification_documents?.[2]}
-                documentType="tradeLicense"
-                onUpload={handleDocumentUpload}
-                uploadProgress={uploadProgress.tradeLicense}
-                required={false}
-              />
-            </div>
-          </div>
-
-          {/* Information Checklist */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Profil-Vollständigkeit</CardTitle>
-              <CardDescription>
-                Überprüfen Sie, ob alle erforderlichen Informationen vorhanden sind
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  {hasUidNumber ? (
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">UID-Nummer</p>
-                    <p className="text-xs text-muted-foreground">
-                      {hasUidNumber ? handwerkerProfile.uid_number : 'Noch nicht angegeben'}
-                    </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="mb-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Aufträge durchsuchen..."
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                  {hasInsurance ? (
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  {leadsLoading ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
+                    </div>
+                  ) : filteredLeads.length === 0 ? (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Keine passenden Aufträge gefunden. Erweitern Sie Ihre Kategorien oder Einsatzgebiete im Profil.
+                      </AlertDescription>
+                    </Alert>
                   ) : (
-                    <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                    <div className="space-y-4">
+                      {filteredLeads.map((lead) => (
+                        <Card key={lead.id} className="hover:border-brand-600 transition-colors">
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg">{lead.title}</CardTitle>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-sm text-muted-foreground">
+                                    {lead.city}, {lead.canton} ({lead.zip})
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col gap-2 items-end">
+                                {getUrgencyBadge(lead.urgency)}
+                                <Badge variant="outline">{lead.category}</Badge>
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                              {lead.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4 text-sm">
+                                {lead.budget_min && lead.budget_max && (
+                                  <div className="flex items-center gap-1">
+                                    <Euro className="h-4 w-4 text-muted-foreground" />
+                                    <span>{lead.budget_min} - {lead.budget_max} CHF</span>
+                                  </div>
+                                )}
+                                <div className="flex items-center gap-1 text-muted-foreground">
+                                  <FileText className="h-4 w-4" />
+                                  <span>{lead.proposals_count} Angebote</span>
+                                </div>
+                              </div>
+                              <Dialog open={selectedLead?.id === lead.id} onOpenChange={(open) => !open && setSelectedLead(null)}>
+                                <DialogTrigger asChild>
+                                  <Button onClick={() => setSelectedLead(lead)}>
+                                    <Send className="h-4 w-4 mr-2" />
+                                    Angebot senden
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-2xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Angebot für: {lead.title}</DialogTitle>
+                                    <DialogDescription>
+                                      Erstellen Sie Ihr Angebot für diesen Auftrag
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="price_min">Preis von (CHF) *</Label>
+                                        <Input
+                                          id="price_min"
+                                          type="number"
+                                          placeholder="z.B. 5000"
+                                          value={proposalForm.price_min}
+                                          onChange={(e) => setProposalForm({ ...proposalForm, price_min: e.target.value })}
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="price_max">Preis bis (CHF) *</Label>
+                                        <Input
+                                          id="price_max"
+                                          type="number"
+                                          placeholder="z.B. 7000"
+                                          value={proposalForm.price_max}
+                                          onChange={(e) => setProposalForm({ ...proposalForm, price_max: e.target.value })}
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="duration">Geschätzte Dauer (Tage)</Label>
+                                      <Input
+                                        id="duration"
+                                        type="number"
+                                        placeholder="z.B. 5"
+                                        value={proposalForm.estimated_duration_days}
+                                        onChange={(e) => setProposalForm({ ...proposalForm, estimated_duration_days: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="message">Ihre Nachricht *</Label>
+                                      <Textarea
+                                        id="message"
+                                        placeholder="Beschreiben Sie, wie Sie den Auftrag ausführen würden..."
+                                        rows={6}
+                                        value={proposalForm.message}
+                                        onChange={(e) => setProposalForm({ ...proposalForm, message: e.target.value })}
+                                      />
+                                    </div>
+                                    <div className="flex justify-end gap-2">
+                                      <Button
+                                        variant="outline"
+                                        onClick={() => setSelectedLead(null)}
+                                      >
+                                        Abbrechen
+                                      </Button>
+                                      <Button
+                                        onClick={handleSubmitProposal}
+                                        disabled={submittingProposal}
+                                      >
+                                        {submittingProposal ? (
+                                          <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Wird gesendet...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <Send className="h-4 w-4 mr-2" />
+                                            Angebot senden
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   )}
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Haftpflichtversicherung</p>
-                    <p className="text-xs text-muted-foreground">
-                      {hasInsurance 
-                        ? `${handwerkerProfile.liability_insurance_provider} (gültig bis ${new Date(handwerkerProfile.insurance_valid_until!).toLocaleDateString('de-CH')})` 
-                        : 'Noch nicht angegeben'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {hasBankDetails ? (
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Bankverbindung</p>
-                    <p className="text-xs text-muted-foreground">
-                      {hasBankDetails ? `${handwerkerProfile.bank_name}` : 'Noch nicht angegeben'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {hasCompanyInfo ? (
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-                  )}
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Firmeninformationen</p>
-                    <p className="text-xs text-muted-foreground">
-                      {hasCompanyInfo ? handwerkerProfile.company_name : 'Noch nicht angegeben'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <div className="flex flex-wrap gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/handwerker-onboarding')}
-            >
-              <Building2 className="mr-2 h-4 w-4" />
-              Profil bearbeiten
-            </Button>
-            
-            {handwerkerProfile.verification_status === 'approved' && (
-              <Button onClick={() => navigate('/browse-leads')}>
-                <Eye className="mr-2 h-4 w-4" />
-                Leads durchsuchen
-              </Button>
-            )}
-
-            {(handwerkerProfile.verification_status === 'rejected' || 
-              handwerkerProfile.verification_status === 'needs_review') && (
-              <Button variant="outline">
-                <AlertCircle className="mr-2 h-4 w-4" />
-                Support kontaktieren
-              </Button>
-            )}
-          </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
-            <TabsContent value="proposals">
-              <ProposalsList userId={user.id} />
+            {/* My Proposals Tab */}
+            <TabsContent value="proposals" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Meine Angebote</CardTitle>
+                  <CardDescription>
+                    Übersicht über alle Ihre eingereichten Angebote
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {proposalsLoading ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
+                    </div>
+                  ) : proposals.length === 0 ? (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Sie haben noch keine Angebote eingereicht. Durchsuchen Sie verfügbare Aufträge, um Angebote zu senden.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <div className="space-y-4">
+                      {proposals.map((proposal) => (
+                        <Card key={proposal.id}>
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <CardTitle className="text-lg">
+                                  {proposal.leads.title}
+                                </CardTitle>
+                                <div className="flex items-center gap-2 mt-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-sm text-muted-foreground">
+                                    {proposal.leads.city}, {proposal.leads.canton}
+                                  </span>
+                                </div>
+                              </div>
+                              {getStatusBadge(proposal.status)}
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-4 text-sm">
+                                <div className="flex items-center gap-1">
+                                  <Euro className="h-4 w-4 text-muted-foreground" />
+                                  <span>{proposal.price_min} - {proposal.price_max} CHF</span>
+                                </div>
+                                {proposal.estimated_duration_days && (
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4 text-muted-foreground" />
+                                    <span>{proposal.estimated_duration_days} Tage</span>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground line-clamp-2">
+                                {proposal.message}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Gesendet: {new Date(proposal.submitted_at).toLocaleDateString('de-CH', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric'
+                                })}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
-            <TabsContent value="subscription">
-              <SubscriptionManager userId={user.id} />
+            {/* Profile Tab */}
+            <TabsContent value="profile" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profil bearbeiten</CardTitle>
+                  <CardDescription>
+                    Aktualisieren Sie Ihre Profilinformationen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Basic Info - Read Only */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Vorname</Label>
+                      <Input value={handwerkerProfile.first_name || ""} disabled />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nachname</Label>
+                      <Input value={handwerkerProfile.last_name || ""} disabled />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>E-Mail</Label>
+                    <Input value={handwerkerProfile.email || ""} disabled />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Firma</Label>
+                    <Input value={handwerkerProfile.company_name || ""} disabled />
+                  </div>
+
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-sm">
+                      Grundlegende Informationen können nicht hier geändert werden. 
+                      Kontaktieren Sie uns bei Änderungswünschen.
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Editable Fields */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone_number">Telefonnummer</Label>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone_number"
+                        type="tel"
+                        placeholder="+41 79 123 45 67"
+                        value={profileData.phone_number}
+                        onChange={(e) => setProfileData({ ...profileData, phone_number: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Über mich / Firma</Label>
+                    <Textarea
+                      id="bio"
+                      placeholder="Beschreiben Sie Ihre Erfahrung und Spezialisierung..."
+                      rows={6}
+                      value={profileData.bio}
+                      onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="hourly_rate_min">Stundensatz von (CHF)</Label>
+                      <Input
+                        id="hourly_rate_min"
+                        type="number"
+                        placeholder="z.B. 80"
+                        value={profileData.hourly_rate_min}
+                        onChange={(e) => setProfileData({ ...profileData, hourly_rate_min: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hourly_rate_max">Stundensatz bis (CHF)</Label>
+                      <Input
+                        id="hourly_rate_max"
+                        type="number"
+                        placeholder="z.B. 120"
+                        value={profileData.hourly_rate_max}
+                        onChange={(e) => setProfileData({ ...profileData, hourly_rate_max: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Kategorien</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {handwerkerProfile.categories.map((cat) => (
+                        <Badge key={cat} variant="secondary">{cat}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Einsatzgebiete</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {handwerkerProfile.service_areas.map((area) => (
+                        <Badge key={area} variant="outline">{area}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={handleUpdateProfile}
+                      disabled={profileEditing}
+                    >
+                      {profileEditing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Wird gespeichert...
+                        </>
+                      ) : (
+                        "Profil aktualisieren"
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>

@@ -433,3 +433,66 @@ export const adminRegistrationNotificationTemplate = (data: AdminRegistrationDat
     </p>
   `);
 };
+
+// Rejection email template
+interface RejectionData {
+  firstName: string;
+  lastName: string;
+  companyName?: string;
+  reason?: string;
+  email: string;
+}
+
+export const rejectionNotificationTemplate = (data: RejectionData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2 style="color: #d32f2f;">Registrierung nicht genehmigt</h2>
+      
+      <p>Sehr geehrte/r ${data.firstName} ${data.lastName},</p>
+      
+      <p>
+        Vielen Dank für Ihr Interesse an einer Zusammenarbeit mit Büeze.ch.
+      </p>
+      
+      <p>
+        Nach sorgfältiger Prüfung Ihrer Unterlagen müssen wir Ihnen leider mitteilen, 
+        dass wir Ihre Registrierung ${data.companyName ? `für ${data.companyName}` : ''} 
+        zum jetzigen Zeitpunkt nicht genehmigen können.
+      </p>
+      
+      ${data.reason ? `
+        <div class="info-box" style="background: #fff3e0; border-left-color: #f57c00;">
+          <h3 style="margin-top: 0; color: #e65100;">Grund der Ablehnung:</h3>
+          <p style="margin-bottom: 0; white-space: pre-wrap;">${data.reason}</p>
+        </div>
+      ` : ''}
+      
+      <h3 style="color: #0066CC; margin-top: 30px;">Was Sie tun können:</h3>
+      
+      <ul style="line-height: 1.8;">
+        <li><strong>Fehlende Dokumente:</strong> Falls Dokumente fehlen oder unvollständig sind, können Sie diese nachreichen</li>
+        <li><strong>Ungültige Informationen:</strong> Überprüfen Sie Ihre angegebenen Daten und korrigieren Sie diese</li>
+        <li><strong>Lizenz oder Versicherung:</strong> Stellen Sie sicher, dass alle erforderlichen Lizenzen und Versicherungen aktuell sind</li>
+        <li><strong>Rückfragen:</strong> Kontaktieren Sie uns für weitere Informationen</li>
+      </ul>
+      
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #0066CC;">Kontakt aufnehmen</h3>
+        <p style="margin-bottom: 0;">
+          <strong>E-Mail:</strong> <a href="mailto:info@walia-solutions.ch">info@walia-solutions.ch</a><br>
+          <strong>Website:</strong> <a href="https://bueze.ch">www.bueze.ch</a>
+        </p>
+      </div>
+      
+      <p style="margin-top: 30px;">
+        Wir bedauern, Ihnen keine positivere Nachricht übermitteln zu können, 
+        und stehen bei Fragen gerne zur Verfügung.
+      </p>
+      
+      <p>
+        Mit freundlichen Grüssen<br>
+        <strong>Das Büeze.ch Team</strong>
+      </p>
+    </div>
+  `);
+};
