@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SWISS_CANTONS } from "@/config/cantons";
 import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle } from "lucide-react";
+import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
@@ -320,98 +320,120 @@ const HandwerkerOnboarding = () => {
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-6">
-            {/* Compact Header */}
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-bold">Willkommen bei Büeze.ch</h2>
-              <p className="text-muted-foreground">
-                Erstellen Sie Ihr Handwerkerprofil in 4 einfachen Schritten
+          <div className="space-y-8">
+            {/* Bold Header */}
+            <div className="text-center space-y-3">
+              <h2 className="text-4xl font-bold text-foreground">Willkommen bei Büeze.ch</h2>
+              <p className="text-lg text-muted-foreground">
+                Ihr Handwerkerprofil in 4 Schritten
               </p>
-              <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                <AlertCircle className="h-4 w-4" />
-                <span>Geschätzte Zeit: 10-15 Minuten</span>
-              </div>
+              <Badge variant="secondary" className="text-sm px-4 py-2">
+                <Clock className="h-4 w-4 mr-2" />
+                10-15 Minuten
+              </Badge>
             </div>
 
-            {/* Compact Checklist */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Benötigte Informationen</CardTitle>
-                <CardDescription className="text-xs">
-                  Diese Informationen sind für die Aktivierung Ihres Profils erforderlich
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Shield className="h-3 w-3 text-primary" />
+            {/* Bold Info Cards */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Shield className="h-6 w-6 text-primary" />
                     </div>
-                    <span>UID-Nummer (CHE-123.456.789)</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Shield className="h-3 w-3 text-primary" />
+                    <div>
+                      <CardTitle className="text-lg">Benötigte Dokumente</CardTitle>
+                      <CardDescription className="text-base mt-1">Für die Aktivierung erforderlich</CardDescription>
                     </div>
-                    <span>Haftpflichtversicherung (Anbieter & Gültigkeit)</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Wallet className="h-3 w-3 text-primary" />
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 text-base">
+                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span>UID-Nummer</span>
                     </div>
-                    <span>IBAN & Bankname</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Building2 className="h-3 w-3 text-primary" />
+                    <div className="flex items-center gap-3 text-base">
+                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span>Haftpflichtversicherung</span>
                     </div>
-                    <span>Firmenname & Rechtsform</span>
+                    <div className="flex items-center gap-3 text-base">
+                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span>IBAN & Bankname</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-base">
+                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span>Firmenangaben</span>
+                    </div>
                   </div>
-                </div>
-                <Alert className="mt-4 bg-blue-50 border-blue-200">
-                  <FileText className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-xs text-blue-900">
-                    💡 Dokumente können jetzt hochgeladen werden für schnellere Verifizierung, 
-                    oder später in Ihrem Dashboard nachgereicht werden.
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Optional Upload Section - Collapsible */}
-            <Card className="border-dashed">
-              <CardHeader className="pb-3">
-                <button
-                  type="button"
-                  onClick={() => setShowUploadSection(!showUploadSection)}
-                  className="flex items-center justify-between w-full text-left hover:opacity-70 transition-opacity"
-                >
-                  <div>
-                    <CardTitle className="text-base">⚡ Schnellere Verifizierung</CardTitle>
-                    <CardDescription className="mt-1">
-                      Laden Sie Dokumente bereits jetzt hoch, oder reichen Sie später nach
-                    </CardDescription>
+              <Card className="border-2 border-brand-200 bg-gradient-to-br from-brand-50 to-transparent">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-brand-500/10 flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-brand-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">⚡ Optional jetzt hochladen</CardTitle>
+                      <CardDescription className="text-base mt-1">Schnellere Verifizierung</CardDescription>
+                    </div>
                   </div>
-                  <Badge variant="secondary">Optional</Badge>
-                </button>
-              </CardHeader>
-              
-              {showUploadSection && (
-                <CardContent className="space-y-4 pt-0">
+                </CardHeader>
+                <CardContent>
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadSection(!showUploadSection)}
+                    className="w-full text-left"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-white border hover:border-primary transition-colors">
+                        <span className="text-base font-medium">UID-Zertifikat</span>
+                        {step0Uploads.uidCertificate ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <Upload className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-lg bg-white border hover:border-primary transition-colors">
+                        <span className="text-base font-medium">Versicherungsnachweis</span>
+                        {step0Uploads.insuranceDocument ? (
+                          <CheckCircle className="h-5 w-5 text-green-600" />
+                        ) : (
+                          <Upload className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Upload Section - Expanded */}
+            {showUploadSection && (
+              <Card className="border-2 border-dashed border-primary/30">
+                <CardHeader>
+                  <CardTitle className="text-xl">Dokumente hochladen</CardTitle>
+                  <CardDescription className="text-base">
+                    Kann auch später nachgereicht werden
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
                   {/* UID Certificate Upload */}
-                  <div className="space-y-2">
-                    <Label htmlFor="step0-uid">UID-Zertifikat</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="step0-uid" className="text-base font-medium">UID-Zertifikat</Label>
                     {step0Uploads.uidCertificate ? (
-                      <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm flex-1">{step0Uploads.uidCertificate.name}</span>
+                      <div className="flex items-center gap-3 p-4 border-2 rounded-lg bg-green-50 border-green-200">
+                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                        <span className="text-base flex-1 font-medium">{step0Uploads.uidCertificate.name}</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => setStep0Uploads(prev => ({ ...prev, uidCertificate: undefined }))}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-5 w-5" />
                         </Button>
                       </div>
                     ) : (
@@ -432,32 +454,29 @@ const HandwerkerOnboarding = () => {
                           type="button"
                           variant="outline"
                           onClick={() => document.getElementById('step0-uid')?.click()}
-                          className="w-full"
+                          className="w-full h-12 text-base"
                         >
-                          <Upload className="mr-2 h-4 w-4" />
-                          UID-Zertifikat hochladen
+                          <Upload className="mr-2 h-5 w-5" />
+                          Hochladen
                         </Button>
                       </>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                      PDF, JPG oder PNG · Max. 10MB · Kann später nachgereicht werden
-                    </p>
                   </div>
 
                   {/* Insurance Document Upload */}
-                  <div className="space-y-2">
-                    <Label htmlFor="step0-insurance">Versicherungsnachweis</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="step0-insurance" className="text-base font-medium">Versicherungsnachweis</Label>
                     {step0Uploads.insuranceDocument ? (
-                      <div className="flex items-center gap-2 p-3 border rounded-md bg-green-50">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm flex-1">{step0Uploads.insuranceDocument.name}</span>
+                      <div className="flex items-center gap-3 p-4 border-2 rounded-lg bg-green-50 border-green-200">
+                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                        <span className="text-base flex-1 font-medium">{step0Uploads.insuranceDocument.name}</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => setStep0Uploads(prev => ({ ...prev, insuranceDocument: undefined }))}
                         >
-                          <X className="h-4 w-4" />
+                          <X className="h-5 w-5" />
                         </Button>
                       </div>
                     ) : (
@@ -478,38 +497,23 @@ const HandwerkerOnboarding = () => {
                           type="button"
                           variant="outline"
                           onClick={() => document.getElementById('step0-insurance')?.click()}
-                          className="w-full"
+                          className="w-full h-12 text-base"
                         >
-                          <Upload className="mr-2 h-4 w-4" />
-                          Versicherungsnachweis hochladen
+                          <Upload className="mr-2 h-5 w-5" />
+                          Hochladen
                         </Button>
                       </>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                      PDF, JPG oder PNG · Max. 10MB · Kann später nachgereicht werden
-                    </p>
                   </div>
-
-                  <Alert className="bg-green-50 border-green-200">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-xs text-green-900">
-                      <strong>Vorteile des frühen Hochladens:</strong><br />
-                      • Schnellere Profilaktivierung (oft innerhalb 24h)<br />
-                      • Weniger Schritte später<br />
-                      • Sofort loslegen nach Verifizierung
-                    </AlertDescription>
-                  </Alert>
                 </CardContent>
-              )}
-            </Card>
+              </Card>
+            )}
 
-            {/* Streamlined Info Alert */}
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                <strong>Profil-Aktivierung:</strong> Dokumente werden innerhalb 1-2 Werktagen geprüft. 
-                Sie können fehlende Dokumente jederzeit in Ihrem Dashboard hochladen und den Status 
-                in Echtzeit verfolgen.
+            {/* Simple Info */}
+            <Alert className="border-2">
+              <AlertCircle className="h-5 w-5" />
+              <AlertDescription className="text-base ml-2">
+                Verifizierung erfolgt innerhalb 1-2 Werktagen. Fehlende Dokumente können Sie später hochladen.
               </AlertDescription>
             </Alert>
           </div>
