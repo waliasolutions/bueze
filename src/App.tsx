@@ -27,6 +27,9 @@ import HandwerkerApprovals from "./pages/admin/HandwerkerApprovals";
 import HandwerkerVerification from "./pages/admin/HandwerkerVerification";
 import AGB from "./pages/legal/AGB";
 import PricingPage from "./pages/legal/PricingPage";
+import MagicLinkHandler from "./pages/MagicLinkHandler";
+import OpportunityView from "./pages/OpportunityView";
+import ProposalReview from "./pages/ProposalReview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,6 +92,9 @@ const App = () => {
             <Route path="/admin/handwerker-verification" element={<HandwerkerVerification />} />
             <Route path="/legal/agb" element={<AGB />} />
             <Route path="/legal/pricing" element={<PricingPage />} />
+            <Route path="/magic" element={<MagicLinkHandler />} />
+            <Route path="/opportunity/:leadId" element={<OpportunityView />} />
+            <Route path="/proposals/:proposalId" element={<ProposalReview />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

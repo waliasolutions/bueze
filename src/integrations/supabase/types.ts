@@ -1097,6 +1097,68 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_proposals: {
+        Row: {
+          attachments: string[] | null
+          client_viewed_at: string | null
+          created_at: string
+          estimated_duration_days: number | null
+          handwerker_id: string
+          id: string
+          lead_id: string
+          message: string
+          price_max: number
+          price_min: number
+          responded_at: string | null
+          status: Database["public"]["Enums"]["proposal_status"]
+          submitted_at: string
+          updated_at: string
+          view_count: number | null
+        }
+        Insert: {
+          attachments?: string[] | null
+          client_viewed_at?: string | null
+          created_at?: string
+          estimated_duration_days?: number | null
+          handwerker_id: string
+          id?: string
+          lead_id: string
+          message: string
+          price_max: number
+          price_min: number
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["proposal_status"]
+          submitted_at?: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Update: {
+          attachments?: string[] | null
+          client_viewed_at?: string | null
+          created_at?: string
+          estimated_duration_days?: number | null
+          handwerker_id?: string
+          id?: string
+          lead_id?: string
+          message?: string
+          price_max?: number
+          price_min?: number
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["proposal_status"]
+          submitted_at?: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_purchases: {
         Row: {
           buyer_id: string
@@ -1169,6 +1231,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          accepted_proposal_id: string | null
           address: string | null
           budget_max: number | null
           budget_min: number | null
@@ -1185,6 +1248,8 @@ export type Database = {
           max_purchases: number | null
           media_urls: string[] | null
           owner_id: string
+          proposal_deadline: string | null
+          proposals_count: number | null
           purchased_count: number | null
           quality_score: number | null
           request_id: string | null
@@ -1196,6 +1261,7 @@ export type Database = {
           zip: string
         }
         Insert: {
+          accepted_proposal_id?: string | null
           address?: string | null
           budget_max?: number | null
           budget_min?: number | null
@@ -1212,6 +1278,8 @@ export type Database = {
           max_purchases?: number | null
           media_urls?: string[] | null
           owner_id: string
+          proposal_deadline?: string | null
+          proposals_count?: number | null
           purchased_count?: number | null
           quality_score?: number | null
           request_id?: string | null
@@ -1223,6 +1291,7 @@ export type Database = {
           zip: string
         }
         Update: {
+          accepted_proposal_id?: string | null
           address?: string | null
           budget_max?: number | null
           budget_min?: number | null
@@ -1239,6 +1308,8 @@ export type Database = {
           max_purchases?: number | null
           media_urls?: string[] | null
           owner_id?: string
+          proposal_deadline?: string | null
+          proposals_count?: number | null
           purchased_count?: number | null
           quality_score?: number | null
           request_id?: string | null
@@ -1249,7 +1320,15 @@ export type Database = {
           urgency?: Database["public"]["Enums"]["urgency_level"]
           zip?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_accepted_proposal_id_fkey"
+            columns: ["accepted_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "lead_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       legal_pages: {
         Row: {
@@ -1288,6 +1367,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      magic_tokens: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          metadata: Json | null
+          resource_id: string | null
+          resource_type: string
+          token: string
+          used_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type: string
+          token: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string
+          token?: string
+          used_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -2376,6 +2491,7 @@ export type Database = {
         Returns: boolean
       }
       delete_expired_contact_requests: { Args: never; Returns: undefined }
+      delete_expired_magic_tokens: { Args: never; Returns: undefined }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -2523,6 +2639,7 @@ export type Database = {
         | "deleted"
       payroll_period_type: "monthly" | "weekly" | "bi_weekly"
       payroll_status: "draft" | "calculated" | "approved" | "paid"
+      proposal_status: "pending" | "accepted" | "rejected" | "withdrawn"
       subscription_plan:
         | "starter"
         | "professional"
@@ -2820,6 +2937,7 @@ export const Constants = {
       ],
       payroll_period_type: ["monthly", "weekly", "bi_weekly"],
       payroll_status: ["draft", "calculated", "approved", "paid"],
+      proposal_status: ["pending", "accepted", "rejected", "withdrawn"],
       subscription_plan: [
         "starter",
         "professional",
