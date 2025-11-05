@@ -1186,7 +1186,7 @@ const HandwerkerOnboarding = () => {
                 <CardTitle className="text-2xl">Handwerkerprofil erstellen</CardTitle>
                 <CardDescription className="text-base mt-1">
                   {currentStep === 0 
-                    ? "Willkommen - Dokumente bereithalten" 
+                    ? "Bereiten Sie Ihre Dokumente vor" 
                     : `Schritt ${currentStep} von ${totalSteps}`
                   }
                 </CardDescription>
