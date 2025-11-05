@@ -173,7 +173,23 @@ const HandwerkerOnboarding = () => {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
+      // Company Information validation
+      if (!formData.companyName.trim()) {
+        newErrors.companyName = "Firmenname ist erforderlich";
+      }
+      if (!formData.companyLegalForm) {
+        newErrors.companyLegalForm = "Rechtsform ist erforderlich";
+      }
+      // UID is optional but validate format if provided
+      if (formData.uidNumber && !validateUID(formData.uidNumber)) {
+        newErrors.uidNumber = "Ungültiges Format. Beispiel: CHE-123.456.789";
+      }
+      if (formData.mwstNumber && !validateMWST(formData.mwstNumber)) {
+        newErrors.mwstNumber = "Ungültiges Format. Beispiel: CHE-123.456.789 MWST";
+      }
+    } else if (step === 2) {
       // Personal Information validation
+      // Name, Email, Phone: ALWAYS required for ALL legal forms
       if (!formData.firstName.trim()) {
         newErrors.firstName = "Vorname ist erforderlich";
       }
@@ -188,48 +204,59 @@ const HandwerkerOnboarding = () => {
       if (!formData.phoneNumber.trim()) {
         newErrors.phoneNumber = "Telefonnummer ist erforderlich";
       }
-      if (!formData.personalAddress.trim()) {
-        newErrors.personalAddress = "Adresse ist erforderlich";
+      
+      // Address: ONLY required for Einzelfirma
+      if (formData.companyLegalForm === "einzelfirma") {
+        if (!formData.personalAddress.trim()) {
+          newErrors.personalAddress = "Persönliche Adresse ist für Einzelfirma erforderlich";
+        }
+        if (!formData.personalZip.trim()) {
+          newErrors.personalZip = "PLZ ist erforderlich";
+        }
+        if (!formData.personalCity.trim()) {
+          newErrors.personalCity = "Ort ist erforderlich";
+        }
+        if (!formData.personalCanton) {
+          newErrors.personalCanton = "Kanton ist erforderlich";
+        }
       }
-      if (!formData.personalZip.trim()) {
-        newErrors.personalZip = "PLZ ist erforderlich";
-      }
-      if (!formData.personalCity.trim()) {
-        newErrors.personalCity = "Ort ist erforderlich";
-      }
-      if (!formData.personalCanton) {
-        newErrors.personalCanton = "Kanton ist erforderlich";
-      }
-    } else if (step === 2) {
-      // Company Information validation
-      if (!formData.companyName.trim()) {
-        newErrors.companyName = "Firmenname ist erforderlich";
-      }
-      // UID is optional but validate format if provided
-      if (formData.uidNumber && !validateUID(formData.uidNumber)) {
-        newErrors.uidNumber = "Ungültiges Format. Beispiel: CHE-123.456.789";
-      }
-      if (formData.mwstNumber && !validateMWST(formData.mwstNumber)) {
-        newErrors.mwstNumber = "Ungültiges Format. Beispiel: CHE-123.456.789 MWST";
-      }
+      // For other legal forms (GmbH, AG, etc.), personal address is OPTIONAL
     } else if (step === 3) {
-      // Business Address validation
-      if (!formData.sameAsPersonal) {
-        if (!formData.businessAddress.trim()) {
-          newErrors.businessAddress = "Geschäftsadresse ist erforderlich";
+      // Business Address validation depends on legal form
+      if (formData.companyLegalForm !== "einzelfirma") {
+        // For GmbH, AG, etc: Business address is REQUIRED
+        if (!formData.sameAsPersonal) {
+          if (!formData.businessAddress.trim()) {
+            newErrors.businessAddress = "Geschäftsadresse ist erforderlich";
+          }
+          if (!formData.businessZip) {
+            newErrors.businessZip = "PLZ ist erforderlich";
+          }
+          if (!formData.businessCity.trim()) {
+            newErrors.businessCity = "Ort ist erforderlich";
+          }
+          if (!formData.businessCanton) {
+            newErrors.businessCanton = "Kanton ist erforderlich";
+          }
         }
-        if (!formData.businessZip) {
-          newErrors.businessZip = "PLZ ist erforderlich";
-        }
-        if (!formData.businessCity.trim()) {
-          newErrors.businessCity = "Ort ist erforderlich";
-        }
-        if (!formData.businessCanton) {
-          newErrors.businessCanton = "Kanton ist erforderlich";
+      } else {
+        // For Einzelfirma: Business address is OPTIONAL (personal is already required)
+        // Only validate if user chose NOT to use personal address AND started filling it
+        if (!formData.sameAsPersonal && formData.businessAddress.trim()) {
+          // If they start filling it, validate properly
+          if (!formData.businessZip) {
+            newErrors.businessZip = "PLZ ist erforderlich";
+          }
+          if (!formData.businessCity.trim()) {
+            newErrors.businessCity = "Ort ist erforderlich";
+          }
+          if (!formData.businessCanton) {
+            newErrors.businessCanton = "Kanton ist erforderlich";
+          }
         }
       }
       
-      // Banking validation
+      // Banking validation - same for all
       if (!formData.iban) {
         newErrors.iban = "IBAN ist erforderlich";
       } else if (!validateIBAN(formData.iban)) {
@@ -493,6 +520,122 @@ const HandwerkerOnboarding = () => {
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
               <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
+                <Building2 className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">Firmeninformationen</h3>
+                <p className="text-base text-muted-foreground">Grundlegende Angaben zu Ihrem Betrieb</p>
+              </div>
+            </div>
+
+            <Alert className="border-brand-300 bg-brand-50 mb-6">
+              <AlertCircle className="h-5 w-5 text-brand-600" />
+              <AlertDescription className="text-base ml-2">
+                <span className="font-semibold text-brand-700">Hinweis:</span>
+                {" "}Felder mit <span className="text-brand-600">★</span> sind für die Aktivierung 
+                Ihres Kontos erforderlich, können aber später nachgereicht werden.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <Label htmlFor="companyName" className="text-base font-medium">Firmenname *</Label>
+                <Input
+                  id="companyName"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  placeholder="z.B. Muster AG"
+                  className="h-12 text-base"
+                />
+                {errors.companyName && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.companyName}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="companyLegalForm" className="text-base font-medium">Rechtsform *</Label>
+                <Select
+                  value={formData.companyLegalForm}
+                  onValueChange={(value) => setFormData({ ...formData, companyLegalForm: value })}
+                >
+                  <SelectTrigger className="h-12 text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
+                    <SelectItem value="gmbh">GmbH</SelectItem>
+                    <SelectItem value="ag">AG</SelectItem>
+                    <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
+                    <SelectItem value="kommanditgesellschaft">Kommanditgesellschaft</SelectItem>
+                    <SelectItem value="genossenschaft">Genossenschaft</SelectItem>
+                    <SelectItem value="verein">Verein</SelectItem>
+                    <SelectItem value="stiftung">Stiftung</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.companyLegalForm && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.companyLegalForm}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="uidNumber" className="text-base font-medium">
+                  UID-Nummer
+                  <span className="text-brand-600 ml-1" title="Für Aktivierung erforderlich">★</span>
+                </Label>
+                <Input
+                  id="uidNumber"
+                  value={formData.uidNumber}
+                  onChange={(e) => setFormData({ ...formData, uidNumber: e.target.value })}
+                  onBlur={(e) => {
+                    const formatted = formatUID(e.target.value);
+                    setFormData({ ...formData, uidNumber: formatted });
+                  }}
+                  placeholder="CHE-123.456.789"
+                  className="h-12 text-base font-mono"
+                />
+                {errors.uidNumber && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.uidNumber}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <span className="text-brand-600">★</span>
+                  Für die Aktivierung Ihres Kontos benötigt
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="mwstNumber" className="text-base font-medium">MWST-Nummer (optional)</Label>
+                <Input
+                  id="mwstNumber"
+                  value={formData.mwstNumber}
+                  onChange={(e) => setFormData({ ...formData, mwstNumber: e.target.value })}
+                  placeholder="CHE-123.456.789 MWST"
+                  className="h-12 text-base font-mono"
+                />
+                {errors.mwstNumber && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.mwstNumber}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
                 <User className="h-7 w-7 text-white" />
               </div>
               <div>
@@ -576,7 +719,9 @@ const HandwerkerOnboarding = () => {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="personalAddress" className="text-base font-medium">Adresse *</Label>
+                <Label htmlFor="personalAddress" className="text-base font-medium">
+                  Adresse {formData.companyLegalForm === "einzelfirma" && "*"}
+                </Label>
                 <Input
                   id="personalAddress"
                   value={formData.personalAddress}
@@ -590,11 +735,22 @@ const HandwerkerOnboarding = () => {
                     {errors.personalAddress}
                   </p>
                 )}
+                {formData.companyLegalForm === "einzelfirma" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Für Einzelfirma ist die persönliche Adresse erforderlich
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Optional - Die Geschäftsadresse wird in Schritt 3 abgefragt
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <Label htmlFor="personalZip" className="text-base font-medium">PLZ *</Label>
+                  <Label htmlFor="personalZip" className="text-base font-medium">
+                    PLZ {formData.companyLegalForm === "einzelfirma" && "*"}
+                  </Label>
                   <Input
                     id="personalZip"
                     value={formData.personalZip}
@@ -612,7 +768,9 @@ const HandwerkerOnboarding = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="personalCity" className="text-base font-medium">Ort *</Label>
+                  <Label htmlFor="personalCity" className="text-base font-medium">
+                    Ort {formData.companyLegalForm === "einzelfirma" && "*"}
+                  </Label>
                   <Input
                     id="personalCity"
                     value={formData.personalCity}
@@ -630,7 +788,9 @@ const HandwerkerOnboarding = () => {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="personalCanton" className="text-base font-medium">Kanton *</Label>
+                <Label htmlFor="personalCanton" className="text-base font-medium">
+                  Kanton {formData.companyLegalForm === "einzelfirma" && "*"}
+                </Label>
                 <Select
                   value={formData.personalCanton}
                   onValueChange={(value) => setFormData({ ...formData, personalCanton: value })}
@@ -657,116 +817,6 @@ const HandwerkerOnboarding = () => {
           </div>
         );
 
-      case 2:
-        return (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <Building2 className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Firmeninformationen</h3>
-                <p className="text-base text-muted-foreground">Grundlegende Angaben zu Ihrem Betrieb</p>
-              </div>
-            </div>
-
-            <Alert className="border-brand-300 bg-brand-50 mb-6">
-              <AlertCircle className="h-5 w-5 text-brand-600" />
-              <AlertDescription className="text-base ml-2">
-                <span className="font-semibold text-brand-700">Hinweis:</span>
-                {" "}Felder mit <span className="text-brand-600">★</span> sind für die Aktivierung 
-                Ihres Kontos erforderlich, können aber später nachgereicht werden.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-5">
-              <div className="space-y-3">
-                <Label htmlFor="companyName" className="text-base font-medium">Firmenname *</Label>
-                <Input
-                  id="companyName"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  placeholder="z.B. Muster AG"
-                  className="h-12 text-base"
-                />
-                {errors.companyName && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.companyName}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="companyLegalForm" className="text-base font-medium">Rechtsform *</Label>
-                <Select
-                  value={formData.companyLegalForm}
-                  onValueChange={(value) => setFormData({ ...formData, companyLegalForm: value })}
-                >
-                  <SelectTrigger className="h-12 text-base">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
-                    <SelectItem value="gmbh">GmbH</SelectItem>
-                    <SelectItem value="ag">AG</SelectItem>
-                    <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
-                    <SelectItem value="kommanditgesellschaft">Kommanditgesellschaft</SelectItem>
-                    <SelectItem value="genossenschaft">Genossenschaft</SelectItem>
-                    <SelectItem value="verein">Verein</SelectItem>
-                    <SelectItem value="stiftung">Stiftung</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="uidNumber" className="text-base font-medium">
-                  UID-Nummer
-                  <span className="text-brand-600 ml-1" title="Für Aktivierung erforderlich">★</span>
-                </Label>
-                <Input
-                  id="uidNumber"
-                  value={formData.uidNumber}
-                  onChange={(e) => setFormData({ ...formData, uidNumber: e.target.value })}
-                  onBlur={(e) => {
-                    const formatted = formatUID(e.target.value);
-                    setFormData({ ...formData, uidNumber: formatted });
-                  }}
-                  placeholder="CHE-123.456.789"
-                  className="h-12 text-base font-mono"
-                />
-                {errors.uidNumber && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.uidNumber}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <span className="text-brand-600">★</span>
-                  Für die Aktivierung Ihres Kontos benötigt
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="mwstNumber" className="text-base font-medium">MWST-Nummer (optional)</Label>
-                <Input
-                  id="mwstNumber"
-                  value={formData.mwstNumber}
-                  onChange={(e) => setFormData({ ...formData, mwstNumber: e.target.value })}
-                  placeholder="CHE-123.456.789 MWST"
-                  className="h-12 text-base font-mono"
-                />
-                {errors.mwstNumber && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.mwstNumber}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-
       case 3:
         return (
           <div className="space-y-6 animate-fade-in">
@@ -779,6 +829,22 @@ const HandwerkerOnboarding = () => {
                 <p className="text-base text-muted-foreground">Geschäftsadresse und Bankverbindung</p>
               </div>
             </div>
+
+            {formData.companyLegalForm === "einzelfirma" ? (
+              <Alert className="border-brand-300 bg-brand-50">
+                <AlertCircle className="h-5 w-5 text-brand-600" />
+                <AlertDescription className="text-base ml-2">
+                  Für Einzelfirma ist die Geschäftsadresse optional. Sie können die persönliche Adresse aus Schritt 2 verwenden.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="border-brand-300 bg-brand-50">
+                <AlertCircle className="h-5 w-5 text-brand-600" />
+                <AlertDescription className="text-base ml-2">
+                  Die Geschäftsadresse Ihrer Firma ist erforderlich.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
               <Checkbox
@@ -1328,13 +1394,13 @@ const HandwerkerOnboarding = () => {
             {/* Summary Cards */}
             <div className="space-y-4">
               
-              {/* 1. Personal Information */}
+              {/* 1. Company Information */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">Persönliche Informationen</CardTitle>
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Firmeninformationen</CardTitle>
                     </div>
                     <Button
                       variant="ghost"
@@ -1346,23 +1412,22 @@ const HandwerkerOnboarding = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <SummaryItem label="Name" value={`${formData.firstName} ${formData.lastName}`} />
-                  <SummaryItem label="E-Mail" value={formData.email} />
-                  <SummaryItem label="Telefon" value={formData.phoneNumber} />
-                  <SummaryItem 
-                    label="Adresse" 
-                    value={`${formData.personalAddress}, ${formData.personalZip} ${formData.personalCity}, ${formData.personalCanton}`} 
-                  />
+                  <SummaryItem label="Firmenname" value={formData.companyName} />
+                  <SummaryItem label="Rechtsform" value={legalFormLabels[formData.companyLegalForm] || formData.companyLegalForm} />
+                  <SummaryItem label="UID-Nummer" value={formData.uidNumber} />
+                  {formData.mwstNumber && (
+                    <SummaryItem label="MWST-Nummer" value={formData.mwstNumber} />
+                  )}
                 </CardContent>
               </Card>
 
-              {/* 2. Company Information */}
+              {/* 2. Personal Information */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">Firmeninformationen</CardTitle>
+                      <User className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Persönliche Informationen</CardTitle>
                     </div>
                     <Button
                       variant="ghost"
@@ -1374,11 +1439,14 @@ const HandwerkerOnboarding = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <SummaryItem label="Firmenname" value={formData.companyName} />
-                  <SummaryItem label="Rechtsform" value={legalFormLabels[formData.companyLegalForm] || formData.companyLegalForm} />
-                  <SummaryItem label="UID-Nummer" value={formData.uidNumber} />
-                  {formData.mwstNumber && (
-                    <SummaryItem label="MWST-Nummer" value={formData.mwstNumber} />
+                  <SummaryItem label="Name" value={`${formData.firstName} ${formData.lastName}`} />
+                  <SummaryItem label="E-Mail" value={formData.email} />
+                  <SummaryItem label="Telefon" value={formData.phoneNumber} />
+                  {formData.personalAddress && (
+                    <SummaryItem 
+                      label="Adresse" 
+                      value={`${formData.personalAddress}, ${formData.personalZip} ${formData.personalCity}, ${formData.personalCanton}`} 
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -1547,7 +1615,7 @@ const HandwerkerOnboarding = () => {
               {[1, 2, 3, 4, 5, 6].map((step) => {
                 const isCompleted = step < currentStep;
                 const isCurrent = step === currentStep;
-                const stepLabels = ['Person', 'Firma', 'Adresse', 'Versicherung', 'Fachgebiete', 'Prüfung'];
+                const stepLabels = ['Firma', 'Person', 'Adresse', 'Versicherung', 'Fachgebiete', 'Prüfung'];
               
               return (
                 <div key={step} className="flex flex-col items-center flex-1">
