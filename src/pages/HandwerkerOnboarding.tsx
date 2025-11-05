@@ -366,14 +366,6 @@ const HandwerkerOnboarding = () => {
           <div className="space-y-6 animate-fade-in">
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
               <CardHeader className="space-y-4 pb-6">
-                <div className="text-center space-y-3">
-                  <h2 className="text-4xl font-bold bg-gradient-to-r from-primary to-brand-500 bg-clip-text text-transparent">
-                    Willkommen bei Büeze.ch!
-                  </h2>
-                  <p className="text-lg text-foreground">
-                    Vielen Dank für Ihre Registrierung!
-                  </p>
-                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
