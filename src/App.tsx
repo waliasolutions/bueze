@@ -23,6 +23,7 @@ import KategorienLanding from "./pages/KategorienLanding";
 import MajorCategoryLanding from "./pages/MajorCategoryLanding";
 import HandwerkerLanding from "./pages/HandwerkerLanding";
 import HandwerkerApprovals from "./pages/admin/HandwerkerApprovals";
+import HandwerkerVerification from "./pages/admin/HandwerkerVerification";
 import AGB from "./pages/legal/AGB";
 import PricingPage from "./pages/legal/PricingPage";
 import NotFound from "./pages/NotFound";
@@ -83,6 +84,7 @@ const App = () => {
           <Route path="/category/:categorySlug" element={<CategoryLanding />} />
             <Route path="/handwerker" element={<HandwerkerLanding />} />
             <Route path="/admin/approvals" element={<HandwerkerApprovals />} />
+            <Route path="/admin/handwerker-verification" element={<HandwerkerVerification />} />
             <Route path="/legal/agb" element={<AGB />} />
             <Route path="/legal/pricing" element={<PricingPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SWISS_CANTONS } from "@/config/cantons";
 import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase, X } from "lucide-react";
+import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
@@ -26,6 +26,16 @@ const HandwerkerOnboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<{
+    uidCertificate?: File;
+    insuranceDocument?: File;
+    tradeLicense?: File;
+  }>({});
+  const [uploadProgress, setUploadProgress] = useState<{
+    uidCertificate?: string;
+    insuranceDocument?: string;
+    tradeLicense?: string;
+  }>({});
 
   const [formData, setFormData] = useState({
     // Company Information
@@ -137,6 +147,40 @@ const HandwerkerOnboarding = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
+  const handleFileUpload = async (file: File, type: 'uidCertificate' | 'insuranceDocument' | 'tradeLicense') => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
+      
+      setUploadProgress(prev => ({ ...prev, [type]: 'uploading' }));
+
+      const { error: uploadError } = await supabase.storage
+        .from('handwerker-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      setUploadProgress(prev => ({ ...prev, [type]: 'success' }));
+      setUploadedFiles(prev => ({ ...prev, [type]: file }));
+
+      toast({
+        title: "Dokument hochgeladen",
+        description: `${file.name} wurde erfolgreich hochgeladen.`,
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadProgress(prev => ({ ...prev, [type]: 'error' }));
+      toast({
+        title: "Upload fehlgeschlagen",
+        description: "Dokument konnte nicht hochgeladen werden.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
 
@@ -186,6 +230,24 @@ const HandwerkerOnboarding = () => {
         }
       }
 
+      // Collect uploaded document URLs
+      const verificationDocuments: string[] = [];
+      const documentTypes = ['uidCertificate', 'insuranceDocument', 'tradeLicense'] as const;
+      
+      for (const type of documentTypes) {
+        if (uploadedFiles[type]) {
+          const fileExt = uploadedFiles[type]!.name.split('.').pop();
+          const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
+          const { data } = supabase.storage
+            .from('handwerker-documents')
+            .getPublicUrl(fileName);
+          
+          if (data?.publicUrl) {
+            verificationDocuments.push(data.publicUrl);
+          }
+        }
+      }
+
       // Insert or update handwerker_profile
       const { error } = await supabase
         .from("handwerker_profiles")
@@ -210,7 +272,9 @@ const HandwerkerOnboarding = () => {
           service_areas: formData.serviceAreas.length > 0 ? formData.serviceAreas : [],
           hourly_rate_min: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
           hourly_rate_max: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
-          is_verified: false, // Will be verified by admin
+          verification_documents: verificationDocuments,
+          verification_status: 'pending',
+          is_verified: false,
         }]);
 
       if (error) throw error;
@@ -393,6 +457,46 @@ const HandwerkerOnboarding = () => {
               )}
               <p className="text-sm text-muted-foreground">
                 Erforderlich bei Jahresumsatz über CHF 100'000
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-4 border-t">
+              <Label htmlFor="uidCertificate">UID-Zertifikat hochladen</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="uidCertificate"
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, 'uidCertificate');
+                  }}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('uidCertificate')?.click()}
+                  className="w-full"
+                  disabled={uploadProgress.uidCertificate === 'uploading'}
+                >
+                  {uploadProgress.uidCertificate === 'uploading' ? (
+                    <>Wird hochgeladen...</>
+                  ) : uploadProgress.uidCertificate === 'success' ? (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                      {uploadedFiles.uidCertificate?.name}
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      UID-Zertifikat auswählen
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                PDF, JPG oder PNG (max. 10MB)
               </p>
             </div>
           </div>
@@ -581,6 +685,84 @@ const HandwerkerOnboarding = () => {
               <p className="text-sm text-muted-foreground">
                 Abhängig von Branche und Kanton
               </p>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t">
+              <h4 className="font-semibold">Versicherungsdokumente hochladen</h4>
+              
+              <div className="space-y-2">
+                <Label htmlFor="insuranceDocument">Haftpflichtversicherung</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="insuranceDocument"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, 'insuranceDocument');
+                    }}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('insuranceDocument')?.click()}
+                    className="w-full"
+                    disabled={uploadProgress.insuranceDocument === 'uploading'}
+                  >
+                    {uploadProgress.insuranceDocument === 'uploading' ? (
+                      <>Wird hochgeladen...</>
+                    ) : uploadProgress.insuranceDocument === 'success' ? (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                        {uploadedFiles.insuranceDocument?.name}
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Versicherungspolice auswählen
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tradeLicense">Gewerbebewilligung (optional)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="tradeLicense"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, 'tradeLicense');
+                    }}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('tradeLicense')?.click()}
+                    className="w-full"
+                    disabled={uploadProgress.tradeLicense === 'uploading'}
+                  >
+                    {uploadProgress.tradeLicense === 'uploading' ? (
+                      <>Wird hochgeladen...</>
+                    ) : uploadProgress.tradeLicense === 'success' ? (
+                      <>
+                        <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
+                        {uploadedFiles.tradeLicense?.name}
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="mr-2 h-4 w-4" />
+                        Gewerbebewilligung auswählen
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <Alert>

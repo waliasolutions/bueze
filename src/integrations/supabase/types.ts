@@ -989,6 +989,10 @@ export type Database = {
           updated_at: string
           user_id: string
           verification_documents: string[] | null
+          verification_notes: string | null
+          verification_status: string | null
+          verified_at: string | null
+          verified_by: string | null
           website: string | null
         }
         Insert: {
@@ -1023,6 +1027,10 @@ export type Database = {
           updated_at?: string
           user_id: string
           verification_documents?: string[] | null
+          verification_notes?: string | null
+          verification_status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
           website?: string | null
         }
         Update: {
@@ -1057,6 +1065,10 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verification_documents?: string[] | null
+          verification_notes?: string | null
+          verification_status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
           website?: string | null
         }
         Relationships: []
