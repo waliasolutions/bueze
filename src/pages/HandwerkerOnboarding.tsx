@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import { SWISS_CANTONS } from "@/config/cantons";
 import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
@@ -38,6 +39,13 @@ const HandwerkerOnboarding = () => {
     tradeLicense?: string;
   }>({});
   const [showUploadSection, setShowUploadSection] = useState(false);
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+  const [recoveryData, setRecoveryData] = useState<{
+    progress: number;
+    lastSaveTime: string;
+    currentStep: number;
+    totalSteps: number;
+  } | null>(null);
 
   const [formData, setFormData] = useState({
     // Company Information
@@ -104,14 +112,39 @@ const HandwerkerOnboarding = () => {
           
           // Only load if saved within last 7 days
           if (hoursSinceLastSave < 168) {
-            setCurrentStep(parsed.currentStep || 1);
-            setFormData(parsed.formData || formData);
-            setSelectedMajorCategories(parsed.selectedMajorCategories || []);
+            // Calculate progress
+            const savedProgress = ((parsed.currentStep - 1) / 4) * 100;
             
-            toast({
-              title: "Entwurf wiederhergestellt",
-              description: "Ihre letzten Änderungen wurden geladen.",
+            // Format last save time
+            const lastSaveDate = new Date(parsed.timestamp);
+            const now = new Date();
+            const diffDays = Math.floor((now.getTime() - lastSaveDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            let lastSaveTimeStr;
+            if (diffDays === 0) {
+              lastSaveTimeStr = `Heute um ${lastSaveDate.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
+            } else if (diffDays === 1) {
+              lastSaveTimeStr = `Gestern um ${lastSaveDate.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
+            } else {
+              lastSaveTimeStr = lastSaveDate.toLocaleDateString('de-CH', { 
+                day: '2-digit', 
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            }
+            
+            // Set recovery data and show dialog
+            setRecoveryData({
+              progress: savedProgress,
+              lastSaveTime: lastSaveTimeStr,
+              currentStep: parsed.currentStep,
+              totalSteps: 4,
             });
+            setShowRecoveryDialog(true);
+            
+            // Store the parsed data temporarily (don't load yet)
+            sessionStorage.setItem('pending-recovery-data', JSON.stringify(parsed));
           } else {
             // Clear old data
             localStorage.removeItem('handwerker-onboarding-draft');
@@ -1330,7 +1363,148 @@ const HandwerkerOnboarding = () => {
           <CardContent className="pt-6">
             {renderStepContent()}
           </CardContent>
+
+          <CardFooter className="flex gap-4 pt-6 border-t">
+            {currentStep > 1 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleBack}
+                className="h-12 px-6 text-base flex-1"
+                disabled={isLoading}
+              >
+                <ChevronLeft className="h-5 w-5 mr-2" />
+                Zurück
+              </Button>
+            )}
+            
+            {currentStep < 5 && (
+              <Button
+                type="button"
+                onClick={handleNext}
+                className="h-12 px-6 text-base flex-1"
+                disabled={isLoading}
+              >
+                {currentStep === 4 ? "Weiter zur Zusammenfassung" : "Weiter"}
+                <ChevronRight className="h-5 w-5 ml-2" />
+              </Button>
+            )}
+            
+            {currentStep === 5 && (
+              <Button
+                type="button"
+                onClick={handleSubmit}
+                disabled={isLoading}
+                className="h-12 px-6 text-base flex-1 bg-brand-600 hover:bg-brand-700"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Wird eingereicht...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Bestätigen & Profil einreichen
+                  </>
+                )}
+              </Button>
+            )}
+          </CardFooter>
         </Card>
+
+        {/* Recovery Dialog */}
+        <AlertDialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-brand-600" />
+                </div>
+                <div>
+                  <AlertDialogTitle className="text-xl">Willkommen zurück!</AlertDialogTitle>
+                  <AlertDialogDescription className="text-base mt-1">
+                    Wir haben Ihren Fortschritt gespeichert
+                  </AlertDialogDescription>
+                </div>
+              </div>
+            </AlertDialogHeader>
+
+            {recoveryData && (
+              <div className="space-y-4 py-4">
+                {/* Progress Bar */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium text-muted-foreground">Fortschritt</p>
+                    <p className="text-sm font-bold text-brand-600">{Math.round(recoveryData.progress)}%</p>
+                  </div>
+                  <Progress value={recoveryData.progress} className="h-2" />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Schritt {recoveryData.currentStep} von {recoveryData.totalSteps} abgeschlossen
+                  </p>
+                </div>
+
+                {/* Last Save Time */}
+                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Zuletzt bearbeitet</p>
+                    <p className="text-sm font-medium">{recoveryData.lastSaveTime}</p>
+                  </div>
+                </div>
+
+                {/* Info */}
+                <Alert className="border-brand-300 bg-brand-50">
+                  <CheckCircle className="h-4 w-4 text-brand-600" />
+                  <AlertDescription className="text-sm ml-2">
+                    Ihre Daten werden automatisch gespeichert und bleiben 7 Tage verfügbar.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                onClick={() => {
+                  // Start fresh - clear everything
+                  localStorage.removeItem('handwerker-onboarding-draft');
+                  sessionStorage.removeItem('pending-recovery-data');
+                  setShowRecoveryDialog(false);
+                  toast({
+                    title: "Neu gestartet",
+                    description: "Das Formular wurde zurückgesetzt.",
+                  });
+                }}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                Neu beginnen
+              </Button>
+              <Button
+                onClick={() => {
+                  // Load the saved data
+                  const pendingData = sessionStorage.getItem('pending-recovery-data');
+                  if (pendingData) {
+                    const parsed = JSON.parse(pendingData);
+                    setCurrentStep(parsed.currentStep || 1);
+                    setFormData(parsed.formData || formData);
+                    setSelectedMajorCategories(parsed.selectedMajorCategories || []);
+                    sessionStorage.removeItem('pending-recovery-data');
+                  }
+                  setShowRecoveryDialog(false);
+                  toast({
+                    title: "Fortschritt wiederhergestellt",
+                    description: `Sie befinden sich jetzt bei Schritt ${recoveryData?.currentStep}.`,
+                    duration: 3000,
+                  });
+                }}
+                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700"
+              >
+                Fortfahren
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
