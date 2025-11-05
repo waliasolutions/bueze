@@ -15,7 +15,7 @@ import { SWISS_CANTONS } from "@/config/cantons";
 import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
@@ -48,6 +48,16 @@ const HandwerkerOnboarding = () => {
   } | null>(null);
 
   const [formData, setFormData] = useState({
+    // Personal Information
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    personalAddress: "",
+    personalZip: "",
+    personalCity: "",
+    personalCanton: "",
+    
     // Company Information
     companyName: "",
     companyLegalForm: "einzelfirma",
@@ -81,7 +91,7 @@ const HandwerkerOnboarding = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = ((currentStep - 1) / totalSteps) * 100;
 
   // Auto-save form data to localStorage
@@ -113,7 +123,7 @@ const HandwerkerOnboarding = () => {
           // Only load if saved within last 7 days
           if (hoursSinceLastSave < 168) {
             // Calculate progress
-            const savedProgress = ((parsed.currentStep - 1) / 4) * 100;
+            const savedProgress = ((parsed.currentStep - 1) / 5) * 100;
             
             // Format last save time
             const lastSaveDate = new Date(parsed.timestamp);
@@ -139,7 +149,7 @@ const HandwerkerOnboarding = () => {
               progress: savedProgress,
               lastSaveTime: lastSaveTimeStr,
               currentStep: parsed.currentStep,
-              totalSteps: 4,
+              totalSteps: 5,
             });
             setShowRecoveryDialog(true);
             
@@ -163,6 +173,34 @@ const HandwerkerOnboarding = () => {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
+      // Personal Information validation
+      if (!formData.firstName.trim()) {
+        newErrors.firstName = "Vorname ist erforderlich";
+      }
+      if (!formData.lastName.trim()) {
+        newErrors.lastName = "Nachname ist erforderlich";
+      }
+      if (!formData.email.trim()) {
+        newErrors.email = "E-Mail-Adresse ist erforderlich";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = "Ungültige E-Mail-Adresse";
+      }
+      if (!formData.phoneNumber.trim()) {
+        newErrors.phoneNumber = "Telefonnummer ist erforderlich";
+      }
+      if (!formData.personalAddress.trim()) {
+        newErrors.personalAddress = "Adresse ist erforderlich";
+      }
+      if (!formData.personalZip.trim()) {
+        newErrors.personalZip = "PLZ ist erforderlich";
+      }
+      if (!formData.personalCity.trim()) {
+        newErrors.personalCity = "Ort ist erforderlich";
+      }
+      if (!formData.personalCanton) {
+        newErrors.personalCanton = "Kanton ist erforderlich";
+      }
+    } else if (step === 2) {
       // Company Information validation
       if (!formData.companyName.trim()) {
         newErrors.companyName = "Firmenname ist erforderlich";
@@ -174,7 +212,7 @@ const HandwerkerOnboarding = () => {
       if (formData.mwstNumber && !validateMWST(formData.mwstNumber)) {
         newErrors.mwstNumber = "Ungültiges Format. Beispiel: CHE-123.456.789 MWST";
       }
-    } else if (step === 2) {
+    } else if (step === 3) {
       // Business Address validation
       if (!formData.sameAsPersonal) {
         if (!formData.businessAddress.trim()) {
@@ -200,7 +238,7 @@ const HandwerkerOnboarding = () => {
       if (!formData.bankName.trim()) {
         newErrors.bankName = "Bankname ist erforderlich";
       }
-    } else if (step === 3) {
+    } else if (step === 4) {
       // Insurance is optional but validate if provider is given
       if (formData.liabilityInsuranceProvider.trim() && !formData.insuranceValidUntil) {
         newErrors.insuranceValidUntil = "Bitte geben Sie das Gültigkeitsdatum an";
@@ -209,7 +247,7 @@ const HandwerkerOnboarding = () => {
       if (formData.insuranceValidUntil && !formData.liabilityInsuranceProvider.trim()) {
         newErrors.liabilityInsuranceProvider = "Bitte geben Sie den Versicherungsanbieter an";
       }
-    } else if (step === 4) {
+    } else if (step === 5) {
       // Require at least 1 major category
       if (selectedMajorCategories.length === 0) {
         newErrors.categories = "Bitte wählen Sie mindestens eine Hauptkategorie";
@@ -223,7 +261,7 @@ const HandwerkerOnboarding = () => {
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, 5));
+      setCurrentStep((prev) => Math.min(prev + 1, 6));
     }
   };
 
@@ -448,6 +486,175 @@ const HandwerkerOnboarding = () => {
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
               <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
+                <User className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">Persönliche Informationen</h3>
+                <p className="text-base text-muted-foreground">Ihre Kontaktdaten als Ansprechperson</p>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label htmlFor="firstName" className="text-base font-medium">Vorname *</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    placeholder="Max"
+                    className="h-12 text-base"
+                  />
+                  {errors.firstName && (
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.firstName}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="lastName" className="text-base font-medium">Nachname *</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    placeholder="Muster"
+                    className="h-12 text-base"
+                  />
+                  {errors.lastName && (
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.lastName}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="email" className="text-base font-medium">E-Mail-Adresse *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
+                  placeholder="max.muster@beispiel.ch"
+                  className="h-12 text-base"
+                />
+                {errors.email && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="phoneNumber" className="text-base font-medium">Telefonnummer *</Label>
+                <Input
+                  id="phoneNumber"
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  placeholder="+41 79 123 45 67"
+                  className="h-12 text-base"
+                />
+                {errors.phoneNumber && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.phoneNumber}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">Format: +41 79 123 45 67</p>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="personalAddress" className="text-base font-medium">Adresse *</Label>
+                <Input
+                  id="personalAddress"
+                  value={formData.personalAddress}
+                  onChange={(e) => setFormData({ ...formData, personalAddress: e.target.value })}
+                  placeholder="Musterstrasse 123"
+                  className="h-12 text-base"
+                />
+                {errors.personalAddress && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.personalAddress}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label htmlFor="personalZip" className="text-base font-medium">PLZ *</Label>
+                  <Input
+                    id="personalZip"
+                    value={formData.personalZip}
+                    onChange={(e) => setFormData({ ...formData, personalZip: e.target.value })}
+                    placeholder="8000"
+                    maxLength={4}
+                    className="h-12 text-base"
+                  />
+                  {errors.personalZip && (
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.personalZip}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <Label htmlFor="personalCity" className="text-base font-medium">Ort *</Label>
+                  <Input
+                    id="personalCity"
+                    value={formData.personalCity}
+                    onChange={(e) => setFormData({ ...formData, personalCity: e.target.value })}
+                    placeholder="Zürich"
+                    className="h-12 text-base"
+                  />
+                  {errors.personalCity && (
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.personalCity}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="personalCanton" className="text-base font-medium">Kanton *</Label>
+                <Select
+                  value={formData.personalCanton}
+                  onValueChange={(value) => setFormData({ ...formData, personalCanton: value })}
+                >
+                  <SelectTrigger className="h-12 text-base">
+                    <SelectValue placeholder="Kanton wählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SWISS_CANTONS.map((canton) => (
+                      <SelectItem key={canton.value} value={canton.value}>
+                        {canton.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.personalCanton && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.personalCanton}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
                 <Building2 className="h-7 w-7 text-white" />
               </div>
               <div>
@@ -553,7 +760,7 @@ const HandwerkerOnboarding = () => {
           </div>
         );
 
-      case 2:
+      case 3:
         return (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
@@ -570,9 +777,20 @@ const HandwerkerOnboarding = () => {
               <Checkbox
                 id="sameAsPersonal"
                 checked={formData.sameAsPersonal}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, sameAsPersonal: checked as boolean })
-                }
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    setFormData({ 
+                      ...formData, 
+                      sameAsPersonal: true,
+                      businessAddress: formData.personalAddress,
+                      businessZip: formData.personalZip,
+                      businessCity: formData.personalCity,
+                      businessCanton: formData.personalCanton,
+                    });
+                  } else {
+                    setFormData({ ...formData, sameAsPersonal: false });
+                  }
+                }}
               />
               <Label htmlFor="sameAsPersonal" className="cursor-pointer text-base font-medium">
                 Gleich wie persönliche Adresse
@@ -713,7 +931,7 @@ const HandwerkerOnboarding = () => {
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
@@ -895,7 +1113,7 @@ const HandwerkerOnboarding = () => {
           </div>
         );
 
-      case 4:
+      case 5:
         return (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
@@ -1084,7 +1302,7 @@ const HandwerkerOnboarding = () => {
           </div>
         );
 
-      case 5:
+      case 6:
         return (
           <div className="space-y-6 animate-fade-in">
             {/* Header */}
@@ -1103,7 +1321,35 @@ const HandwerkerOnboarding = () => {
             {/* Summary Cards */}
             <div className="space-y-4">
               
-              {/* 1. Company Information */}
+              {/* 1. Personal Information */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Persönliche Informationen</CardTitle>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentStep(1)}
+                    >
+                      Bearbeiten
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <SummaryItem label="Name" value={`${formData.firstName} ${formData.lastName}`} />
+                  <SummaryItem label="E-Mail" value={formData.email} />
+                  <SummaryItem label="Telefon" value={formData.phoneNumber} />
+                  <SummaryItem 
+                    label="Adresse" 
+                    value={`${formData.personalAddress}, ${formData.personalZip} ${formData.personalCity}, ${formData.personalCanton}`} 
+                  />
+                </CardContent>
+              </Card>
+
+              {/* 2. Company Information */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -1114,7 +1360,7 @@ const HandwerkerOnboarding = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCurrentStep(1)}
+                      onClick={() => setCurrentStep(2)}
                     >
                       Bearbeiten
                     </Button>
@@ -1130,7 +1376,7 @@ const HandwerkerOnboarding = () => {
                 </CardContent>
               </Card>
 
-              {/* 2. Banking Information */}
+              {/* 3. Banking Information */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -1141,7 +1387,7 @@ const HandwerkerOnboarding = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCurrentStep(2)}
+                      onClick={() => setCurrentStep(3)}
                     >
                       Bearbeiten
                     </Button>
@@ -1153,7 +1399,7 @@ const HandwerkerOnboarding = () => {
                 </CardContent>
               </Card>
 
-              {/* 3. Insurance & Licenses */}
+              {/* 4. Insurance & Licenses */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -1164,7 +1410,7 @@ const HandwerkerOnboarding = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCurrentStep(3)}
+                      onClick={() => setCurrentStep(4)}
                     >
                       Bearbeiten
                     </Button>
@@ -1182,7 +1428,7 @@ const HandwerkerOnboarding = () => {
                 </CardContent>
               </Card>
 
-              {/* 4. Service Details */}
+              {/* 5. Service Details */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -1193,7 +1439,7 @@ const HandwerkerOnboarding = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCurrentStep(4)}
+                      onClick={() => setCurrentStep(5)}
                     >
                       Bearbeiten
                     </Button>
@@ -1244,7 +1490,7 @@ const HandwerkerOnboarding = () => {
                 </CardContent>
               </Card>
 
-              {/* 5. Uploaded Documents */}
+              {/* 6. Uploaded Documents */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
@@ -1291,10 +1537,10 @@ const HandwerkerOnboarding = () => {
         {/* Visual Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            {[1, 2, 3, 4, 5].map((step) => {
-              const isCompleted = step < currentStep;
-              const isCurrent = step === currentStep;
-              const stepLabels = ['Firma', 'Adresse', 'Versicherung', 'Fachgebiete', 'Prüfung'];
+              {[1, 2, 3, 4, 5, 6].map((step) => {
+                const isCompleted = step < currentStep;
+                const isCurrent = step === currentStep;
+                const stepLabels = ['Person', 'Firma', 'Adresse', 'Versicherung', 'Fachgebiete', 'Prüfung'];
               
               return (
                 <div key={step} className="flex flex-col items-center flex-1">
@@ -1326,7 +1572,7 @@ const HandwerkerOnboarding = () => {
               <div>
                 <CardTitle className="text-2xl">Handwerkerprofil erstellen</CardTitle>
                 <CardDescription className="text-base mt-1">
-                  Schritt {currentStep} von {totalSteps}
+                  Schritt {currentStep} von 6
                 </CardDescription>
               </div>
               {lastSaved && (
@@ -1378,19 +1624,19 @@ const HandwerkerOnboarding = () => {
               </Button>
             )}
             
-            {currentStep < 5 && (
-              <Button
-                type="button"
-                onClick={handleNext}
-                className="h-12 px-6 text-base flex-1"
-                disabled={isLoading}
-              >
-                {currentStep === 4 ? "Weiter zur Zusammenfassung" : "Weiter"}
-                <ChevronRight className="h-5 w-5 ml-2" />
-              </Button>
-            )}
-            
-            {currentStep === 5 && (
+              {currentStep < 6 && (
+                <Button
+                  type="button"
+                  onClick={handleNext}
+                  className="h-12 px-6 text-base flex-1"
+                  disabled={isLoading}
+                >
+                  {currentStep === 5 ? "Weiter zur Zusammenfassung" : "Weiter"}
+                  <ChevronRight className="h-5 w-5 ml-2" />
+                </Button>
+              )}
+              
+              {currentStep === 6 && (
               <Button
                 type="button"
                 onClick={handleSubmit}
