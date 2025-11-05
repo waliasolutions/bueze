@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
 import { CANTON_CODES } from '@/config/cantons';
@@ -337,13 +337,13 @@ export default function Auth() {
                           />
                           <label htmlFor="agb-accept" className="text-sm text-muted-foreground leading-relaxed cursor-pointer">
                             Ich akzeptiere die{' '}
-                            <a href="/legal/agb" className="text-brand-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                            <Link to="/legal/agb" className="text-brand-600 hover:underline">
                               Allgemeinen Geschäftsbedingungen
-                            </a>
+                            </Link>
                             {' '}und habe die{' '}
-                            <a href="/legal/pricing" className="text-brand-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                            <Link to="/legal/pricing" className="text-brand-600 hover:underline">
                               Preisübersicht
-                            </a>
+                            </Link>
                             {' '}gelesen.
                           </label>
                         </div>
