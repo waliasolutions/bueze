@@ -8,9 +8,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { ProposalsList } from "@/components/ProposalsList";
+import { SubscriptionManager } from "@/components/SubscriptionManager";
 import { 
   CheckCircle, 
   XCircle, 
@@ -23,7 +26,8 @@ import {
   Building2, 
   FileText,
   X,
-  HelpCircle
+  HelpCircle,
+  Crown
 } from "lucide-react";
 
 interface HandwerkerProfile {
@@ -430,11 +434,23 @@ const HandwerkerDashboard = () => {
         <div className="max-w-6xl mx-auto">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Verifizierungs-Status</h1>
+            <h1 className="text-3xl font-bold text-foreground">Handwerker Dashboard</h1>
             <p className="text-muted-foreground">
-              Verwalten Sie Ihre Dokumente und verfolgen Sie den Verifizierungsprozess
+              Verwalten Sie Ihre Offerten, Dokumente und Abo
             </p>
           </div>
+
+          <Tabs defaultValue="verification" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="verification">Verifizierung</TabsTrigger>
+              <TabsTrigger value="proposals">Meine Offerten</TabsTrigger>
+              <TabsTrigger value="subscription">
+                <Crown className="h-4 w-4 mr-2" />
+                Abo verwalten
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="verification" className="space-y-6">
 
           {/* Status Overview Card */}
           <Card className={`mb-6 ${statusConfig.bgClass}`}>
@@ -602,6 +618,16 @@ const HandwerkerDashboard = () => {
               </Button>
             )}
           </div>
+            </TabsContent>
+
+            <TabsContent value="proposals">
+              <ProposalsList userId={user.id} />
+            </TabsContent>
+
+            <TabsContent value="subscription">
+              <SubscriptionManager userId={user.id} />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />

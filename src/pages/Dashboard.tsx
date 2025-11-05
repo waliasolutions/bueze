@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { ReceivedProposals } from '@/components/ReceivedProposals';
 import { logWithCorrelation, captureException } from '@/lib/errorTracking';
 import { trackError } from '@/lib/errorCategories';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp, Crown, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp, Crown, AlertCircle, ShieldCheck, FileText } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatCurrency } from '@/lib/swissTime';
 // TODO: Re-enable after types regenerate
 // import { checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
@@ -312,6 +313,7 @@ const Dashboard = () => {
           <Tabs defaultValue={isHandwerker ? "purchases" : "leads"} className="space-y-6">
             <TabsList>
               {!isHandwerker && <TabsTrigger value="leads">Meine Aufträge</TabsTrigger>}
+              {!isHandwerker && <TabsTrigger value="proposals"><FileText className="h-4 w-4 mr-2" />Erhaltene Offerten</TabsTrigger>}
               {isHandwerker && <TabsTrigger value="purchases">Gekaufte Aufträge</TabsTrigger>}
               <TabsTrigger value="profile">Profil</TabsTrigger>
             </TabsList>
@@ -394,6 +396,12 @@ const Dashboard = () => {
                     ))}
                   </div>
                 )}
+              </TabsContent>
+            )}
+
+            {!isHandwerker && (
+              <TabsContent value="proposals" className="space-y-6">
+                <ReceivedProposals userId={user?.id || 'demo-user-123'} />
               </TabsContent>
             )}
 
