@@ -363,3 +363,73 @@ export const deadlineReminderTemplate = (data: DeadlineReminderData) => {
     </div>
   `);
 };
+
+// Admin Registration Notification Email Template
+export interface AdminRegistrationData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  companyName: string;
+  categories: string[];
+  serviceAreas: string[];
+  profileId: string;
+  submittedAt: string;
+}
+
+export const adminRegistrationNotificationTemplate = (data: AdminRegistrationData) => {
+  const categoriesText = data.categories.join(', ');
+  const serviceAreasText = data.serviceAreas.join(', ');
+  
+  return emailWrapper(`
+    <h2 style="color: #0066CC; margin-top: 0;">Neue Handwerker-Registrierung</h2>
+    
+    <p>Hallo Admin-Team,</p>
+    
+    <p>Eine neue Handwerker-Registrierung wartet auf Freigabe.</p>
+    
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+      <h3 style="margin-top: 0; color: #333;">Handwerker-Details</h3>
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Name:</td>
+          <td style="padding: 8px 0;">${data.firstName} ${data.lastName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">E-Mail:</td>
+          <td style="padding: 8px 0;">${data.email}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Telefon:</td>
+          <td style="padding: 8px 0;">${data.phone}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Firma:</td>
+          <td style="padding: 8px 0;">${data.companyName || 'Nicht angegeben'}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Kategorien:</td>
+          <td style="padding: 8px 0;">${categoriesText}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Einsatzgebiete:</td>
+          <td style="padding: 8px 0;">${serviceAreasText}</td>
+        </tr>
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Eingereicht am:</td>
+          <td style="padding: 8px 0;">${data.submittedAt}</td>
+        </tr>
+      </table>
+    </div>
+    
+    <p>
+      <a href="https://bueze.ch/admin/handwerker-approvals" class="button">
+        Zur Freigabe
+      </a>
+    </p>
+    
+    <p style="color: #666; font-size: 14px; margin-top: 30px;">
+      Diese E-Mail wurde automatisch vom Büeze.ch System generiert.
+    </p>
+  `);
+};
