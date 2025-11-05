@@ -13,9 +13,7 @@ export interface SubscriptionPlan {
   pricePerMonth: number; // effective monthly price
   billingCycle: 'monthly' | '6_month' | 'annual' | null;
   features: string[];
-  viewsLimit: number; // -1 = unlimited
-  leadsIncluded: number; // -1 = unlimited
-  leadPrice: number; // price per additional lead in CHF (0 if included)
+  proposalsLimit: number; // -1 = unlimited, number = max proposals per month
   popular?: boolean;
   savings?: string; // display text for savings
 }
@@ -29,13 +27,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     pricePerMonth: 0,
     billingCycle: null,
     features: [
-      '5 Lead-Ansichten pro Monat',
-      'Ort, PLZ, Kategorie & Budget sichtbar',
+      '5 Offerten pro Monat',
+      'Kontaktdetails nach Annahme',
       'Kein Abo erforderlich',
     ],
-    viewsLimit: 5,
-    leadsIncluded: 0,
-    leadPrice: 25,
+    proposalsLimit: 5,
   },
   monthly: {
     id: 'monthly',
@@ -45,13 +41,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     pricePerMonth: 90,
     billingCycle: 'monthly',
     features: [
-      'Unbegrenzte Lead-Ansichten',
+      'Unbegrenzte Offerten',
       'Alle Anfragen durchsuchen',
       'Monatlich kündbar',
     ],
-    viewsLimit: -1,
-    leadsIncluded: -1,
-    leadPrice: 25,
+    proposalsLimit: -1,
     popular: true,
   },
   '6_month': {
@@ -62,13 +56,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     pricePerMonth: 85,
     billingCycle: '6_month',
     features: [
-      'Unbegrenzte Lead-Ansichten',
+      'Unbegrenzte Offerten',
       'Alle Anfragen durchsuchen',
       'CHF 5/Monat gespart',
     ],
-    viewsLimit: -1,
-    leadsIncluded: -1,
-    leadPrice: 25,
+    proposalsLimit: -1,
     savings: 'Sparen Sie CHF 30',
   },
   annual: {
@@ -79,13 +71,11 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
     pricePerMonth: 80,
     billingCycle: 'annual',
     features: [
-      'Unbegrenzte Lead-Ansichten',
+      'Unbegrenzte Offerten',
       'Alle Anfragen durchsuchen',
       'Beste Preis-Leistung',
     ],
-    viewsLimit: -1,
-    leadsIncluded: -1,
-    leadPrice: 25,
+    proposalsLimit: -1,
     savings: 'Sparen Sie CHF 120',
   },
 };
@@ -100,17 +90,17 @@ export function getPlanById(planId: SubscriptionPlanType): SubscriptionPlan {
 }
 
 /**
- * Check if a plan has unlimited views
+ * Check if a plan has unlimited proposals
  */
-export function hasUnlimitedViews(planId: SubscriptionPlanType): boolean {
-  return SUBSCRIPTION_PLANS[planId].viewsLimit === -1;
+export function hasUnlimitedProposals(planId: SubscriptionPlanType): boolean {
+  return SUBSCRIPTION_PLANS[planId].proposalsLimit === -1;
 }
 
 /**
- * Get the price for purchasing a lead based on subscription plan
+ * Get the monthly proposal limit for a plan
  */
-export function getLeadPrice(planId: SubscriptionPlanType): number {
-  return SUBSCRIPTION_PLANS[planId].leadPrice;
+export function getProposalLimit(planId: SubscriptionPlanType): number {
+  return SUBSCRIPTION_PLANS[planId].proposalsLimit;
 }
 
 /**

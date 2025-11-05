@@ -1,25 +1,25 @@
 /**
  * Subscription Helper Functions
- * Manages subscription access, view tracking, and lead purchase pricing
+ * Manages subscription access and proposal quota tracking
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { SUBSCRIPTION_PLANS, SubscriptionPlanType, getLeadPrice } from '@/config/subscriptionPlans';
+import { SUBSCRIPTION_PLANS, SubscriptionPlanType, getProposalLimit } from '@/config/subscriptionPlans';
 
-export interface SubscriptionAccessCheck {
-  canViewLead: boolean;
-  remainingViews: number;
+export interface ProposalQuotaCheck {
+  canSubmitProposal: boolean;
+  remainingProposals: number;
   requiresUpgrade: boolean;
-  canPurchaseLead: boolean;
-  leadPrice: number; // in CHF
   planType: SubscriptionPlanType;
   isUnlimited: boolean;
+  usedThisMonth: number;
+  resetDate: Date | null;
 }
 
 /**
- * Check user's subscription access and limits
+ * Check user's proposal quota and limits
  */
-export async function checkSubscriptionAccess(userId: string): Promise<SubscriptionAccessCheck> {
+export async function checkProposalQuota(userId: string): Promise<ProposalQuotaCheck> {
   try {
     // Fetch user's subscription
     const { data: subscription, error } = await supabase
@@ -29,110 +29,97 @@ export async function checkSubscriptionAccess(userId: string): Promise<Subscript
       .single();
 
     if (error || !subscription) {
-      // No subscription = free tier
+      // No subscription = free tier (5 proposals per month)
       return {
-        canViewLead: subscription?.used_views < 2,
-        remainingViews: Math.max(0, 2 - (subscription?.used_views || 0)),
-        requiresUpgrade: (subscription?.used_views || 0) >= 2,
-        canPurchaseLead: true,
-        leadPrice: 20,
+        canSubmitProposal: true,
+        remainingProposals: 5,
+        requiresUpgrade: false,
         planType: 'free',
         isUnlimited: false,
+        usedThisMonth: 0,
+        resetDate: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
       };
     }
 
     const planType = subscription.plan as SubscriptionPlanType;
     const plan = SUBSCRIPTION_PLANS[planType];
-    const isUnlimited = plan.viewsLimit === -1;
-    const usedViews = subscription.used_views || 0;
-    const remainingViews = isUnlimited ? -1 : Math.max(0, plan.viewsLimit - usedViews);
+    const proposalLimit = plan.proposalsLimit;
+    const isUnlimited = proposalLimit === -1;
+    const usedProposals = subscription.used_proposals || 0;
+    const remainingProposals = isUnlimited ? -1 : Math.max(0, proposalLimit - usedProposals);
 
     return {
-      canViewLead: isUnlimited || usedViews < plan.viewsLimit,
-      remainingViews,
-      requiresUpgrade: !isUnlimited && usedViews >= plan.viewsLimit,
-      canPurchaseLead: true,
-      leadPrice: plan.leadPrice,
+      canSubmitProposal: isUnlimited || usedProposals < proposalLimit,
+      remainingProposals,
+      requiresUpgrade: !isUnlimited && usedProposals >= proposalLimit,
       planType,
       isUnlimited,
+      usedThisMonth: usedProposals,
+      resetDate: subscription.proposals_reset_at ? new Date(subscription.proposals_reset_at) : null,
     };
   } catch (error) {
-    console.error('Error checking subscription access:', error);
+    console.error('Error checking proposal quota:', error);
     // Default to free tier on error
     return {
-      canViewLead: false,
-      remainingViews: 0,
+      canSubmitProposal: false,
+      remainingProposals: 0,
       requiresUpgrade: true,
-      canPurchaseLead: true,
-      leadPrice: 20,
       planType: 'free',
       isUnlimited: false,
+      usedThisMonth: 0,
+      resetDate: null,
     };
   }
 }
 
 /**
- * Track a lead view (for free tier users)
+ * Increment proposal count after successful submission
  */
-export async function trackLeadView(userId: string, leadId: string): Promise<boolean> {
+export async function incrementProposalCount(userId: string): Promise<boolean> {
   try {
-    // Insert into lead_views table
-    const { error: viewError } = await supabase
-      .from('lead_views')
-      .insert({
-        lead_id: leadId,
-        viewer_id: userId,
-      });
-
-    if (viewError && !viewError.message.includes('duplicate key')) {
-      console.error('Error inserting lead view:', viewError);
-      return false;
-    }
-
-    // Increment used_views in subscriptions
     const { data: subscription } = await supabase
       .from('subscriptions')
-      .select('used_views')
+      .select('used_proposals')
       .eq('user_id', userId)
       .single();
 
     if (subscription) {
       const { error: updateError } = await supabase
         .from('subscriptions')
-        .update({ used_views: (subscription.used_views || 0) + 1 })
+        .update({ used_proposals: (subscription.used_proposals || 0) + 1 })
         .eq('user_id', userId);
 
       if (updateError) {
-        console.error('Error updating view count:', updateError);
+        console.error('Error updating proposal count:', updateError);
         return false;
       }
     }
 
     return true;
   } catch (error) {
-    console.error('Error tracking lead view:', error);
+    console.error('Error incrementing proposal count:', error);
     return false;
   }
 }
 
 /**
- * Determine if user can purchase lead and at what price
+ * Check if user has an active subscription (not free tier)
  */
-export async function canPurchaseLeadWithPrice(
-  userId: string
-): Promise<{ canPurchase: boolean; price: number }> {
+export async function hasActiveSubscription(userId: string): Promise<boolean> {
   try {
-    const access = await checkSubscriptionAccess(userId);
-    
-    return {
-      canPurchase: access.canPurchaseLead,
-      price: access.leadPrice,
-    };
+    const { data: subscription, error } = await supabase
+      .from('subscriptions')
+      .select('plan')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !subscription) {
+      return false;
+    }
+
+    return subscription.plan !== 'free';
   } catch (error) {
-    console.error('Error checking purchase eligibility:', error);
-    return {
-      canPurchase: true,
-      price: 20, // Default to free tier price
-    };
+    console.error('Error checking active subscription:', error);
+    return false;
   }
 }
