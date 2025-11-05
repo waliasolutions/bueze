@@ -57,7 +57,7 @@ const MajorCategoryLanding = () => {
       <section className="py-16 bg-gradient-to-b from-pastel-blue-50 to-surface">
         <div className="container mx-auto px-4 text-center">
           <div className={`w-20 h-20 rounded-full bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white mx-auto mb-6 shadow-lg`}>
-            <Icon className="w-10 h-10" />
+            <Icon className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-ink-900 mb-4">
             {majorCategory.label}
