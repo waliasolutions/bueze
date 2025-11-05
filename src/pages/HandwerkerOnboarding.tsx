@@ -5,21 +5,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { SWISS_CANTONS } from "@/config/cantons";
 import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase } from "lucide-react";
+import { AlertCircle, Building2, Wallet, Shield, Briefcase, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { majorCategories } from "@/config/majorCategories";
+import { subcategoryLabels } from "@/config/subcategoryLabels";
+import { cn } from "@/lib/utils";
 
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     // Company Information
@@ -499,48 +505,163 @@ const HandwerkerOnboarding = () => {
 
       case 4:
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
               <Briefcase className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-semibold">Dienstleistungen (optional)</h3>
+              <h3 className="text-lg font-semibold">Fachgebiete wählen</h3>
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Diese Informationen können Sie später in Ihrem Profil vervollständigen.
+              Wählen Sie zunächst Ihre Hauptkategorien und dann Ihre konkreten Fachgebiete.
             </p>
 
-            <div className="space-y-2">
-              <Label htmlFor="bio">Kurze Beschreibung</Label>
-              <Textarea
-                id="bio"
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                placeholder="Beschreiben Sie Ihre Dienstleistungen und Erfahrung..."
-                rows={4}
-              />
+            {/* Step 1: Select Major Categories */}
+            <div>
+              <h4 className="font-semibold mb-3">Schritt 1: Hauptkategorien</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {Object.values(majorCategories).map((majorCat) => {
+                  const Icon = majorCat.icon;
+                  const isSelected = selectedMajorCategories.includes(majorCat.id);
+                  
+                  return (
+                    <Card
+                      key={majorCat.id}
+                      className={cn(
+                        "cursor-pointer transition-all hover:shadow-md",
+                        isSelected && "ring-2 ring-brand-600 bg-brand-50"
+                      )}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedMajorCategories(prev => 
+                            prev.filter(id => id !== majorCat.id)
+                          );
+                          // Remove all subcategories from this major category
+                          setFormData(prev => ({
+                            ...prev,
+                            categories: prev.categories.filter(
+                              cat => !majorCat.subcategories.includes(cat)
+                            )
+                          }));
+                        } else {
+                          setSelectedMajorCategories(prev => [...prev, majorCat.id]);
+                        }
+                      }}
+                    >
+                      <CardContent className="p-4 text-center">
+                        <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white mx-auto mb-2`}>
+                          <Icon className="w-6 h-6" />
+                        </div>
+                        <p className="text-xs font-medium">{majorCat.label}</p>
+                        {isSelected && (
+                          <Badge className="mt-2 bg-brand-600 text-xs">✓</Badge>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Step 2: Select Subcategories */}
+            {selectedMajorCategories.length > 0 && (
+              <div>
+                <h4 className="font-semibold mb-3">Schritt 2: Fachgebiete</h4>
+                
+                {selectedMajorCategories.map(majorCatId => {
+                  const majorCat = majorCategories[majorCatId];
+                  const subcats = majorCat.subcategories
+                    .map(subId => subcategoryLabels[subId])
+                    .filter(Boolean);
+                  
+                  return (
+                    <Accordion key={majorCatId} type="single" collapsible defaultValue={majorCatId}>
+                      <AccordionItem value={majorCatId} className="border rounded-lg px-4">
+                        <AccordionTrigger className="text-base font-semibold hover:no-underline">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white`}>
+                              <majorCat.icon className="w-4 h-4" />
+                            </div>
+                            {majorCat.label}
+                            <Badge variant="secondary" className="ml-2">
+                              {formData.categories.filter(cat => majorCat.subcategories.includes(cat)).length} gewählt
+                            </Badge>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <div className="flex flex-wrap gap-2 pt-3 pb-2">
+                            {subcats.map(subcat => {
+                              const isSelected = formData.categories.includes(subcat.value);
+                              
+                              return (
+                                <Badge
+                                  key={subcat.value}
+                                  variant={isSelected ? "default" : "outline"}
+                                  className="cursor-pointer px-3 py-1.5 text-sm hover:bg-brand-100"
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        categories: prev.categories.filter(id => id !== subcat.value)
+                                      }));
+                                    } else {
+                                      setFormData(prev => ({
+                                        ...prev,
+                                        categories: [...prev.categories, subcat.value]
+                                      }));
+                                    }
+                                  }}
+                                >
+                                  {subcat.label}
+                                  {isSelected && <X className="ml-1 h-3 w-3" />}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    </Accordion>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Optional fields */}
+            <div className="space-y-4 pt-6 border-t">
+              <h4 className="font-semibold">Zusätzliche Angaben (optional)</h4>
+              
               <div className="space-y-2">
-                <Label htmlFor="hourlyRateMin">Stundensatz von (CHF)</Label>
-                <Input
-                  id="hourlyRateMin"
-                  type="number"
-                  value={formData.hourlyRateMin}
-                  onChange={(e) => setFormData({ ...formData, hourlyRateMin: e.target.value })}
-                  placeholder="80"
+                <Label htmlFor="bio">Kurze Beschreibung</Label>
+                <Textarea
+                  id="bio"
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  placeholder="Beschreiben Sie Ihre Dienstleistungen und Erfahrung..."
+                  rows={4}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="hourlyRateMax">Stundensatz bis (CHF)</Label>
-                <Input
-                  id="hourlyRateMax"
-                  type="number"
-                  value={formData.hourlyRateMax}
-                  onChange={(e) => setFormData({ ...formData, hourlyRateMax: e.target.value })}
-                  placeholder="120"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="hourlyRateMin">Stundensatz von (CHF)</Label>
+                  <Input
+                    id="hourlyRateMin"
+                    type="number"
+                    value={formData.hourlyRateMin}
+                    onChange={(e) => setFormData({ ...formData, hourlyRateMin: e.target.value })}
+                    placeholder="80"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hourlyRateMax">Stundensatz bis (CHF)</Label>
+                  <Input
+                    id="hourlyRateMax"
+                    type="number"
+                    value={formData.hourlyRateMax}
+                    onChange={(e) => setFormData({ ...formData, hourlyRateMax: e.target.value })}
+                    placeholder="120"
+                  />
+                </div>
               </div>
             </div>
 

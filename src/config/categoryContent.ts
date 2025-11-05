@@ -1,4 +1,4 @@
-import { TreePine, Layers, Zap, Paintbrush, Truck, Grid3x3, Package, Sprout, Lightbulb, Palette, Box, Home, ChefHat, Wrench } from 'lucide-react';
+import { TreePine, Layers, Zap, Paintbrush, Truck, Grid3x3, Package, Sprout, Lightbulb, Palette, Box, Home, ChefHat, Wrench, Cable, Shield, Wifi, Smartphone, Car, Hammer, Droplet, Bath, Flame, Sun, Wind, Snowflake, DoorOpen, Package2, Trash2 } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface ServiceType {
@@ -259,5 +259,388 @@ export const categoryContent: Record<string, CategoryContent> = {
     ],
     metaTitle: 'Küchenbau & Küchenmontage',
     metaDescription: 'Professionelle Küchenbauer für Planung, Montage und Renovation. Kostenlose Offerten aus Ihrer Region.',
+  },
+
+  // Elektroinstallationen subcategories
+  'elektro-hausinstallationen': {
+    formCategory: 'elektro_hausinstallationen',
+    title: 'Hausinstallationen – Professionelle Elektroinstallation',
+    description: 'Vom Neubau bis zur Sanierung: Fachgerechte Elektroinstallationen nach Schweizer Normen (NIV)',
+    services: [
+      {
+        icon: Cable,
+        title: 'Neuinstallationen',
+        description: 'Komplette Elektroinstallation für Neubauten und Umbauten mit Planung, Ausführung und Abnahme'
+      },
+      {
+        icon: Zap,
+        title: 'Leitungen & Kabelzüge',
+        description: 'Verlegung von Steigleitungen, Installationsleitungen und Kabelkanälen'
+      },
+      {
+        icon: Lightbulb,
+        title: 'Steckdosen & Schalter',
+        description: 'Installation von Steckdosen, Lichtschaltern, Dimmern und USB-Steckdosen'
+      }
+    ],
+    faq: [
+      {
+        question: 'Benötige ich eine Bewilligung für Elektroinstallationen?',
+        answer: 'Für grössere Installationen ist eine Meldung beim lokalen Elektrizitätswerk erforderlich. Ihr Elektriker kümmert sich um alle Formalitäten und erstellt den Sicherheitsnachweis (SiNa).'
+      },
+      {
+        question: 'Wie lange dauert eine Hausinstallation?',
+        answer: 'Das hängt von der Grösse des Projekts ab. Für eine durchschnittliche Wohnung (3.5 Zimmer) rechnet man mit 3-5 Arbeitstagen für die Rohinstallation.'
+      }
+    ],
+    metaTitle: 'Elektroinstallation Schweiz - Hausinstallationen | Büeze.ch',
+    metaDescription: 'Professionelle Hausinstallationen: Steckdosen, Leitungen, Schalter. Geprüfte Elektriker aus Ihrer Region.'
+  },
+
+  'elektro-beleuchtung': {
+    formCategory: 'elektro_beleuchtung',
+    title: 'Beleuchtung & Leuchtenmontage',
+    description: 'LED-Umrüstung, Spots, Decken-/Pendelleuchten und moderne Lichtkonzepte vom Fachmann',
+    services: [
+      {
+        icon: Lightbulb,
+        title: 'LED-Umrüstung',
+        description: 'Energiesparende LED-Beleuchtung für alle Räume'
+      },
+      {
+        icon: Zap,
+        title: 'Spots & Einbauleuchten',
+        description: 'Moderne Spotbeleuchtung für optimale Raumausleuchtung'
+      },
+      {
+        icon: Shield,
+        title: 'Bewegungsmelder',
+        description: 'Automatische Beleuchtung für Komfort und Sicherheit'
+      }
+    ],
+    faq: [
+      {
+        question: 'Lohnt sich die Umrüstung auf LED?',
+        answer: 'Ja! LED-Leuchten sparen bis zu 80% Energie und halten 10-mal länger als herkömmliche Glühbirnen.'
+      }
+    ],
+    metaTitle: 'Beleuchtung & LED-Umrüstung | Büeze.ch',
+    metaDescription: 'LED-Beleuchtung und Leuchtenmontage vom Elektriker. Energieeffizient und modern.'
+  },
+
+  'elektro-smart-home': {
+    formCategory: 'elektro_smart_home',
+    title: 'Smart Home & Automation',
+    description: 'KNX, Loxone, Shelly, Hue – Ihr Zuhause intelligent steuern',
+    services: [
+      {
+        icon: Smartphone,
+        title: 'Smart Home Systeme',
+        description: 'KNX, Loxone oder Shelly für intelligente Haussteuerung'
+      },
+      {
+        icon: Wifi,
+        title: 'Vernetzung',
+        description: 'Beleuchtung, Heizung, Jalousien zentral steuern'
+      },
+      {
+        icon: Shield,
+        title: 'Sicherheit',
+        description: 'Alarmanlagen und Überwachung integrieren'
+      }
+    ],
+    faq: [
+      {
+        question: 'Welches Smart Home System ist das beste?',
+        answer: 'Das hängt von Ihren Bedürfnissen ab. KNX ist der Standard für Neubauten, Shelly ideal für Nachrüstungen.'
+      }
+    ],
+    metaTitle: 'Smart Home Installation | Büeze.ch',
+    metaDescription: 'Smart Home Systeme installieren: KNX, Loxone, Shelly. Experten aus Ihrer Region.'
+  },
+
+  'elektro-wallbox': {
+    formCategory: 'elektro_wallbox',
+    title: 'E-Mobilität – Wallbox Installation',
+    description: 'Ladestation für Ihr Elektroauto professionell installiert',
+    services: [
+      {
+        icon: Car,
+        title: 'Wallbox Installation',
+        description: 'Ladestation für Ihr Zuhause fachgerecht installiert'
+      },
+      {
+        icon: Zap,
+        title: 'Lastmanagement',
+        description: 'Intelligente Steuerung für optimale Stromnutzung'
+      },
+      {
+        icon: Shield,
+        title: 'Anmeldung Netzbetreiber',
+        description: 'Wir übernehmen alle Formalitäten'
+      }
+    ],
+    faq: [
+      {
+        question: 'Benötige ich eine Bewilligung für eine Wallbox?',
+        answer: 'Ja, Wallboxen ab 3.7 kW müssen beim Netzbetreiber angemeldet werden. Ihr Elektriker erledigt das für Sie.'
+      }
+    ],
+    metaTitle: 'Wallbox Installation Schweiz | Büeze.ch',
+    metaDescription: 'Wallbox für Elektroauto installieren. Professionell vom Elektriker.'
+  },
+
+  // Bodenbeläge subcategories
+  'parkett-laminat': {
+    formCategory: 'parkett_laminat',
+    title: 'Parkett und Laminat',
+    description: 'Hochwertige Holzböden professionell verlegt',
+    services: [
+      {
+        icon: Layers,
+        title: 'Parkettverlegung',
+        description: 'Echtholzparkett in allen Varianten'
+      },
+      {
+        icon: Grid3x3,
+        title: 'Laminat',
+        description: 'Pflegeleicht und robust'
+      },
+      {
+        icon: Wrench,
+        title: 'Renovation',
+        description: 'Abschleifen und neu versiegeln'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was ist besser: Parkett oder Laminat?',
+        answer: 'Parkett ist hochwertiger und kann mehrfach abgeschliffen werden. Laminat ist günstiger und pflegeleichter.'
+      }
+    ],
+    metaTitle: 'Parkett & Laminat verlegen | Büeze.ch',
+    metaDescription: 'Parkett und Laminat vom Bodenleger. Professionelle Verlegung.'
+  },
+
+  'bodenfliesen': {
+    formCategory: 'bodenfliese',
+    title: 'Bodenfliesen',
+    description: 'Fliesen verlegen für Bad, Küche und alle Wohnräume',
+    services: [
+      {
+        icon: Grid3x3,
+        title: 'Fliesenverlegung',
+        description: 'Keramik, Naturstein, Feinsteinzeug'
+      },
+      {
+        icon: Bath,
+        title: 'Nassbereiche',
+        description: 'Fachgerechte Abdichtung für Bad und Dusche'
+      },
+      {
+        icon: Wrench,
+        title: 'Fugenarbeiten',
+        description: 'Saubere Verfugung für perfektes Finish'
+      }
+    ],
+    faq: [
+      {
+        question: 'Wie lange muss ich warten bis ich die Fliesen belasten kann?',
+        answer: 'Nach 24-48 Stunden ist die Fläche begehbar, vollständig belastbar nach 7 Tagen.'
+      }
+    ],
+    metaTitle: 'Bodenfliesen verlegen | Büeze.ch',
+    metaDescription: 'Bodenfliesen vom Plattenleger. Professionell verlegt.'
+  },
+
+  // Sanitär subcategories
+  'badewanne-dusche': {
+    formCategory: 'badewanne_dusche',
+    title: 'Badewanne und Dusche',
+    description: 'Badewannen und Duschen fachgerecht installiert',
+    services: [
+      {
+        icon: Bath,
+        title: 'Badewannen',
+        description: 'Installation aller Wannentypen'
+      },
+      {
+        icon: Droplet,
+        title: 'Duschanlagen',
+        description: 'Bodengleiche Duschen und Duschkabinen'
+      },
+      {
+        icon: Wrench,
+        title: 'Armaturen',
+        description: 'Mischer, Thermostate, Regenduschen'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was kostet eine neue Dusche?',
+        answer: 'Das hängt von der Ausstattung ab. Eine einfache Duschkabine ab CHF 2000, bodengleiche Duschen ab CHF 4000.'
+      }
+    ],
+    metaTitle: 'Badewanne & Dusche installieren | Büeze.ch',
+    metaDescription: 'Badewanne und Dusche vom Sanitär. Professionelle Installation.'
+  },
+
+  // Heizung subcategories
+  'fussbodenheizung': {
+    formCategory: 'fussbodenheizung',
+    title: 'Fussbodenheizung',
+    description: 'Behagliche Wärme vom Boden – Installation und Service',
+    services: [
+      {
+        icon: Flame,
+        title: 'Neuinstallation',
+        description: 'Fussbodenheizung für Neubau und Renovation'
+      },
+      {
+        icon: Wind,
+        title: 'Wartung',
+        description: 'Regelmässige Kontrolle und Spülung'
+      },
+      {
+        icon: Wrench,
+        title: 'Reparatur',
+        description: 'Schnelle Hilfe bei Problemen'
+      }
+    ],
+    faq: [
+      {
+        question: 'Eignet sich Fussbodenheizung für Parkett?',
+        answer: 'Ja, mit geeignetem Parkett und korrekter Installation ist das problemlos möglich.'
+      }
+    ],
+    metaTitle: 'Fussbodenheizung installieren | Büeze.ch',
+    metaDescription: 'Fussbodenheizung vom Heizungsinstallateur. Professionell installiert.'
+  },
+
+  'photovoltaik': {
+    formCategory: 'photovoltaik',
+    title: 'Photovoltaik & Batteriespeicher',
+    description: 'Solarstrom vom eigenen Dach – nachhaltig und rentabel',
+    services: [
+      {
+        icon: Sun,
+        title: 'PV-Anlagen',
+        description: 'Planung und Installation von Solaranlagen'
+      },
+      {
+        icon: Package2,
+        title: 'Batteriespeicher',
+        description: 'Stromspeicher für maximale Eigennutzung'
+      },
+      {
+        icon: Zap,
+        title: 'Anmeldung',
+        description: 'Alle Formalitäten inklusive'
+      }
+    ],
+    faq: [
+      {
+        question: 'Lohnt sich eine PV-Anlage in der Schweiz?',
+        answer: 'Ja! Mit Förderungen, steigenden Strompreisen und Eigenverbrauch amortisiert sich eine Anlage in 10-15 Jahren.'
+      }
+    ],
+    metaTitle: 'Photovoltaik & Solar | Büeze.ch',
+    metaDescription: 'PV-Anlage installieren. Solarstrom vom eigenen Dach.'
+  },
+
+  // Küche subcategories
+  'kuechenplanung': {
+    formCategory: 'kuechenplanung',
+    title: 'Küchenplanung',
+    description: 'Professionelle Küchenplanung für Ihre Traumküche',
+    services: [
+      {
+        icon: ChefHat,
+        title: '3D-Planung',
+        description: 'Visualisierung Ihrer neuen Küche'
+      },
+      {
+        icon: Home,
+        title: 'Beratung',
+        description: 'Auswahl von Material und Geräten'
+      },
+      {
+        icon: Wrench,
+        title: 'Umsetzung',
+        description: 'Von der Planung bis zur Montage'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was kostet eine Küchenplanung?',
+        answer: 'Viele Küchenbauer bieten die Planung kostenlos an, wenn Sie die Küche auch bei ihnen kaufen.'
+      }
+    ],
+    metaTitle: 'Küchenplanung Schweiz | Büeze.ch',
+    metaDescription: 'Küche planen vom Profi. 3D-Visualisierung und Beratung.'
+  },
+
+  // Bau & Renovation
+  'metallbau': {
+    formCategory: 'metallbau',
+    title: 'Metallbau',
+    description: 'Metallkonstruktionen, Geländer, Treppen und mehr',
+    services: [
+      {
+        icon: Hammer,
+        title: 'Geländer',
+        description: 'Innen- und Aussengeländer aus Metall'
+      },
+      {
+        icon: DoorOpen,
+        title: 'Metalltreppen',
+        description: 'Massgeschneiderte Treppenkonstruktionen'
+      },
+      {
+        icon: Wrench,
+        title: 'Konstruktionen',
+        description: 'Stahl- und Aluminium-Arbeiten'
+      }
+    ],
+    faq: [
+      {
+        question: 'Welches Material ist besser: Stahl oder Aluminium?',
+        answer: 'Stahl ist stabiler, Aluminium korrosionsbeständig und leichter. Die Wahl hängt vom Einsatzbereich ab.'
+      }
+    ],
+    metaTitle: 'Metallbau Schweiz | Büeze.ch',
+    metaDescription: 'Metallbau: Geländer, Treppen, Konstruktionen. Vom Fachmann.'
+  },
+
+  // Räumung & Entsorgung
+  'aufloesung-entsorgung': {
+    formCategory: 'aufloesung_entsorgung',
+    title: 'Auflösung und Entsorgung',
+    description: 'Wohnungsauflösungen und professionelle Entsorgung',
+    services: [
+      {
+        icon: Trash2,
+        title: 'Wohnungsauflösung',
+        description: 'Komplette Räumung von Wohnungen und Häusern'
+      },
+      {
+        icon: Truck,
+        title: 'Entsorgung',
+        description: 'Fachgerechte Entsorgung aller Materialien'
+      },
+      {
+        icon: Package,
+        title: 'Entrümpelung',
+        description: 'Keller, Dachboden, Garage'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was kostet eine Wohnungsauflösung?',
+        answer: 'Das hängt von Grösse und Menge ab. Durchschnittlich CHF 1500-3000 für eine 3-Zimmer-Wohnung.'
+      }
+    ],
+    metaTitle: 'Wohnungsauflösung & Entsorgung | Büeze.ch',
+    metaDescription: 'Wohnungsauflösung und Entrümpelung. Professionell und zuverlässig.'
   },
 };

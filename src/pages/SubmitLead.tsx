@@ -8,7 +8,7 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
@@ -49,22 +49,44 @@ const leadSchema = z.object({
 type LeadFormData = z.infer<typeof leadSchema>;
 
 const categories = [
-  { value: 'elektriker', label: 'Elektrik' },
-  { value: 'sanitaer', label: 'Sanitär' },
-  { value: 'heizung', label: 'Heizung' },
-  { value: 'maler', label: 'Malerei' },
-  { value: 'schreiner', label: 'Schreinerei' },
-  { value: 'bodenleger', label: 'Bodenbeläge' },
-  { value: 'dachdecker', label: 'Dacharbeiten' },
-  { value: 'gartenbau', label: 'Gartenbau' },
-  { value: 'kuechenbau', label: 'Küchenbau' },
-  { value: 'badumbau', label: 'Badumbau' },
-  { value: 'zimmermann', label: 'Zimmermann' },
-  { value: 'maurer', label: 'Maurer' },
-  { value: 'plattenleger', label: 'Plattenleger' },
-  { value: 'gipser', label: 'Gipser' },
-  { value: 'transport', label: 'Transport & Umzug' },
+  { value: 'elektriker', label: 'Elektrik', group: 'Elektroinstallationen' },
+  { value: 'elektro_hausinstallationen', label: 'Hausinstallationen', group: 'Elektroinstallationen' },
+  { value: 'elektro_beleuchtung', label: 'Beleuchtung', group: 'Elektroinstallationen' },
+  { value: 'elektro_smart_home', label: 'Smart Home', group: 'Elektroinstallationen' },
+  { value: 'elektro_wallbox', label: 'Wallbox / E-Mobilität', group: 'Elektroinstallationen' },
+  { value: 'sanitaer', label: 'Sanitär', group: 'Sanitär' },
+  { value: 'badezimmer', label: 'Badezimmer', group: 'Sanitär' },
+  { value: 'badewanne_dusche', label: 'Badewanne / Dusche', group: 'Sanitär' },
+  { value: 'heizung', label: 'Heizung', group: 'Heizung, Klima & Solar' },
+  { value: 'fussbodenheizung', label: 'Fussbodenheizung', group: 'Heizung, Klima & Solar' },
+  { value: 'photovoltaik', label: 'Photovoltaik', group: 'Heizung, Klima & Solar' },
+  { value: 'maler', label: 'Malerei', group: 'Innenausbau & Schreiner' },
+  { value: 'schreiner', label: 'Schreinerei', group: 'Innenausbau & Schreiner' },
+  { value: 'bodenleger', label: 'Bodenbeläge', group: 'Bodenbeläge' },
+  { value: 'parkett_laminat', label: 'Parkett / Laminat', group: 'Bodenbeläge' },
+  { value: 'bodenfliese', label: 'Bodenfliesen', group: 'Bodenbeläge' },
+  { value: 'dachdecker', label: 'Dacharbeiten', group: 'Bau & Renovation' },
+  { value: 'gartenbau', label: 'Gartenbau', group: 'Bau & Renovation' },
+  { value: 'metallbau', label: 'Metallbau', group: 'Bau & Renovation' },
+  { value: 'kuechenbau', label: 'Küchenbau', group: 'Küche' },
+  { value: 'kuechenplanung', label: 'Küchenplanung', group: 'Küche' },
+  { value: 'badumbau', label: 'Badumbau', group: 'Sanitär' },
+  { value: 'zimmermann', label: 'Zimmermann', group: 'Bau & Renovation' },
+  { value: 'maurer', label: 'Maurer', group: 'Bau & Renovation' },
+  { value: 'plattenleger', label: 'Plattenleger', group: 'Bodenbeläge' },
+  { value: 'gipser', label: 'Gipser', group: 'Innenausbau & Schreiner' },
+  { value: 'umzug', label: 'Transport & Umzug', group: 'Räumung & Entsorgung' },
+  { value: 'aufloesung_entsorgung', label: 'Auflösung / Entsorgung', group: 'Räumung & Entsorgung' },
 ];
+
+// Group categories by major category
+const groupedCategories = categories.reduce((acc, cat) => {
+  if (!acc[cat.group]) {
+    acc[cat.group] = [];
+  }
+  acc[cat.group].push(cat);
+  return acc;
+}, {} as Record<string, typeof categories>);
 
 
 const urgencyLevels = [
@@ -523,10 +545,15 @@ const SubmitLead = () => {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {categories.map((category) => (
-                                <SelectItem key={category.value} value={category.value}>
-                                  {category.label}
-                                </SelectItem>
+                              {Object.entries(groupedCategories).map(([group, cats]) => (
+                                <SelectGroup key={group}>
+                                  <SelectLabel>{group}</SelectLabel>
+                                  {cats.map((category) => (
+                                    <SelectItem key={category.value} value={category.value}>
+                                      {category.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
                               ))}
                             </SelectContent>
                           </Select>
