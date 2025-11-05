@@ -19,7 +19,7 @@ const HandwerkerLanding = () => {
     {
       icon: Coins,
       title: 'Faire Preise',
-      description: 'Keine versteckten Kosten – Sie zahlen nur für Leads, die Sie wirklich interessieren.'
+      description: 'Transparente Abo-Preise – keine Kosten pro Kontakt oder versteckte Gebühren.'
     },
     {
       icon: LayoutDashboard,
@@ -58,7 +58,7 @@ const HandwerkerLanding = () => {
     },
     {
       question: 'Wie funktioniert die Preisgestaltung für Handwerker?',
-      answer: 'Die Registrierung ist komplett kostenlos. Im kostenlosen Plan können Sie monatlich 5 Anfragen anschauen – Sie sehen dabei Ort, PLZ, Kategorie und Budget, jedoch keine Kontaktdaten. Mit einem Abo (ab CHF 90/Monat) erhalten Sie unbegrenzten Zugriff auf alle Anfragen und können alle verfügbaren Projekte durchsuchen. Um die vollständigen Kontaktdaten eines Auftraggebers zu erhalten, kaufen Sie den Lead für CHF 25. So zahlen Sie nur für die Anfragen, die Sie wirklich interessieren.'
+      answer: 'Mit einem Abo (ab CHF 90/Monat) können Sie unbegrenzt Offerten einreichen. Im Free-Plan sind 5 Offerten pro Monat enthalten. Sie reichen Ihre Offerte mit Preis, Zeitrahmen und Nachricht ein. Sobald der Kunde Ihre Offerte akzeptiert, erhalten beide Seiten die vollständigen Kontaktdaten – ohne Zusatzkosten. Sie zahlen nur für das Abo, nicht pro Kontakt.'
     },
     {
       question: 'Welche Informationen sehen Auftraggeber von mir?',
