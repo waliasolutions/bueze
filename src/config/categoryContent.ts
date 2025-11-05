@@ -643,4 +643,249 @@ export const categoryContent: Record<string, CategoryContent> = {
     metaTitle: 'Wohnungsauflösung & Entsorgung | Büeze.ch',
     metaDescription: 'Wohnungsauflösung und Entrümpelung. Professionell und zuverlässig.'
   },
+
+  // Additional Bau & Renovation
+  'holzbau': {
+    formCategory: 'holzbau',
+    title: 'Holzbau & Zimmerei',
+    description: 'Dachstühle, Carports und Holzkonstruktionen vom Zimmermann',
+    services: [
+      {
+        icon: Home,
+        title: 'Dachstühle',
+        description: 'Dachkonstruktionen fachgerecht erstellt'
+      },
+      {
+        icon: Car,
+        title: 'Carports',
+        description: 'Holz-Carports nach Mass'
+      },
+      {
+        icon: TreePine,
+        title: 'Holzkonstruktionen',
+        description: 'Balkone, Pergolen, Überdachungen'
+      }
+    ],
+    faq: [
+      {
+        question: 'Welches Holz für Aussenarbeiten?',
+        answer: 'Lärche und Douglasie sind ideal für Aussenbereich. Alternativ druckimprägniertes Nadelholz.'
+      }
+    ],
+    metaTitle: 'Holzbau & Zimmerei Schweiz | Büeze.ch',
+    metaDescription: 'Holzbau: Dachstühle, Carports, Konstruktionen. Zimmerer aus Ihrer Region.'
+  },
+
+  'mauerarbeit': {
+    formCategory: 'mauerarbeit',
+    title: 'Mauerarbeiten & Verputzen',
+    description: 'Mauern, Verputzen und Steinarbeiten vom Maurer',
+    services: [
+      {
+        icon: Hammer,
+        title: 'Mauerwerk',
+        description: 'Neue Mauern und Trennwände'
+      },
+      {
+        icon: Home,
+        title: 'Verputzarbeiten',
+        description: 'Innen- und Aussenputz'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was kostet Mauerwerk pro m²?',
+        answer: 'Ca. CHF 150-250 pro m² inklusive Material, abhängig von Steinart.'
+      }
+    ],
+    metaTitle: 'Mauerarbeiten & Verputzen | Büeze.ch',
+    metaDescription: 'Maurer für Mauerwerk und Verputzarbeiten. Kostenlose Offerten.'
+  },
+
+  'betonarbeiten': {
+    formCategory: 'betonarbeiten',
+    title: 'Betonarbeiten',
+    description: 'Fundamente, Bodenplatten und Betonkonstruktionen',
+    services: [
+      {
+        icon: Hammer,
+        title: 'Fundamente',
+        description: 'Betonfundamente für Gebäude'
+      },
+      {
+        icon: Layers,
+        title: 'Bodenplatten',
+        description: 'Betonböden und Platten'
+      }
+    ],
+    faq: [
+      {
+        question: 'Wie lange muss Beton trocknen?',
+        answer: 'Nach 28 Tagen erreicht Beton seine volle Festigkeit.'
+      }
+    ],
+    metaTitle: 'Betonarbeiten Schweiz | Büeze.ch',
+    metaDescription: 'Betonarbeiten: Fundamente, Platten. Kostenlose Offerten.'
+  },
+
+  'fundament': {
+    formCategory: 'fundament',
+    title: 'Fundamente',
+    description: 'Fundamente für Gebäude, Garagen und Anbauten',
+    services: [
+      {
+        icon: Layers,
+        title: 'Streifenfundamente',
+        description: 'Klassische Fundamente für Wände'
+      },
+      {
+        icon: Package,
+        title: 'Punktfundamente',
+        description: 'Für Stützen und Pfosten'
+      }
+    ],
+    faq: [
+      {
+        question: 'Wie tief muss ein Fundament sein?',
+        answer: 'Mindestens 80cm frostfrei, je nach Bodenqualität auch tiefer.'
+      }
+    ],
+    metaTitle: 'Fundamente erstellen | Büeze.ch',
+    metaDescription: 'Fundamente professionell erstellt. Kostenlose Offerten.'
+  },
+
+  'kernbohrungen': {
+    formCategory: 'kernbohrungen',
+    title: 'Kernbohrungen & Durchbrüche',
+    description: 'Präzise Bohrungen durch Beton, Mauerwerk und Stein',
+    services: [
+      {
+        icon: Hammer,
+        title: 'Kernbohrungen',
+        description: 'Saubere Durchbrüche für Leitungen'
+      },
+      {
+        icon: Wrench,
+        title: 'Wanddurchbrüche',
+        description: 'Türen und Fensteröffnungen'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was kostet eine Kernbohrung?',
+        answer: 'Ab ca. CHF 150 je nach Durchmesser und Wandstärke.'
+      }
+    ],
+    metaTitle: 'Kernbohrungen Schweiz | Büeze.ch',
+    metaDescription: 'Kernbohrungen und Durchbrüche. Sauber und präzise.'
+  },
+
+  'abbruch-durchbruch': {
+    formCategory: 'abbruch_durchbruch',
+    title: 'Abbruch & Durchbruch',
+    description: 'Abbrucharbeiten und Wanddurchbrüche',
+    services: [
+      {
+        icon: Hammer,
+        title: 'Abbrucharbeiten',
+        description: 'Teilabbrüche und Rückbau'
+      },
+      {
+        icon: DoorOpen,
+        title: 'Wanddurchbrüche',
+        description: 'Öffnungen für Türen und Fenster'
+      }
+    ],
+    faq: [
+      {
+        question: 'Brauche ich eine Bewilligung?',
+        answer: 'Für tragende Wände meist ja. Ihr Handwerker berät Sie.'
+      }
+    ],
+    metaTitle: 'Abbruch & Durchbruch | Büeze.ch',
+    metaDescription: 'Abbrucharbeiten und Durchbrüche. Kostenlose Offerten.'
+  },
+
+  'renovierung-sonstige': {
+    formCategory: 'renovierung_sonstige',
+    title: 'Sonstige Renovationsarbeiten',
+    description: 'Diverse Umbau- und Renovationsarbeiten',
+    services: [
+      {
+        icon: Wrench,
+        title: 'Renovationen',
+        description: 'Umfassende Renovationsprojekte'
+      },
+      {
+        icon: Home,
+        title: 'Umbauarbeiten',
+        description: 'Umbauten und Anpassungen'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was gehört zur Renovation?',
+        answer: 'Von einfachen Reparaturen bis zur Totalsanierung ist alles möglich.'
+      }
+    ],
+    metaTitle: 'Renovationsarbeiten | Büeze.ch',
+    metaDescription: 'Renovationen und Umbauarbeiten. Kostenlose Offerten.'
+  },
+
+  'garage-carport': {
+    formCategory: 'garage_carport',
+    title: 'Garage & Carport',
+    description: 'Garagen, Garagentore und Carports',
+    services: [
+      {
+        icon: Car,
+        title: 'Garagenbau',
+        description: 'Fertig- und Massgaragen'
+      },
+      {
+        icon: DoorOpen,
+        title: 'Garagentore',
+        description: 'Sektional- und Schwing tore'
+      },
+      {
+        icon: Home,
+        title: 'Carports',
+        description: 'Offene Überdachungen für Fahrzeuge'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was ist günstiger - Garage oder Carport?',
+        answer: 'Carports sind deutlich günstiger und schneller erstellt.'
+      }
+    ],
+    metaTitle: 'Garage & Carport bauen | Büeze.ch',
+    metaDescription: 'Garagen und Carports vom Fachmann. Kostenlose Offerten.'
+  },
+
+  'aussenarbeiten-sonstige': {
+    formCategory: 'aussenarbeiten_sonstige',
+    title: 'Sonstige Aussenarbeiten',
+    description: 'Diverse Arbeiten rund ums Haus',
+    services: [
+      {
+        icon: Home,
+        title: 'Fassadenarbeiten',
+        description: 'Fassadenreinigung und -sanierung'
+      },
+      {
+        icon: Hammer,
+        title: 'Aussenanlagen',
+        description: 'Wege, Mauern, Treppen'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was zählt zu Aussenarbeiten?',
+        answer: 'Alle Arbeiten ausserhalb des Gebäudes: Fassade, Garten, Zufahrt, etc.'
+      }
+    ],
+    metaTitle: 'Aussenarbeiten | Büeze.ch',
+    metaDescription: 'Aussenarbeiten rund ums Haus. Kostenlose Offerten.'
+  },
 };
