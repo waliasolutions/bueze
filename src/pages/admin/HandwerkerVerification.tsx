@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,16 @@ import { subcategoryLabels } from "@/config/subcategoryLabels";
 interface HandwerkerProfile {
   id: string;
   user_id: string;
+  // Personal Information
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  personal_address: string | null;
+  personal_zip: string | null;
+  personal_city: string | null;
+  personal_canton: string | null;
+  // Company Information
   company_name: string | null;
   company_legal_form: string | null;
   uid_number: string | null;
@@ -47,16 +58,66 @@ interface HandwerkerProfile {
 
 export default function HandwerkerVerification() {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [profiles, setProfiles] = useState<HandwerkerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<HandwerkerProfile | null>(null);
   const [verificationNotes, setVerificationNotes] = useState("");
   const [activeTab, setActiveTab] = useState("pending");
   const [processing, setProcessing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          toast({
+            title: "Zugriff verweigert",
+            description: "Bitte melden Sie sich an.",
+            variant: "destructive",
+          });
+          navigate('/auth');
+          return;
+        }
+
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+
+        if (!roleData) {
+          toast({
+            title: "Zugriff verweigert",
+            description: "Diese Seite ist nur für Administratoren zugänglich.",
+            variant: "destructive",
+          });
+          navigate('/');
+          return;
+        }
+
+        setIsAdmin(true);
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        navigate('/');
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAdminAccess();
+  }, [navigate, toast]);
 
   useEffect(() => {
-    fetchProfiles();
-  }, [activeTab]);
+    if (isAdmin) {
+      fetchProfiles();
+    }
+  }, [activeTab, isAdmin]);
 
   const fetchProfiles = async () => {
     setLoading(true);
@@ -155,12 +216,18 @@ export default function HandwerkerVerification() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Handwerker-Verifizierung</h1>
-        <p className="text-muted-foreground mt-2">
-          Überprüfen und genehmigen Sie Handwerkerprofile
-        </p>
-      </div>
+      {checkingAuth ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Zugriff wird überprüft...</p>
+        </div>
+      ) : (
+        <>
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold">Handwerker-Verifizierung</h1>
+            <p className="text-muted-foreground mt-2">
+              Überprüfen und genehmigen Sie Handwerkerprofile
+            </p>
+          </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
         <TabsList>
@@ -189,9 +256,13 @@ export default function HandwerkerVerification() {
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle>{profile.company_name || profile.profiles?.full_name || "Kein Name"}</CardTitle>
+                        <CardTitle>
+                          {profile.first_name && profile.last_name 
+                            ? `${profile.first_name} ${profile.last_name}` 
+                            : profile.company_name || profile.profiles?.full_name || "Kein Name"}
+                        </CardTitle>
                         <CardDescription>
-                          {profile.profiles?.email} • {profile.profiles?.phone || "Keine Telefonnummer"}
+                          {profile.email || profile.profiles?.email} • {profile.phone_number || profile.profiles?.phone || "Keine Telefonnummer"}
                         </CardDescription>
                       </div>
                       {getStatusBadge(profile.verification_status)}
@@ -261,12 +332,50 @@ export default function HandwerkerVerification() {
 
           {selectedProfile && (
             <div className="space-y-6">
+              {/* Personal Information Section */}
+              <div className="border-b pb-4">
+                <h3 className="text-lg font-semibold mb-4">Persönliche Informationen</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Name</p>
+                    <p className="text-sm">
+                      {selectedProfile.first_name && selectedProfile.last_name 
+                        ? `${selectedProfile.first_name} ${selectedProfile.last_name}`
+                        : "Nicht angegeben"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">E-Mail</p>
+                    <p className="text-sm">{selectedProfile.email || "Nicht angegeben"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Telefon</p>
+                    <p className="text-sm">{selectedProfile.phone_number || "Nicht angegeben"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Persönliche Adresse</p>
+                    <div className="text-sm">
+                      {selectedProfile.personal_address && (
+                        <>
+                          <p>{selectedProfile.personal_address}</p>
+                          <p>{selectedProfile.personal_zip} {selectedProfile.personal_city}</p>
+                          <p>{selectedProfile.personal_canton}</p>
+                        </>
+                      )}
+                      {!selectedProfile.personal_address && "Nicht angegeben"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Company & Business Information */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-semibold mb-2">Firmeninformationen</h4>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Rechtsform:</strong> {selectedProfile.company_legal_form}</p>
-                    <p><strong>UID:</strong> {selectedProfile.uid_number}</p>
+                    <p><strong>Firma:</strong> {selectedProfile.company_name || "Nicht angegeben"}</p>
+                    <p><strong>Rechtsform:</strong> {selectedProfile.company_legal_form || "Nicht angegeben"}</p>
+                    <p><strong>UID:</strong> {selectedProfile.uid_number || "Nicht angegeben"}</p>
                     <p><strong>MWST:</strong> {selectedProfile.mwst_number || "Nicht angegeben"}</p>
                   </div>
                 </div>
@@ -274,29 +383,54 @@ export default function HandwerkerVerification() {
                 <div>
                   <h4 className="font-semibold mb-2">Geschäftsadresse</h4>
                   <div className="space-y-2 text-sm">
-                    <p>{selectedProfile.business_address}</p>
-                    <p>{selectedProfile.business_zip} {selectedProfile.business_city}</p>
-                    <p>{selectedProfile.business_canton}</p>
+                    {selectedProfile.business_address ? (
+                      <>
+                        <p>{selectedProfile.business_address}</p>
+                        <p>{selectedProfile.business_zip} {selectedProfile.business_city}</p>
+                        <p>{selectedProfile.business_canton}</p>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">Nicht angegeben</p>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <h4 className="font-semibold mb-2">Bankinformationen</h4>
                   <div className="space-y-2 text-sm">
-                    <p><strong>IBAN:</strong> {selectedProfile.iban}</p>
-                    <p><strong>Bank:</strong> {selectedProfile.bank_name}</p>
+                    <p><strong>IBAN:</strong> {selectedProfile.iban || "Nicht angegeben"}</p>
+                    <p><strong>Bank:</strong> {selectedProfile.bank_name || "Nicht angegeben"}</p>
                   </div>
                 </div>
 
                 <div>
                   <h4 className="font-semibold mb-2">Versicherung</h4>
                   <div className="space-y-2 text-sm">
-                    <p><strong>Anbieter:</strong> {selectedProfile.liability_insurance_provider}</p>
-                    <p><strong>Gültig bis:</strong> {selectedProfile.insurance_valid_until}</p>
+                    <p><strong>Anbieter:</strong> {selectedProfile.liability_insurance_provider || "Nicht angegeben"}</p>
+                    <p><strong>Gültig bis:</strong> {selectedProfile.insurance_valid_until || "Nicht angegeben"}</p>
                     {selectedProfile.liability_insurance_policy_number && (
                       <p><strong>Police:</strong> {selectedProfile.liability_insurance_policy_number}</p>
                     )}
                   </div>
+                </div>
+              </div>
+
+              {/* Service Information */}
+              <div>
+                <h4 className="font-semibold mb-2">Dienstleistungen</h4>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Kategorien:</strong> {getCategoryLabels(selectedProfile.categories)}</p>
+                  {(selectedProfile.hourly_rate_min || selectedProfile.hourly_rate_max) && (
+                    <p>
+                      <strong>Stundenansatz:</strong> CHF {selectedProfile.hourly_rate_min || '?'} - {selectedProfile.hourly_rate_max || '?'}
+                    </p>
+                  )}
+                  {selectedProfile.bio && (
+                    <div>
+                      <strong>Beschreibung:</strong>
+                      <p className="mt-1 text-muted-foreground">{selectedProfile.bio}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -355,6 +489,8 @@ export default function HandwerkerVerification() {
           )}
         </DialogContent>
       </Dialog>
+        </>
+      )}
     </div>
   );
 }

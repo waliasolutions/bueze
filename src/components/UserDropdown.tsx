@@ -247,6 +247,10 @@ export const UserDropdown = () => {
               <ShieldCheck className="mr-2 h-4 w-4" />
               <span>Handwerker-Freigaben</span>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/admin/handwerker-verification')} className="cursor-pointer">
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              <span>Handwerker-Verifizierung</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-line-200" />
           </>
         )}
