@@ -12,21 +12,21 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface PendingHandwerker {
   id: string;
-  user_id: string;
+  user_id: string | null; // Nullable for guest registrations
   is_verified: boolean;
   categories: string[];
   service_areas: string[];
   business_license: string | null;
   verification_documents: string[] | null;
   created_at: string;
-  profiles: {
-    id: string;
-    full_name: string;
-    email: string;
-    phone: string | null;
-    city: string | null;
-    canton: string | null;
-  };
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  company_name: string | null;
+  business_city: string | null;
+  business_canton: string | null;
+  verification_status: string;
 }
 
 const HandwerkerApprovals = () => {
@@ -93,37 +93,22 @@ const HandwerkerApprovals = () => {
           service_areas,
           business_license,
           verification_documents,
-          created_at
+          created_at,
+          first_name,
+          last_name,
+          email,
+          phone_number,
+          company_name,
+          business_city,
+          business_canton,
+          verification_status
         `)
-        .eq('is_verified', false)
+        .eq('verification_status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Fetch profiles separately
-      const handwerkersWithProfiles = await Promise.all(
-        (data || []).map(async (handwerker) => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id, full_name, email, phone, city, canton')
-            .eq('id', handwerker.user_id)
-            .single();
-
-          return {
-            ...handwerker,
-            profiles: profileData || {
-              id: handwerker.user_id,
-              full_name: 'Unknown',
-              email: 'unknown@example.com',
-              phone: null,
-              city: null,
-              canton: null,
-            }
-          };
-        })
-      );
-
-      setPendingHandwerkers(handwerkersWithProfiles as PendingHandwerker[]);
+      setPendingHandwerkers((data || []) as PendingHandwerker[]);
     } catch (error) {
       console.error('Error fetching pending handwerkers:', error);
       toast({
@@ -137,29 +122,24 @@ const HandwerkerApprovals = () => {
   const approveHandwerker = async (handwerker: PendingHandwerker) => {
     setApproving(handwerker.id);
     try {
-      const { error: updateError } = await supabase
-        .from('handwerker_profiles')
-        .update({ is_verified: true })
-        .eq('id', handwerker.id);
+      // Get current user's email for admin tracking
+      const { data: { user } } = await supabase.auth.getUser();
+      const adminEmail = user?.email || 'info@walia-solutions.ch';
 
-      if (updateError) throw updateError;
-
-      const { error: emailError } = await supabase.functions.invoke('send-approval-email', {
+      // Call edge function to create account and send credentials
+      const { data, error } = await supabase.functions.invoke('create-handwerker-account', {
         body: { 
-          userId: handwerker.user_id,
-          userName: handwerker.profiles.full_name,
-          userEmail: handwerker.profiles.email,
-          type: 'approved' 
+          profileId: handwerker.id,
+          adminEmail: adminEmail,
         }
       });
 
-      if (emailError) {
-        console.error('Email sending error:', emailError);
-      }
+      if (error) throw error;
 
       toast({
         title: 'Handwerker freigeschaltet',
-        description: `${handwerker.profiles.full_name} wurde erfolgreich freigeschaltet.`,
+        description: `${handwerker.first_name} ${handwerker.last_name} wurde erfolgreich freigeschaltet und erhält seine Zugangsdaten per E-Mail.`,
+        duration: 6000,
       });
 
       await fetchPendingHandwerkers();
@@ -167,7 +147,7 @@ const HandwerkerApprovals = () => {
       console.error('Error approving handwerker:', error);
       toast({
         title: 'Fehler',
-        description: 'Freischaltung fehlgeschlagen.',
+        description: 'Freischaltung fehlgeschlagen. Bitte versuchen Sie es erneut.',
         variant: 'destructive',
       });
     } finally {
@@ -180,22 +160,37 @@ const HandwerkerApprovals = () => {
     
     setApproving(handwerker.id);
     try {
-      const { error: emailError } = await supabase.functions.invoke('send-approval-email', {
-        body: { 
-          userId: handwerker.user_id,
-          userName: handwerker.profiles.full_name,
-          userEmail: handwerker.profiles.email,
-          type: 'rejected',
-          reason: reason || undefined
-        }
-      });
+      // Update verification status to rejected
+      const { error: updateError } = await supabase
+        .from('handwerker_profiles')
+        .update({ verification_status: 'rejected' })
+        .eq('id', handwerker.id);
 
-      if (emailError) throw emailError;
+      if (updateError) throw updateError;
+
+      // Optionally send rejection email if they have an account
+      if (handwerker.user_id) {
+        const { error: emailError } = await supabase.functions.invoke('send-approval-email', {
+          body: { 
+            userId: handwerker.user_id,
+            userName: `${handwerker.first_name} ${handwerker.last_name}`,
+            userEmail: handwerker.email,
+            type: 'rejected',
+            reason: reason || undefined
+          }
+        });
+
+        if (emailError) {
+          console.error('Email sending error:', emailError);
+        }
+      }
 
       toast({
-        title: 'Ablehnung gesendet',
-        description: `${handwerker.profiles.full_name} wurde über die Ablehnung informiert.`,
+        title: 'Handwerker abgelehnt',
+        description: `${handwerker.first_name} ${handwerker.last_name} wurde abgelehnt.`,
       });
+
+      await fetchPendingHandwerkers();
     } catch (error) {
       console.error('Error rejecting handwerker:', error);
       toast({
@@ -249,23 +244,28 @@ const HandwerkerApprovals = () => {
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-xl">
-                          {handwerker.profiles.full_name}
+                          {handwerker.first_name} {handwerker.last_name}
+                          {handwerker.company_name && (
+                            <span className="text-sm font-normal text-ink-600 ml-2">
+                              ({handwerker.company_name})
+                            </span>
+                          )}
                         </CardTitle>
                         <CardDescription className="mt-2 space-y-1">
                           <div className="flex items-center gap-2">
                             <Mail className="h-4 w-4" />
-                            {handwerker.profiles.email}
+                            {handwerker.email}
                           </div>
-                          {handwerker.profiles.phone && (
+                          {handwerker.phone_number && (
                             <div className="flex items-center gap-2">
                               <Phone className="h-4 w-4" />
-                              {handwerker.profiles.phone}
+                              {handwerker.phone_number}
                             </div>
                           )}
-                          {(handwerker.profiles.city || handwerker.profiles.canton) && (
+                          {(handwerker.business_city || handwerker.business_canton) && (
                             <div className="flex items-center gap-2">
                               <MapPin className="h-4 w-4" />
-                              {[handwerker.profiles.city, handwerker.profiles.canton]
+                              {[handwerker.business_city, handwerker.business_canton]
                                 .filter(Boolean)
                                 .join(', ')}
                             </div>

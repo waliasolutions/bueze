@@ -62,7 +62,7 @@ export const majorCategories: Record<string, MajorCategory> = {
       'bodenfliese', 'bodenleger', 'plattenleger', 
       'bodenbelag_sonstige'
     ],
-    color: 'from-brown-500 to-brown-700',
+    color: 'from-amber-600 to-amber-800',
     showOnHome: true,
     faq: [
       { question: 'Wie lange dauert die Verlegung eines neuen Bodens?', answer: 'Das hängt von der Raumgrösse und dem Material ab. Parkett oder Laminat sind oft in 1-2 Tagen verlegt, während Fliesen mehr Zeit benötigen. Die Bodenleger geben Ihnen in der Offerte eine genaue Zeitplanung.' },

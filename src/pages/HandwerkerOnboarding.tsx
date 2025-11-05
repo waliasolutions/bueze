@@ -335,28 +335,8 @@ const HandwerkerOnboarding = () => {
 
     setIsLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Nicht angemeldet",
-          description: "Bitte melden Sie sich zuerst an.",
-          variant: "destructive",
-        });
-        navigate('/auth?role=handwerker');
-        return;
-      }
-
-      // Verify user is actually a handwerker
-      const userRole = user.user_metadata?.role;
-      if (userRole !== 'handwerker') {
-        toast({
-          title: "Zugriff verweigert",
-          description: "Diese Seite ist nur für Handwerker verfügbar.",
-          variant: "destructive",
-        });
-        navigate('/dashboard');
-        return;
-      }
+      // Guest registration - no authentication required
+      // User account will be created by admin upon approval
 
       // Use personal address for business if same address is selected
       let businessAddress = formData.businessAddress;
@@ -380,11 +360,12 @@ const HandwerkerOnboarding = () => {
 
       // Upload files to Supabase storage and collect URLs
       const verificationDocuments: string[] = [];
+      const tempUserId = crypto.randomUUID(); // Temporary ID for file organization
       
       for (const [type, file] of Object.entries(allUploads)) {
         if (file) {
           const fileExt = file.name.split('.').pop();
-          const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
+          const fileName = `pending/${tempUserId}/${type}-${Date.now()}.${fileExt}`;
           
           // Upload file if not already uploaded
           const { error: uploadError } = await supabase.storage
@@ -403,11 +384,11 @@ const HandwerkerOnboarding = () => {
         }
       }
 
-      // Insert or update handwerker_profile
+      // Insert handwerker_profile for guest registration (no user_id)
       const { error } = await supabase
         .from("handwerker_profiles")
-        .upsert([{
-          user_id: user.id,
+        .insert([{
+          user_id: null, // Will be set by admin upon approval
           // Personal Information
           first_name: formData.firstName || null,
           last_name: formData.lastName || null,
@@ -450,14 +431,15 @@ const HandwerkerOnboarding = () => {
       if (error) throw error;
 
       toast({
-        title: "Profil eingereicht",
-        description: "Ihr Handwerkerprofil wird innerhalb von 1-2 Werktagen überprüft.",
+        title: "Registrierung eingereicht",
+        description: "Vielen Dank! Wir überprüfen Ihre Angaben und melden uns innerhalb von 1-2 Werktagen per E-Mail mit Ihren Zugangsdaten.",
+        duration: 8000,
       });
 
       // Clear saved draft
       localStorage.removeItem('handwerker-onboarding-draft');
 
-      navigate("/handwerker-dashboard");
+      navigate("/");
     } catch (error) {
       console.error("Error saving profile:", error);
       toast({

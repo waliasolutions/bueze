@@ -995,7 +995,7 @@ export type Database = {
           trade_license_number: string | null
           uid_number: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           verification_documents: string[] | null
           verification_notes: string | null
           verification_status: string | null
@@ -1041,7 +1041,7 @@ export type Database = {
           trade_license_number?: string | null
           uid_number?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           verification_documents?: string[] | null
           verification_notes?: string | null
           verification_status?: string | null
@@ -1087,7 +1087,7 @@ export type Database = {
           trade_license_number?: string | null
           uid_number?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           verification_documents?: string[] | null
           verification_notes?: string | null
           verification_status?: string | null
