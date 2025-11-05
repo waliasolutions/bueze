@@ -13,9 +13,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, MapPin, Clock, Coins, Eye, Users, TrendingUp, Crown, AlertCircle, ShieldCheck } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatCurrency } from '@/lib/swissTime';
-import { checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
+// TODO: Re-enable after types regenerate
+// import { checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
 import { getLeadStatus } from '@/config/leadStatuses';
-import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
+// import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
 
 interface Lead {
   id: string;
@@ -101,7 +102,8 @@ const Dashboard = () => {
   const [myLeads, setMyLeads] = useState<Lead[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
-  const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
+  // TODO: Re-enable after types regenerate
+  // const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
   const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfile | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -151,16 +153,16 @@ const Dashboard = () => {
 
       if (handwerkerProfileData) {
         setHandwerkerProfile(handwerkerProfileData);
-        // Mock subscription access for demo
-        setSubscriptionAccess({ 
-          canViewLead: true, 
-          canPurchaseLead: true, 
-          isUnlimited: true, 
-          remainingViews: 999, 
-          requiresUpgrade: false, 
-          leadPrice: 20,
-          planType: 'annual' 
-        });
+        // TODO: Re-enable after types regenerate - Mock subscription access for demo
+        // setSubscriptionAccess({ 
+        //   canViewLead: true, 
+        //   canPurchaseLead: true, 
+        //   isUnlimited: true, 
+        //   remainingViews: 999, 
+        //   requiresUpgrade: false,
+        //   leadPrice: 20,
+        //   planType: 'annual' 
+        // });
       }
 
       // Fetch user's purchases - show all for demo

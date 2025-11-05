@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Eye, Users } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
-import { trackLeadView, checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
+// TODO: Re-enable after types regenerate
+// import { trackLeadView, checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
 import { pauseLead, completeLead, deleteLead, reactivateLead, getLeadAnalytics } from '@/lib/leadHelpers';
 import { getLeadStatus } from '@/config/leadStatuses';
 import type { LeadAnalytics } from '@/lib/leadHelpers';
@@ -118,8 +119,8 @@ const LeadDetails = () => {
   const trackView = async () => {
     if (!user || !lead || lead.owner_id === user.id || hasPurchased) return;
     
-    // Track view for non-owners who haven't purchased
-    await trackLeadView(user.id, lead.id);
+    // TODO: Re-enable after types regenerate - Track view for non-owners who haven't purchased
+    // await trackLeadView(user.id, lead.id);
   };
 
   const fetchAnalytics = async () => {

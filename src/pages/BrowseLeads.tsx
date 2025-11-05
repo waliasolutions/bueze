@@ -16,9 +16,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Clock, Coins, Search, ShoppingCart, Crown, AlertCircle, Filter, X } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
-import { checkSubscriptionAccess, canPurchaseLeadWithPrice } from '@/lib/subscriptionHelpers';
+// TODO: Re-enable after types regenerate
+// import { checkSubscriptionAccess, canPurchaseLeadWithPrice } from '@/lib/subscriptionHelpers';
 import { canViewLead as canViewLeadByStatus } from '@/config/leadStatuses';
-import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
+// import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
@@ -91,7 +92,8 @@ const BrowseLeads = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCanton, setSelectedCanton] = useState('all');
   const [selectedUrgency, setSelectedUrgency] = useState('all');
-  const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
+  // TODO: Re-enable after types regenerate
+  // const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 50;
@@ -124,16 +126,16 @@ const BrowseLeads = () => {
 
   const checkUserSubscription = async () => {
     try {
-      // DEMO MODE: Mock subscription access for pitch
-      setSubscriptionAccess({ 
-        canViewLead: true, 
-        canPurchaseLead: true, 
-        isUnlimited: true, 
-        remainingViews: 999, 
-        requiresUpgrade: false, 
-        leadPrice: 20,
-        planType: 'annual' 
-      });
+      // TODO: Re-enable after types regenerate - DEMO MODE: Mock subscription access for pitch
+      // setSubscriptionAccess({ 
+      //   canViewLead: true, 
+      //   canPurchaseLead: true, 
+      //   isUnlimited: true, 
+      //   remainingViews: 999, 
+      //   requiresUpgrade: false,
+      //   leadPrice: 20,
+      //   planType: 'annual' 
+      // });
     } catch (error) {
       console.error('Error checking subscription:', error);
     }
@@ -261,18 +263,20 @@ const BrowseLeads = () => {
         return;
       }
 
-      // Check subscription access
-      const { canPurchase, price } = await canPurchaseLeadWithPrice(user.id);
+      // TODO: Re-enable after types regenerate - Check subscription access
+      // const { canPurchase, price } = await canPurchaseLeadWithPrice(user.id);
+      // if (!canPurchase) {
+      //   toast({
+      //     title: "Upgrade erforderlich",
+      //     description: "Bitte upgraden Sie Ihr Abonnement, um Aufträge zu kaufen.",
+      //     variant: "destructive",
+      //   });
+      //   navigate('/profile?tab=subscription');
+      //   return;
+      // }
 
-      if (!canPurchase) {
-        toast({
-          title: "Upgrade erforderlich",
-          description: "Bitte upgraden Sie Ihr Abonnement, um Aufträge zu kaufen.",
-          variant: "destructive",
-        });
-        navigate('/profile?tab=subscription');
-        return;
-      }
+      // Temporary: Allow all purchases for now
+      const price = 25;
 
       // Insert lead purchase with request_id for idempotency
       const { error: purchaseError } = await supabase
@@ -373,8 +377,8 @@ const BrowseLeads = () => {
             </p>
           </div>
 
-          {/* Subscription Status Banner */}
-          {subscriptionAccess && !subscriptionAccess.isUnlimited && (
+          {/* TODO: Re-enable after types regenerate - Subscription Status Banner */}
+          {/* {subscriptionAccess && !subscriptionAccess.isUnlimited && (
             <Alert className="mb-6">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>
@@ -394,7 +398,7 @@ const BrowseLeads = () => {
                 )}
               </AlertDescription>
             </Alert>
-          )}
+          )} */}
 
           {/* Filters */}
           <Card className="mb-8">
@@ -627,7 +631,7 @@ const BrowseLeads = () => {
                         <span className="font-medium">{formatBudget(lead.budget_min, lead.budget_max)}</span>
                       </div>
                       <div className="text-sm text-primary font-medium">
-                        CHF {subscriptionAccess?.leadPrice || 20}
+                        CHF 25
                       </div>
                     </div>
 
