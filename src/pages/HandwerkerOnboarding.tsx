@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
 
@@ -62,7 +62,7 @@ const HandwerkerOnboarding = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const totalSteps = 4;
-  const progress = (currentStep / totalSteps) * 100;
+  const progress = currentStep === 0 ? 0 : (currentStep / totalSteps) * 100;
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -114,6 +114,12 @@ const HandwerkerOnboarding = () => {
       if (!formData.insuranceValidUntil) {
         newErrors.insuranceValidUntil = "Gültigkeitsdatum ist erforderlich";
       }
+    } else if (step === 4) {
+      // Require at least 1 major category
+      if (selectedMajorCategories.length === 0) {
+        newErrors.categories = "Bitte wählen Sie mindestens eine Hauptkategorie";
+      }
+      // Subcategories are optional - no validation needed
     }
 
     setErrors(newErrors);
@@ -121,13 +127,14 @@ const HandwerkerOnboarding = () => {
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep)) {
+    // Skip validation for Step 0 (welcome screen)
+    if (currentStep === 0 || validateStep(currentStep)) {
       setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     }
   };
 
   const handleBack = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
   const handleSubmit = async () => {
@@ -228,6 +235,88 @@ const HandwerkerOnboarding = () => {
 
   const renderStepContent = () => {
     switch (currentStep) {
+      case 0:
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-2xl font-bold mb-2">Willkommen bei Büeze.ch</h2>
+              <p className="text-muted-foreground">
+                Bevor Sie starten, halten Sie bitte folgende Dokumente bereit:
+              </p>
+            </div>
+
+            <Alert className="bg-info/10 border-primary">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Geschätzte Zeit:</strong> 10-15 Minuten
+              </AlertDescription>
+            </Alert>
+
+            <Card className="bg-card">
+              <CardHeader>
+                <CardTitle className="text-lg">Erforderliche Dokumente</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">UID-Nummer</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Unternehmens-Identifikationsnummer vom BFS (Format: CHE-123.456.789)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Haftpflichtversicherung</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Name des Versicherungsanbieters und <strong>Gültigkeitsdatum</strong> (Ablaufdatum)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <Wallet className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Bankinformationen</h4>
+                    <p className="text-sm text-muted-foreground">
+                      IBAN und Name Ihrer Bank für Zahlungsabwicklung
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="mt-1">
+                    <Building2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Firmeninformationen</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Rechtsform, Firmenname, MWST-Nummer (falls vorhanden)
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Alert className="bg-warning/10 border-warning">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Wichtig:</strong> Ohne gültige UID-Nummer und Haftpflichtversicherung 
+                kann Ihr Profil nicht aktiviert werden.
+              </AlertDescription>
+            </Alert>
+          </div>
+        );
+
       case 1:
         return (
           <div className="space-y-4">
@@ -512,12 +601,20 @@ const HandwerkerOnboarding = () => {
             </div>
 
             <p className="text-sm text-muted-foreground">
-              Wählen Sie zunächst Ihre Hauptkategorien und dann Ihre konkreten Fachgebiete.
+              Wählen Sie Ihre <strong>Hauptkategorien (erforderlich)</strong> und optional 
+              Ihre spezifischen Fachgebiete für eine bessere Auffindbarkeit.
             </p>
+
+            {errors.categories && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{errors.categories}</AlertDescription>
+              </Alert>
+            )}
 
             {/* Step 1: Select Major Categories */}
             <div>
-              <h4 className="font-semibold mb-3">Schritt 1: Hauptkategorien</h4>
+              <h4 className="font-semibold mb-3">Schritt 1: Hauptkategorien *</h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {Object.values(majorCategories).map((majorCat) => {
                   const Icon = majorCat.icon;
@@ -565,7 +662,12 @@ const HandwerkerOnboarding = () => {
             {/* Step 2: Select Subcategories */}
             {selectedMajorCategories.length > 0 && (
               <div>
-                <h4 className="font-semibold mb-3">Schritt 2: Fachgebiete</h4>
+                <h4 className="font-semibold mb-3">
+                  Schritt 2: Fachgebiete <span className="text-sm font-normal text-muted-foreground">(optional)</span>
+                </h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Wählen Sie spezifische Fachgebiete, um gezielter für passende Aufträge gefunden zu werden.
+                </p>
                 
                 {selectedMajorCategories.map(majorCatId => {
                   const majorCat = majorCategories[majorCatId];
@@ -583,7 +685,7 @@ const HandwerkerOnboarding = () => {
                             </div>
                             {majorCat.label}
                             <Badge variant="secondary" className="ml-2">
-                              {formData.categories.filter(cat => majorCat.subcategories.includes(cat)).length} gewählt
+                              {formData.categories.filter(cat => majorCat.subcategories.includes(cat)).length} gewählt (optional)
                             </Badge>
                           </div>
                         </AccordionTrigger>
@@ -690,7 +792,10 @@ const HandwerkerOnboarding = () => {
           <CardHeader>
             <CardTitle>Handwerkerprofil vervollständigen</CardTitle>
             <CardDescription>
-              Schritt {currentStep} von {totalSteps}
+              {currentStep === 0 
+                ? "Willkommen - Dokumente bereithalten" 
+                : `Schritt ${currentStep} von ${totalSteps}`
+              }
             </CardDescription>
             <Progress value={progress} className="mt-2" />
           </CardHeader>
@@ -702,12 +807,16 @@ const HandwerkerOnboarding = () => {
               <Button
                 variant="outline"
                 onClick={handleBack}
-                disabled={currentStep === 1 || isLoading}
+                disabled={currentStep === 0 || isLoading}
               >
                 Zurück
               </Button>
 
-              {currentStep < totalSteps ? (
+              {currentStep === 0 ? (
+                <Button onClick={handleNext} disabled={isLoading}>
+                  Registrierung starten
+                </Button>
+              ) : currentStep < totalSteps ? (
                 <Button onClick={handleNext} disabled={isLoading}>
                   Weiter
                 </Button>
