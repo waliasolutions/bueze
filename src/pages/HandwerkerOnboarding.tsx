@@ -76,7 +76,7 @@ const HandwerkerOnboarding = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = currentStep === 0 ? 0 : (currentStep / totalSteps) * 100;
 
   const validateStep = (step: number): boolean => {
@@ -316,359 +316,104 @@ const HandwerkerOnboarding = () => {
     }
   };
 
+  // Helper components for summary page
+  interface SummaryItemProps {
+    label: string;
+    value: string;
+  }
+
+  const SummaryItem: React.FC<SummaryItemProps> = ({ label, value }) => (
+    <div className="flex justify-between items-start py-2 border-b last:border-0">
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <span className="text-sm font-semibold text-right max-w-[60%]">{value}</span>
+    </div>
+  );
+
+  interface DocumentStatusProps {
+    label: string;
+    file?: File;
+  }
+
+  const DocumentStatus: React.FC<DocumentStatusProps> = ({ label, file }) => (
+    <div className="flex justify-between items-center py-2 border-b last:border-0">
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      {file ? (
+        <div className="flex items-center gap-2">
+          <CheckCircle className="h-4 w-4 text-green-600" />
+          <span className="text-sm text-green-700 font-medium">Hochgeladen</span>
+        </div>
+      ) : (
+        <Badge variant="secondary" className="text-xs">Optional</Badge>
+      )}
+    </div>
+  );
+
+  const legalFormLabels: Record<string, string> = {
+    einzelfirma: "Einzelfirma",
+    gmbh: "GmbH",
+    ag: "AG",
+    kollektivgesellschaft: "Kollektivgesellschaft",
+    kommanditgesellschaft: "Kommanditgesellschaft",
+    genossenschaft: "Genossenschaft",
+    verein: "Verein",
+    stiftung: "Stiftung",
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
         return (
-          <div className="space-y-8">
-
-            {/* Bold Info Cards */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Shield className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Benötigte Dokumente</CardTitle>
-                      <CardDescription className="text-base mt-1">Für die Aktivierung erforderlich</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 text-base">
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                      <span>UID-Nummer</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-base">
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                      <span>Haftpflichtversicherung</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-base">
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                      <span>IBAN & Bankname</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-base">
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                      <span>Firmenangaben</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-2 border-brand-200 bg-gradient-to-br from-brand-50 to-transparent">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-brand-500/10 flex items-center justify-center">
-                      <Upload className="h-6 w-6 text-brand-600" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">⚡ Optional jetzt hochladen</CardTitle>
-                      <CardDescription className="text-base mt-1">Schnellere Verifizierung</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <button
-                    type="button"
-                    onClick={() => setShowUploadSection(!showUploadSection)}
-                    className="w-full text-left"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-white border hover:border-primary transition-colors">
-                        <span className="text-base font-medium">UID-Zertifikat</span>
-                        {step0Uploads.uidCertificate ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <Upload className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between p-3 rounded-lg bg-white border hover:border-primary transition-colors">
-                        <span className="text-base font-medium">Versicherungsnachweis</span>
-                        {step0Uploads.insuranceDocument ? (
-                          <CheckCircle className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <Upload className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Upload Section - Expanded */}
-            {showUploadSection && (
-              <Card className="border-2 border-dashed border-primary/30">
-                <CardHeader>
-                  <CardTitle className="text-xl">Dokumente hochladen</CardTitle>
-                  <CardDescription className="text-base">
-                    Kann auch später nachgereicht werden
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* UID Certificate Upload */}
-                  <div className="space-y-3">
-                    <Label htmlFor="step0-uid" className="text-base font-medium">UID-Zertifikat</Label>
-                    {step0Uploads.uidCertificate ? (
-                      <div className="flex items-center gap-3 p-4 border-2 rounded-lg bg-green-50 border-green-200">
-                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                        <span className="text-base flex-1 font-medium">{step0Uploads.uidCertificate.name}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setStep0Uploads(prev => ({ ...prev, uidCertificate: undefined }))}
-                        >
-                          <X className="h-5 w-5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <Input
-                          id="step0-uid"
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setStep0Uploads(prev => ({ ...prev, uidCertificate: file }));
-                            }
-                          }}
-                          className="hidden"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => document.getElementById('step0-uid')?.click()}
-                          className="w-full h-12 text-base"
-                        >
-                          <Upload className="mr-2 h-5 w-5" />
-                          Hochladen
-                        </Button>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Insurance Document Upload */}
-                  <div className="space-y-3">
-                    <Label htmlFor="step0-insurance" className="text-base font-medium">Versicherungsnachweis</Label>
-                    {step0Uploads.insuranceDocument ? (
-                      <div className="flex items-center gap-3 p-4 border-2 rounded-lg bg-green-50 border-green-200">
-                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                        <span className="text-base flex-1 font-medium">{step0Uploads.insuranceDocument.name}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setStep0Uploads(prev => ({ ...prev, insuranceDocument: undefined }))}
-                        >
-                          <X className="h-5 w-5" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <Input
-                          id="step0-insurance"
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setStep0Uploads(prev => ({ ...prev, insuranceDocument: file }));
-                            }
-                          }}
-                          className="hidden"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => document.getElementById('step0-insurance')?.click()}
-                          className="w-full h-12 text-base"
-                        >
-                          <Upload className="mr-2 h-5 w-5" />
-                          Hochladen
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Simple Info */}
-            <Alert className="border-2">
-              <AlertCircle className="h-5 w-5" />
-              <AlertDescription className="text-base ml-2">
-                Verifizierung erfolgt innerhalb 1-2 Werktagen. Fehlende Dokumente können Sie später hochladen.
-              </AlertDescription>
-            </Alert>
-          </div>
-        );
-
-      case 1:
-        return (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <Building2 className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Firmeninformationen</h3>
-                <p className="text-base text-muted-foreground">Ihre Unternehmensangaben</p>
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="space-y-3">
-                <Label htmlFor="companyLegalForm" className="text-base font-medium">Rechtsform *</Label>
-                <Select
-                  value={formData.companyLegalForm}
-                  onValueChange={(value) => setFormData({ ...formData, companyLegalForm: value })}
-                >
-                  <SelectTrigger className="h-12 text-base">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
-                    <SelectItem value="gmbh">GmbH</SelectItem>
-                    <SelectItem value="ag">AG</SelectItem>
-                    <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
-                    <SelectItem value="other">Andere</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="companyName" className="text-base font-medium">Firmenname *</Label>
-                <Input
-                  id="companyName"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  placeholder="z.B. Max Muster Bau GmbH"
-                  className="h-12 text-base"
-                />
-                {errors.companyName && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.companyName}
+            <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+              <CardHeader className="space-y-4 pb-6">
+                <div className="text-center space-y-3">
+                  <h2 className="text-4xl font-bold bg-gradient-to-r from-primary to-brand-500 bg-clip-text text-transparent">
+                    Willkommen bei Büeze.ch!
+                  </h2>
+                  <p className="text-lg text-foreground">
+                    Vielen Dank für Ihre Registrierung!
                   </p>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="uidNumber" className="text-base font-medium">UID-Nummer *</Label>
-                <Input
-                  id="uidNumber"
-                  value={formData.uidNumber}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFormData({ ...formData, uidNumber: value });
-                  }}
-                  onBlur={(e) => {
-                    const formatted = formatUID(e.target.value);
-                    setFormData({ ...formData, uidNumber: formatted });
-                  }}
-                  placeholder="CHE-123.456.789"
-                  className="h-12 text-base"
-                />
-                {errors.uidNumber && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.uidNumber}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <p className="text-base text-muted-foreground leading-relaxed">
+                    In den nächsten Schritten erfassen wir Ihre Firmeninformationen. 
+                    Folgende Angaben werden für die Verifizierung benötigt:
                   </p>
-                )}
-                <p className="text-sm text-muted-foreground">
-                  Unternehmens-Identifikationsnummer vom BFS
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="mwstNumber" className="text-base font-medium">MWST-Nummer (optional)</Label>
-                <Input
-                  id="mwstNumber"
-                  value={formData.mwstNumber}
-                  onChange={(e) => setFormData({ ...formData, mwstNumber: e.target.value })}
-                  placeholder="CHE-123.456.789 MWST"
-                  className="h-12 text-base"
-                />
-                {errors.mwstNumber && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.mwstNumber}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground">
-                  Erforderlich bei Jahresumsatz über CHF 100'000
-                </p>
-              </div>
-
-              <Card className="border-2 border-dashed mt-6">
-                <CardHeader>
-                  <CardTitle className="text-lg">UID-Zertifikat</CardTitle>
-                  <CardDescription>Offizielles Zertifikat hochladen</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {step0Uploads.uidCertificate && !uploadedFiles.uidCertificate ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 p-4 border-2 rounded-lg bg-green-50 border-green-200">
-                        <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-base font-medium">Bereits hochgeladen</p>
-                          <p className="text-sm text-muted-foreground">{step0Uploads.uidCertificate.name}</p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setUploadedFiles(prev => ({ ...prev, uidCertificate: step0Uploads.uidCertificate }));
-                          }}
-                        >
-                          Ersetzen
-                        </Button>
-                      </div>
+                  
+                  <div className="space-y-3 ml-4">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-base font-medium">UID-Nummer</span>
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <Input
-                        id="uidCertificate"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, 'uidCertificate');
-                        }}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('uidCertificate')?.click()}
-                        className="w-full h-12 text-base"
-                        disabled={uploadProgress.uidCertificate === 'uploading'}
-                      >
-                        {uploadProgress.uidCertificate === 'uploading' ? (
-                          <>Wird hochgeladen...</>
-                        ) : uploadProgress.uidCertificate === 'success' ? (
-                          <>
-                            <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-                            {uploadedFiles.uidCertificate?.name}
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="mr-2 h-5 w-5" />
-                            UID-Zertifikat hochladen
-                          </>
-                        )}
-                      </Button>
+                    <div className="flex items-start gap-3">
+                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-base font-medium">Haftpflichtversicherung-Gültigkeit</span>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                  </div>
+                </div>
+
+                <Alert className="border-primary/30 bg-primary/5">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <AlertDescription className="text-base ml-2">
+                    <span className="font-semibold">Warum?</span>
+                    <br />
+                    Diese Verifizierung garantiert unseren Kunden die Qualität und Seriosität 
+                    der Handwerker auf Büeze.ch.
+                  </AlertDescription>
+                </Alert>
+
+                <Alert className="border-brand-300 bg-brand-50">
+                  <Clock className="h-5 w-5 text-brand-600" />
+                  <AlertDescription className="text-base ml-2">
+                    <span className="font-semibold text-brand-700">Tipp</span>
+                    <br />
+                    Falls Sie diese Angaben bereit haben, wird Ihr Profil schneller aktiviert!
+                  </AlertDescription>
+                </Alert>
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -1197,10 +942,200 @@ const HandwerkerOnboarding = () => {
               </CardContent>
             </Card>
 
-            <Alert className="border-2 border-brand-200 bg-brand-50">
-              <CheckCircle className="h-5 w-5 text-brand-600" />
-              <AlertDescription className="text-base">
-                <strong>Fast geschafft!</strong> Ihr Profil wird innerhalb von 1-2 Werktagen überprüft.
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-6 animate-fade-in">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
+                <FileText className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">Zusammenfassung</h3>
+                <p className="text-base text-muted-foreground">
+                  Überprüfen Sie Ihre Angaben vor dem Absenden
+                </p>
+              </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="space-y-4">
+              
+              {/* 1. Company Information */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Firmeninformationen</CardTitle>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentStep(1)}
+                    >
+                      Bearbeiten
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <SummaryItem label="Firmenname" value={formData.companyName} />
+                  <SummaryItem label="Rechtsform" value={legalFormLabels[formData.companyLegalForm] || formData.companyLegalForm} />
+                  <SummaryItem label="UID-Nummer" value={formData.uidNumber} />
+                  {formData.mwstNumber && (
+                    <SummaryItem label="MWST-Nummer" value={formData.mwstNumber} />
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* 2. Banking Information */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Zahlungsinformationen</CardTitle>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentStep(2)}
+                    >
+                      Bearbeiten
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <SummaryItem label="IBAN" value={formData.iban} />
+                  <SummaryItem label="Bank" value={formData.bankName} />
+                </CardContent>
+              </Card>
+
+              {/* 3. Insurance & Licenses */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Versicherung & Lizenzen</CardTitle>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentStep(3)}
+                    >
+                      Bearbeiten
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <SummaryItem label="Versicherungsanbieter" value={formData.liabilityInsuranceProvider} />
+                  <SummaryItem label="Gültig bis" value={formData.insuranceValidUntil} />
+                  {formData.policyNumber && (
+                    <SummaryItem label="Policennummer" value={formData.policyNumber} />
+                  )}
+                  {formData.tradeLicenseNumber && (
+                    <SummaryItem label="Gewerbelizenz" value={formData.tradeLicenseNumber} />
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* 4. Service Details */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">Dienstleistungen</CardTitle>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentStep(4)}
+                    >
+                      Bearbeiten
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Kategorien</p>
+                    <div className="flex flex-wrap gap-2">
+                      {formData.categories.length > 0 ? (
+                        formData.categories.map((cat) => (
+                          <Badge key={cat} variant="secondary">
+                            {subcategoryLabels[cat]?.label || cat}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Keine Kategorien ausgewählt</span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {formData.serviceAreas.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Einsatzgebiete</p>
+                      <div className="flex flex-wrap gap-2">
+                        {formData.serviceAreas.map((area) => (
+                          <Badge key={area} variant="outline">
+                            {area}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(formData.hourlyRateMin || formData.hourlyRateMax) && (
+                    <SummaryItem 
+                      label="Stundenansatz" 
+                      value={`CHF ${formData.hourlyRateMin || '?'} - ${formData.hourlyRateMax || '?'}`} 
+                    />
+                  )}
+
+                  {formData.bio && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Beschreibung</p>
+                      <p className="text-sm">{formData.bio}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* 5. Uploaded Documents */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg">Hochgeladene Dokumente</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <DocumentStatus 
+                    label="UID-Zertifikat" 
+                    file={uploadedFiles.uidCertificate || step0Uploads.uidCertificate}
+                  />
+                  <DocumentStatus 
+                    label="Versicherungsnachweis" 
+                    file={uploadedFiles.insuranceDocument || step0Uploads.insuranceDocument}
+                  />
+                  <DocumentStatus 
+                    label="Gewerbelizenz" 
+                    file={uploadedFiles.tradeLicense}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Confirmation Alert */}
+            <Alert className="border-2 border-primary/20 bg-primary/5">
+              <CheckCircle className="h-5 w-5 text-primary" />
+              <AlertDescription className="text-base ml-2">
+                Bitte überprüfen Sie alle Angaben sorgfältig. Nach dem Absenden 
+                wird Ihr Profil innerhalb von 1-2 Werktagen durch unser Team verifiziert.
               </AlertDescription>
             </Alert>
           </div>
@@ -1217,10 +1152,10 @@ const HandwerkerOnboarding = () => {
         {/* Visual Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            {[0, 1, 2, 3, 4].map((step) => {
+            {[0, 1, 2, 3, 4, 5].map((step) => {
               const isCompleted = step < currentStep;
               const isCurrent = step === currentStep;
-              const stepLabels = ['Start', 'Firma', 'Adresse', 'Versicherung', 'Fachgebiete'];
+              const stepLabels = ['Start', 'Firma', 'Adresse', 'Versicherung', 'Fachgebiete', 'Prüfung'];
               
               return (
                 <div key={step} className="flex flex-col items-center flex-1">
@@ -1240,11 +1175,11 @@ const HandwerkerOnboarding = () => {
                   )}>
                     {stepLabels[step]}
                   </p>
-                  {step < 4 && (
+                  {step < 5 && (
                     <div className={cn(
                       "absolute w-full h-1 top-6 left-1/2 -z-10 transition-all duration-300",
                       isCompleted ? "bg-primary" : "bg-muted"
-                    )} style={{ width: 'calc(100% / 5)' }} />
+                    )} style={{ width: 'calc(100% / 6)' }} />
                   )}
                 </div>
               );
@@ -1290,11 +1225,11 @@ const HandwerkerOnboarding = () => {
                 </Button>
               ) : currentStep < totalSteps ? (
                 <Button onClick={handleNext} disabled={isLoading} className="h-12 px-6 text-base">
-                  Weiter
+                  {currentStep === 4 ? "Weiter zur Zusammenfassung" : "Weiter"}
                 </Button>
               ) : (
                 <Button onClick={handleSubmit} disabled={isLoading} className="h-12 px-8 text-base bg-brand-600 hover:bg-brand-700">
-                  {isLoading ? "Wird gespeichert..." : "Profil einreichen"}
+                  {isLoading ? "Wird eingereicht..." : "Bestätigen & Profil einreichen"}
                 </Button>
               )}
             </div>
