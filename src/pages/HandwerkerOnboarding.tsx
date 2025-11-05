@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,9 +23,10 @@ import { cn } from "@/lib/utils";
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [uploadedFiles, setUploadedFiles] = useState<{
     uidCertificate?: File;
     insuranceDocument?: File;
@@ -35,10 +36,6 @@ const HandwerkerOnboarding = () => {
     uidCertificate?: string;
     insuranceDocument?: string;
     tradeLicense?: string;
-  }>({});
-  const [step0Uploads, setStep0Uploads] = useState<{
-    uidCertificate?: File;
-    insuranceDocument?: File;
   }>({});
   const [showUploadSection, setShowUploadSection] = useState(false);
 
@@ -76,8 +73,58 @@ const HandwerkerOnboarding = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const totalSteps = 5;
-  const progress = currentStep === 0 ? 0 : (currentStep / totalSteps) * 100;
+  const totalSteps = 4;
+  const progress = ((currentStep - 1) / totalSteps) * 100;
+
+  // Auto-save form data to localStorage
+  useEffect(() => {
+    const saveToLocalStorage = () => {
+      const dataToSave = {
+        currentStep,
+        formData,
+        selectedMajorCategories,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem('handwerker-onboarding-draft', JSON.stringify(dataToSave));
+      setLastSaved(new Date());
+    };
+
+    const timeoutId = setTimeout(saveToLocalStorage, 1000);
+    return () => clearTimeout(timeoutId);
+  }, [currentStep, formData, selectedMajorCategories]);
+
+  // Load saved form data from localStorage on mount
+  useEffect(() => {
+    const loadFromLocalStorage = () => {
+      const savedData = localStorage.getItem('handwerker-onboarding-draft');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          const hoursSinceLastSave = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+          
+          // Only load if saved within last 7 days
+          if (hoursSinceLastSave < 168) {
+            setCurrentStep(parsed.currentStep || 1);
+            setFormData(parsed.formData || formData);
+            setSelectedMajorCategories(parsed.selectedMajorCategories || []);
+            
+            toast({
+              title: "Entwurf wiederhergestellt",
+              description: "Ihre letzten Änderungen wurden geladen.",
+            });
+          } else {
+            // Clear old data
+            localStorage.removeItem('handwerker-onboarding-draft');
+          }
+        } catch (error) {
+          console.error('Error loading saved data:', error);
+          localStorage.removeItem('handwerker-onboarding-draft');
+        }
+      }
+    };
+
+    loadFromLocalStorage();
+  }, []);
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
@@ -87,9 +134,8 @@ const HandwerkerOnboarding = () => {
       if (!formData.companyName.trim()) {
         newErrors.companyName = "Firmenname ist erforderlich";
       }
-      if (!formData.uidNumber) {
-        newErrors.uidNumber = "UID-Nummer ist erforderlich";
-      } else if (!validateUID(formData.uidNumber)) {
+      // UID is optional but validate format if provided
+      if (formData.uidNumber && !validateUID(formData.uidNumber)) {
         newErrors.uidNumber = "Ungültiges Format. Beispiel: CHE-123.456.789";
       }
       if (formData.mwstNumber && !validateMWST(formData.mwstNumber)) {
@@ -122,12 +168,13 @@ const HandwerkerOnboarding = () => {
         newErrors.bankName = "Bankname ist erforderlich";
       }
     } else if (step === 3) {
-      // Insurance validation
-      if (!formData.liabilityInsuranceProvider.trim()) {
-        newErrors.liabilityInsuranceProvider = "Versicherungsanbieter ist erforderlich";
+      // Insurance is optional but validate if provider is given
+      if (formData.liabilityInsuranceProvider.trim() && !formData.insuranceValidUntil) {
+        newErrors.insuranceValidUntil = "Bitte geben Sie das Gültigkeitsdatum an";
       }
-      if (!formData.insuranceValidUntil) {
-        newErrors.insuranceValidUntil = "Gültigkeitsdatum ist erforderlich";
+      // If valid-until is given, require provider
+      if (formData.insuranceValidUntil && !formData.liabilityInsuranceProvider.trim()) {
+        newErrors.liabilityInsuranceProvider = "Bitte geben Sie den Versicherungsanbieter an";
       }
     } else if (step === 4) {
       // Require at least 1 major category
@@ -142,14 +189,13 @@ const HandwerkerOnboarding = () => {
   };
 
   const handleNext = () => {
-    // Skip validation for Step 0 (welcome screen)
-    if (currentStep === 0 || validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, 5));
     }
   };
 
   const handleBack = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
   const handleFileUpload = async (file: File, type: 'uidCertificate' | 'insuranceDocument' | 'tradeLicense') => {
@@ -235,10 +281,10 @@ const HandwerkerOnboarding = () => {
         }
       }
 
-      // Collect all uploaded files (merge Step 0 uploads with later uploads)
+      // Collect all uploaded files
       const allUploads = {
-        uidCertificate: uploadedFiles.uidCertificate || step0Uploads.uidCertificate,
-        insuranceDocument: uploadedFiles.insuranceDocument || step0Uploads.insuranceDocument,
+        uidCertificate: uploadedFiles.uidCertificate,
+        insuranceDocument: uploadedFiles.insuranceDocument,
         tradeLicense: uploadedFiles.tradeLicense,
       };
 
@@ -303,6 +349,9 @@ const HandwerkerOnboarding = () => {
         description: "Ihr Handwerkerprofil wird innerhalb von 1-2 Werktagen überprüft.",
       });
 
+      // Clear saved draft
+      localStorage.removeItem('handwerker-onboarding-draft');
+
       navigate("/handwerker-dashboard");
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -361,51 +410,113 @@ const HandwerkerOnboarding = () => {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0:
+      case 1:
         return (
           <div className="space-y-6 animate-fade-in">
-            <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-              <CardHeader className="space-y-4 pb-6">
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <p className="text-base text-muted-foreground leading-relaxed">
-                    In den nächsten Schritten erfassen wir Ihre Firmeninformationen. 
-                    Folgende Angaben werden für die Verifizierung benötigt:
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
+                <Building2 className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold">Firmeninformationen</h3>
+                <p className="text-base text-muted-foreground">Grundlegende Angaben zu Ihrem Betrieb</p>
+              </div>
+            </div>
+
+            <Alert className="border-brand-300 bg-brand-50 mb-6">
+              <AlertCircle className="h-5 w-5 text-brand-600" />
+              <AlertDescription className="text-base ml-2">
+                <span className="font-semibold text-brand-700">Hinweis:</span>
+                {" "}Felder mit <span className="text-brand-600">★</span> sind für die Aktivierung 
+                Ihres Kontos erforderlich, können aber später nachgereicht werden.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-5">
+              <div className="space-y-3">
+                <Label htmlFor="companyName" className="text-base font-medium">Firmenname *</Label>
+                <Input
+                  id="companyName"
+                  value={formData.companyName}
+                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  placeholder="z.B. Muster AG"
+                  className="h-12 text-base"
+                />
+                {errors.companyName && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.companyName}
                   </p>
-                  
-                  <div className="space-y-3 ml-4">
-                    <div className="flex items-start gap-3">
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-base font-medium">UID-Nummer</span>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <CheckCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-base font-medium">Haftpflichtversicherung-Gültigkeit</span>
-                    </div>
-                  </div>
-                </div>
+                )}
+              </div>
 
-                <Alert className="border-primary/30 bg-primary/5">
-                  <Shield className="h-5 w-5 text-primary" />
-                  <AlertDescription className="text-base ml-2">
-                    <span className="font-semibold">Warum?</span>
-                    <br />
-                    Diese Verifizierung garantiert unseren Kunden die Qualität und Seriosität 
-                    der Handwerker auf Büeze.ch.
-                  </AlertDescription>
-                </Alert>
+              <div className="space-y-3">
+                <Label htmlFor="companyLegalForm" className="text-base font-medium">Rechtsform *</Label>
+                <Select
+                  value={formData.companyLegalForm}
+                  onValueChange={(value) => setFormData({ ...formData, companyLegalForm: value })}
+                >
+                  <SelectTrigger className="h-12 text-base">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
+                    <SelectItem value="gmbh">GmbH</SelectItem>
+                    <SelectItem value="ag">AG</SelectItem>
+                    <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
+                    <SelectItem value="kommanditgesellschaft">Kommanditgesellschaft</SelectItem>
+                    <SelectItem value="genossenschaft">Genossenschaft</SelectItem>
+                    <SelectItem value="verein">Verein</SelectItem>
+                    <SelectItem value="stiftung">Stiftung</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <Alert className="border-brand-300 bg-brand-50">
-                  <Clock className="h-5 w-5 text-brand-600" />
-                  <AlertDescription className="text-base ml-2">
-                    <span className="font-semibold text-brand-700">Tipp</span>
-                    <br />
-                    Falls Sie diese Angaben bereit haben, wird Ihr Profil schneller aktiviert!
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+              <div className="space-y-3">
+                <Label htmlFor="uidNumber" className="text-base font-medium">
+                  UID-Nummer
+                  <span className="text-brand-600 ml-1" title="Für Aktivierung erforderlich">★</span>
+                </Label>
+                <Input
+                  id="uidNumber"
+                  value={formData.uidNumber}
+                  onChange={(e) => setFormData({ ...formData, uidNumber: e.target.value })}
+                  onBlur={(e) => {
+                    const formatted = formatUID(e.target.value);
+                    setFormData({ ...formData, uidNumber: formatted });
+                  }}
+                  placeholder="CHE-123.456.789"
+                  className="h-12 text-base font-mono"
+                />
+                {errors.uidNumber && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.uidNumber}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <span className="text-brand-600">★</span>
+                  Für die Aktivierung Ihres Kontos benötigt
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="mwstNumber" className="text-base font-medium">MWST-Nummer (optional)</Label>
+                <Input
+                  id="mwstNumber"
+                  value={formData.mwstNumber}
+                  onChange={(e) => setFormData({ ...formData, mwstNumber: e.target.value })}
+                  placeholder="CHE-123.456.789 MWST"
+                  className="h-12 text-base font-mono"
+                />
+                {errors.mwstNumber && (
+                  <p className="text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    {errors.mwstNumber}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         );
 
@@ -582,9 +693,21 @@ const HandwerkerOnboarding = () => {
               </div>
             </div>
 
+            <Alert className="border-brand-300 bg-brand-50 mb-6">
+              <AlertCircle className="h-5 w-5 text-brand-600" />
+              <AlertDescription className="text-base ml-2">
+                <span className="font-semibold text-brand-700">Hinweis:</span>
+                {" "}Versicherungsinformationen mit <span className="text-brand-600">★</span> sind für 
+                die Aktivierung erforderlich, können aber später ergänzt werden.
+              </AlertDescription>
+            </Alert>
+
             <div className="space-y-5">
               <div className="space-y-3">
-                <Label htmlFor="liabilityInsuranceProvider" className="text-base font-medium">Haftpflichtversicherung *</Label>
+                <Label htmlFor="liabilityInsuranceProvider" className="text-base font-medium">
+                  Haftpflichtversicherung
+                  <span className="text-brand-600 ml-1" title="Für Aktivierung erforderlich">★</span>
+                </Label>
                 <Input
                   id="liabilityInsuranceProvider"
                   value={formData.liabilityInsuranceProvider}
@@ -600,6 +723,10 @@ const HandwerkerOnboarding = () => {
                     {errors.liabilityInsuranceProvider}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <span className="text-brand-600">★</span>
+                  Für die Aktivierung Ihres Kontos benötigt
+                </p>
               </div>
 
               <div className="space-y-3">
@@ -614,7 +741,10 @@ const HandwerkerOnboarding = () => {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="insuranceValidUntil" className="text-base font-medium">Gültig bis *</Label>
+                <Label htmlFor="insuranceValidUntil" className="text-base font-medium">
+                  Gültig bis
+                  <span className="text-brand-600 ml-1" title="Für Aktivierung erforderlich">★</span>
+                </Label>
                 <Input
                   id="insuranceValidUntil"
                   type="date"
@@ -628,6 +758,10 @@ const HandwerkerOnboarding = () => {
                     {errors.insuranceValidUntil}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                  <span className="text-brand-600">★</span>
+                  Für die Aktivierung Ihres Kontos benötigt
+                </p>
               </div>
 
               <div className="space-y-3">
@@ -654,26 +788,7 @@ const HandwerkerOnboarding = () => {
                 <div className="space-y-3">
                   <Label htmlFor="insuranceDocument" className="text-base font-medium">Haftpflichtversicherung</Label>
                   
-                  {step0Uploads.insuranceDocument && !uploadedFiles.insuranceDocument ? (
-                    <div className="flex items-center gap-3 p-4 border-2 rounded-lg bg-green-50 border-green-200">
-                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                      <div className="flex-1">
-                        <p className="text-base font-medium">Bereits hochgeladen</p>
-                        <p className="text-sm text-muted-foreground">{step0Uploads.insuranceDocument.name}</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setUploadedFiles(prev => ({ ...prev, insuranceDocument: step0Uploads.insuranceDocument }));
-                        }}
-                      >
-                        Ersetzen
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
+                  <div className="space-y-3">
                       <Input
                         id="insuranceDocument"
                         type="file"
@@ -706,7 +821,6 @@ const HandwerkerOnboarding = () => {
                         )}
                       </Button>
                     </div>
-                  )}
                 </div>
 
                 <div className="space-y-3">
@@ -1108,11 +1222,11 @@ const HandwerkerOnboarding = () => {
                 <CardContent className="space-y-2">
                   <DocumentStatus 
                     label="UID-Zertifikat" 
-                    file={uploadedFiles.uidCertificate || step0Uploads.uidCertificate}
+                    file={uploadedFiles.uidCertificate}
                   />
                   <DocumentStatus 
                     label="Versicherungsnachweis" 
-                    file={uploadedFiles.insuranceDocument || step0Uploads.insuranceDocument}
+                    file={uploadedFiles.insuranceDocument}
                   />
                   <DocumentStatus 
                     label="Gewerbelizenz" 
@@ -1144,10 +1258,10 @@ const HandwerkerOnboarding = () => {
         {/* Visual Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            {[0, 1, 2, 3, 4, 5].map((step) => {
+            {[1, 2, 3, 4, 5].map((step) => {
               const isCompleted = step < currentStep;
               const isCurrent = step === currentStep;
-              const stepLabels = ['Start', 'Firma', 'Adresse', 'Versicherung', 'Fachgebiete', 'Prüfung'];
+              const stepLabels = ['Firma', 'Adresse', 'Versicherung', 'Fachgebiete', 'Prüfung'];
               
               return (
                 <div key={step} className="flex flex-col items-center flex-1">
@@ -1157,7 +1271,7 @@ const HandwerkerOnboarding = () => {
                     isCurrent && "bg-brand-500 text-white shadow-xl scale-125 ring-4 ring-brand-200",
                     !isCompleted && !isCurrent && "bg-muted text-muted-foreground"
                   )}>
-                    {isCompleted ? <CheckCircle className="h-6 w-6" /> : step + 1}
+                    {isCompleted ? <CheckCircle className="h-6 w-6" /> : step}
                   </div>
                   <p className={cn(
                     "text-xs mt-2 font-medium text-center",
@@ -1165,14 +1279,8 @@ const HandwerkerOnboarding = () => {
                     isCompleted && "text-primary",
                     !isCompleted && !isCurrent && "text-muted-foreground"
                   )}>
-                    {stepLabels[step]}
+                    {stepLabels[step - 1]}
                   </p>
-                  {step < 5 && (
-                    <div className={cn(
-                      "absolute w-full h-1 top-6 left-1/2 -z-10 transition-all duration-300",
-                      isCompleted ? "bg-primary" : "bg-muted"
-                    )} style={{ width: 'calc(100% / 6)' }} />
-                  )}
                 </div>
               );
             })}
@@ -1185,12 +1293,33 @@ const HandwerkerOnboarding = () => {
               <div>
                 <CardTitle className="text-2xl">Handwerkerprofil erstellen</CardTitle>
                 <CardDescription className="text-base mt-1">
-                  {currentStep === 0 
-                    ? "Bereiten Sie Ihre Dokumente vor" 
-                    : `Schritt ${currentStep} von ${totalSteps}`
-                  }
+                  Schritt {currentStep} von {totalSteps}
                 </CardDescription>
               </div>
+              {lastSaved && (
+                <p className="text-xs text-muted-foreground">
+                  Zuletzt gespeichert: {lastSaved.toLocaleTimeString('de-CH')}
+                </p>
+              )}
+            </div>
+            {localStorage.getItem('handwerker-onboarding-draft') && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  localStorage.removeItem('handwerker-onboarding-draft');
+                  toast({
+                    title: "Entwurf gelöscht",
+                    description: "Ihre gespeicherten Daten wurden entfernt.",
+                  });
+                  window.location.reload();
+                }}
+                className="text-xs text-muted-foreground hover:text-destructive mt-2"
+              >
+                Entwurf löschen
+              </Button>
+            )}
+            <div className="flex items-center justify-between mt-4">
               <Badge variant="secondary" className="text-sm px-3 py-1">
                 {Math.round(progress)}% fertig
               </Badge>
@@ -1200,31 +1329,6 @@ const HandwerkerOnboarding = () => {
 
           <CardContent className="pt-6">
             {renderStepContent()}
-
-            <div className="flex justify-between mt-8 pt-6 border-t">
-              <Button
-                variant="outline"
-                onClick={handleBack}
-                disabled={currentStep === 0 || isLoading}
-                className="h-12 px-6 text-base"
-              >
-                Zurück
-              </Button>
-
-              {currentStep === 0 ? (
-                <Button onClick={handleNext} disabled={isLoading} className="h-12 px-6 text-base">
-                  Registrierung starten
-                </Button>
-              ) : currentStep < totalSteps ? (
-                <Button onClick={handleNext} disabled={isLoading} className="h-12 px-6 text-base">
-                  {currentStep === 4 ? "Weiter zur Zusammenfassung" : "Weiter"}
-                </Button>
-              ) : (
-                <Button onClick={handleSubmit} disabled={isLoading} className="h-12 px-8 text-base bg-brand-600 hover:bg-brand-700">
-                  {isLoading ? "Wird eingereicht..." : "Bestätigen & Profil einreichen"}
-                </Button>
-              )}
-            </div>
           </CardContent>
         </Card>
       </div>
