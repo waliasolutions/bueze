@@ -331,25 +331,17 @@ const HandwerkerOnboarding = () => {
         return;
       }
 
-      // Get user's personal address from profile if using same address
+      // Use personal address for business if same address is selected
       let businessAddress = formData.businessAddress;
       let businessZip = formData.businessZip;
       let businessCity = formData.businessCity;
       let businessCanton = formData.businessCanton;
 
       if (formData.sameAsPersonal) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("address, zip, city, canton")
-          .eq("id", user.id)
-          .single();
-
-        if (profile) {
-          businessAddress = profile.address || "";
-          businessZip = profile.zip || "";
-          businessCity = profile.city || "";
-          businessCanton = profile.canton || "";
-        }
+        businessAddress = formData.personalAddress;
+        businessZip = formData.personalZip;
+        businessCity = formData.personalCity;
+        businessCanton = formData.personalCanton;
       }
 
       // Collect all uploaded files
@@ -389,25 +381,40 @@ const HandwerkerOnboarding = () => {
         .from("handwerker_profiles")
         .upsert([{
           user_id: user.id,
+          // Personal Information
+          first_name: formData.firstName || null,
+          last_name: formData.lastName || null,
+          email: formData.email || null,
+          phone_number: formData.phoneNumber || null,
+          personal_address: formData.personalAddress || null,
+          personal_zip: formData.personalZip || null,
+          personal_city: formData.personalCity || null,
+          personal_canton: formData.personalCanton || null,
+          // Company Information
           company_name: formData.companyName || null,
           company_legal_form: formData.companyLegalForm || null,
           uid_number: formData.uidNumber || null,
           mwst_number: formData.mwstNumber || null,
+          // Business Address
           business_address: businessAddress || null,
           business_zip: businessZip || null,
           business_city: businessCity || null,
           business_canton: businessCanton || null,
+          // Banking
           iban: formData.iban.replace(/\s/g, "") || null,
           bank_name: formData.bankName || null,
+          // Insurance & Licenses
           liability_insurance_provider: formData.liabilityInsuranceProvider,
           liability_insurance_policy_number: formData.policyNumber || null,
           trade_license_number: formData.tradeLicenseNumber || null,
           insurance_valid_until: formData.insuranceValidUntil,
+          // Service Details
           bio: formData.bio || null,
           categories: formData.categories as any[],
           service_areas: formData.serviceAreas.length > 0 ? formData.serviceAreas : [],
           hourly_rate_min: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
           hourly_rate_max: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
+          // Verification
           verification_documents: verificationDocuments,
           verification_status: 'pending',
           is_verified: false,
