@@ -52,7 +52,6 @@ serve(async (req) => {
       phone: profile.phone_number || 'N/A',
       companyName: profile.company_name || '',
       categories: profile.categories || [],
-      serviceAreas: profile.service_areas || [],
       profileId: profile.id,
       submittedAt: new Date(profile.created_at).toLocaleDateString('de-CH', {
         day: '2-digit',
@@ -75,7 +74,7 @@ serve(async (req) => {
     const emailPayload = {
       api_key: smtp2goApiKey,
       to: ['info@walia-solutions.ch'],
-      sender: 'noreply@bueeze.ch',
+      sender: 'info@walia-solutions.ch',
       subject: `Neue Handwerker-Registrierung: ${profile.first_name} ${profile.last_name}`,
       html_body: emailHtml,
     };

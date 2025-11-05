@@ -266,14 +266,8 @@ const HandwerkerOnboarding = () => {
         newErrors.bankName = "Bankname ist erforderlich";
       }
     } else if (step === 4) {
-      // Insurance is optional but validate if provider is given
-      if (formData.liabilityInsuranceProvider.trim() && !formData.insuranceValidUntil) {
-        newErrors.insuranceValidUntil = "Bitte geben Sie das Gültigkeitsdatum an";
-      }
-      // If valid-until is given, require provider
-      if (formData.insuranceValidUntil && !formData.liabilityInsuranceProvider.trim()) {
-        newErrors.liabilityInsuranceProvider = "Bitte geben Sie den Versicherungsanbieter an";
-      }
+      // Insurance is completely optional - no validation required
+      // Users are informed via UI that it's needed for activation
     } else if (step === 5) {
       // Require at least 1 major category
       if (selectedMajorCategories.length === 0) {

@@ -372,14 +372,83 @@ export interface AdminRegistrationData {
   phone: string;
   companyName: string;
   categories: string[];
-  serviceAreas: string[];
   profileId: string;
   submittedAt: string;
 }
 
 export const adminRegistrationNotificationTemplate = (data: AdminRegistrationData) => {
-  const categoriesText = data.categories.join(', ');
-  const serviceAreasText = data.serviceAreas.join(', ');
+  // Import subcategory labels for human-readable category names
+  const subcategoryLabels: Record<string, string> = {
+    "electrician_installation": "Elektroinstallationen",
+    "electrician_repair": "Elektriker Reparaturen",
+    "electrician_panel": "Sicherungskasten & Unterverteilung",
+    "electrician_lighting": "Beleuchtung & Lichtplanung",
+    "electrician_charging": "Ladestationen E-Auto",
+    "electrician_smart_home": "Smart Home Installation",
+    "electrician_solar": "Photovoltaik & Solaranlagen",
+    "metalworker_construction": "Metallbau",
+    "metalworker_stairs": "Treppen & Geländer",
+    "metalworker_gates": "Tore & Zäune",
+    "metalworker_balconies": "Balkone & Terrassen",
+    "builder_new_construction": "Neubau",
+    "builder_renovation": "Umbau & Sanierung",
+    "builder_masonry": "Maurer- & Betonarbeiten",
+    "builder_plastering": "Verputz- & Stuckarbeiten",
+    "builder_insulation": "Wärmedämmung & Isolation",
+    "flooring_parquet": "Parkett und Laminat",
+    "flooring_tiles": "Plattenbeläge (Fliesen, Platten)",
+    "flooring_carpet": "Teppich & Textilbeläge",
+    "flooring_vinyl": "Vinyl & PVC",
+    "flooring_natural_stone": "Naturstein",
+    "flooring_screeding": "Unterlagsboden & Spachtelung",
+    "heating_installation": "Heizungsinstallation",
+    "heating_service": "Heizungswartung & Service",
+    "heating_floor": "Fussbodenheizung",
+    "heating_solar_thermal": "Solarthermie",
+    "heating_heat_pump": "Wärmepumpen",
+    "heating_ventilation": "Lüftung & Klimaanlage",
+    "plumber_installation": "Sanitärinstallationen",
+    "plumber_repair": "Sanitärreparaturen",
+    "plumber_bathroom": "Badewanne und Dusche",
+    "plumber_kitchen": "Kücheninstallationen",
+    "plumber_heating": "Heizung & Warmwasser",
+    "plumber_drainage": "Abwasser & Entwässerung",
+    "kitchen_planning": "Küchenplanung",
+    "kitchen_installation": "Kücheneinbau",
+    "kitchen_appliances": "Küchengeräte",
+    "kitchen_countertops": "Arbeitsplatten",
+    "carpenter_furniture": "Möbelbau",
+    "carpenter_doors": "Türen & Zargen",
+    "carpenter_windows": "Fenster",
+    "carpenter_stairs": "Treppen",
+    "carpenter_builtin": "Einbauschränke",
+    "carpenter_flooring": "Bodenbeläge",
+    "cleaning_clearance": "Auflösung und Entsorgung",
+    "cleaning_moving": "Umzugsservice",
+    "cleaning_construction": "Baureinigung",
+    "cleaning_garden": "Gartenräumung",
+    "painter_interior": "Innenanstrich",
+    "painter_exterior": "Aussenanstrich",
+    "painter_wallpaper": "Tapezieren",
+    "painter_plastering": "Gipserarbeiten",
+    "roofer_repair": "Dachreparatur",
+    "roofer_new": "Neues Dach",
+    "roofer_insulation": "Dachisolation",
+    "roofer_facade": "Fassadenarbeiten",
+    "landscaper_garden": "Gartengestaltung",
+    "landscaper_terrace": "Terrassen & Wege",
+    "landscaper_lawn": "Rasen & Bepflanzung",
+    "landscaper_fencing": "Zäune & Sichtschutz",
+    "window_new": "Neue Fenster",
+    "window_repair": "Fensterreparatur",
+    "window_doors": "Türen & Tore",
+    "window_shutters": "Rollläden & Storen",
+  };
+  
+  // Map enum values to readable German labels
+  const categoriesText = data.categories
+    .map(cat => subcategoryLabels[cat] || cat)
+    .join(', ') || 'Keine Kategorien angegeben';
   
   return emailWrapper(`
     <h2 style="color: #0066CC; margin-top: 0;">Neue Handwerker-Registrierung</h2>
@@ -410,10 +479,6 @@ export const adminRegistrationNotificationTemplate = (data: AdminRegistrationDat
         <tr>
           <td style="padding: 8px 0; font-weight: 600; color: #666;">Kategorien:</td>
           <td style="padding: 8px 0;">${categoriesText}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; font-weight: 600; color: #666;">Einsatzgebiete:</td>
-          <td style="padding: 8px 0;">${serviceAreasText}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; font-weight: 600; color: #666;">Eingereicht am:</td>
