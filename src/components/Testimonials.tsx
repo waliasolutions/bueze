@@ -45,7 +45,7 @@ export const Testimonials = () => {
               {/* Quote Icon */}
               <div className="absolute -top-4 left-8">
                 <div className="w-8 h-8 bg-brand-500 rounded-full flex items-center justify-center">
-                  <Quote className="h-4 w-4 text-ink-900" />
+                  <Quote className="h-4 w-4 text-white" />
                 </div>
               </div>
 

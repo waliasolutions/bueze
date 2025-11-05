@@ -46,7 +46,7 @@ All colors MUST be HSL.
     --popover-foreground: var(--ink-900);
     
     --primary: var(--brand-500);
-    --primary-foreground: var(--ink-900);
+    --primary-foreground: 0 0% 100%;
     
     --secondary: var(--pastel-blue-50);
     --secondary-foreground: var(--ink-700);
@@ -55,7 +55,7 @@ All colors MUST be HSL.
     --muted-foreground: var(--ink-500);
     
     --accent: var(--brand-500);
-    --accent-foreground: var(--ink-900);
+    --accent-foreground: 0 0% 100%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;

@@ -95,7 +95,7 @@ export const Footer = () => {
                 aria-label="Facebook"
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
-                <Facebook className="h-5 w-5 text-ink-300 group-hover:text-white" />
+                <Facebook className="h-5 w-5 text-white" />
               </a>
               <a 
                 href="https://www.instagram.com/bueeze.ch/"
@@ -104,7 +104,7 @@ export const Footer = () => {
                 aria-label="Instagram"
                 className="w-10 h-10 bg-ink-700 rounded-lg flex items-center justify-center hover:bg-brand-500 transition-colors group"
               >
-                <Instagram className="h-5 w-5 text-ink-300 group-hover:text-white" />
+                <Instagram className="h-5 w-5 text-white" />
               </a>
             </div>
           </div>
