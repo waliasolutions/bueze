@@ -22,27 +22,34 @@ const PricingPage = () => {
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-ink-900 mb-4">Preise für Handwerker</h1>
             <p className="text-xl text-ink-700">
-              Wählen Sie Ihr Abo und zahlen Sie nur für die Leads, die Sie kaufen
-            </p>
-            <p className="text-lg text-brand-600 font-semibold mt-4">
-              Alle Pläne: CHF 25 pro Lead-Kauf
+              Wählen Sie Ihr Abo und senden Sie Offerten an interessante Projekte
             </p>
           </div>
 
           <Card className="mb-8 bg-pastel-blue-50 border-brand-600">
             <CardContent className="pt-6">
-              <h3 className="text-xl font-bold text-ink-900 mb-4">So funktioniert unser Preismodell</h3>
-              <div className="grid md:grid-cols-2 gap-6">
+              <h3 className="text-xl font-bold text-ink-900 mb-4">So funktioniert das Offertensystem</h3>
+              <div className="grid md:grid-cols-3 gap-6">
                 <div>
                   <h4 className="font-semibold text-brand-600 mb-2">1. Abo wählen</h4>
                   <p className="text-ink-700">
-                    Entscheiden Sie, wie viele Anfragen Sie durchsuchen möchten. Mit dem kostenlosen Plan sehen Sie 5 Anfragen pro Monat. Mit einem Abo haben Sie unbegrenzten Zugriff auf alle verfügbaren Projekte.
+                    Free-Plan: 5 Offerten pro Monat. Monats-Abo (ab CHF 90): Unbegrenzte Offerten. 
+                    Je länger das Abo, desto günstiger der Monatspreis.
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-brand-600 mb-2">2. Leads kaufen</h4>
+                  <h4 className="font-semibold text-brand-600 mb-2">2. Offerten einreichen</h4>
                   <p className="text-ink-700">
-                    Interessiert Sie eine Anfrage? Kaufen Sie den Lead für CHF 25 und erhalten Sie sofort die vollständigen Kontaktdaten des Auftraggebers. So zahlen Sie nur für echte Geschäftsmöglichkeiten.
+                    Sie sehen neue Anfragen mit PLZ, Stadt, Projektbeschreibung und Budget. 
+                    Reichen Sie Ihre Offerte mit Preis, Zeitrahmen und persönlicher Nachricht ein. 
+                    Sie haben 10 Tage Zeit für jede Anfrage.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-brand-600 mb-2">3. Kontaktdaten nach Annahme</h4>
+                  <p className="text-ink-700">
+                    Sobald der Kunde Ihre Offerte akzeptiert, erhalten beide Seiten die vollständigen 
+                    Kontaktdaten – ohne Zusatzkosten. Nur angenommene Offerten führen zum Kontakt.
                   </p>
                 </div>
               </div>
@@ -96,23 +103,38 @@ const PricingPage = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Was bedeutet "Lead-Ansichten"?</h3>
+                <h3 className="font-semibold text-ink-900 mb-2">Was bedeutet "Offerten pro Monat"?</h3>
                 <p className="text-ink-700">
-                  Lead-Ansichten sind Kundenanfragen, die Sie durchsuchen können. Sie sehen dabei Ort, PLZ, Kategorie und Budget – jedoch keine Kontaktdaten. Im kostenlosen Plan: 5 pro Monat. Mit Abo: unbegrenzt.
+                  Das ist die Anzahl Offerten, die Sie pro Monat einreichen können. 
+                  Free-Nutzer: 5 Offerten/Monat. Abo-Nutzer: Unbegrenzte Offerten. 
+                  Am 1. des Monats wird das Kontingent zurückgesetzt.
                 </p>
               </div>
 
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Wie erhalte ich die Kontaktdaten?</h3>
                 <p className="text-ink-700">
-                  Kaufen Sie den Lead und erhalten Sie sofort die vollständigen Kontaktdaten. So zahlen Sie nur für Anfragen, die Sie wirklich interessieren.
+                  Nur wenn der Kunde Ihre Offerte akzeptiert. Dann erhalten beide Seiten 
+                  gleichzeitig die vollständigen Kontaktdaten (Name, Telefon, E-Mail, Adresse) 
+                  – ohne Zusatzkosten.
                 </p>
               </div>
 
               <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Was ist der Unterschied zwischen Ansehen und Kaufen?</h3>
+                <h3 className="font-semibold text-ink-900 mb-2">Was passiert nach 10 Tagen?</h3>
                 <p className="text-ink-700">
-                  <strong>Ansehen:</strong> Projektbeschreibung, Ort, PLZ, Kategorie und Budget. <strong>Kaufen:</strong> Vollständige Kontaktdaten (Name, Telefonnummer, E-Mail) zum direkten Kontakt.
+                  Jede Anfrage hat eine 10-Tage-Frist für Offerten. Nach Ablauf können keine 
+                  neuen Offerten mehr eingereicht werden. Der Kunde kann aber weiterhin bereits 
+                  eingereichte Offerten prüfen und annehmen.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-ink-900 mb-2">Sieht der Kunde meine Kontaktdaten vor der Annahme?</h3>
+                <p className="text-ink-700">
+                  Nein. Vor der Annahme sieht der Kunde nur Ihre Stadt, Ihre Bewertungen und 
+                  Ihre Offerte (Preis, Zeitrahmen, Nachricht). Erst nach Annahme werden die 
+                  vollständigen Kontaktdaten beider Seiten ausgetauscht.
                 </p>
               </div>
 
@@ -126,7 +148,8 @@ const PricingPage = () => {
               <div>
                 <h3 className="font-semibold text-ink-900 mb-2">Gibt es versteckte Kosten?</h3>
                 <p className="text-ink-700">
-                  Nein. Alle Preise sind transparent und werden Ihnen vor jedem Kauf klar angezeigt. Sie zahlen nur für das, was Sie auswählen.
+                  Nein. Alle Preise sind transparent. Sie zahlen nur für das gewählte Abo, 
+                  nicht pro Kontakt oder Offerte.
                 </p>
               </div>
 

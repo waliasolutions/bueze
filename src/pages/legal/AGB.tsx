@@ -56,45 +56,81 @@ const AGB = () => {
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">4. Leistungsumfang und Abonnements</h2>
+                
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold mb-2">4.1 Offertenprozess</h3>
+                  <ol className="list-decimal pl-6 text-ink-700 space-y-2">
+                    <li>Handwerker sehen neue Anfragen mit: PLZ, Ort (Stadt), Projektbeschreibung, Budget, Kategorie</li>
+                    <li>Handwerker haben 10 Tage Zeit, eine Offerte einzureichen</li>
+                    <li>Offerte enthält: Preisrahmen, Zeitschätzung, persönliche Nachricht, optionale Anhänge</li>
+                    <li>Kunde erhält Benachrichtigung über neue Offerte</li>
+                    <li>Kunde kann Offerte annehmen oder ablehnen</li>
+                    <li>Bei Annahme: Beide Parteien erhalten vollständige Kontaktdaten (Name, Telefon, E-Mail, Adresse)</li>
+                    <li>Pro Anfrage kann nur eine Offerte angenommen werden</li>
+                    <li>Nach Annahme wird automatisch ein Conversation-Thread erstellt</li>
+                  </ol>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold mb-2">4.2 Kontingente und Limits</h3>
+                  <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                    <li>Free-Nutzer: 5 Offerten pro Monat, Reset am 1. des Folgemonats</li>
+                    <li>Abo-Nutzer (Monatlich, 6-Monate, Jährlich): Unbegrenzte Offerten</li>
+                    <li>Abgelehnte Offerten werden nicht auf das Kontingent angerechnet</li>
+                    <li>Nur eingereichte Offerten zählen zur monatlichen Limite</li>
+                    <li>10-Tage-Frist für Offerteneingabe pro Anfrage</li>
+                  </ul>
+                </div>
+
                 <p className="text-ink-700 mb-4">
                   BÜEZE.CH bietet Handwerkern folgende Nutzungspakete an:
                 </p>
                 
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2">a) Free-Paket</h3>
+                  <h3 className="text-xl font-semibold mb-2">4.3 Free-Paket</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
                     <li>Kostenlos nutzbar</li>
-                    <li>5 Lead-Ansichten pro Monat</li>
-                    <li>CHF 25 pro Lead-Kauf</li>
+                    <li>5 Offerten pro Monat</li>
+                    <li>Zugriff auf alle aktiven Anfragen</li>
+                    <li>Kontaktdaten nach Annahme durch Kunden</li>
+                    <li>10-Tage-Frist für Offerteneingabe</li>
                   </ul>
                   <p className="text-ink-700 mt-2 italic">Ideal zum Testen – keine versteckten Kosten.</p>
                 </div>
 
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2">b) Monatliches Abo</h3>
+                  <h3 className="text-xl font-semibold mb-2">4.4 Monatliches Abo</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
                     <li>CHF 90 / Monat</li>
-                    <li>Unbegrenzte Lead-Ansichten</li>
+                    <li>Unbegrenzte Offerten</li>
+                    <li>Erweiterte Suchfilter und Benachrichtigungen</li>
+                    <li>Kontaktdaten nach Annahme durch Kunden</li>
                     <li>Laufzeit: 1 Monat</li>
                     <li>Verlängert sich automatisch um jeweils 1 weiteren Monat, sofern nicht spätestens 1 Tag vor Ablauf über den Kündigungs-Button im Benutzerkonto gekündigt wird.</li>
                   </ul>
                 </div>
 
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2">c) 6-Monats-Abo</h3>
+                  <h3 className="text-xl font-semibold mb-2">4.5 6-Monats-Abo</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
                     <li>CHF 510 / 6 Monate (–10 %)</li>
-                    <li>Unbegrenzte Lead-Ansichten</li>
+                    <li>Unbegrenzte Offerten</li>
+                    <li>Erweiterte Suchfilter und Benachrichtigungen</li>
+                    <li>Sofortiger Zugriff auf alle aktiven Anfragen</li>
+                    <li>Priorisierte Verifizierung neuer Profile</li>
                     <li>Laufzeit: 6 Monate</li>
                     <li>Verlängert sich automatisch um weitere 6 Monate, sofern nicht spätestens 1 Tag vor Ablauf über den Kündigungs-Button im Benutzerkonto gekündigt wird.</li>
                   </ul>
                 </div>
 
                 <div className="mb-6">
-                  <h3 className="text-xl font-semibold mb-2">d) Jahresabo</h3>
+                  <h3 className="text-xl font-semibold mb-2">4.6 Jahresabo</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
                     <li>CHF 960 / Jahr (–20 %)</li>
-                    <li>Unbegrenzte Lead-Ansichten</li>
+                    <li>Unbegrenzte Offerten</li>
+                    <li>Erweiterte Suchfilter und Benachrichtigungen</li>
+                    <li>Sofortiger Zugriff auf alle aktiven Anfragen</li>
+                    <li>Priorisierte Verifizierung neuer Profile</li>
                     <li>Laufzeit: 12 Monate</li>
                     <li>Verlängert sich automatisch um 12 Monate, sofern nicht spätestens 1 Tag vor Ablauf über den Kündigungs-Button im Benutzerkonto gekündigt wird.</li>
                   </ul>
