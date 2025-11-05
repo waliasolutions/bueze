@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PaymentMethodCard } from '@/components/PaymentMethodCard';
 import { SubscriptionManagement } from '@/components/SubscriptionManagement';
 import { AddPaymentMethodDialog } from '@/components/AddPaymentMethodDialog';
+import { X } from 'lucide-react';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
 import { SWISS_CANTONS } from '@/config/cantons';
 
@@ -70,6 +71,7 @@ const Profile = () => {
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<any>(null);
   const [showAddPaymentDialog, setShowAddPaymentDialog] = useState(false);
+  const [serviceAreaInput, setServiceAreaInput] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -600,6 +602,78 @@ const Profile = () => {
                                     </label>
                                   </div>
                                 ))}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={handwerkerForm.control}
+                          name="service_areas"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Einsatzgebiete (PLZ)</FormLabel>
+                              <FormDescription>
+                                Geben Sie Postleitzahlen ein, in denen Sie arbeiten. Bereiche mit Bindestrich (z.B. 8000-8099).
+                              </FormDescription>
+                              <div className="space-y-3">
+                                <Input
+                                  placeholder="z.B. 8000, 8001-8099, 9000"
+                                  value={serviceAreaInput}
+                                  onChange={(e) => setServiceAreaInput(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ',') {
+                                      e.preventDefault();
+                                      const value = serviceAreaInput.trim();
+                                      
+                                      if (value) {
+                                        const parts = value.split(',').map(p => p.trim()).filter(p => p);
+                                        const validAreas: string[] = [];
+                                        
+                                        for (const part of parts) {
+                                          if (part.includes('-')) {
+                                            const [start, end] = part.split('-').map(p => p.trim());
+                                            const startNum = parseInt(start);
+                                            const endNum = parseInt(end);
+                                            
+                                            if (/^\d{4}$/.test(start) && /^\d{4}$/.test(end) && 
+                                                startNum >= 1000 && startNum <= 9999 &&
+                                                endNum >= 1000 && endNum <= 9999 &&
+                                                startNum <= endNum) {
+                                              validAreas.push(part);
+                                            }
+                                          } else if (/^\d{4}$/.test(part)) {
+                                            const num = parseInt(part);
+                                            if (num >= 1000 && num <= 9999) {
+                                              validAreas.push(part);
+                                            }
+                                          }
+                                        }
+                                        
+                                        if (validAreas.length > 0) {
+                                          field.onChange([...new Set([...field.value, ...validAreas])]);
+                                          setServiceAreaInput('');
+                                        }
+                                      }
+                                    }
+                                  }}
+                                />
+                                {field.value?.length > 0 && (
+                                  <div className="flex flex-wrap gap-2 p-3 bg-muted/50 rounded-md">
+                                    {field.value.map((area, index) => (
+                                      <Badge key={index} variant="secondary" className="cursor-pointer">
+                                        {area}
+                                        <X
+                                          className="ml-1 h-3 w-3"
+                                          onClick={() => {
+                                            field.onChange(field.value.filter((_, i) => i !== index));
+                                          }}
+                                        />
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                               <FormMessage />
                             </FormItem>

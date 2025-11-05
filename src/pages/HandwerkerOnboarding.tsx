@@ -15,7 +15,7 @@ import { SWISS_CANTONS } from "@/config/cantons";
 import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User } from "lucide-react";
+import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User, MapPin } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
@@ -28,6 +28,7 @@ const HandwerkerOnboarding = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [serviceAreaInput, setServiceAreaInput] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<{
     uidCertificate?: File;
     insuranceDocument?: File;
@@ -1300,6 +1301,122 @@ const HandwerkerOnboarding = () => {
                 </div>
               </div>
             )}
+
+            {/* Service Areas */}
+            <Card className="border-2 mt-6">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Einsatzgebiete (PLZ) <span className="text-red-500">*</span>
+                </CardTitle>
+                <CardDescription>
+                  Geben Sie Postleitzahlen ein, in denen Sie arbeiten. Sie erhalten nur Benachrichtigungen für Anfragen in diesen Gebieten.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {errors.serviceAreas && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{errors.serviceAreas}</AlertDescription>
+                  </Alert>
+                )}
+                
+                <div className="space-y-3">
+                  <Label className="text-base font-medium">
+                    Postleitzahlen eingeben
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Einzelne PLZ: 8000, 8001, 9000 | Bereiche: 8000-8099 | Drücken Sie Enter oder Komma zum Hinzufügen
+                  </p>
+                  <Input
+                    placeholder="z.B. 8000, 8001-8099, 9000"
+                    value={serviceAreaInput}
+                    onChange={(e) => setServiceAreaInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        const value = serviceAreaInput.trim();
+                        
+                        if (value) {
+                          // Parse PLZ input
+                          const parts = value.split(',').map(p => p.trim()).filter(p => p);
+                          const validAreas: string[] = [];
+                          
+                          for (const part of parts) {
+                            // Range: 8000-8099
+                            if (part.includes('-')) {
+                              const [start, end] = part.split('-').map(p => p.trim());
+                              const startNum = parseInt(start);
+                              const endNum = parseInt(end);
+                              
+                              if (/^\d{4}$/.test(start) && /^\d{4}$/.test(end) && 
+                                  startNum >= 1000 && startNum <= 9999 &&
+                                  endNum >= 1000 && endNum <= 9999 &&
+                                  startNum <= endNum) {
+                                 validAreas.push(part);
+                               } else {
+                                 toast({ title: "Fehler", description: `Ungültiger Bereich: ${part}`, variant: "destructive" });
+                               }
+                            }
+                            // Single PLZ: 8000
+                            else if (/^\d{4}$/.test(part)) {
+                              const num = parseInt(part);
+                              if (num >= 1000 && num <= 9999) {
+                                 validAreas.push(part);
+                               } else {
+                                 toast({ title: "Fehler", description: `Ungültige PLZ: ${part}`, variant: "destructive" });
+                               }
+                             } else {
+                               toast({ title: "Fehler", description: `Ungültige Eingabe: ${part}`, variant: "destructive" });
+                             }
+                          }
+                          
+                          if (validAreas.length > 0) {
+                            setFormData(prev => ({
+                              ...prev,
+                              serviceAreas: [...new Set([...prev.serviceAreas, ...validAreas])]
+                            }));
+                            setServiceAreaInput('');
+                            if (errors.serviceAreas) {
+                              setErrors(prev => ({ ...prev, serviceAreas: '' }));
+                            }
+                          }
+                        }
+                      }
+                    }}
+                    className="h-12 text-base"
+                  />
+                </div>
+
+                {formData.serviceAreas.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">
+                      Ausgewählte Einsatzgebiete ({formData.serviceAreas.length})
+                    </Label>
+                    <div className="flex flex-wrap gap-2 p-4 bg-muted/50 rounded-lg min-h-[80px]">
+                      {formData.serviceAreas.map((area, index) => (
+                        <Badge 
+                          key={index} 
+                          variant="secondary"
+                          className="px-3 py-2 text-sm font-medium cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                        >
+                          {area}
+                          <X 
+                            className="ml-2 h-3 w-3" 
+                            onClick={() => {
+                              setFormData(prev => ({
+                                ...prev,
+                                serviceAreas: prev.serviceAreas.filter((_, i) => i !== index)
+                              }));
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Optional fields */}
             <Card className="border-2 mt-6">

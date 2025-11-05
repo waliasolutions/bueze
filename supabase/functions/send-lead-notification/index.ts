@@ -52,12 +52,28 @@ serve(async (req) => {
 
     console.log(`Found ${handwerkers?.length || 0} potential handwerkers for category ${lead.category}`);
 
-    // Filter by service area (PLZ matching)
-    const leadPLZ = lead.postal_code?.toString().substring(0, 4);
+    // Filter by service area (PLZ matching with range support)
+    const leadPLZ = parseInt(lead.zip?.toString() || lead.postal_code?.toString() || '0');
+    
     const matchingHandwerkers = handwerkers?.filter(hw => {
-      return hw.service_areas?.some((area: string) => {
-        const areaPLZ = area.substring(0, 4);
-        return areaPLZ === leadPLZ;
+      if (!hw.service_areas || hw.service_areas.length === 0) return false;
+      
+      return hw.service_areas.some((area: string) => {
+        // Handle range: "8000-8099"
+        if (area.includes('-')) {
+          const [start, end] = area.split('-').map(p => parseInt(p.trim()));
+          if (!isNaN(start) && !isNaN(end)) {
+            return leadPLZ >= start && leadPLZ <= end;
+          }
+        }
+        
+        // Handle single PLZ: "8000"
+        const servicePLZ = parseInt(area.trim());
+        if (!isNaN(servicePLZ)) {
+          return leadPLZ === servicePLZ;
+        }
+        
+        return false;
       });
     }) || [];
 
