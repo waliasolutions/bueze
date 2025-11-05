@@ -321,17 +321,6 @@ const HandwerkerOnboarding = () => {
       case 0:
         return (
           <div className="space-y-8">
-            {/* Bold Header */}
-            <div className="text-center space-y-3">
-              <h2 className="text-4xl font-bold text-foreground">Willkommen bei Büeze.ch</h2>
-              <p className="text-lg text-muted-foreground">
-                Ihr Handwerkerprofil in 4 Schritten
-              </p>
-              <Badge variant="secondary" className="text-sm px-4 py-2">
-                <Clock className="h-4 w-4 mr-2" />
-                10-15 Minuten
-              </Badge>
-            </div>
 
             {/* Bold Info Cards */}
             <div className="grid md:grid-cols-2 gap-4">
@@ -1238,7 +1227,7 @@ const HandwerkerOnboarding = () => {
                   <div className={cn(
                     "w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300",
                     isCompleted && "bg-primary text-primary-foreground shadow-lg scale-110",
-                    isCurrent && "bg-brand-500 text-white shadow-xl scale-125 ring-4 ring-brand-200 animate-pulse",
+                    isCurrent && "bg-brand-500 text-white shadow-xl scale-125 ring-4 ring-brand-200",
                     !isCompleted && !isCurrent && "bg-muted text-muted-foreground"
                   )}>
                     {isCompleted ? <CheckCircle className="h-6 w-6" /> : step + 1}
