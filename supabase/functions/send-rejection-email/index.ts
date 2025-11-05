@@ -51,7 +51,7 @@ Was Sie tun können:
 
 Kontakt:
 E-Mail: info@walia-solutions.ch
-Website: www.bueze.ch
+Website: www.bueeze.ch
 
 Wir bedauern, Ihnen keine positivere Nachricht übermitteln zu können, 
 und stehen bei Fragen gerne zur Verfügung.
@@ -68,7 +68,7 @@ Das Büeze.ch Team
         'X-Smtp2go-Api-Key': smtp2goApiKey,
       },
       body: JSON.stringify({
-        sender: 'Büeze.ch <noreply@bueze.ch>',
+        sender: 'Büeze.ch <noreply@bueeze.ch>',
         to: [data.email],
         subject: 'Ihre Registrierung bei Büeze.ch',
         text_body: textBody,

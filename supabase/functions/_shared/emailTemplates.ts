@@ -86,7 +86,7 @@ export const emailWrapper = (content: string) => `
     <div class="footer">
       <p><strong>Büeze GmbH</strong><br>
       Gotthardstrasse 37 | 6410 Goldau | Schweiz</p>
-      <p><a href="https://bueze.ch">www.bueze.ch</a> | <a href="mailto:info@bueze.ch">info@bueze.ch</a></p>
+      <p><a href="https://bueeze.ch">www.bueeze.ch</a> | <a href="mailto:info@bueeze.ch">info@bueeze.ch</a></p>
       <p style="margin-top: 15px; color: #999;">
         Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht direkt auf diese Nachricht.
       </p>
@@ -422,11 +422,11 @@ export const adminRegistrationNotificationTemplate = (data: AdminRegistrationDat
       </table>
     </div>
     
-    <p>
-      <a href="https://bueze.ch/admin/handwerker-approvals" class="button">
-        Zur Freigabe
-      </a>
-    </p>
+      <p>
+        <a href="https://bueeze.ch/admin/handwerker-approvals" class="button">
+          Zur Freigabe
+        </a>
+      </p>
     
     <p style="color: #666; font-size: 14px; margin-top: 30px;">
       Diese E-Mail wurde automatisch vom Büeze.ch System generiert.
@@ -480,7 +480,7 @@ export const rejectionNotificationTemplate = (data: RejectionData) => {
         <h3 style="margin-top: 0; color: #0066CC;">Kontakt aufnehmen</h3>
         <p style="margin-bottom: 0;">
           <strong>E-Mail:</strong> <a href="mailto:info@walia-solutions.ch">info@walia-solutions.ch</a><br>
-          <strong>Website:</strong> <a href="https://bueze.ch">www.bueze.ch</a>
+          <strong>Website:</strong> <a href="https://bueeze.ch">www.bueeze.ch</a>
         </p>
       </div>
       

@@ -75,7 +75,7 @@ serve(async (req) => {
     const emailPayload = {
       api_key: smtp2goApiKey,
       to: ['info@walia-solutions.ch'],
-      sender: 'noreply@bueze.ch',
+      sender: 'noreply@bueeze.ch',
       subject: `Neue Handwerker-Registrierung: ${profile.first_name} ${profile.last_name}`,
       html_body: emailHtml,
     };

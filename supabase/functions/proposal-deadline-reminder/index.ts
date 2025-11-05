@@ -151,7 +151,7 @@ serve(async (req) => {
             leadTitle: lead.title,
             proposalsCount: proposals.length,
             deadline: lead.proposal_deadline,
-            dashboardLink: 'https://bueze.ch/dashboard'
+            dashboardLink: 'https://bueeze.ch/dashboard'
           });
 
           await fetch('https://api.smtp2go.com/v3/email/send', {
@@ -161,7 +161,7 @@ serve(async (req) => {
               'X-Smtp2go-Api-Key': smtp2goApiKey,
             },
             body: JSON.stringify({
-              sender: 'noreply@bueze.ch',
+              sender: 'noreply@bueeze.ch',
               to: [lead.profiles?.email],
               subject: `Erinnerung: ${proposals.length} Offerten warten auf Ihre Antwort`,
               html_body: clientEmailHtml,
@@ -210,7 +210,7 @@ serve(async (req) => {
               expires_at: expiresAt.toISOString(),
             });
 
-            const magicLink = `https://bueze.ch/opportunity/${lead.id}?token=${token}`;
+            const magicLink = `https://bueeze.ch/opportunity/${lead.id}?token=${token}`;
 
             const handwerkerEmailHtml = handwerkerReminderTemplate({
               handwerkerName: profile.full_name || 'Handwerker',
@@ -230,7 +230,7 @@ serve(async (req) => {
                 'X-Smtp2go-Api-Key': smtp2goApiKey,
               },
               body: JSON.stringify({
-                sender: 'noreply@bueze.ch',
+                sender: 'noreply@bueeze.ch',
                 to: [profile.email],
                 subject: `Letzte Chance: Offerte für "${lead.title}" einreichen`,
                 html_body: handwerkerEmailHtml,

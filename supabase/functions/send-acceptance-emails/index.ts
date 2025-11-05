@@ -70,8 +70,8 @@ serve(async (req) => {
     }
 
     const conversationLink = conversation 
-      ? `https://bueze.ch/messages/${conversation.id}` 
-      : 'https://bueze.ch/messages';
+      ? `https://bueeze.ch/messages/${conversation.id}` 
+      : 'https://bueeze.ch/messages';
 
     // Prepare email data
     const priceText = proposal.price_min && proposal.price_max
@@ -111,7 +111,7 @@ serve(async (req) => {
         'X-Smtp2go-Api-Key': smtp2goApiKey,
       },
       body: JSON.stringify({
-        sender: 'noreply@bueze.ch',
+        sender: 'noreply@bueeze.ch',
         to: [proposal.handwerker_profiles?.profiles?.email],
         subject: 'Gratulation! Ihre Offerte wurde angenommen',
         html_body: handwerkerEmailHtml,
@@ -125,7 +125,7 @@ serve(async (req) => {
         'X-Smtp2go-Api-Key': smtp2goApiKey,
       },
       body: JSON.stringify({
-        sender: 'noreply@bueze.ch',
+        sender: 'noreply@bueeze.ch',
         to: [proposal.leads?.profiles?.email],
         subject: `Sie haben ${proposal.handwerker_profiles?.profiles?.full_name || 'einen Handwerker'} ausgewählt`,
         html_body: clientEmailHtml,

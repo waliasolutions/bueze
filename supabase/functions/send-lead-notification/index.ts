@@ -92,7 +92,7 @@ serve(async (req) => {
         }
 
         // Create magic link
-        const magicLink = `https://bueze.ch/opportunity/${leadId}?token=${token}`;
+        const magicLink = `https://bueeze.ch/opportunity/${leadId}?token=${token}`;
 
         // Send email
         const emailHtml = newLeadNotificationTemplate({
@@ -113,7 +113,7 @@ serve(async (req) => {
             'X-Smtp2go-Api-Key': smtp2goApiKey,
           },
           body: JSON.stringify({
-            sender: 'noreply@bueze.ch',
+            sender: 'noreply@bueeze.ch',
             to: [hw.profiles?.email],
             subject: `Neue Anfrage in ${lead.category} - ${lead.city}`,
             html_body: emailHtml,

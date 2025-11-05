@@ -104,7 +104,7 @@ serve(async (req) => {
       console.error('Failed to create magic token:', tokenError);
     }
 
-    const magicLink = `https://bueze.ch/dashboard?token=${token}&firstLogin=true`;
+    const magicLink = `https://bueeze.ch/dashboard?token=${token}&firstLogin=true`;
 
     // Send welcome email
     const emailHtml = guestWelcomeTemplate({
@@ -121,7 +121,7 @@ serve(async (req) => {
         'X-Smtp2go-Api-Key': smtp2goApiKey,
       },
       body: JSON.stringify({
-        sender: 'noreply@bueze.ch',
+        sender: 'noreply@bueeze.ch',
         to: [email],
         subject: 'Willkommen bei BÜEZE.CH - Ihr Zugang',
         html_body: emailHtml,

@@ -75,7 +75,7 @@ serve(async (req) => {
       throw new Error(`Failed to create magic token: ${tokenError.message}`);
     }
 
-    const magicLink = `https://bueze.ch/proposals/${proposalId}?token=${token}`;
+    const magicLink = `https://bueeze.ch/proposals/${proposalId}?token=${token}`;
 
     // Send email to client
     const emailHtml = newProposalNotificationTemplate({
@@ -96,7 +96,7 @@ serve(async (req) => {
         'X-Smtp2go-Api-Key': smtp2goApiKey,
       },
       body: JSON.stringify({
-        sender: 'noreply@bueze.ch',
+        sender: 'noreply@bueeze.ch',
         to: [proposal.leads?.profiles?.email],
         subject: `Neue Offerte für Ihr Projekt "${proposal.leads?.title}"`,
         html_body: emailHtml,

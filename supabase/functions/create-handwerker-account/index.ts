@@ -35,7 +35,7 @@ E-Mail: ${data.email}
 Passwort: ${data.password}
 ━━━━━━━━━━━━━━━━━━━━
 
-→ Hier einloggen: https://bueze.ch/auth
+→ Hier einloggen: https://bueeze.ch/auth
 
 WICHTIG: Aus Sicherheitsgründen empfehlen wir, das Passwort nach der ersten Anmeldung zu ändern.
 
@@ -73,7 +73,7 @@ Ihr Büeze.ch Team`;
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="https://bueze.ch/auth" style="display: inline-block; background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+          <a href="https://bueeze.ch/auth" style="display: inline-block; background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
             Jetzt einloggen
           </a>
         </div>
@@ -111,7 +111,7 @@ Ihr Büeze.ch Team`;
         'X-Smtp2go-Api-Key': smtp2goApiKey!,
       },
       body: JSON.stringify({
-        sender: 'Büeze.ch <noreply@bueze.ch>',
+        sender: 'Büeze.ch <noreply@bueeze.ch>',
         to: [email],
         subject: '🎉 Ihr Büeze.ch Account ist aktiv!',
         text_body: emailBody,

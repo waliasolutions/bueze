@@ -51,7 +51,7 @@ Vielen Dank für Ihr Interesse an Büeze.ch.
 Leider konnten wir Ihr Profil zum jetzigen Zeitpunkt nicht freischalten.
 ${reason ? `\n\nGrund: ${reason}` : ''}
 
-Wenn Sie Fragen haben oder weitere Informationen bereitstellen möchten, kontaktieren Sie uns gerne unter info@bueze.ch.
+Wenn Sie Fragen haben oder weitere Informationen bereitstellen möchten, kontaktieren Sie uns gerne unter info@bueeze.ch.
 
 Freundliche Grüsse
 Ihr Büeze.ch Team`;
@@ -66,7 +66,7 @@ Ihr Büeze.ch Team`;
         'X-Smtp2go-Api-Key': smtp2goApiKey,
       },
       body: JSON.stringify({
-        sender: 'noreply@bueze.ch',
+        sender: 'noreply@bueeze.ch',
         to: [userEmail],
         subject: subject,
         text_body: body,
