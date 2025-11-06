@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, Plus, Shield } from 'lucide-react';
+import { Menu, X, Plus, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
@@ -129,16 +129,10 @@ export const Header = () => {
                 <UserDropdown />
               </div>
             ) : (
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" className="gap-2" onClick={() => navigate('/auth')}>
-                  <User className="h-4 w-4" />
-                  Anmelden
-                </Button>
-                <Button onClick={() => navigate('/submit-lead')} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Auftrag erstellen
-                </Button>
-              </div>
+              <Button onClick={() => navigate('/submit-lead')} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Auftrag erstellen
+              </Button>
             )}
           </div>
 
@@ -197,16 +191,10 @@ export const Header = () => {
                   <UserDropdown />
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <Button variant="ghost" className="justify-start gap-2 w-full" onClick={() => navigate('/auth')}>
-                    <User className="h-4 w-4" />
-                    Anmelden
-                  </Button>
-                  <Button variant="default" className="justify-start gap-2 w-full" onClick={() => navigate('/submit-lead')}>
-                    <Plus className="h-4 w-4" />
-                    Auftrag erstellen
-                  </Button>
-                </div>
+                <Button variant="default" className="justify-start gap-2 w-full" onClick={() => navigate('/submit-lead')}>
+                  <Plus className="h-4 w-4" />
+                  Auftrag erstellen
+                </Button>
               )}
             </div>
           </div>
