@@ -32,12 +32,10 @@ const HandwerkerOnboarding = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [serviceAreaInput, setServiceAreaInput] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<{
-    uidCertificate?: File;
-    insuranceDocument?: File;
-    tradeLicense?: File;
+    insuranceDocument?: { name: string; uploadedAt: string; path: string };
+    tradeLicense?: { name: string; uploadedAt: string; path: string };
   }>({});
   const [uploadProgress, setUploadProgress] = useState<{
-    uidCertificate?: string;
     insuranceDocument?: string;
     tradeLicense?: string;
   }>({});
@@ -100,12 +98,13 @@ const HandwerkerOnboarding = () => {
   // Auto-save form data to localStorage
   useEffect(() => {
     const saveToLocalStorage = () => {
-      const dataToSave = {
-        currentStep,
-        formData,
-        selectedMajorCategories,
-        timestamp: Date.now(),
-      };
+    const dataToSave = {
+      currentStep,
+      formData,
+      selectedMajorCategories,
+      uploadedFiles,
+      timestamp: Date.now(),
+    };
       localStorage.setItem('handwerker-onboarding-draft', JSON.stringify(dataToSave));
       setLastSaved(new Date());
     };
@@ -279,7 +278,7 @@ const HandwerkerOnboarding = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleFileUpload = async (file: File, type: 'uidCertificate' | 'insuranceDocument' | 'tradeLicense') => {
+  const handleFileUpload = async (file: File, type: 'insuranceDocument' | 'tradeLicense') => {
     try {
       // Validate file size (max 10MB)
       const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -314,7 +313,14 @@ const HandwerkerOnboarding = () => {
       }
 
       setUploadProgress(prev => ({ ...prev, [type]: 'success' }));
-      setUploadedFiles(prev => ({ ...prev, [type]: file }));
+      setUploadedFiles(prev => ({ 
+        ...prev, 
+        [type]: {
+          name: file.name,
+          uploadedAt: new Date().toISOString(),
+          path: fileName
+        }
+      }));
 
       toast({
         title: "Dokument hochgeladen",
@@ -354,7 +360,6 @@ const HandwerkerOnboarding = () => {
 
       // Collect all uploaded files
       const allUploads = {
-        uidCertificate: uploadedFiles.uidCertificate,
         insuranceDocument: uploadedFiles.insuranceDocument,
         tradeLicense: uploadedFiles.tradeLicense,
       };
@@ -363,24 +368,15 @@ const HandwerkerOnboarding = () => {
       const verificationDocuments: string[] = [];
       const tempUserId = sessionStorage.getItem('handwerker-upload-temp-id') || crypto.randomUUID();
       
-      for (const [type, file] of Object.entries(allUploads)) {
-        if (file) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `pending/${tempUserId}/${type}-${Date.now()}.${fileExt}`;
-          
-          // Upload file if not already uploaded
-          const { error: uploadError } = await supabase.storage
+      for (const [type, fileMetadata] of Object.entries(allUploads)) {
+        if (fileMetadata && fileMetadata.path) {
+          // File was already uploaded, just get the public URL
+          const { data } = supabase.storage
             .from('handwerker-documents')
-            .upload(fileName, file);
+            .getPublicUrl(fileMetadata.path);
           
-          if (!uploadError) {
-            const { data } = supabase.storage
-              .from('handwerker-documents')
-              .getPublicUrl(fileName);
-            
-            if (data?.publicUrl) {
-              verificationDocuments.push(data.publicUrl);
-            }
+          if (data?.publicUrl) {
+            verificationDocuments.push(data.publicUrl);
           }
         }
       }
@@ -489,7 +485,7 @@ const HandwerkerOnboarding = () => {
 
   interface DocumentStatusProps {
     label: string;
-    file?: File;
+    file?: { name: string; uploadedAt: string };
   }
 
   const DocumentStatus: React.FC<DocumentStatusProps> = ({ label, file }) => (
@@ -498,7 +494,7 @@ const HandwerkerOnboarding = () => {
       {file ? (
         <div className="flex items-center gap-2">
           <CheckCircle className="h-4 w-4 text-green-600" />
-          <span className="text-sm text-green-700 font-medium">Hochgeladen</span>
+          <span className="text-sm text-green-700 font-medium">{file.name}</span>
         </div>
       ) : (
         <Badge variant="secondary" className="text-xs">Optional</Badge>
@@ -1075,6 +1071,18 @@ const HandwerkerOnboarding = () => {
                 />
               </div>
 
+              {sessionStorage.getItem('handwerker-upload-temp-id') && 
+               !uploadedFiles.insuranceDocument && 
+               !uploadedFiles.tradeLicense && (
+                <Alert className="border-amber-300 bg-amber-50">
+                  <AlertCircle className="h-5 w-5 text-amber-600" />
+                  <AlertDescription className="text-base ml-2">
+                    Es sieht so aus, als hätten Sie zuvor Dokumente hochgeladen, die nicht gespeichert wurden. 
+                    Bitte laden Sie Ihre Dokumente erneut hoch.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="space-y-3">
                 <Label htmlFor="insuranceValidUntil" className="text-base font-medium">
                   Gültig bis
@@ -1141,14 +1149,14 @@ const HandwerkerOnboarding = () => {
                         className="w-full h-12 text-base"
                         disabled={uploadProgress.insuranceDocument === 'uploading'}
                       >
-                        {uploadProgress.insuranceDocument === 'uploading' ? (
-                          <>Wird hochgeladen...</>
-                        ) : uploadProgress.insuranceDocument === 'success' ? (
-                          <>
-                            <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-                            {uploadedFiles.insuranceDocument?.name}
-                          </>
-                        ) : (
+                      {uploadProgress.insuranceDocument === 'uploading' ? (
+                        <>Wird hochgeladen...</>
+                      ) : uploadedFiles.insuranceDocument ? (
+                        <>
+                          <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
+                          {uploadedFiles.insuranceDocument.name}
+                        </>
+                      ) : (
                           <>
                             <FileText className="mr-2 h-5 w-5" />
                             Versicherungspolice hochladen
@@ -1179,10 +1187,10 @@ const HandwerkerOnboarding = () => {
                   >
                     {uploadProgress.tradeLicense === 'uploading' ? (
                       <>Wird hochgeladen...</>
-                    ) : uploadProgress.tradeLicense === 'success' ? (
+                    ) : uploadedFiles.tradeLicense ? (
                       <>
                         <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-                        {uploadedFiles.tradeLicense?.name}
+                        {uploadedFiles.tradeLicense.name}
                       </>
                     ) : (
                       <>
@@ -1736,10 +1744,6 @@ const HandwerkerOnboarding = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <DocumentStatus 
-                    label="UID-Zertifikat" 
-                    file={uploadedFiles.uidCertificate}
-                  />
                   <DocumentStatus 
                     label="Versicherungsnachweis" 
                     file={uploadedFiles.insuranceDocument}
