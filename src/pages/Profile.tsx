@@ -21,6 +21,8 @@ import { AddPaymentMethodDialog } from '@/components/AddPaymentMethodDialog';
 import { X } from 'lucide-react';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
 import { SWISS_CANTONS } from '@/config/cantons';
+import ServiceAreaMap from '@/components/ServiceAreaMap';
+import { Label } from '@/components/ui/label';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name muss mindestens 2 Zeichen haben'),
@@ -679,6 +681,16 @@ const Profile = () => {
                             </FormItem>
                           )}
                         />
+
+                        {/* Service Area Map Preview */}
+                        {handwerkerForm.watch('service_areas')?.length > 0 && (
+                          <div className="space-y-3">
+                            <Label className="text-base font-medium">
+                              Kartenvorschau Ihrer Einsatzgebiete
+                            </Label>
+                            <ServiceAreaMap serviceAreas={handwerkerForm.watch('service_areas') || []} />
+                          </div>
+                        )}
 
                         <FormField
                           control={handwerkerForm.control}

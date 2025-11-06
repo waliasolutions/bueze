@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
 import { cn } from "@/lib/utils";
+import ServiceAreaMap from '@/components/ServiceAreaMap';
 
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
@@ -1413,6 +1414,16 @@ const HandwerkerOnboarding = () => {
                         </Badge>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Service Area Map Preview */}
+                {formData.serviceAreas.length > 0 && (
+                  <div className="space-y-3 mt-6">
+                    <Label className="text-base font-medium">
+                      Kartenvorschau Ihrer Einsatzgebiete
+                    </Label>
+                    <ServiceAreaMap serviceAreas={formData.serviceAreas} />
                   </div>
                 )}
               </CardContent>
