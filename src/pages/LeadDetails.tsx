@@ -37,6 +37,7 @@ interface Lead {
   max_purchases: number;
   quality_score: number;
   status: string;
+  proposals_count?: number;
 }
 
 interface Profile {
@@ -95,8 +96,7 @@ const LeadDetails = () => {
   const [owner, setOwner] = useState<Profile | null>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [purchasing, setPurchasing] = useState(false);
-  const [hasPurchased, setHasPurchased] = useState(false);
+  const [hasProposal, setHasProposal] = useState(false);
   const [analytics, setAnalytics] = useState<LeadAnalytics | null>(null);
   const [updating, setUpdating] = useState(false);
 
@@ -108,7 +108,7 @@ const LeadDetails = () => {
 
   useEffect(() => {
     if (user && lead) {
-      checkPurchaseStatus();
+      checkProposalStatus();
       trackView();
       if (lead.owner_id === user.id) {
         fetchAnalytics();
@@ -117,9 +117,9 @@ const LeadDetails = () => {
   }, [user, lead]);
 
   const trackView = async () => {
-    if (!user || !lead || lead.owner_id === user.id || hasPurchased) return;
+    if (!user || !lead || lead.owner_id === user.id || hasProposal) return;
     
-    // TODO: Re-enable after types regenerate - Track view for non-owners who haven't purchased
+    // TODO: Re-enable after types regenerate - Track view for non-owners who haven't submitted proposal
     // await trackLeadView(user.id, lead.id);
   };
 
@@ -134,28 +134,28 @@ const LeadDetails = () => {
     setUser(user);
   };
 
-  const checkPurchaseStatus = async () => {
+  const checkProposalStatus = async () => {
     if (!user || !lead) return;
 
     try {
-      const { data: purchase } = await supabase
-        .from('lead_purchases')
+      const { data: proposal } = await supabase
+        .from('lead_proposals')
         .select('id')
         .eq('lead_id', lead.id)
-        .eq('buyer_id', user.id)
+        .eq('handwerker_id', user.id)
         .maybeSingle();
 
-      console.log('Purchase check:', { 
+      console.log('Proposal check:', { 
         leadId: lead.id, 
         userId: user.id, 
         leadOwnerId: lead.owner_id,
-        purchaseFound: !!purchase,
+        proposalFound: !!proposal,
         isOwnLead: lead.owner_id === user.id 
       });
       
-      setHasPurchased(!!purchase);
+      setHasProposal(!!proposal);
     } catch (error) {
-      console.error('Error checking purchase status:', error);
+      console.error('Error checking proposal status:', error);
     }
   };
 
@@ -196,97 +196,17 @@ const LeadDetails = () => {
     }
   };
 
-  const handlePurchase = async () => {
+  const handleViewOpportunity = () => {
     if (!user) {
       toast({
         title: "Anmeldung erforderlich",
-        description: "Sie müssen angemeldet sein, um Aufträge zu kaufen.",
+        description: "Sie müssen angemeldet sein, um eine Offerte einzureichen.",
         variant: "destructive",
       });
       navigate('/auth');
       return;
     }
-
-    if (!lead) return;
-
-    setPurchasing(true);
-    try {
-      // Check if user already purchased this lead
-      const { data: existingPurchase } = await supabase
-        .from('lead_purchases')
-        .select('id')
-        .eq('lead_id', lead.id)
-        .eq('buyer_id', user.id)
-        .single();
-
-      if (existingPurchase) {
-        toast({
-          title: "Bereits gekauft",
-          description: "Sie haben diesen Auftrag bereits gekauft.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Insert purchase record
-      const { error: purchaseError } = await supabase
-        .from('lead_purchases')
-        .insert({
-          lead_id: lead.id,
-          buyer_id: user.id,
-          price: 2000, // 20 CHF in cents
-        });
-
-      if (purchaseError) throw purchaseError;
-
-      // Create conversation between buyer and lead owner
-      const { data: conversation, error: conversationError } = await supabase
-        .from('conversations')
-        .insert({
-          lead_id: lead.id,
-          homeowner_id: lead.owner_id,
-          handwerker_id: user.id,
-        })
-        .select()
-        .single();
-
-      let conversationId = conversation?.id;
-
-      // If conversation already exists, get it
-      if (conversationError && conversationError.message.includes('duplicate key')) {
-        const { data: existingConversation } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('lead_id', lead.id)
-          .eq('homeowner_id', lead.owner_id)
-          .eq('handwerker_id', user.id)
-          .single();
-        
-        conversationId = existingConversation?.id;
-      }
-
-      toast({
-        title: "Auftrag gekauft",
-        description: "Sie haben den Auftrag erfolgreich gekauft und können jetzt eine Nachricht senden.",
-      });
-
-      // Update purchase status and navigate to conversation
-      setHasPurchased(true);
-      if (conversationId) {
-        navigate(`/messages/${conversationId}`);
-      } else {
-        navigate('/conversations');
-      }
-    } catch (error) {
-      console.error('Error purchasing lead:', error);
-      toast({
-        title: "Fehler",
-        description: "Beim Kauf des Auftrags ist ein Fehler aufgetreten.",
-        variant: "destructive",
-      });
-    } finally {
-      setPurchasing(false);
-    }
+    navigate(`/opportunity/${lead.id}`);
   };
 
   const handleStatusChange = async (action: 'pause' | 'complete' | 'delete' | 'reactivate') => {
@@ -337,8 +257,8 @@ const LeadDetails = () => {
   };
 
   const isOwnLead = user && lead && lead.owner_id === user.id;
-  const shouldShowContactInfo = user && owner && (hasPurchased || isOwnLead);
-  const shouldShowPurchaseSection = !isOwnLead;
+  const shouldShowContactInfo = user && owner && (hasProposal || isOwnLead);
+  const shouldShowProposalSection = !isOwnLead;
   const leadStatus = lead ? getLeadStatus(lead.status as any) : null;
 
   // Helper to get status badge variant
@@ -619,12 +539,12 @@ const LeadDetails = () => {
                           <CardTitle className="text-2xl">{lead.title}</CardTitle>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <MapPin className="h-4 w-4" />
-                            <span>
-                              {isOwnLead || hasPurchased ? 
-                                `${lead.address ? lead.address + ', ' : ''}${lead.zip} ${lead.city}, ${lead.canton}` : 
-                                `${lead.zip} ${lead.city}, ${lead.canton}`
-                              }
-                            </span>
+                             <span>
+                               {isOwnLead || hasProposal ? 
+                                 `${lead.address ? lead.address + ', ' : ''}${lead.zip} ${lead.city}, ${lead.canton}` : 
+                                 `${lead.zip} ${lead.city}, ${lead.canton}`
+                               }
+                             </span>
                             <Clock className="h-4 w-4 ml-4" />
                             <span>{formatTimeAgo(lead.created_at)}</span>
                           </div>
@@ -657,14 +577,8 @@ const LeadDetails = () => {
 
                   <div className="pt-4 border-t">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-muted-foreground">Verkaufte Plätze</span>
-                      <span className="text-sm font-medium">{lead.purchased_count}/{lead.max_purchases}</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${(lead.purchased_count / lead.max_purchases) * 100}%` }}
-                      />
+                      <span className="text-sm text-muted-foreground">Offerten eingereicht</span>
+                      <span className="text-sm font-medium">{lead.proposals_count || 0}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -700,7 +614,7 @@ const LeadDetails = () => {
                         </div>
                       </div>
                     </div>
-                    {hasPurchased && (
+                    {hasProposal && (
                       <Button 
                         className="w-full" 
                         onClick={async () => {
@@ -728,43 +642,49 @@ const LeadDetails = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Purchase section - only show for other's leads */}
-              {shouldShowPurchaseSection && (
-                <Card>
+              {/* Proposal section - only show for other's leads */}
+              {shouldShowProposalSection && !hasProposal && (
+                <Card className="bg-gradient-to-br from-brand-50 to-brand-100/30 border-brand-200">
                   <CardHeader>
-                    <CardTitle>Auftrag kaufen</CardTitle>
+                    <CardTitle>Offerte einreichen</CardTitle>
                     <CardDescription>
-                      Erhalten Sie Zugang zu den Kontaktdaten und können sich direkt bewerben.
+                      Reichen Sie Ihre Offerte ein und zeigen Sie dem Kunden, warum Sie der richtige Handwerker für dieses Projekt sind.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">CHF 20</div>
-                      <div className="text-sm text-muted-foreground">einmalig</div>
-                    </div>
-                    
+                  <CardContent>
                     <Button 
-                      className="w-full" 
+                      onClick={handleViewOpportunity}
                       size="lg"
-                      onClick={handlePurchase}
-                      disabled={purchasing || !user || hasPurchased}
-                      variant={hasPurchased ? "secondary" : "default"}
+                      className="w-full"
                     >
-                      {hasPurchased 
-                        ? 'Bereits gekauft' 
-                        : purchasing 
-                          ? 'Wird gekauft...' 
-                          : 'Jetzt kaufen'
-                      }
+                      Jetzt Offerte einreichen
                     </Button>
-
+                    
                     {!user && (
-                      <p className="text-xs text-center text-muted-foreground">
+                      <p className="text-xs text-center text-muted-foreground mt-4">
                         <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/auth')}>
                           Anmelden
-                        </Button> um diesen Auftrag zu kaufen
+                        </Button> um eine Offerte einzureichen
                       </p>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {hasProposal && (
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="pt-6 text-center">
+                    <div className="text-green-600 text-4xl mb-3">✓</div>
+                    <h3 className="font-semibold text-green-900 mb-2">Offerte eingereicht</h3>
+                    <p className="text-green-700 mb-4">
+                      Sie haben bereits eine Offerte für diesen Auftrag eingereicht.
+                    </p>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate('/handwerker-dashboard')}
+                    >
+                      Zum Dashboard
+                    </Button>
                   </CardContent>
                 </Card>
               )}

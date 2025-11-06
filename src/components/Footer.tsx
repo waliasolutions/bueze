@@ -37,6 +37,11 @@ export const Footer = () => {
 
   const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
+    
+    // Force scroll to top immediately
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    
+    // Then navigate
     navigate(href);
   };
 

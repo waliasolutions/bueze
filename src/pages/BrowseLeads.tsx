@@ -40,6 +40,7 @@ interface Lead {
   max_purchases: number;
   quality_score: number;
   status: string;
+  proposals_count?: number;
 }
 
 const categoryLabels = {
@@ -249,95 +250,8 @@ const BrowseLeads = () => {
 
   const hasActiveFilters = searchTerm || selectedMajorCategory !== 'all' || selectedCategory !== 'all' || selectedCanton !== 'all' || selectedUrgency !== 'all';
 
-  const handlePurchaseLead = async (leadId: string) => {
-    try {
-      logWithCorrelation('BrowseLeads: Purchasing lead', { leadId });
-      
-      // Generate or retrieve request ID for idempotency
-      const requestId = getOrCreateRequestId(`purchase_${leadId}`);
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      // TODO: Re-enable after types regenerate - Check subscription access
-      // const { canPurchase, price } = await canPurchaseLeadWithPrice(user.id);
-      // if (!canPurchase) {
-      //   toast({
-      //     title: "Upgrade erforderlich",
-      //     description: "Bitte upgraden Sie Ihr Abonnement, um Aufträge zu kaufen.",
-      //     variant: "destructive",
-      //   });
-      //   navigate('/profile?tab=subscription');
-      //   return;
-      // }
-
-      // Temporary: Allow all purchases for now
-      const price = 25;
-
-      // Insert lead purchase with request_id for idempotency
-      const { error: purchaseError } = await supabase
-        .from('lead_purchases')
-        .insert({
-          lead_id: leadId,
-          buyer_id: user.id,
-          price: price * 100, // Convert CHF to cents
-          request_id: requestId
-        })
-        .select();
-
-      if (purchaseError) {
-        throw purchaseError;
-      }
-
-      // Clear request ID after successful purchase
-      clearRequestId(`purchase_${leadId}`);
-
-      logWithCorrelation('BrowseLeads: Purchase successful', { 
-        leadId, 
-        requestId 
-      });
-
-      toast({
-        title: "Auftrag gekauft!",
-        description: `Sie haben den Auftrag für CHF ${price} erfolgreich gekauft.`,
-      });
-      
-      // Refresh leads and subscription status
-      fetchLeads();
-      checkUserSubscription();
-      
-      // Navigate to lead details
-      navigate(`/lead/${leadId}`);
-    } catch (error) {
-      const categorized = trackError(error);
-      
-      // Handle duplicate purchase error specifically
-      if (categorized.category === 'duplicate_key') {
-        toast({
-          title: "Bereits gekauft",
-          description: "Sie haben diesen Auftrag bereits gekauft.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      captureException(error as Error, { 
-        context: 'handlePurchaseLead',
-        category: categorized.category 
-      });
-      
-      logWithCorrelation('BrowseLeads: Purchase error', categorized);
-      
-      toast({
-        title: "Fehler",
-        description: categorized.message || "Ein unerwarteter Fehler ist aufgetreten.",
-        variant: "destructive",
-      });
-    }
+  const handleViewOpportunity = (leadId: string) => {
+    navigate(`/opportunity/${leadId}`);
   };
 
   const formatBudget = (min: number, max: number) => {
@@ -630,21 +544,12 @@ const BrowseLeads = () => {
                         <Coins className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">{formatBudget(lead.budget_min, lead.budget_max)}</span>
                       </div>
-                      <div className="text-sm text-primary font-medium">
-                        CHF 25
-                      </div>
                     </div>
 
                     <div className="space-y-2 mb-4">
                       <div className="flex justify-between text-sm">
-                        <span>Verfügbare Plätze</span>
-                        <span>{lead.max_purchases - lead.purchased_count}/{lead.max_purchases}</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full" 
-                          style={{ width: `${((lead.max_purchases - lead.purchased_count) / lead.max_purchases) * 100}%` }}
-                        />
+                        <span>Offerten eingereicht</span>
+                        <span>{lead.proposals_count || 0}</span>
                       </div>
                     </div>
 
@@ -660,10 +565,9 @@ const BrowseLeads = () => {
                       <Button 
                         size="sm" 
                         className="flex-1"
-                        onClick={() => handlePurchaseLead(lead.id)}
+                        onClick={() => handleViewOpportunity(lead.id)}
                       >
-                        <ShoppingCart className="h-4 w-4 mr-1" />
-                        Kaufen
+                        Offerte einreichen
                       </Button>
                     </div>
                   </CardContent>
