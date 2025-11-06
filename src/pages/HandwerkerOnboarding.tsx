@@ -17,12 +17,11 @@ import { SWISS_CANTONS } from "@/config/cantons";
 import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User, MapPin } from "lucide-react";
+import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
 import { cn } from "@/lib/utils";
-import ServiceAreaMap from '@/components/ServiceAreaMap';
 
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
@@ -251,14 +250,9 @@ const HandwerkerOnboarding = () => {
         }
       }
       
-      // Banking validation - same for all
-      if (!formData.iban) {
-        newErrors.iban = "IBAN ist erforderlich";
-      } else if (!validateIBAN(formData.iban)) {
+      // Banking validation - optional but validate format if provided
+      if (formData.iban && !validateIBAN(formData.iban)) {
         newErrors.iban = "Ungültige IBAN. Format: CH## #### #### #### #### #";
-      }
-      if (!formData.bankName.trim()) {
-        newErrors.bankName = "Bankname ist erforderlich";
       }
     } else if (step === 4) {
       // Insurance is completely optional - no validation required
@@ -415,9 +409,9 @@ const HandwerkerOnboarding = () => {
           business_zip: businessZip || null,
           business_city: businessCity || null,
           business_canton: businessCanton || null,
-          // Banking
-          iban: formData.iban.replace(/\s/g, "") || null,
-          bank_name: formData.bankName || null,
+          // Banking (optional)
+          iban: formData.iban ? formData.iban.replace(/\s/g, "") : null,
+          bank_name: formData.bankName?.trim() || null,
           // Insurance & Licenses
           liability_insurance_provider: formData.liabilityInsuranceProvider,
           liability_insurance_policy_number: formData.policyNumber || null,
@@ -966,23 +960,30 @@ const HandwerkerOnboarding = () => {
             <Card className="border-2 mt-6">
               <CardHeader>
                 <CardTitle className="text-lg">Bankinformationen</CardTitle>
-                <CardDescription>Für Auszahlungen</CardDescription>
+                <CardDescription>Optional - Für Auszahlungen erforderlich</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
                 <div className="space-y-3">
-                  <Label htmlFor="iban" className="text-base font-medium">IBAN *</Label>
+                  <Label htmlFor="iban" className="text-base font-medium">IBAN (optional)</Label>
                   <Input
                     id="iban"
                     value={formData.iban}
                     onChange={(e) => {
-                      const value = e.target.value;
-                      setFormData({ ...formData, iban: value });
+                      let value = e.target.value.toUpperCase();
+                      // Remove all spaces for length check
+                      const cleanValue = value.replace(/\s/g, '');
+                      
+                      // Swiss IBAN: CH + 19 digits = 21 characters max (without spaces)
+                      if (cleanValue.length <= 21) {
+                        setFormData({ ...formData, iban: value });
+                      }
                     }}
                     onBlur={(e) => {
                       const formatted = formatIBAN(e.target.value);
                       setFormData({ ...formData, iban: formatted });
                     }}
                     placeholder="CH76 0000 0000 0000 0000 0"
+                    maxLength={26}
                     className="h-12 text-base font-mono"
                   />
                   {errors.iban && (
@@ -994,7 +995,7 @@ const HandwerkerOnboarding = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="bankName" className="text-base font-medium">Bankname *</Label>
+                  <Label htmlFor="bankName" className="text-base font-medium">Bankname (optional)</Label>
                   <Input
                     id="bankName"
                     value={formData.bankName}
@@ -1338,12 +1339,9 @@ const HandwerkerOnboarding = () => {
             {/* Service Areas */}
             <Card className="border-2 mt-6">
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Einsatzgebiete (PLZ) <span className="text-red-500">*</span>
-                </CardTitle>
+                <CardTitle className="text-lg">Einsatzgebiete</CardTitle>
                 <CardDescription>
-                  Geben Sie Postleitzahlen ein, in denen Sie arbeiten. Sie erhalten nur Benachrichtigungen für Anfragen in diesen Gebieten.
+                  Optional - Postleitzahlen, in denen Sie tätig sind
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1356,7 +1354,7 @@ const HandwerkerOnboarding = () => {
                 
                 <div className="space-y-3">
                   <Label className="text-base font-medium">
-                    Postleitzahlen eingeben
+                    Postleitzahlen eingeben (optional)
                   </Label>
                   <p className="text-sm text-muted-foreground">
                     Einzelne PLZ: 8000, 8001, 9000 | Bereiche: 8000-8099 | Drücken Sie Enter oder Komma zum Hinzufügen
@@ -1449,15 +1447,6 @@ const HandwerkerOnboarding = () => {
                   </div>
                 )}
 
-                {/* Service Area Map Preview */}
-                {formData.serviceAreas.length > 0 && (
-                  <div className="space-y-3 mt-6">
-                    <Label className="text-base font-medium">
-                      Kartenvorschau Ihrer Einsatzgebiete
-                    </Label>
-                    <ServiceAreaMap serviceAreas={formData.serviceAreas} />
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -1587,28 +1576,30 @@ const HandwerkerOnboarding = () => {
                 </CardContent>
               </Card>
 
-              {/* 3. Banking Information */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Wallet className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">Zahlungsinformationen</CardTitle>
+              {/* 3. Banking Information - only show if filled */}
+              {(formData.iban || formData.bankName) && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-lg">Zahlungsinformationen</CardTitle>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentStep(3)}
+                      >
+                        Bearbeiten
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCurrentStep(3)}
-                    >
-                      Bearbeiten
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <SummaryItem label="IBAN" value={formData.iban} />
-                  <SummaryItem label="Bank" value={formData.bankName} />
-                </CardContent>
-              </Card>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {formData.iban && <SummaryItem label="IBAN" value={formData.iban} />}
+                    {formData.bankName && <SummaryItem label="Bank" value={formData.bankName} />}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* 4. Insurance & Licenses */}
               <Card>
