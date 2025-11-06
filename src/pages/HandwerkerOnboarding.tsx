@@ -382,7 +382,7 @@ const HandwerkerOnboarding = () => {
       }
 
       // Insert handwerker_profile for guest registration (no user_id)
-      const { error } = await supabase
+      const { data: profileData, error } = await supabase
         .from("handwerker_profiles")
         .insert([{
           user_id: null, // Will be set by admin upon approval
@@ -423,9 +423,12 @@ const HandwerkerOnboarding = () => {
           verification_documents: verificationDocuments,
           verification_status: 'pending',
           is_verified: false,
-        }]);
+        }])
+        .select()
+        .single();
 
       if (error) throw error;
+      if (!profileData) throw new Error('Failed to create profile');
 
       console.log('Profile created successfully, sending admin notification...');
 
@@ -435,7 +438,7 @@ const HandwerkerOnboarding = () => {
           'send-admin-registration-notification',
           {
             body: {
-              profileId: error ? null : 'pending', // Will be handled by the trigger
+              profileId: profileData.id,
             },
           }
         );
