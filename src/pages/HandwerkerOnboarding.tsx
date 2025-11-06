@@ -125,7 +125,7 @@ const HandwerkerOnboarding = () => {
           // Only load if saved within last 7 days
           if (hoursSinceLastSave < 168) {
             // Calculate progress
-            const savedProgress = ((parsed.currentStep - 1) / 5) * 100;
+            const savedProgress = Math.min(((parsed.currentStep - 1) / 5) * 100, 100);
             
             // Format last save time
             const lastSaveDate = new Date(parsed.timestamp);
@@ -1929,7 +1929,7 @@ const HandwerkerOnboarding = () => {
                   </div>
                   <Progress value={recoveryData.progress} className="h-2" />
                   <p className="text-xs text-muted-foreground mt-2">
-                    Schritt {recoveryData.currentStep} von {recoveryData.totalSteps} abgeschlossen
+                    Schritt {Math.min(recoveryData.currentStep, recoveryData.totalSteps)} von {recoveryData.totalSteps}
                   </p>
                 </div>
 
@@ -1958,6 +1958,44 @@ const HandwerkerOnboarding = () => {
                   // Start fresh - clear everything
                   localStorage.removeItem('handwerker-onboarding-draft');
                   sessionStorage.removeItem('pending-recovery-data');
+                  sessionStorage.removeItem('handwerker-upload-temp-id');
+                  
+                  // Reset all state to initial values
+                  setCurrentStep(1);
+                  setFormData({
+                    firstName: "",
+                    lastName: "",
+                    email: "",
+                    phoneNumber: "",
+                    personalAddress: "",
+                    personalZip: "",
+                    personalCity: "",
+                    personalCanton: "",
+                    companyName: "",
+                    companyLegalForm: "einzelfirma",
+                    uidNumber: "",
+                    mwstNumber: "",
+                    businessAddress: "",
+                    businessZip: "",
+                    businessCity: "",
+                    businessCanton: "",
+                    sameAsPersonal: false,
+                    iban: "",
+                    bankName: "",
+                    liabilityInsuranceProvider: "",
+                    policyNumber: "",
+                    tradeLicenseNumber: "",
+                    insuranceValidUntil: "",
+                    categories: [] as string[],
+                    serviceAreas: [] as string[],
+                    hourlyRateMin: "",
+                    hourlyRateMax: "",
+                    bio: "",
+                  });
+                  setSelectedMajorCategories([]);
+                  setUploadedFiles({});
+                  setErrors({});
+                  
                   setShowRecoveryDialog(false);
                   toast({
                     title: "Neu gestartet",
