@@ -36,18 +36,8 @@ export const Footer = () => {
   ];
 
   const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    e.preventDefault(); // Always prevent default Link behavior
-    
-    // Scroll to top first
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
-    // If we're not already on this page, navigate to it
-    if (window.location.pathname !== href) {
-      // Small delay to let scroll animation start
-      setTimeout(() => {
-        navigate(href);
-      }, 50);
-    }
+    e.preventDefault();
+    navigate(href);
   };
 
   return (
