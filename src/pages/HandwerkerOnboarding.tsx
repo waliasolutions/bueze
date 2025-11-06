@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -426,10 +428,30 @@ const HandwerkerOnboarding = () => {
 
       if (error) throw error;
 
+      console.log('Profile created successfully, sending admin notification...');
+
+      // Trigger admin notification email
+      try {
+        const { error: notifyError } = await supabase.functions.invoke(
+          'send-admin-registration-notification',
+          {
+            body: {
+              profileId: error ? null : 'pending', // Will be handled by the trigger
+            },
+          }
+        );
+
+        if (notifyError) {
+          console.error('Failed to send admin notification:', notifyError);
+        }
+      } catch (notifyErr) {
+        console.error('Admin notification error:', notifyErr);
+      }
+
       toast({
-        title: "Registrierung eingereicht",
-        description: "Vielen Dank! Wir überprüfen Ihre Angaben und melden uns innerhalb von 1-2 Werktagen per E-Mail mit Ihren Zugangsdaten.",
-        duration: 8000,
+        title: "Registrierung erfolgreich",
+        description: "Vielen Dank! Wir überprüfen Ihre Angaben und senden Ihnen innerhalb von 1-2 Werktagen Ihre Zugangsdaten per E-Mail.",
+        duration: 10000,
       });
 
       // Clear saved draft
@@ -1711,8 +1733,10 @@ const HandwerkerOnboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background py-12">
-      <div className="container max-w-3xl mx-auto px-4">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="pt-24 pb-12">
+        <div className="container max-w-3xl mx-auto px-4">
         {/* Visual Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -1931,6 +1955,8 @@ const HandwerkerOnboarding = () => {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+      </main>
+      <Footer />
     </div>
   );
 };

@@ -15,22 +15,18 @@ export const Header = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   useEffect(() => {
-    // DEMO MODE: Mock user for pitch presentation
-    const mockUser = { id: 'demo-user-123', email: 'demo@bueze.ch' } as any;
-    setUser(mockUser);
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
     
-    // const checkUser = async () => {
-    //   const { data: { user } } = await supabase.auth.getUser();
-    //   setUser(user);
-    // };
-    
-    // checkUser();
+    checkUser();
 
-    // const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    //   setUser(session?.user ?? null);
-    // });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
 
-    // return () => subscription.unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleNavClick = (href: string, e: React.MouseEvent) => {
