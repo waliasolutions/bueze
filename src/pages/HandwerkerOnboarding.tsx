@@ -1650,13 +1650,48 @@ const HandwerkerOnboarding = () => {
                 <CardContent className="space-y-3">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Kategorien</p>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.categories.length > 0 ? (
-                        formData.categories.map((cat) => (
-                          <Badge key={cat} variant="secondary">
-                            {subcategoryLabels[cat]?.label || cat}
-                          </Badge>
-                        ))
+                    <div className="space-y-3">
+                      {selectedMajorCategories.length > 0 ? (
+                        selectedMajorCategories.map((majorCatId) => {
+                          const majorCat = majorCategories[majorCatId];
+                          const selectedSubcats = formData.categories.filter(cat => 
+                            majorCat.subcategories.includes(cat)
+                          );
+                          
+                          return (
+                            <div key={majorCatId} className="space-y-2">
+                              {/* Major Category Badge */}
+                              <Badge 
+                                variant="default" 
+                                className="bg-brand-600 hover:bg-brand-700 text-white font-medium"
+                              >
+                                {majorCat.label}
+                              </Badge>
+                              
+                              {/* Subcategories if any selected */}
+                              {selectedSubcats.length > 0 && (
+                                <div className="flex flex-wrap gap-2 ml-4 pl-2 border-l-2 border-brand-200">
+                                  {selectedSubcats.map((cat) => (
+                                    <Badge 
+                                      key={cat} 
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      {subcategoryLabels[cat]?.label || cat}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Message when no subcategories selected for this major category */}
+                              {selectedSubcats.length === 0 && (
+                                <p className="text-xs text-muted-foreground ml-4 pl-2 border-l-2 border-brand-200 italic">
+                                  Keine spezifischen Fachgebiete ausgewählt
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })
                       ) : (
                         <span className="text-sm text-muted-foreground">Keine Kategorien ausgewählt</span>
                       )}
