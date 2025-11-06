@@ -1,9 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Phone, MapPin, Facebook, Instagram } from 'lucide-react';
 import logo from '@/assets/bueze-logo.png';
 
 export const Footer = () => {
+  const navigate = useNavigate();
+  
   const footerSections = [
     {
       title: 'Für Auftraggeber',
@@ -32,6 +34,21 @@ export const Footer = () => {
       ]
     }
   ];
+
+  const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault(); // Always prevent default Link behavior
+    
+    // Scroll to top first
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // If we're not already on this page, navigate to it
+    if (window.location.pathname !== href) {
+      // Small delay to let scroll animation start
+      setTimeout(() => {
+        navigate(href);
+      }, 50);
+    }
+  };
 
   return (
     <footer className="bg-ink-900 text-surface">
@@ -76,13 +93,7 @@ export const Footer = () => {
                   <li key={linkIndex}>
                     <Link 
                       to={link.href} 
-                      onClick={(e) => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        if (window.location.pathname === link.href) {
-                          e.preventDefault();
-                          setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
-                        }
-                      }}
+                      onClick={(e) => handleNavigation(e, link.href)}
                       className="text-ink-300 hover:text-brand-400 transition-colors text-sm"
                     >
                       {link.label}
