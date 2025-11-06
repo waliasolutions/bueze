@@ -17,7 +17,12 @@ export const Footer = () => {
       links: [
         { label: 'Handwerker-Infos', href: '/handwerker' },
         { label: 'Leads durchsuchen', href: '/search' },
-        { label: 'Preise & Abos', href: '/legal/pricing' },
+      ]
+    },
+    {
+      title: 'Preise',
+      links: [
+        { label: 'Abonnements', href: '/pricing' },
       ]
     },
     {
@@ -71,7 +76,13 @@ export const Footer = () => {
                   <li key={linkIndex}>
                     <Link 
                       to={link.href} 
-                      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                      onClick={(e) => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (window.location.pathname === link.href) {
+                          e.preventDefault();
+                          setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+                        }
+                      }}
                       className="text-ink-300 hover:text-brand-400 transition-colors text-sm"
                     >
                       {link.label}

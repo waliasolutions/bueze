@@ -341,7 +341,7 @@ export default function Auth() {
                               Allgemeinen Geschäftsbedingungen
                             </Link>
                             {' '}und habe die{' '}
-                            <Link to="/legal/pricing" className="text-brand-600 hover:underline">
+                            <Link to="/pricing" className="text-brand-600 hover:underline">
                               Preisübersicht
                             </Link>
                             {' '}gelesen.

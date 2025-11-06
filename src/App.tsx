@@ -93,7 +93,7 @@ const App = () => {
             <Route path="/admin/approvals" element={<HandwerkerApprovals />} />
             <Route path="/admin/handwerker-verification" element={<HandwerkerVerification />} />
             <Route path="/legal/agb" element={<AGB />} />
-            <Route path="/legal/pricing" element={<PricingPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
             <Route path="/magic" element={<MagicLinkHandler />} />
             <Route path="/opportunity/:leadId" element={<OpportunityView />} />
             <Route path="/proposals/:proposalId" element={<ProposalReview />} />
