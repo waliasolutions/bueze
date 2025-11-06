@@ -78,7 +78,10 @@ export const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
+          <div className="flex items-center cursor-pointer" onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            navigate('/');
+          }}>
             <img src={logo} alt="Büeze.ch" className="h-24 w-auto" />
           </div>
 
@@ -101,6 +104,7 @@ export const Header = () => {
                 <Link
                   key={index}
                   to={item.href}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                   className="text-ink-700 hover:text-brand-600 transition-colors font-medium"
                 >
                   {item.label}
@@ -115,21 +119,30 @@ export const Header = () => {
                 {isAdmin && (
                   <Button 
                     variant="ghost" 
-                    onClick={() => navigate('/admin')} 
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      navigate('/admin');
+                    }} 
                     className="gap-2 text-brand-600 hover:text-brand-700"
                   >
                     <Shield className="h-4 w-4" />
                     Admin
                   </Button>
                 )}
-                <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
+                <Button variant="outline" onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  navigate('/submit-lead');
+                }} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Auftrag erstellen
                 </Button>
                 <UserDropdown />
               </div>
             ) : (
-              <Button onClick={() => navigate('/submit-lead')} className="gap-2">
+              <Button onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                navigate('/submit-lead');
+              }} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Auftrag erstellen
               </Button>
@@ -166,7 +179,10 @@ export const Header = () => {
                   key={index}
                   to={item.href}
                   className="block py-2 text-ink-700 hover:text-brand-600 transition-colors font-medium"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setIsMenuOpen(false);
+                  }}
                 >
                   {item.label}
                 </Link>
@@ -180,6 +196,7 @@ export const Header = () => {
                       variant="ghost" 
                       className="justify-start gap-2 w-full text-brand-600" 
                       onClick={() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
                         navigate('/admin');
                         setIsMenuOpen(false);
                       }}
@@ -191,7 +208,10 @@ export const Header = () => {
                   <UserDropdown />
                 </div>
               ) : (
-                <Button variant="default" className="justify-start gap-2 w-full" onClick={() => navigate('/submit-lead')}>
+                <Button variant="default" className="justify-start gap-2 w-full" onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  navigate('/submit-lead');
+                }}>
                   <Plus className="h-4 w-4" />
                   Auftrag erstellen
                 </Button>
