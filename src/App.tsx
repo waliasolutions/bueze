@@ -49,7 +49,7 @@ const ScrollToTop = () => {
       }, 0);
     } else {
       // No hash - scroll to top
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }
   }, [pathname, hash]);
   
