@@ -23,6 +23,7 @@ import CategoryLanding from "./pages/CategoryLanding";
 import KategorienLanding from "./pages/KategorienLanding";
 import MajorCategoryLanding from "./pages/MajorCategoryLanding";
 import HandwerkerLanding from "./pages/HandwerkerLanding";
+import AdminDashboard from "./pages/admin/AdminDashboard";
 import HandwerkerApprovals from "./pages/admin/HandwerkerApprovals";
 import HandwerkerVerification from "./pages/admin/HandwerkerVerification";
 import AGB from "./pages/legal/AGB";
@@ -88,6 +89,7 @@ const App = () => {
           <Route path="/kategorien/:majorCategorySlug" element={<MajorCategoryLanding />} />
           <Route path="/category/:categorySlug" element={<CategoryLanding />} />
             <Route path="/handwerker" element={<HandwerkerLanding />} />
+            <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/approvals" element={<HandwerkerApprovals />} />
             <Route path="/admin/handwerker-verification" element={<HandwerkerVerification />} />
             <Route path="/legal/agb" element={<AGB />} />

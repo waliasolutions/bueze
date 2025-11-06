@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, Plus } from 'lucide-react';
+import { Menu, X, User, Plus, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
@@ -9,6 +9,7 @@ import logo from '@/assets/bueze-logo.png';
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,12 +19,30 @@ export const Header = () => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      
+      if (user) {
+        // Check if user is admin
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        setIsAdmin(roleData?.role === 'admin');
+      } else {
+        setIsAdmin(false);
+      }
     };
     
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        checkUser(); // Re-check admin status
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -93,6 +112,16 @@ export const Header = () => {
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-3">
+                {isAdmin && (
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => navigate('/admin')} 
+                    className="gap-2 text-brand-600 hover:text-brand-700"
+                  >
+                    <Shield className="h-4 w-4" />
+                    Admin
+                  </Button>
+                )}
                 <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Auftrag erstellen
@@ -152,6 +181,19 @@ export const Header = () => {
             <div className="flex flex-col gap-3 pt-4 border-t border-line-200">
               {user ? (
                 <div className="space-y-3">
+                  {isAdmin && (
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start gap-2 w-full text-brand-600" 
+                      onClick={() => {
+                        navigate('/admin');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <Shield className="h-4 w-4" />
+                      Admin Dashboard
+                    </Button>
+                  )}
                   <UserDropdown />
                 </div>
               ) : (
