@@ -95,16 +95,39 @@ const HandwerkerOnboarding = () => {
   const totalSteps = 5;
   const progress = ((currentStep - 1) / totalSteps) * 100;
 
+  // Helper function to check if form has meaningful progress
+  const hasSignificantProgress = () => {
+    // If beyond step 1, there's progress
+    if (currentStep > 1) return true;
+    
+    // Check if any critical fields are filled
+    const hasFilledFields = 
+      formData.companyName.trim() !== "" ||
+      formData.firstName.trim() !== "" ||
+      formData.lastName.trim() !== "" ||
+      formData.email.trim() !== "";
+    
+    // Check if any categories selected
+    const hasSelectedCategories = selectedMajorCategories.length > 0;
+    
+    return hasFilledFields || hasSelectedCategories;
+  };
+
   // Auto-save form data to localStorage
   useEffect(() => {
     const saveToLocalStorage = () => {
-    const dataToSave = {
-      currentStep,
-      formData,
-      selectedMajorCategories,
-      uploadedFiles,
-      timestamp: Date.now(),
-    };
+      // Only save if there's meaningful progress
+      if (!hasSignificantProgress()) {
+        return;
+      }
+      
+      const dataToSave = {
+        currentStep,
+        formData,
+        selectedMajorCategories,
+        uploadedFiles,
+        timestamp: Date.now(),
+      };
       localStorage.setItem('handwerker-onboarding-draft', JSON.stringify(dataToSave));
       setLastSaved(new Date());
     };
