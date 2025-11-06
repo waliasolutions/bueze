@@ -220,9 +220,6 @@ const HandwerkerOnboarding = () => {
         if (!formData.personalCity.trim()) {
           newErrors.personalCity = "Ort ist erforderlich";
         }
-        if (!formData.personalCanton) {
-          newErrors.personalCanton = "Kanton ist erforderlich";
-        }
       }
       // For other legal forms (GmbH, AG, etc.), personal address is OPTIONAL
     } else if (step === 3) {
@@ -239,9 +236,6 @@ const HandwerkerOnboarding = () => {
           if (!formData.businessCity.trim()) {
             newErrors.businessCity = "Ort ist erforderlich";
           }
-          if (!formData.businessCanton) {
-            newErrors.businessCanton = "Kanton ist erforderlich";
-          }
         }
       } else {
         // For Einzelfirma: Business address is OPTIONAL (personal is already required)
@@ -253,9 +247,6 @@ const HandwerkerOnboarding = () => {
           }
           if (!formData.businessCity.trim()) {
             newErrors.businessCity = "Ort ist erforderlich";
-          }
-          if (!formData.businessCanton) {
-            newErrors.businessCanton = "Kanton ist erforderlich";
           }
         }
       }
@@ -296,11 +287,26 @@ const HandwerkerOnboarding = () => {
 
   const handleFileUpload = async (file: File, type: 'uidCertificate' | 'insuranceDocument' | 'tradeLicense') => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      // Validate file size (max 10MB)
+      const MAX_FILE_SIZE = 10 * 1024 * 1024;
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "Datei zu groß",
+          description: "Die Datei darf maximal 10MB groß sein.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Generate or reuse temporary ID for organizing uploads
+      let tempId = sessionStorage.getItem('handwerker-upload-temp-id');
+      if (!tempId) {
+        tempId = crypto.randomUUID();
+        sessionStorage.setItem('handwerker-upload-temp-id', tempId);
+      }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/${type}-${Date.now()}.${fileExt}`;
+      const fileName = `pending/${tempId}/${type}-${Date.now()}.${fileExt}`;
       
       setUploadProgress(prev => ({ ...prev, [type]: 'uploading' }));
 
@@ -308,7 +314,10 @@ const HandwerkerOnboarding = () => {
         .from('handwerker-documents')
         .upload(fileName, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(uploadError.message);
+      }
 
       setUploadProgress(prev => ({ ...prev, [type]: 'success' }));
       setUploadedFiles(prev => ({ ...prev, [type]: file }));
@@ -322,7 +331,7 @@ const HandwerkerOnboarding = () => {
       setUploadProgress(prev => ({ ...prev, [type]: 'error' }));
       toast({
         title: "Upload fehlgeschlagen",
-        description: "Dokument konnte nicht hochgeladen werden.",
+        description: error instanceof Error ? error.message : "Dokument konnte nicht hochgeladen werden.",
         variant: "destructive",
       });
     }
@@ -358,7 +367,7 @@ const HandwerkerOnboarding = () => {
 
       // Upload files to Supabase storage and collect URLs
       const verificationDocuments: string[] = [];
-      const tempUserId = crypto.randomUUID(); // Temporary ID for file organization
+      const tempUserId = sessionStorage.getItem('handwerker-upload-temp-id') || crypto.randomUUID();
       
       for (const [type, file] of Object.entries(allUploads)) {
         if (file) {
@@ -456,6 +465,7 @@ const HandwerkerOnboarding = () => {
 
       // Clear saved draft
       localStorage.removeItem('handwerker-onboarding-draft');
+      sessionStorage.removeItem('handwerker-upload-temp-id');
 
       navigate("/");
     } catch (error) {
@@ -789,7 +799,7 @@ const HandwerkerOnboarding = () => {
 
               <div className="space-y-3">
                 <Label htmlFor="personalCanton" className="text-base font-medium">
-                  Kanton {formData.companyLegalForm === "einzelfirma" && "*"}
+                  Kanton (optional)
                 </Label>
                 <Select
                   value={formData.personalCanton}
@@ -927,7 +937,7 @@ const HandwerkerOnboarding = () => {
                 </div>
 
                 <div className="space-y-3">
-                  <Label htmlFor="businessCanton" className="text-base font-medium">Kanton *</Label>
+                  <Label htmlFor="businessCanton" className="text-base font-medium">Kanton (optional)</Label>
                   <Select
                     value={formData.businessCanton}
                     onValueChange={(value) => setFormData({ ...formData, businessCanton: value })}
