@@ -257,11 +257,8 @@ const HandwerkerOnboarding = () => {
       // Insurance is completely optional - no validation required
       // Users are informed via UI that it's needed for activation
     } else if (step === 5) {
-      // Require at least 1 major category
-      if (selectedMajorCategories.length === 0) {
-        newErrors.categories = "Bitte wählen Sie mindestens eine Hauptkategorie";
-      }
-      // Subcategories are optional - no validation needed
+      // Categories and subcategories are completely optional
+      // Users can submit without selecting any categories
     }
 
     setErrors(newErrors);
@@ -341,7 +338,23 @@ const HandwerkerOnboarding = () => {
     if (!validateStep(currentStep)) return;
 
     setIsLoading(true);
+    
+    // === DIAGNOSTIC LOGGING START ===
+    console.log('=== HANDWERKER REGISTRATION DEBUG ===');
+    console.log('Current timestamp:', new Date().toISOString());
+    
     try {
+      // Check authentication state
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('Auth session:', session ? 'EXISTS' : 'NULL');
+      console.log('Session error:', sessionError);
+      console.log('User ID:', session?.user?.id || 'NULL (guest registration)');
+      
+      // Log form data structure
+      console.log('Form data categories:', formData.categories);
+      console.log('Form data service areas:', formData.serviceAreas);
+      console.log('Selected major categories:', selectedMajorCategories);
+      
       // Guest registration - no authentication required
       // User account will be created by admin upon approval
 
@@ -381,56 +394,83 @@ const HandwerkerOnboarding = () => {
         }
       }
 
+      // Prepare insert data
+      const insertData = {
+        user_id: null, // Will be set by admin upon approval
+        // Personal Information
+        first_name: formData.firstName || null,
+        last_name: formData.lastName || null,
+        email: formData.email || null,
+        phone_number: formData.phoneNumber || null,
+        personal_address: formData.personalAddress || null,
+        personal_zip: formData.personalZip || null,
+        personal_city: formData.personalCity || null,
+        personal_canton: formData.personalCanton || null,
+        // Company Information
+        company_name: formData.companyName || null,
+        company_legal_form: formData.companyLegalForm || null,
+        uid_number: formData.uidNumber || null,
+        mwst_number: formData.mwstNumber || null,
+        // Business Address
+        business_address: businessAddress || null,
+        business_zip: businessZip || null,
+        business_city: businessCity || null,
+        business_canton: businessCanton || null,
+        // Banking (optional)
+        iban: formData.iban ? formData.iban.replace(/\s/g, "") : null,
+        bank_name: formData.bankName?.trim() || null,
+        // Insurance & Licenses
+        liability_insurance_provider: formData.liabilityInsuranceProvider,
+        liability_insurance_policy_number: formData.policyNumber || null,
+        trade_license_number: formData.tradeLicenseNumber || null,
+        insurance_valid_until: formData.insuranceValidUntil || null,
+        // Service Details
+        bio: formData.bio || null,
+        categories: formData.categories as any[],
+        service_areas: formData.serviceAreas.length > 0 ? formData.serviceAreas : [],
+        hourly_rate_min: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
+        hourly_rate_max: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
+        // Verification
+        verification_documents: verificationDocuments,
+        verification_status: 'pending',
+        is_verified: false,
+      };
+
+      console.log('Insert data prepared:', {
+        user_id: insertData.user_id,
+        email: insertData.email,
+        categories: insertData.categories,
+        service_areas: insertData.service_areas,
+        verification_status: insertData.verification_status
+      });
+
       // Insert handwerker_profile for guest registration (no user_id)
+      console.log('Attempting database insert...');
       const { data: profileData, error } = await supabase
         .from("handwerker_profiles")
-        .insert([{
-          user_id: null, // Will be set by admin upon approval
-          // Personal Information
-          first_name: formData.firstName || null,
-          last_name: formData.lastName || null,
-          email: formData.email || null,
-          phone_number: formData.phoneNumber || null,
-          personal_address: formData.personalAddress || null,
-          personal_zip: formData.personalZip || null,
-          personal_city: formData.personalCity || null,
-          personal_canton: formData.personalCanton || null,
-          // Company Information
-          company_name: formData.companyName || null,
-          company_legal_form: formData.companyLegalForm || null,
-          uid_number: formData.uidNumber || null,
-          mwst_number: formData.mwstNumber || null,
-          // Business Address
-          business_address: businessAddress || null,
-          business_zip: businessZip || null,
-          business_city: businessCity || null,
-          business_canton: businessCanton || null,
-          // Banking (optional)
-          iban: formData.iban ? formData.iban.replace(/\s/g, "") : null,
-          bank_name: formData.bankName?.trim() || null,
-          // Insurance & Licenses
-          liability_insurance_provider: formData.liabilityInsuranceProvider,
-          liability_insurance_policy_number: formData.policyNumber || null,
-          trade_license_number: formData.tradeLicenseNumber || null,
-          insurance_valid_until: formData.insuranceValidUntil || null,
-          // Service Details
-          bio: formData.bio || null,
-          categories: formData.categories as any[],
-          service_areas: formData.serviceAreas.length > 0 ? formData.serviceAreas : [],
-          hourly_rate_min: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
-          hourly_rate_max: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
-          // Verification
-          verification_documents: verificationDocuments,
-          verification_status: 'pending',
-          is_verified: false,
-        }])
+        .insert([insertData])
         .select()
         .single();
 
-      if (error) throw error;
-      if (!profileData) throw new Error('Failed to create profile');
+      console.log('Insert result - error:', error);
+      console.log('Insert result - data:', profileData);
 
-      console.log('Profile created successfully, sending admin notification...');
+      if (error) {
+        console.error('=== DATABASE INSERT ERROR ===');
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
+        throw error;
+      }
+      if (!profileData) {
+        console.error('=== PROFILE DATA IS NULL ===');
+        throw new Error('Failed to create profile');
+      }
+
+      console.log('=== PROFILE CREATED SUCCESSFULLY ===');
+      console.log('Profile ID:', profileData.id);
+      console.log('Sending admin notification...');
 
       // Trigger admin notification email
       try {
@@ -460,9 +500,15 @@ const HandwerkerOnboarding = () => {
       localStorage.removeItem('handwerker-onboarding-draft');
       sessionStorage.removeItem('handwerker-upload-temp-id');
 
+      console.log('=== REGISTRATION COMPLETE ===');
+      console.log('Navigating to homepage...');
       navigate("/");
     } catch (error) {
-      console.error("Error saving profile:", error);
+      console.error('=== REGISTRATION ERROR ===');
+      console.error('Error type:', error?.constructor?.name);
+      console.error('Error message:', error instanceof Error ? error.message : String(error));
+      console.error('Full error object:', error);
+      
       toast({
         title: "Fehler",
         description: "Profil konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
@@ -470,6 +516,7 @@ const HandwerkerOnboarding = () => {
       });
     } finally {
       setIsLoading(false);
+      console.log('=== REGISTRATION PROCESS END ===');
     }
   };
 
@@ -1217,7 +1264,7 @@ const HandwerkerOnboarding = () => {
               </div>
               <div>
                 <h3 className="text-2xl font-bold">Fachgebiete wählen</h3>
-                <p className="text-base text-muted-foreground">Ihre Spezialisierungen</p>
+                <p className="text-base text-muted-foreground">Ihre Spezialisierungen (optional)</p>
               </div>
             </div>
 
@@ -1228,9 +1275,16 @@ const HandwerkerOnboarding = () => {
               </Alert>
             )}
 
+            <Alert className="bg-blue-50 border-blue-200">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                Sie können diese Angaben auch später in Ihrem Profil ergänzen.
+              </AlertDescription>
+            </Alert>
+
             {/* Major Categories */}
             <div>
-              <h4 className="text-lg font-semibold mb-4">Hauptkategorien *</h4>
+              <h4 className="text-lg font-semibold mb-4">Hauptkategorien <span className="text-base font-normal text-muted-foreground">(optional)</span></h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {Object.values(majorCategories).map((majorCat) => {
                   const Icon = majorCat.icon;
