@@ -24,7 +24,6 @@ export const Footer = () => {
       title: 'Rechtliches',
       links: [
         { label: 'AGB', href: '/legal/agb' },
-        { label: 'Preise', href: '/legal/pricing' },
       ]
     }
   ];
