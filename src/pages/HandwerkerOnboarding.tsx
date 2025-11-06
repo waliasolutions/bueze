@@ -291,11 +291,13 @@ const HandwerkerOnboarding = () => {
   const handleNext = () => {
     if (validateStep(currentStep)) {
       setCurrentStep((prev) => Math.min(prev + 1, 6));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleBack = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleFileUpload = async (file: File, type: 'insuranceDocument' | 'tradeLicense') => {
