@@ -15,7 +15,7 @@ const faqData = [
       },
       {
         q: 'Was kostet eine Anfrage bei Büeze.ch?',
-        a: 'Das Erstellen einer Anfrage ist für Sie komplett kostenlos und unverbindlich. Erst wenn Sie sich für einen Handwerker entscheiden, fallen Kosten an – und auch dann nur für den eigentlichen Auftrag, nicht für die Nutzung von Büeze.ch.'
+        a: 'Das Erstellen einer Anfrage ist für Sie komplett kostenlos und unverbindlich. Auch die Nutzung von Büeze.ch ist zu 100% kostenlos – Sie zahlen nur die Kosten, die Sie direkt mit dem Handwerker für die Ausführung der Arbeit vereinbaren. Büeze.ch verdient dabei nichts.'
       }
     ]
   },
