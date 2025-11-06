@@ -412,7 +412,7 @@ const HandwerkerOnboarding = () => {
           liability_insurance_provider: formData.liabilityInsuranceProvider,
           liability_insurance_policy_number: formData.policyNumber || null,
           trade_license_number: formData.tradeLicenseNumber || null,
-          insurance_valid_until: formData.insuranceValidUntil,
+          insurance_valid_until: formData.insuranceValidUntil || null,
           // Service Details
           bio: formData.bio || null,
           categories: formData.categories as any[],
