@@ -445,10 +445,112 @@ export const adminRegistrationNotificationTemplate = (data: AdminRegistrationDat
     "window_shutters": "Rollläden & Storen",
   };
   
-  // Map enum values to readable German labels
-  const categoriesText = data.categories
-    .map(cat => subcategoryLabels[cat] || cat)
-    .join(', ') || 'Keine Kategorien angegeben';
+  // Major category mapping for grouping subcategories
+  const majorCategoryMap: Record<string, { label: string; subcats: string[] }> = {
+    'elektroinstallationen': {
+      label: 'Elektroinstallationen',
+      subcats: ['electrician_installation', 'electrician_repair', 'electrician_panel',
+                'electrician_lighting', 'electrician_charging', 'electrician_smart_home',
+                'electrician_solar']
+    },
+    'metallbau': {
+      label: 'Metallbau',
+      subcats: ['metalworker_construction', 'metalworker_stairs', 'metalworker_gates',
+                'metalworker_balconies']
+    },
+    'bau_renovation': {
+      label: 'Bau & Renovation',
+      subcats: ['builder_new_construction', 'builder_renovation', 'builder_masonry',
+                'builder_plastering', 'builder_insulation']
+    },
+    'bodenbelaege': {
+      label: 'Bodenbeläge',
+      subcats: ['flooring_parquet', 'flooring_tiles', 'flooring_carpet',
+                'flooring_vinyl', 'flooring_natural_stone', 'flooring_screeding']
+    },
+    'heizung': {
+      label: 'Heizung & Lüftung',
+      subcats: ['heating_installation', 'heating_service', 'heating_floor',
+                'heating_solar_thermal', 'heating_heat_pump', 'heating_ventilation']
+    },
+    'sanitaer': {
+      label: 'Sanitär',
+      subcats: ['plumber_installation', 'plumber_repair', 'plumber_bathroom',
+                'plumber_kitchen', 'plumber_heating', 'plumber_drainage']
+    },
+    'kuechen': {
+      label: 'Küchen',
+      subcats: ['kitchen_planning', 'kitchen_installation', 'kitchen_appliances',
+                'kitchen_countertops']
+    },
+    'schreinerei': {
+      label: 'Schreinerei',
+      subcats: ['carpenter_furniture', 'carpenter_doors', 'carpenter_windows',
+                'carpenter_stairs', 'carpenter_builtin', 'carpenter_flooring']
+    },
+    'raeumungen': {
+      label: 'Räumungen & Umzüge',
+      subcats: ['cleaning_clearance', 'cleaning_moving', 'cleaning_construction',
+                'cleaning_garden']
+    },
+    'maler': {
+      label: 'Maler & Gipser',
+      subcats: ['painter_interior', 'painter_exterior', 'painter_wallpaper',
+                'painter_plastering']
+    },
+    'dach': {
+      label: 'Dach & Fassade',
+      subcats: ['roofer_repair', 'roofer_new', 'roofer_insulation', 'roofer_facade']
+    },
+    'gartenbau': {
+      label: 'Gartenbau',
+      subcats: ['landscaper_garden', 'landscaper_terrace', 'landscaper_lawn',
+                'landscaper_fencing']
+    },
+    'fenster': {
+      label: 'Fenster & Türen',
+      subcats: ['window_new', 'window_repair', 'window_doors', 'window_shutters']
+    }
+  };
+
+  // Group subcategories by their major categories
+  const categoryGroups = new Map<string, { label: string; subcats: string[] }>();
+  
+  for (const subcat of data.categories) {
+    // Find which major category this subcategory belongs to
+    let foundMajorCat: { id: string; label: string } | null = null;
+    for (const [majorId, majorData] of Object.entries(majorCategoryMap)) {
+      if (majorData.subcats.includes(subcat)) {
+        foundMajorCat = { id: majorId, label: majorData.label };
+        break;
+      }
+    }
+    
+    if (foundMajorCat) {
+      if (!categoryGroups.has(foundMajorCat.id)) {
+        categoryGroups.set(foundMajorCat.id, {
+          label: foundMajorCat.label,
+          subcats: []
+        });
+      }
+      const readable = subcategoryLabels[subcat] || subcat;
+      categoryGroups.get(foundMajorCat.id)!.subcats.push(readable);
+    }
+  }
+
+  // Format as "Hauptkategorie (subcat1, subcat2)"
+  let categoriesText = '';
+  if (categoryGroups.size > 0) {
+    const formatted = Array.from(categoryGroups.values()).map(group => {
+      if (group.subcats.length > 0) {
+        return `<strong>${group.label}</strong> (${group.subcats.join(', ')})`;
+      }
+      return `<strong>${group.label}</strong>`;
+    });
+    categoriesText = formatted.join('<br>');
+  } else {
+    categoriesText = 'Keine Kategorien angegeben';
+  }
   
   return emailWrapper(`
     <h2 style="color: #0066CC; margin-top: 0;">Neue Handwerker-Registrierung</h2>

@@ -1,6 +1,19 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { format } from "https://esm.sh/date-fns@3.6.0";
+import { toZonedTime } from "https://esm.sh/date-fns-tz@3.2.0";
 import { adminRegistrationNotificationTemplate } from "../_shared/emailTemplates.ts";
+
+const SWISS_TIMEZONE = 'Europe/Zurich';
+
+/**
+ * Format date/time in Swiss timezone with automatic DST handling
+ */
+function formatSwissDateTime(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  const swissDate = toZonedTime(dateObj, SWISS_TIMEZONE);
+  return format(swissDate, 'dd.MM.yyyy HH:mm', { timeZone: SWISS_TIMEZONE });
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -53,13 +66,7 @@ serve(async (req) => {
       companyName: profile.company_name || '',
       categories: profile.categories || [],
       profileId: profile.id,
-      submittedAt: new Date(profile.created_at).toLocaleDateString('de-CH', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      submittedAt: formatSwissDateTime(profile.created_at)
     };
 
     // Generate email HTML
