@@ -479,11 +479,26 @@ const HandwerkerOnboarding = () => {
 
       // Insert handwerker_profile with user_id
       console.log('Attempting database insert...');
-      const { data: profileData, error } = await supabase
+      console.log('Insert data:', JSON.stringify(insertData, null, 2));
+      
+      const insertPromise = supabase
         .from("handwerker_profiles")
         .insert([insertData])
         .select()
         .single();
+
+      // Add timeout to detect hanging requests
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database insert timeout after 15 seconds')), 15000)
+      );
+
+      const { data: profileData, error } = await Promise.race([
+        insertPromise,
+        timeoutPromise
+      ]).catch(err => {
+        console.error('Insert promise failed:', err);
+        return { data: null, error: err };
+      }) as any;
 
       console.log('Insert result - error:', error);
       console.log('Insert result - data:', profileData);
@@ -492,6 +507,8 @@ const HandwerkerOnboarding = () => {
         console.error('=== DATABASE INSERT ERROR ===');
         console.error('Error code:', error.code);
         console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
         throw error;
       }
       if (!profileData) {
