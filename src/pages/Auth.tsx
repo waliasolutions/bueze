@@ -50,7 +50,20 @@ export default function Auth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        // Check role from user metadata (single source of truth)
+        // Check for admin/super_admin role FIRST
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
+          // Admin users go to admin dashboard
+          navigate('/admin/dashboard');
+          return;
+        }
+        
+        // Then check role from user metadata for handwerker
         const userRole = session.user.user_metadata?.role;
         
         if (userRole === 'handwerker') {
@@ -69,6 +82,7 @@ export default function Auth() {
             navigate('/handwerker-onboarding');
           }
         } else {
+          // Regular users go to regular dashboard
           navigate('/dashboard');
         }
       }

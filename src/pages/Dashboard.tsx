@@ -116,29 +116,40 @@ const Dashboard = () => {
 
   const fetchUserData = async () => {
     try {
-      // DEMO MODE: Mock user for pitch presentation
-      const mockUser = { id: 'demo-user-123', email: 'demo@bueze.ch' };
+      // Get real authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // if (!user) {
-      //   navigate('/auth');
-      //   return;
-      // }
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
 
-      setUser(mockUser);
+      setUser(user);
 
       // Fetch user profile
       const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', mockUser.id)
-        .single();
+        .eq('id', user.id)
+        .maybeSingle();
 
-      setProfile(profileData || { id: mockUser.id, full_name: 'Demo User', email: mockUser.email, role: 'user' });
+      if (profileData) {
+        setProfile(profileData);
+      } else {
+        // Create basic profile if it doesn't exist
+        setProfile({ 
+          id: user.id, 
+          full_name: user.user_metadata?.first_name + ' ' + user.user_metadata?.last_name || user.email?.split('@')[0] || 'User',
+          email: user.email || '',
+          role: 'user' 
+        });
+      }
 
-      // Fetch user's leads (exclude deleted) - show all for demo
+      // Fetch user's leads (exclude deleted)
       const { data: leadsData } = await supabase
         .from('leads')
         .select('*')
+        .eq('owner_id', user.id)
         .neq('status', 'deleted')
         .order('created_at', { ascending: false })
         .limit(10);
@@ -149,7 +160,7 @@ const Dashboard = () => {
       const { data: handwerkerProfileData } = await supabase
         .from('handwerker_profiles')
         .select('id, is_verified')
-        .eq('user_id', mockUser.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (handwerkerProfileData) {
@@ -166,13 +177,14 @@ const Dashboard = () => {
         // });
       }
 
-      // Fetch user's purchases - show all for demo
+      // Fetch user's purchases
       const { data: purchasesData } = await supabase
         .from('lead_purchases')
         .select(`
           *,
           lead:leads(*)
         `)
+        .eq('buyer_id', user.id)
         .order('purchased_at', { ascending: false })
         .limit(10);
 
@@ -401,7 +413,7 @@ const Dashboard = () => {
 
             {!isHandwerker && (
               <TabsContent value="proposals" className="space-y-6">
-                <ReceivedProposals userId={user?.id || 'demo-user-123'} />
+                <ReceivedProposals userId={user?.id} />
               </TabsContent>
             )}
 
