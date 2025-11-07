@@ -200,104 +200,51 @@ const HandwerkerOnboarding = () => {
     const newErrors: Record<string, string> = {};
 
     if (step === 1) {
-      // Company Information validation
+      // Company Information validation - minimal requirements
       if (!formData.companyName.trim()) {
         newErrors.companyName = "Firmenname ist erforderlich";
       } else if (formData.companyName.trim().length < 2) {
         newErrors.companyName = "Firmenname muss mindestens 2 Zeichen lang sein";
-      } else if (/^(test|asdf|dummy|example|aaa|zzz)/i.test(formData.companyName.trim())) {
-        newErrors.companyName = "Bitte geben Sie einen gültigen Firmennamen ein";
       }
-      if (!formData.companyLegalForm) {
-        newErrors.companyLegalForm = "Rechtsform ist erforderlich";
-      }
-      // UID is optional but validate format if provided
-      if (formData.uidNumber && !validateUID(formData.uidNumber)) {
+      // UID and MWST are optional, only validate format if provided
+      if (formData.uidNumber && formData.uidNumber.trim() && !validateUID(formData.uidNumber)) {
         newErrors.uidNumber = "Ungültiges Format. Beispiel: CHE-123.456.789";
       }
-      if (formData.mwstNumber && !validateMWST(formData.mwstNumber)) {
+      if (formData.mwstNumber && formData.mwstNumber.trim() && !validateMWST(formData.mwstNumber)) {
         newErrors.mwstNumber = "Ungültiges Format. Beispiel: CHE-123.456.789 MWST";
       }
     } else if (step === 2) {
-      // Personal Information validation
-      // Name, Email, Phone: ALWAYS required for ALL legal forms
+      // Personal Information validation - only name, email, phone required
       if (!formData.firstName.trim()) {
         newErrors.firstName = "Vorname ist erforderlich";
       } else if (formData.firstName.trim().length < 2) {
         newErrors.firstName = "Vorname muss mindestens 2 Zeichen lang sein";
-      } else if (/^(test|asdf|dummy|example|aaa|zzz)/i.test(formData.firstName.trim())) {
-        newErrors.firstName = "Bitte geben Sie einen gültigen Vornamen ein";
       }
       if (!formData.lastName.trim()) {
         newErrors.lastName = "Nachname ist erforderlich";
       } else if (formData.lastName.trim().length < 2) {
         newErrors.lastName = "Nachname muss mindestens 2 Zeichen lang sein";
-      } else if (/^(test|asdf|dummy|example|aaa|zzz)/i.test(formData.lastName.trim())) {
-        newErrors.lastName = "Bitte geben Sie einen gültigen Nachnamen ein";
       }
       if (!formData.email.trim()) {
         newErrors.email = "E-Mail-Adresse ist erforderlich";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         newErrors.email = "Ungültige E-Mail-Adresse";
-      } else if (/^(test@test|example@example|asdf@|dummy@)/i.test(formData.email.trim())) {
-        newErrors.email = "Bitte geben Sie eine gültige E-Mail-Adresse ein";
       }
       if (!formData.phoneNumber.trim()) {
         newErrors.phoneNumber = "Telefonnummer ist erforderlich";
       }
       
-      // Address: ONLY required for Einzelfirma
-      if (formData.companyLegalForm === "einzelfirma") {
-        if (!formData.personalAddress.trim()) {
-          newErrors.personalAddress = "Persönliche Adresse ist für Einzelfirma erforderlich";
-        }
-        if (!formData.personalZip.trim()) {
-          newErrors.personalZip = "PLZ ist erforderlich";
-        }
-        if (!formData.personalCity.trim()) {
-          newErrors.personalCity = "Ort ist erforderlich";
-        }
-      }
-      // For other legal forms (GmbH, AG, etc.), personal address is OPTIONAL
+      // Personal address is now optional for all legal forms
     } else if (step === 3) {
-      // Business Address validation depends on legal form
-      if (formData.companyLegalForm !== "einzelfirma") {
-        // For GmbH, AG, etc: Business address is REQUIRED
-        if (!formData.sameAsPersonal) {
-          if (!formData.businessAddress.trim()) {
-            newErrors.businessAddress = "Geschäftsadresse ist erforderlich";
-          }
-          if (!formData.businessZip) {
-            newErrors.businessZip = "PLZ ist erforderlich";
-          }
-          if (!formData.businessCity.trim()) {
-            newErrors.businessCity = "Ort ist erforderlich";
-          }
-        }
-      } else {
-        // For Einzelfirma: Business address is OPTIONAL (personal is already required)
-        // Only validate if user chose NOT to use personal address AND started filling it
-        if (!formData.sameAsPersonal && formData.businessAddress.trim()) {
-          // If they start filling it, validate properly
-          if (!formData.businessZip) {
-            newErrors.businessZip = "PLZ ist erforderlich";
-          }
-          if (!formData.businessCity.trim()) {
-            newErrors.businessCity = "Ort ist erforderlich";
-          }
-        }
-      }
-      
-      // Banking validation - optional but validate format if provided
-      if (formData.iban && !validateIBAN(formData.iban)) {
+      // Business address and banking are now completely optional
+      // Only validate format if provided
+      if (formData.iban && formData.iban.trim() && !validateIBAN(formData.iban)) {
         newErrors.iban = "Ungültige IBAN. Format: CH## #### #### #### #### #";
       }
     } else if (step === 4) {
       // Insurance is completely optional - no validation required
-      // Users are informed via UI that it's needed for activation
     } else if (step === 5) {
       // Categories and subcategories are completely optional
-      // Users can submit without selecting any categories
     }
 
     setErrors(newErrors);
@@ -457,44 +404,50 @@ const HandwerkerOnboarding = () => {
         }
       }
 
-      // Prepare insert data
+      // Prepare insert data with safe defaults and null handling
       const insertData = {
         user_id: null, // Will be set by admin upon approval
-        // Personal Information
-        first_name: formData.firstName || null,
-        last_name: formData.lastName || null,
-        email: formData.email || null,
-        phone_number: formData.phoneNumber || null,
-        personal_address: formData.personalAddress || null,
-        personal_zip: formData.personalZip || null,
-        personal_city: formData.personalCity || null,
-        personal_canton: formData.personalCanton || null,
+        // Personal Information - trim and convert empty to null
+        first_name: formData.firstName?.trim() || null,
+        last_name: formData.lastName?.trim() || null,
+        email: formData.email?.trim() || null,
+        phone_number: formData.phoneNumber?.trim() || null,
+        personal_address: formData.personalAddress?.trim() || null,
+        personal_zip: formData.personalZip?.trim() || null,
+        personal_city: formData.personalCity?.trim() || null,
+        personal_canton: formData.personalCanton?.trim() || null,
         // Company Information
-        company_name: formData.companyName || null,
-        company_legal_form: formData.companyLegalForm || null,
-        uid_number: formData.uidNumber || null,
-        mwst_number: formData.mwstNumber || null,
+        company_name: formData.companyName?.trim() || null,
+        company_legal_form: formData.companyLegalForm?.trim() || null,
+        uid_number: formData.uidNumber?.trim() || null,
+        mwst_number: formData.mwstNumber?.trim() || null,
         // Business Address
-        business_address: businessAddress || null,
-        business_zip: businessZip || null,
-        business_city: businessCity || null,
-        business_canton: businessCanton || null,
+        business_address: businessAddress?.trim() || null,
+        business_zip: businessZip?.trim() || null,
+        business_city: businessCity?.trim() || null,
+        business_canton: businessCanton?.trim() || null,
         // Banking (optional)
-        iban: formData.iban ? formData.iban.replace(/\s/g, "") : null,
+        iban: formData.iban?.trim() ? formData.iban.replace(/\s/g, "") : null,
         bank_name: formData.bankName?.trim() || null,
         // Insurance & Licenses
-        liability_insurance_provider: formData.liabilityInsuranceProvider,
-        liability_insurance_policy_number: formData.policyNumber || null,
-        trade_license_number: formData.tradeLicenseNumber || null,
-        insurance_valid_until: formData.insuranceValidUntil || null,
+        liability_insurance_provider: formData.liabilityInsuranceProvider?.trim() || null,
+        liability_insurance_policy_number: formData.policyNumber?.trim() || null,
+        trade_license_number: formData.tradeLicenseNumber?.trim() || null,
+        insurance_valid_until: formData.insuranceValidUntil?.trim() || null,
         // Service Details
-        bio: formData.bio || null,
-        categories: formData.categories as any[],
-        service_areas: formData.serviceAreas.length > 0 ? formData.serviceAreas : [],
-        hourly_rate_min: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
-        hourly_rate_max: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
-        // Verification
-        verification_documents: verificationDocuments,
+        bio: formData.bio?.trim() || null,
+        // Fix: Ensure categories array is properly handled with safe default
+        categories: (Array.isArray(formData.categories) && formData.categories.length > 0) 
+          ? formData.categories 
+          : [] as any,
+        // Ensure service_areas has safe default empty array
+        service_areas: (Array.isArray(formData.serviceAreas) && formData.serviceAreas.length > 0) 
+          ? formData.serviceAreas 
+          : [],
+        hourly_rate_min: formData.hourlyRateMin?.trim() ? parseInt(formData.hourlyRateMin) : null,
+        hourly_rate_max: formData.hourlyRateMax?.trim() ? parseInt(formData.hourlyRateMax) : null,
+        // Verification - ensure array defaults
+        verification_documents: verificationDocuments.length > 0 ? verificationDocuments : [],
         verification_status: 'pending',
         is_verified: false,
         logo_url: logoUrl,
