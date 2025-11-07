@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, AlertTriangle, Search, Filter, History } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, AlertTriangle, Search, Filter, History, Trash2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
@@ -506,6 +506,41 @@ const HandwerkerApprovals = () => {
     }
   };
 
+  const deleteHandwerker = async (handwerker: PendingHandwerker) => {
+    const confirmMessage = `Sind Sie sicher, dass Sie ${handwerker.first_name} ${handwerker.last_name} (${handwerker.email}) löschen möchten?\n\nDies löscht das Handwerker-Profil. Der Benutzer kann sich danach neu registrieren.\n\nDieser Vorgang kann nicht rückgängig gemacht werden.`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    setApproving(handwerker.id);
+    try {
+      // Delete the handwerker profile (this is the main data)
+      const { error: profileError } = await supabase
+        .from('handwerker_profiles')
+        .delete()
+        .eq('id', handwerker.id);
+
+      if (profileError) throw profileError;
+
+      toast({
+        title: 'Handwerker gelöscht',
+        description: `${handwerker.first_name} ${handwerker.last_name} wurde erfolgreich gelöscht und kann sich neu registrieren.`,
+      });
+
+      await fetchPendingHandwerkers();
+    } catch (error) {
+      console.error('Error deleting handwerker:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Löschen fehlgeschlagen. Bitte versuchen Sie es erneut.',
+        variant: 'destructive',
+      });
+    } finally {
+      setApproving(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -975,6 +1010,14 @@ const HandwerkerApprovals = () => {
                         >
                           <XCircle className="h-4 w-4 mr-2" />
                           Ablehnen
+                        </Button>
+                        <Button
+                          onClick={() => deleteHandwerker(handwerker)}
+                          disabled={approving === handwerker.id}
+                          variant="destructive"
+                          size="icon"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </CardContent>
