@@ -7,14 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, AlertTriangle, Search, Filter, History, Trash2 } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, AlertTriangle, Search, Filter, History, Trash2, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface PendingHandwerker {
   id: string;
@@ -82,6 +84,8 @@ const HandwerkerApprovals = () => {
   const [selectedHandwerkers, setSelectedHandwerkers] = useState<string[]>([]);
   const [approvalHistory, setApprovalHistory] = useState<ApprovalHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [editingHandwerker, setEditingHandwerker] = useState<PendingHandwerker | null>(null);
+  const [editFormData, setEditFormData] = useState<Partial<PendingHandwerker>>({});
 
   useEffect(() => {
     checkAdminAccess();
@@ -538,6 +542,40 @@ const HandwerkerApprovals = () => {
       });
     } finally {
       setApproving(null);
+    }
+  };
+
+  const openEditDialog = (handwerker: PendingHandwerker) => {
+    setEditingHandwerker(handwerker);
+    setEditFormData({ ...handwerker });
+  };
+
+  const saveHandwerkerEdit = async () => {
+    if (!editingHandwerker) return;
+
+    try {
+      const { error } = await supabase
+        .from('handwerker_profiles')
+        .update(editFormData as any)
+        .eq('id', editingHandwerker.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Profil aktualisiert',
+        description: 'Die Änderungen wurden erfolgreich gespeichert.',
+      });
+
+      setEditingHandwerker(null);
+      setEditFormData({});
+      await fetchPendingHandwerkers();
+    } catch (error) {
+      console.error('Error updating handwerker:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Aktualisierung fehlgeschlagen.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -1012,6 +1050,14 @@ const HandwerkerApprovals = () => {
                           Ablehnen
                         </Button>
                         <Button
+                          onClick={() => openEditDialog(handwerker)}
+                          disabled={approving === handwerker.id}
+                          variant="secondary"
+                          size="icon"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
                           onClick={() => deleteHandwerker(handwerker)}
                           disabled={approving === handwerker.id}
                           variant="destructive"
@@ -1029,6 +1075,208 @@ const HandwerkerApprovals = () => {
         </div>
       </main>
       <Footer />
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingHandwerker} onOpenChange={(open) => !open && setEditingHandwerker(null)}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Handwerker-Profil bearbeiten</DialogTitle>
+            <DialogDescription>
+              Ändern Sie die Profileinformationen für {editingHandwerker?.first_name} {editingHandwerker?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingHandwerker && (
+            <div className="space-y-6 py-4">
+              {/* Personal Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Persönliche Informationen</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="first_name">Vorname</Label>
+                    <Input
+                      id="first_name"
+                      value={editFormData.first_name || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, first_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last_name">Nachname</Label>
+                    <Input
+                      id="last_name"
+                      value={editFormData.last_name || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, last_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">E-Mail</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={editFormData.email || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone_number">Telefon</Label>
+                    <Input
+                      id="phone_number"
+                      value={editFormData.phone_number || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, phone_number: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Company Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Firmeninformationen</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company_name">Firmenname</Label>
+                    <Input
+                      id="company_name"
+                      value={editFormData.company_name || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, company_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="company_legal_form">Rechtsform</Label>
+                    <Input
+                      id="company_legal_form"
+                      value={editFormData.company_legal_form || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, company_legal_form: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="uid_number">UID-Nummer</Label>
+                    <Input
+                      id="uid_number"
+                      value={editFormData.uid_number || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, uid_number: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="mwst_number">MWST-Nummer</Label>
+                    <Input
+                      id="mwst_number"
+                      value={editFormData.mwst_number || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, mwst_number: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="business_address">Geschäftsadresse</Label>
+                    <Input
+                      id="business_address"
+                      value={editFormData.business_address || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, business_address: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="business_zip">PLZ</Label>
+                    <Input
+                      id="business_zip"
+                      value={editFormData.business_zip || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, business_zip: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="business_city">Ort</Label>
+                    <Input
+                      id="business_city"
+                      value={editFormData.business_city || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, business_city: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Banking Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Bankinformationen</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="iban">IBAN</Label>
+                    <Input
+                      id="iban"
+                      value={editFormData.iban || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, iban: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bank_name">Bank</Label>
+                    <Input
+                      id="bank_name"
+                      value={editFormData.bank_name || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, bank_name: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Insurance Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold border-b pb-2">Versicherungen</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="liability_insurance_provider">Haftpflichtversicherung</Label>
+                    <Input
+                      id="liability_insurance_provider"
+                      value={editFormData.liability_insurance_provider || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, liability_insurance_provider: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="liability_insurance_policy_number">Policen-Nummer</Label>
+                    <Input
+                      id="liability_insurance_policy_number"
+                      value={editFormData.liability_insurance_policy_number || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, liability_insurance_policy_number: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="insurance_valid_until">Gültig bis</Label>
+                    <Input
+                      id="insurance_valid_until"
+                      type="date"
+                      value={editFormData.insurance_valid_until || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, insurance_valid_until: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="trade_license_number">Gewerbeschein</Label>
+                    <Input
+                      id="trade_license_number"
+                      value={editFormData.trade_license_number || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, trade_license_number: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div className="space-y-2">
+                <Label htmlFor="bio">Beschreibung</Label>
+                <Textarea
+                  id="bio"
+                  value={editFormData.bio || ''}
+                  onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
+                  rows={4}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingHandwerker(null)}>
+              Abbrechen
+            </Button>
+            <Button onClick={saveHandwerkerEdit}>
+              Speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
