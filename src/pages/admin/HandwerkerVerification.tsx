@@ -141,7 +141,7 @@ export default function HandwerkerVerification() {
         .from("handwerker_profiles")
         .select(`
           *,
-          profiles!inner (
+          profiles (
             full_name,
             email,
             phone
