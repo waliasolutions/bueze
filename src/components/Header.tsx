@@ -305,13 +305,31 @@ export const Header = () => {
                   <UserDropdown />
                 </div>
               ) : (
-                <Button variant="default" className="justify-start gap-2 w-full" onClick={() => {
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                  navigate('/submit-lead');
-                }}>
-                  <Plus className="h-4 w-4" />
-                  Auftrag erstellen
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    className="justify-start gap-2 w-full" 
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      navigate('/auth');
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    Anmelden
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    className="justify-start gap-2 w-full" 
+                    onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                      navigate('/submit-lead');
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Auftrag erstellen
+                  </Button>
+                </div>
               )}
             </div>
           </div>
