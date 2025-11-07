@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,7 @@ interface HandwerkerProfile {
 export default function HandwerkerVerification() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [profiles, setProfiles] = useState<HandwerkerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<HandwerkerProfile | null>(null);
@@ -84,12 +85,12 @@ export default function HandwerkerVerification() {
           return;
         }
 
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .in('role', ['admin', 'super_admin'])
+      .maybeSingle();
 
         if (!roleData) {
           toast({
@@ -118,6 +119,20 @@ export default function HandwerkerVerification() {
       fetchProfiles();
     }
   }, [activeTab, isAdmin]);
+
+  // Handle highlight parameter from notifications
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (highlightId && profiles.length > 0 && isAdmin) {
+      const profileToHighlight = profiles.find(p => p.id === highlightId);
+      if (profileToHighlight) {
+        setActiveTab('pending');
+        setSelectedProfile(profileToHighlight);
+        // Clear the highlight parameter
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, profiles, isAdmin, setSearchParams]);
 
   const fetchProfiles = async () => {
     setLoading(true);
