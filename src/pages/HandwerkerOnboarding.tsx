@@ -425,6 +425,18 @@ const HandwerkerOnboarding = () => {
 
         if (authError) {
           console.error('Auth account creation error:', authError);
+          
+          // Handle user already exists error
+          if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+            toast({
+              title: 'E-Mail bereits registriert',
+              description: 'Ein Konto mit dieser E-Mail existiert bereits. Bitte melden Sie sich an.',
+              variant: 'destructive',
+            });
+            setTimeout(() => navigate('/auth'), 2000);
+            return;
+          }
+          
           throw new Error(`Konto konnte nicht erstellt werden: ${authError.message}`);
         }
 
