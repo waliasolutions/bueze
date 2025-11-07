@@ -96,11 +96,13 @@ const HandwerkerDashboard = () => {
   
   // Profile Tab
   const [profileEditing, setProfileEditing] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [profileData, setProfileData] = useState({
     bio: "",
     hourly_rate_min: "",
     hourly_rate_max: "",
     phone_number: "",
+    logo_url: "",
   });
 
   // Proposal Form
@@ -159,6 +161,7 @@ const HandwerkerDashboard = () => {
         phone_number: profile.phone_number || '',
         hourly_rate_min: profile.hourly_rate_min?.toString() || '',
         hourly_rate_max: profile.hourly_rate_max?.toString() || '',
+        logo_url: profile.logo_url || '',
       });
       
       // Only fetch leads if verified
@@ -192,6 +195,7 @@ const HandwerkerDashboard = () => {
         hourly_rate_min: data.hourly_rate_min?.toString() || "",
         hourly_rate_max: data.hourly_rate_max?.toString() || "",
         phone_number: data.phone_number || "",
+        logo_url: data.logo_url || "",
       });
 
       // Only fetch leads and proposals if approved
@@ -341,6 +345,7 @@ const HandwerkerDashboard = () => {
           hourly_rate_min: profileData.hourly_rate_min ? parseInt(profileData.hourly_rate_min) : null,
           hourly_rate_max: profileData.hourly_rate_max ? parseInt(profileData.hourly_rate_max) : null,
           phone_number: profileData.phone_number,
+          logo_url: profileData.logo_url,
           updated_at: new Date().toISOString(),
         })
         .eq('id', handwerkerProfile.id);
@@ -363,6 +368,78 @@ const HandwerkerDashboard = () => {
       });
     } finally {
       setProfileEditing(false);
+    }
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    if (!user) return;
+
+    try {
+      // Validate file size (max 5MB for logos)
+      const MAX_FILE_SIZE = 5 * 1024 * 1024;
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "Datei zu groß",
+          description: "Das Logo darf maximal 5MB groß sein.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Ungültiger Dateityp",
+          description: "Bitte laden Sie eine Bilddatei hoch (JPG, PNG, SVG, WebP).",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setLogoUploading(true);
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logos/${user.id}/logo-${Date.now()}.${fileExt}`;
+
+      // Delete old logo if exists
+      if (profileData.logo_url) {
+        const oldPath = profileData.logo_url.split('/handwerker-documents/')[1];
+        if (oldPath) {
+          await supabase.storage
+            .from('handwerker-documents')
+            .remove([oldPath]);
+        }
+      }
+
+      // Upload new logo
+      const { error: uploadError } = await supabase.storage
+        .from('handwerker-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('handwerker-documents')
+        .getPublicUrl(fileName);
+
+      if (data?.publicUrl) {
+        setProfileData(prev => ({ ...prev, logo_url: data.publicUrl }));
+        
+        toast({
+          title: "Logo hochgeladen",
+          description: "Speichern Sie Ihr Profil, um die Änderungen zu übernehmen.",
+        });
+      }
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      toast({
+        title: "Upload fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Logo konnte nicht hochgeladen werden.",
+        variant: "destructive",
+      });
+    } finally {
+      setLogoUploading(false);
     }
   };
 
@@ -750,6 +827,54 @@ const HandwerkerDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Logo Upload Section */}
+                  <div className="space-y-3">
+                    <Label htmlFor="logo-upload">Firmenlogo</Label>
+                    <div className="flex items-center gap-4">
+                      {profileData.logo_url && (
+                        <div className="h-24 w-24 rounded-lg border-2 bg-background flex items-center justify-center overflow-hidden">
+                          <img 
+                            src={profileData.logo_url}
+                            alt="Firmenlogo"
+                            className="h-full w-full object-contain"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <Input
+                          id="logo-upload"
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.svg,.webp"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleLogoUpload(file);
+                          }}
+                          className="hidden"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => document.getElementById('logo-upload')?.click()}
+                          disabled={logoUploading}
+                        >
+                          {logoUploading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Wird hochgeladen...
+                            </>
+                          ) : (
+                            <>
+                              {profileData.logo_url ? 'Logo ändern' : 'Logo hochladen'}
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          JPG, PNG, SVG oder WebP (max. 5MB)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Basic Info - Read Only */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

@@ -981,6 +981,7 @@ export type Database = {
           last_name: string | null
           liability_insurance_policy_number: string | null
           liability_insurance_provider: string | null
+          logo_url: string | null
           mwst_number: string | null
           personal_address: string | null
           personal_canton: string | null
@@ -1027,6 +1028,7 @@ export type Database = {
           last_name?: string | null
           liability_insurance_policy_number?: string | null
           liability_insurance_provider?: string | null
+          logo_url?: string | null
           mwst_number?: string | null
           personal_address?: string | null
           personal_canton?: string | null
@@ -1073,6 +1075,7 @@ export type Database = {
           last_name?: string | null
           liability_insurance_policy_number?: string | null
           liability_insurance_provider?: string | null
+          logo_url?: string | null
           mwst_number?: string | null
           personal_address?: string | null
           personal_canton?: string | null

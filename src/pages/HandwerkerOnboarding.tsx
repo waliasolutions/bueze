@@ -34,10 +34,12 @@ const HandwerkerOnboarding = () => {
   const [uploadedFiles, setUploadedFiles] = useState<{
     insuranceDocument?: { name: string; uploadedAt: string; path: string };
     tradeLicense?: { name: string; uploadedAt: string; path: string };
+    logo?: { name: string; uploadedAt: string; path: string };
   }>({});
   const [uploadProgress, setUploadProgress] = useState<{
     insuranceDocument?: string;
     tradeLicense?: string;
+    logo?: string;
   }>({});
   const [showUploadSection, setShowUploadSection] = useState(false);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
@@ -300,14 +302,26 @@ const HandwerkerOnboarding = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleFileUpload = async (file: File, type: 'insuranceDocument' | 'tradeLicense') => {
+  const handleFileUpload = async (file: File, type: 'insuranceDocument' | 'tradeLicense' | 'logo') => {
     try {
-      // Validate file size (max 10MB)
-      const MAX_FILE_SIZE = 10 * 1024 * 1024;
+      // Validate file size (max 10MB for documents, 5MB for logos)
+      const MAX_FILE_SIZE = type === 'logo' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
       if (file.size > MAX_FILE_SIZE) {
         toast({
           title: "Datei zu groß",
-          description: "Die Datei darf maximal 10MB groß sein.",
+          description: type === 'logo' 
+            ? "Das Logo darf maximal 5MB groß sein."
+            : "Die Datei darf maximal 10MB groß sein.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate logo file type
+      if (type === 'logo' && !file.type.startsWith('image/')) {
+        toast({
+          title: "Ungültiger Dateityp",
+          description: "Bitte laden Sie eine Bilddatei hoch (JPG, PNG, SVG, WebP).",
           variant: "destructive",
         });
         return;
@@ -321,7 +335,11 @@ const HandwerkerOnboarding = () => {
       }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `pending/${tempId}/${type}-${Date.now()}.${fileExt}`;
+      // Use logos folder for logo uploads
+      const folder = type === 'logo' ? 'logos' : 'pending';
+      const fileName = type === 'logo' 
+        ? `${folder}/pending/${type}-${Date.now()}.${fileExt}`
+        : `${folder}/${tempId}/${type}-${Date.now()}.${fileExt}`;
       
       setUploadProgress(prev => ({ ...prev, [type]: 'uploading' }));
 
@@ -400,10 +418,12 @@ const HandwerkerOnboarding = () => {
       const allUploads = {
         insuranceDocument: uploadedFiles.insuranceDocument,
         tradeLicense: uploadedFiles.tradeLicense,
+        logo: uploadedFiles.logo,
       };
 
       // Upload files to Supabase storage and collect URLs
       const verificationDocuments: string[] = [];
+      let logoUrl: string | null = null;
       const tempUserId = sessionStorage.getItem('handwerker-upload-temp-id') || crypto.randomUUID();
       
       for (const [type, fileMetadata] of Object.entries(allUploads)) {
@@ -414,7 +434,11 @@ const HandwerkerOnboarding = () => {
             .getPublicUrl(fileMetadata.path);
           
           if (data?.publicUrl) {
-            verificationDocuments.push(data.publicUrl);
+            if (type === 'logo') {
+              logoUrl = data.publicUrl;
+            } else {
+              verificationDocuments.push(data.publicUrl);
+            }
           }
         }
       }
@@ -459,6 +483,7 @@ const HandwerkerOnboarding = () => {
         verification_documents: verificationDocuments,
         verification_status: 'pending',
         is_verified: false,
+        logo_url: logoUrl,
       };
 
       console.log('Insert data prepared:', {
@@ -692,6 +717,10 @@ const HandwerkerOnboarding = () => {
                   id="mwstNumber"
                   value={formData.mwstNumber}
                   onChange={(e) => setFormData({ ...formData, mwstNumber: e.target.value })}
+                  onBlur={(e) => {
+                    const formatted = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                    setFormData({ ...formData, mwstNumber: formatted });
+                  }}
                   placeholder="CHE-123.456.789 MWST"
                   className="h-12 text-base font-mono"
                 />
@@ -700,6 +729,85 @@ const HandwerkerOnboarding = () => {
                     <AlertCircle className="h-4 w-4" />
                     {errors.mwstNumber}
                   </p>
+                )}
+              </div>
+
+              {/* Logo Upload */}
+              <div className="space-y-3">
+                <Label htmlFor="logo" className="text-base font-medium">Firmenlogo (optional)</Label>
+                <p className="text-sm text-muted-foreground">
+                  Laden Sie Ihr Firmenlogo hoch. Dies hilft Kunden, Sie zu erkennen.
+                </p>
+                
+                <Input
+                  id="logo"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.svg,.webp"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file, 'logo');
+                  }}
+                  className="hidden"
+                />
+                
+                {uploadedFiles.logo ? (
+                  <div className="border-2 border-dashed border-brand-300 bg-brand-50 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {uploadedFiles.logo.path && (
+                          <img 
+                            src={supabase.storage.from('handwerker-documents').getPublicUrl(uploadedFiles.logo.path).data.publicUrl}
+                            alt="Logo Preview"
+                            className="h-16 w-16 object-contain rounded border bg-white"
+                          />
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-success-600" />
+                            <p className="font-medium text-success-700">Logo hochgeladen</p>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{uploadedFiles.logo.name}</p>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setUploadedFiles(prev => {
+                            const updated = { ...prev };
+                            delete updated.logo;
+                            return updated;
+                          });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('logo')?.click()}
+                    className="w-full h-24 text-base border-2 border-dashed hover:border-brand-400 hover:bg-brand-50"
+                    disabled={uploadProgress.logo === 'uploading'}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      {uploadProgress.logo === 'uploading' ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+                          <span>Logo wird hochgeladen...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-6 w-6 text-brand-600" />
+                          <span>Logo hochladen (max. 5MB)</span>
+                          <span className="text-xs text-muted-foreground">JPG, PNG, SVG oder WebP</span>
+                        </>
+                      )}
+                    </div>
+                  </Button>
                 )}
               </div>
             </div>
