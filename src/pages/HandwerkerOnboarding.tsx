@@ -22,12 +22,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
 import { cn } from "@/lib/utils";
+import { PostalCodeInput } from "@/components/PostalCodeInput";
 
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAlreadyAuthenticated, setIsAlreadyAuthenticated] = useState(false);
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [serviceAreaInput, setServiceAreaInput] = useState('');
@@ -96,6 +98,45 @@ const HandwerkerOnboarding = () => {
 
   const totalSteps = 5;
   const progress = ((currentStep - 1) / totalSteps) * 100;
+
+  // Check if user is already logged in and handle accordingly
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        // User is logged in
+        const { data: existingProfile } = await supabase
+          .from('handwerker_profiles')
+          .select('id, verification_status')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (existingProfile) {
+          // Already has profile - redirect to dashboard
+          toast({
+            title: "Profil bereits vorhanden",
+            description: "Sie haben bereits ein Handwerker-Profil.",
+          });
+          navigate('/handwerker-dashboard');
+          return;
+        }
+        
+        // User is logged in but has no profile - pre-fill email from their account
+        setFormData(prev => ({
+          ...prev,
+          email: session.user.email || '',
+          firstName: session.user.user_metadata?.first_name || '',
+          lastName: session.user.user_metadata?.last_name || '',
+        }));
+        
+        // Set flag that user is already authenticated
+        setIsAlreadyAuthenticated(true);
+      }
+    };
+    
+    checkAuthStatus();
+  }, [navigate, toast]);
 
   // Helper function to check if form has meaningful progress
   const hasSignificantProgress = () => {
@@ -349,35 +390,53 @@ const HandwerkerOnboarding = () => {
     try {
       console.log('Form data:', { categories: formData.categories, serviceAreas: formData.serviceAreas });
       
-      // Generate a secure temporary password
-      const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + '!';
-      console.log('Generated temporary password');
-
-      // Create auth account immediately
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: tempPassword,
-        options: {
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            full_name: `${formData.firstName} ${formData.lastName}`,
-            role: 'handwerker',
-          },
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+      let userId: string;
+      let userEmail: string;
+      let tempPassword: string | null = null;
+      
+      if (isAlreadyAuthenticated) {
+        // User is already logged in - use their existing auth account
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          throw new Error('Session expired. Please log in again.');
         }
-      });
+        userId = session.user.id;
+        userEmail = session.user.email!;
+        
+        console.log('Using existing auth account:', userId);
+      } else {
+        // Create new auth account
+        tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + '!';
+        console.log('Generated temporary password');
 
-      if (authError) {
-        console.error('Auth account creation error:', authError);
-        throw new Error(`Konto konnte nicht erstellt werden: ${authError.message}`);
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: tempPassword,
+          options: {
+            data: {
+              first_name: formData.firstName,
+              last_name: formData.lastName,
+              full_name: `${formData.firstName} ${formData.lastName}`,
+              role: 'handwerker',
+            },
+            emailRedirectTo: `${window.location.origin}/handwerker-dashboard`,
+          }
+        });
+
+        if (authError) {
+          console.error('Auth account creation error:', authError);
+          throw new Error(`Konto konnte nicht erstellt werden: ${authError.message}`);
+        }
+
+        if (!authData.user) {
+          throw new Error('Konto wurde erstellt, aber keine Benutzer-ID erhalten');
+        }
+
+        userId = authData.user.id;
+        userEmail = formData.email;
+        
+        console.log('Auth account created successfully:', userId);
       }
-
-      if (!authData.user) {
-        throw new Error('Konto wurde erstellt, aber keine Benutzer-ID erhalten');
-      }
-
-      console.log('Auth account created successfully:', authData.user.id);
 
       // Use personal address for business if same address is selected
       let businessAddress = formData.businessAddress;
@@ -402,7 +461,6 @@ const HandwerkerOnboarding = () => {
       // Upload files to Supabase storage and collect URLs
       const verificationDocuments: string[] = [];
       let logoUrl: string | null = null;
-      const tempUserId = authData.user.id;
       
       for (const [type, fileMetadata] of Object.entries(allUploads)) {
         if (fileMetadata && fileMetadata.path) {
@@ -423,7 +481,7 @@ const HandwerkerOnboarding = () => {
 
       // Prepare insert data with safe defaults and null handling
       const insertData = {
-        user_id: authData.user.id, // Link to newly created auth user
+        user_id: userId, // Link to auth user (existing or new)
         // Personal Information - trim and convert empty to null
         first_name: formData.firstName?.trim() || null,
         last_name: formData.lastName?.trim() || null,
@@ -520,24 +578,26 @@ const HandwerkerOnboarding = () => {
       console.log('=== PROFILE CREATED SUCCESSFULLY ===');
       console.log('Profile ID:', profileData.id);
 
-      // Send welcome email with credentials
-      console.log('Sending credentials email...');
-      try {
-        const { error: credentialsError } = await supabase.functions.invoke('send-handwerker-credentials', {
-          body: { 
-            email: formData.email,
-            password: tempPassword,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            companyName: formData.companyName
-          }
-        });
+      // Send welcome email with credentials (only for new users)
+      if (tempPassword) {
+        console.log('Sending credentials email...');
+        try {
+          const { error: credentialsError } = await supabase.functions.invoke('send-handwerker-credentials', {
+            body: { 
+              email: userEmail,
+              password: tempPassword,
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              companyName: formData.companyName
+            }
+          });
 
-        if (credentialsError) {
-          console.error('Credentials email error (non-critical):', credentialsError);
+          if (credentialsError) {
+            console.error('Credentials email error (non-critical):', credentialsError);
+          }
+        } catch (credErr) {
+          console.error('Credentials email error:', credErr);
         }
-      } catch (credErr) {
-        console.error('Credentials email error:', credErr);
       }
 
       // Trigger admin notification email
@@ -558,18 +618,29 @@ const HandwerkerOnboarding = () => {
       localStorage.removeItem('handwerker-onboarding-draft');
       sessionStorage.removeItem('handwerker-upload-temp-id');
 
-      // Sign out the newly created user
-      await supabase.auth.signOut();
+      // If user was already logged in, just navigate without signing out
+      if (isAlreadyAuthenticated) {
+        toast({
+          title: "Profil erstellt!",
+          description: "Ihr Handwerker-Profil wurde erfolgreich erstellt.",
+          duration: 5000,
+        });
+        console.log('=== PROFILE CREATION COMPLETE ===');
+        navigate("/handwerker-dashboard");
+      } else {
+        // Sign out the newly created user
+        await supabase.auth.signOut();
 
-      toast({
-        title: "Registrierung erfolgreich!",
-        description: "Ihre Zugangsdaten wurden per E-Mail versandt. Sie können sich jetzt anmelden und Ihr Profil vervollständigen.",
-        duration: 8000,
-      });
+        toast({
+          title: "Registrierung erfolgreich!",
+          description: "Ihre Zugangsdaten wurden per E-Mail versandt.",
+          duration: 8000,
+        });
 
-      console.log('=== REGISTRATION COMPLETE ===');
-      console.log('Navigating to auth page...');
-      navigate("/auth?registered=true");
+        console.log('=== REGISTRATION COMPLETE ===');
+        console.log('Navigating to auth page...');
+        navigate("/auth?registered=true");
+      }
     } catch (error) {
       console.error('=== REGISTRATION ERROR ===');
       console.error('Error type:', error?.constructor?.name);
@@ -890,7 +961,13 @@ const HandwerkerOnboarding = () => {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
                   placeholder="max.muster@beispiel.ch"
                   className="h-12 text-base"
+                  disabled={isAlreadyAuthenticated}
                 />
+                {isAlreadyAuthenticated && (
+                  <p className="text-xs text-muted-foreground">
+                    E-Mail kann nicht geändert werden (Sie sind bereits angemeldet)
+                  </p>
+                )}
                 {errors.email && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
@@ -951,12 +1028,15 @@ const HandwerkerOnboarding = () => {
                   <Label htmlFor="personalZip" className="text-base font-medium">
                     PLZ {formData.companyLegalForm === "einzelfirma" && "*"}
                   </Label>
-                  <Input
-                    id="personalZip"
+                  <PostalCodeInput
                     value={formData.personalZip}
-                    onChange={(e) => setFormData({ ...formData, personalZip: e.target.value })}
+                    onValueChange={(plz) => setFormData({ ...formData, personalZip: plz })}
+                    onAddressSelect={(address) => setFormData({ 
+                      ...formData, 
+                      personalCity: address.city,
+                      personalCanton: address.canton 
+                    })}
                     placeholder="8000"
-                    maxLength={4}
                     className="h-12 text-base"
                   />
                   {errors.personalZip && (
@@ -1092,12 +1172,15 @@ const HandwerkerOnboarding = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <Label htmlFor="businessZip" className="text-base font-medium">PLZ *</Label>
-                    <Input
-                      id="businessZip"
+                    <PostalCodeInput
                       value={formData.businessZip}
-                      onChange={(e) => setFormData({ ...formData, businessZip: e.target.value })}
+                      onValueChange={(plz) => setFormData({ ...formData, businessZip: plz })}
+                      onAddressSelect={(address) => setFormData({ 
+                        ...formData, 
+                        businessCity: address.city,
+                        businessCanton: address.canton 
+                      })}
                       placeholder="8000"
-                      maxLength={4}
                       className="h-12 text-base"
                     />
                     {errors.businessZip && (
