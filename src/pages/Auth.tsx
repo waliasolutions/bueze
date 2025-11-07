@@ -48,13 +48,26 @@ export default function Auth() {
       setHideRoleSelector(true);
     }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         // Check role from user metadata (single source of truth)
         const userRole = session.user.user_metadata?.role;
         
         if (userRole === 'handwerker') {
-          navigate('/handwerker-onboarding');
+          // Check if handwerker profile already exists
+          const { data: existingProfile } = await supabase
+            .from('handwerker_profiles')
+            .select('id, verification_status')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          
+          if (existingProfile) {
+            // Profile exists - go to dashboard
+            navigate('/handwerker-dashboard');
+          } else {
+            // No profile - need onboarding
+            navigate('/handwerker-onboarding');
+          }
         } else {
           navigate('/dashboard');
         }

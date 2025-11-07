@@ -589,11 +589,14 @@ export const adminRegistrationNotificationTemplate = (data: AdminRegistrationDat
       </table>
     </div>
     
-      <p>
-        <a href="https://bueeze.ch/admin/handwerker-approvals" class="button">
-          Zur Freigabe
-        </a>
+    <div style="margin-top: 30px; text-align: center;">
+      <a href="https://bueeze.ch/admin/approvals" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        🔍 Zur Freigabe-Seite
+      </a>
+      <p style="margin-top: 10px; font-size: 12px; color: #6b7280;">
+        Oder direkt einloggen: <a href="https://bueeze.ch/auth" style="color: #667eea;">bueeze.ch/auth</a>
       </p>
+    </div>
     
     <p style="color: #666; font-size: 14px; margin-top: 30px;">
       Diese E-Mail wurde automatisch vom Büeze.ch System generiert.

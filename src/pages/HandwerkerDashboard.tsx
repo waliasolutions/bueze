@@ -126,7 +126,50 @@ const HandwerkerDashboard = () => {
       }
 
       setUser(currentUser);
-      await fetchHandwerkerProfile(currentUser.id);
+      
+      // Fetch handwerker profile
+      const { data: profile, error } = await supabase
+        .from('handwerker_profiles')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast({
+          title: 'Fehler',
+          description: 'Profil konnte nicht geladen werden.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+      
+      if (!profile) {
+        // No profile exists - redirect to onboarding
+        navigate('/handwerker-onboarding');
+        return;
+      }
+      
+      setHandwerkerProfile(profile);
+      
+      // Set profile data for editing
+      setProfileData({
+        bio: profile.bio || '',
+        phone_number: profile.phone_number || '',
+        hourly_rate_min: profile.hourly_rate_min?.toString() || '',
+        hourly_rate_max: profile.hourly_rate_max?.toString() || '',
+      });
+      
+      // Only fetch leads if verified
+      if (profile.verification_status === 'approved') {
+        await Promise.all([
+          fetchLeads(profile.categories, profile.service_areas),
+          fetchProposals(currentUser.id)
+        ]);
+      }
+      
+      setLoading(false);
     } catch (error) {
       console.error('Auth error:', error);
       navigate('/auth');
@@ -151,11 +194,13 @@ const HandwerkerDashboard = () => {
         phone_number: data.phone_number || "",
       });
 
-      // Fetch leads and proposals
-      await Promise.all([
-        fetchLeads(data.categories, data.service_areas),
-        fetchProposals(userId)
-      ]);
+      // Only fetch leads and proposals if approved
+      if (data.verification_status === 'approved') {
+        await Promise.all([
+          fetchLeads(data.categories, data.service_areas),
+          fetchProposals(userId)
+        ]);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast({

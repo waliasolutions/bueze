@@ -70,11 +70,21 @@ Ihr Büeze.ch Team`;
           <h2 style="margin-top: 0; color: #667eea;">Ihre Zugangsdaten:</h2>
           <p style="margin: 10px 0;"><strong>E-Mail:</strong> ${data.email}</p>
           <p style="margin: 10px 0;"><strong>Passwort:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 14px;">${data.password}</code></p>
+          
+          <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-top: 20px;">
+            <p style="margin: 0; font-size: 14px; color: #4b5563;">
+              <strong>📱 Nach dem ersten Login:</strong><br>
+              • Sie gelangen direkt zu Ihrem Dashboard<br>
+              • Dort können Sie Ihr Profil bearbeiten (Bio, Telefon, Stundensätze)<br>
+              • Aktive Aufträge durchsuchen und Angebote senden<br>
+              • Mit Kunden direkt kommunizieren
+            </p>
+          </div>
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
           <a href="https://bueeze.ch/auth" style="display: inline-block; background: #667eea; color: white; padding: 14px 32px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-            Jetzt einloggen
+            🚀 Jetzt einloggen und loslegen
           </a>
         </div>
         
@@ -89,6 +99,7 @@ Ihr Büeze.ch Team`;
           <ul style="list-style: none; padding: 0;">
             <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">✅ Alle aktiven Aufträge durchsuchen</li>
             <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">✅ Angebote an interessierte Kunden senden</li>
+            <li style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">✅ Ihr Profil bearbeiten und optimieren</li>
             <li style="padding: 8px 0;">✅ Direkt mit Auftraggebern kommunizieren</li>
           </ul>
         </div>
