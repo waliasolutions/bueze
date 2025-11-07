@@ -18,11 +18,15 @@ export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHandwerkerExpanded, setIsHandwerkerExpanded] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isSuperAdmin = userRole === 'super_admin';
 
   useEffect(() => {
     const checkUser = async () => {
@@ -30,16 +34,16 @@ export const Header = () => {
       setUser(user);
       
       if (user) {
-        // Check if user is admin
+        // Check user role
         const { data: roleData } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', user.id)
           .maybeSingle();
         
-        setIsAdmin(roleData?.role === 'admin');
+        setUserRole(roleData?.role || null);
       } else {
-        setIsAdmin(false);
+        setUserRole(null);
       }
     };
     
@@ -48,9 +52,9 @@ export const Header = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        checkUser(); // Re-check admin status
+        checkUser(); // Re-check user role
       } else {
-        setIsAdmin(false);
+        setUserRole(null);
       }
     });
 
@@ -171,17 +175,64 @@ export const Header = () => {
             {user ? (
               <div className="flex items-center gap-3">
                 {isAdmin && (
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => {
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                      navigate('/admin');
-                    }} 
-                    className="gap-2 text-brand-600 hover:text-brand-700"
-                  >
-                    <Shield className="h-4 w-4" />
-                    Admin
-                  </Button>
+                  <NavigationMenu>
+                    <NavigationMenuList>
+                      <NavigationMenuItem>
+                        <NavigationMenuTrigger className="gap-2 text-brand-600 hover:text-brand-700 bg-transparent hover:bg-transparent data-[state=open]:bg-transparent">
+                          <Shield className="h-4 w-4" />
+                          Admin
+                        </NavigationMenuTrigger>
+                        <NavigationMenuContent>
+                          <ul className="grid w-[240px] gap-1 p-2 bg-white">
+                            <li>
+                              <NavigationMenuLink asChild>
+                                <button
+                                  onClick={() => {
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    navigate('/admin/dashboard');
+                                  }}
+                                  className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                >
+                                  <div className="text-sm font-medium leading-none">Dashboard</div>
+                                  <p className="text-xs text-muted-foreground mt-1">Admin-Übersicht</p>
+                                </button>
+                              </NavigationMenuLink>
+                            </li>
+                            <li>
+                              <NavigationMenuLink asChild>
+                                <button
+                                  onClick={() => {
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    navigate('/admin/approvals');
+                                  }}
+                                  className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                >
+                                  <div className="text-sm font-medium leading-none">Handwerker</div>
+                                  <p className="text-xs text-muted-foreground mt-1">Freigaben verwalten</p>
+                                </button>
+                              </NavigationMenuLink>
+                            </li>
+                            {isSuperAdmin && (
+                              <li>
+                                <NavigationMenuLink asChild>
+                                  <button
+                                    onClick={() => {
+                                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                                      navigate('/admin/users');
+                                    }}
+                                    className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                  >
+                                    <div className="text-sm font-medium leading-none">Benutzer</div>
+                                    <p className="text-xs text-muted-foreground mt-1">Rollen verwalten</p>
+                                  </button>
+                                </NavigationMenuLink>
+                              </li>
+                            )}
+                          </ul>
+                        </NavigationMenuContent>
+                      </NavigationMenuItem>
+                    </NavigationMenuList>
+                  </NavigationMenu>
                 )}
                 <Button variant="outline" onClick={() => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -300,18 +351,61 @@ export const Header = () => {
               {user ? (
                 <div className="space-y-3">
                   {isAdmin && (
-                    <Button 
-                      variant="ghost" 
-                      className="justify-start gap-2 w-full text-brand-600" 
-                      onClick={() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        navigate('/admin');
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <Shield className="h-4 w-4" />
-                      Admin Dashboard
-                    </Button>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+                        className="w-full flex items-center justify-between py-2 text-brand-600 hover:text-brand-700 transition-colors font-medium"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Shield className="h-4 w-4" />
+                          Admin
+                        </span>
+                        <ChevronDown 
+                          className={`h-4 w-4 transition-transform ${
+                            isAdminMenuOpen ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+                      {isAdminMenuOpen && (
+                        <div className="pl-4 space-y-1 border-l-2 border-brand-200">
+                          <Button
+                            variant="ghost"
+                            className="justify-start w-full"
+                            onClick={() => {
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                              navigate('/admin/dashboard');
+                              setIsMenuOpen(false);
+                            }}
+                          >
+                            Dashboard
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="justify-start w-full"
+                            onClick={() => {
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                              navigate('/admin/approvals');
+                              setIsMenuOpen(false);
+                            }}
+                          >
+                            Handwerker
+                          </Button>
+                          {isSuperAdmin && (
+                            <Button
+                              variant="ghost"
+                              className="justify-start w-full"
+                              onClick={() => {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                navigate('/admin/users');
+                                setIsMenuOpen(false);
+                              }}
+                            >
+                              Benutzer
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
                   <UserDropdown />
                 </div>
