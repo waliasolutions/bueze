@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { initErrorTracking, generateCorrelationId } from "@/lib/errorTracking";
+import { PageTransition, TopLoadingBar } from "@/components/PageTransition";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import HandwerkerOnboarding from "./pages/HandwerkerOnboarding";
@@ -72,9 +73,11 @@ const App = () => {
       <TooltipProvider>
         <BrowserRouter>
           <ScrollToTop />
+          <TopLoadingBar />
           <Toaster />
           <Sonner />
-          <Routes>
+          <PageTransition>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/handwerker-onboarding" element={<HandwerkerOnboarding />} />
@@ -107,6 +110,7 @@ const App = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </PageTransition>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
