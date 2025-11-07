@@ -361,14 +361,28 @@ const HandwerkerApprovals = () => {
         const { data: { user } } = await supabase.auth.getUser();
         const adminId = user?.id || null;
 
-        const { error } = await supabase.functions.invoke('create-handwerker-account', {
-          body: { 
-            profileId: handwerker.id,
-            adminId: adminId,
-          }
-        });
+        // Update profile status
+        const { error: updateError } = await supabase
+          .from('handwerker_profiles')
+          .update({
+            verification_status: 'approved',
+            is_verified: true,
+            verified_at: new Date().toISOString(),
+            verified_by: adminId,
+          })
+          .eq('id', handwerker.id);
 
-        if (!error) {
+        if (!updateError) {
+          // Send approval email
+          await supabase.functions.invoke('send-approval-email', {
+            body: { 
+              userId: handwerker.user_id,
+              userName: `${handwerker.first_name} ${handwerker.last_name}`,
+              userEmail: handwerker.email,
+              type: 'approved'
+            }
+          });
+
           await logApprovalAction(handwerker.id, 'approved');
           successCount++;
         }
@@ -394,22 +408,39 @@ const HandwerkerApprovals = () => {
       const { data: { user } } = await supabase.auth.getUser();
       const adminId = user?.id || null;
 
-      // Call edge function to create account and send credentials
-      const { data, error } = await supabase.functions.invoke('create-handwerker-account', {
+      // Update profile status to approved
+      const { error: updateError } = await supabase
+        .from('handwerker_profiles')
+        .update({
+          verification_status: 'approved',
+          is_verified: true,
+          verified_at: new Date().toISOString(),
+          verified_by: adminId,
+        })
+        .eq('id', handwerker.id);
+
+      if (updateError) throw updateError;
+
+      // Send approval notification email
+      const { error: emailError } = await supabase.functions.invoke('send-approval-email', {
         body: { 
-          profileId: handwerker.id,
-          adminId: adminId,
+          userId: handwerker.user_id,
+          userName: `${handwerker.first_name} ${handwerker.last_name}`,
+          userEmail: handwerker.email,
+          type: 'approved'
         }
       });
 
-      if (error) throw error;
+      if (emailError) {
+        console.error('Approval email error (non-critical):', emailError);
+      }
 
       // Log approval action
       await logApprovalAction(handwerker.id, 'approved');
 
       toast({
         title: 'Handwerker freigeschaltet',
-        description: `${handwerker.first_name} ${handwerker.last_name} wurde erfolgreich freigeschaltet und erhält seine Zugangsdaten per E-Mail.`,
+        description: `${handwerker.first_name} ${handwerker.last_name} wurde erfolgreich freigeschaltet und per E-Mail informiert.`,
         duration: 6000,
       });
 

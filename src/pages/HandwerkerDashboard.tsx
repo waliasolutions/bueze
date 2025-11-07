@@ -501,39 +501,63 @@ const HandwerkerDashboard = () => {
     );
   }
 
-  // Check verification status
+  // Check verification status - show pending state
   if (handwerkerProfile.verification_status !== 'approved') {
     return (
       <div className="min-h-screen bg-background">
         <Header />
-        <main className="container mx-auto px-4 py-24">
-          <div className="max-w-2xl mx-auto">
-            <Card className="border-amber-200 bg-amber-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-amber-900">
-                  <Clock className="h-5 w-5" />
-                  Profil wird überprüft
-                </CardTitle>
-                <CardDescription className="text-amber-800">
-                  Ihr Handwerkerprofil wird derzeit von unserem Team überprüft. 
-                  Dies dauert in der Regel 1-2 Werktage. Sie erhalten eine E-Mail mit Ihren Zugangsdaten, 
-                  sobald Ihr Profil freigeschaltet wurde.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-amber-700">
-                  Status: <strong>{handwerkerProfile.verification_status}</strong>
+        <main className="container mx-auto px-4 py-8 pt-24">
+          <Alert className="max-w-2xl mx-auto mb-6 border-brand-200 bg-brand-50">
+            <Clock className="h-5 w-5 text-brand-600" />
+            <AlertTitle className="text-brand-900">Profil in Prüfung</AlertTitle>
+            <AlertDescription className="text-brand-700">
+              Ihr Profil wird derzeit geprüft. Sie können bereits Ihr Profil vervollständigen, aber Aufträge durchsuchen ist erst nach Freigabe möglich.
+            </AlertDescription>
+          </Alert>
+          
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Willkommen bei Büeze.ch!
+              </CardTitle>
+              <CardDescription>
+                Vervollständigen Sie Ihr Profil während der Prüfung
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-4">
+                <p className="text-muted-foreground">
+                  Ihr Handwerker-Konto wurde erstellt! Während wir Ihr Profil prüfen, können Sie bereits:
                 </p>
+                <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
+                  <li>Ihr Profil vervollständigen (Bio, Preise, Servicegebiete)</li>
+                  <li>Portfolio-Bilder hochladen</li>
+                  <li>Ihre Kontakt- und Bankdaten aktualisieren</li>
+                </ul>
+                <p className="text-muted-foreground font-medium">
+                  Nach der Freigabe durch unser Team können Sie dann Aufträge durchsuchen und Offerten abgeben.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
                 <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/handwerker-profile-edit')} 
+                  className="flex-1"
                 >
-                  Zurück zur Startseite
+                  <User className="h-4 w-4 mr-2" />
+                  Profil vervollständigen
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
+                <Button 
+                  onClick={() => navigate('/')} 
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Zur Startseite
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </main>
         <Footer />
       </div>

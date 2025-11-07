@@ -343,24 +343,40 @@ const HandwerkerOnboarding = () => {
 
     setIsLoading(true);
     
-    // === DIAGNOSTIC LOGGING START ===
-    console.log('=== HANDWERKER REGISTRATION DEBUG ===');
+    console.log('=== HANDWERKER REGISTRATION START ===');
     console.log('Current timestamp:', new Date().toISOString());
     
     try {
-      // Check authentication state
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('Auth session:', session ? 'EXISTS' : 'NULL');
-      console.log('Session error:', sessionError);
-      console.log('User ID:', session?.user?.id || 'NULL (guest registration)');
+      console.log('Form data:', { categories: formData.categories, serviceAreas: formData.serviceAreas });
       
-      // Log form data structure
-      console.log('Form data categories:', formData.categories);
-      console.log('Form data service areas:', formData.serviceAreas);
-      console.log('Selected major categories:', selectedMajorCategories);
-      
-      // Guest registration - no authentication required
-      // User account will be created by admin upon approval
+      // Generate a secure temporary password
+      const tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + '!';
+      console.log('Generated temporary password');
+
+      // Create auth account immediately
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: tempPassword,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            full_name: `${formData.firstName} ${formData.lastName}`,
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        }
+      });
+
+      if (authError) {
+        console.error('Auth account creation error:', authError);
+        throw new Error(`Konto konnte nicht erstellt werden: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('Konto wurde erstellt, aber keine Benutzer-ID erhalten');
+      }
+
+      console.log('Auth account created successfully:', authData.user.id);
 
       // Use personal address for business if same address is selected
       let businessAddress = formData.businessAddress;
@@ -385,7 +401,7 @@ const HandwerkerOnboarding = () => {
       // Upload files to Supabase storage and collect URLs
       const verificationDocuments: string[] = [];
       let logoUrl: string | null = null;
-      const tempUserId = sessionStorage.getItem('handwerker-upload-temp-id') || crypto.randomUUID();
+      const tempUserId = authData.user.id;
       
       for (const [type, fileMetadata] of Object.entries(allUploads)) {
         if (fileMetadata && fileMetadata.path) {
@@ -406,7 +422,7 @@ const HandwerkerOnboarding = () => {
 
       // Prepare insert data with safe defaults and null handling
       const insertData = {
-        user_id: null, // Will be set by admin upon approval
+        user_id: authData.user.id, // Link to newly created auth user
         // Personal Information - trim and convert empty to null
         first_name: formData.firstName?.trim() || null,
         last_name: formData.lastName?.trim() || null,
@@ -461,7 +477,7 @@ const HandwerkerOnboarding = () => {
         verification_status: insertData.verification_status
       });
 
-      // Insert handwerker_profile for guest registration (no user_id)
+      // Insert handwerker_profile with user_id
       console.log('Attempting database insert...');
       const { data: profileData, error } = await supabase
         .from("handwerker_profiles")
@@ -476,8 +492,6 @@ const HandwerkerOnboarding = () => {
         console.error('=== DATABASE INSERT ERROR ===');
         console.error('Error code:', error.code);
         console.error('Error message:', error.message);
-        console.error('Error details:', error.details);
-        console.error('Error hint:', error.hint);
         throw error;
       }
       if (!profileData) {
@@ -487,18 +501,33 @@ const HandwerkerOnboarding = () => {
 
       console.log('=== PROFILE CREATED SUCCESSFULLY ===');
       console.log('Profile ID:', profileData.id);
-      console.log('Sending admin notification...');
+
+      // Send welcome email with credentials
+      console.log('Sending credentials email...');
+      try {
+        const { error: credentialsError } = await supabase.functions.invoke('send-handwerker-credentials', {
+          body: { 
+            email: formData.email,
+            password: tempPassword,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            companyName: formData.companyName
+          }
+        });
+
+        if (credentialsError) {
+          console.error('Credentials email error (non-critical):', credentialsError);
+        }
+      } catch (credErr) {
+        console.error('Credentials email error:', credErr);
+      }
 
       // Trigger admin notification email
+      console.log('Sending admin notification...');
       try {
-        const { error: notifyError } = await supabase.functions.invoke(
-          'send-admin-registration-notification',
-          {
-            body: {
-              profileId: profileData.id,
-            },
-          }
-        );
+        const { error: notifyError } = await supabase.functions.invoke('send-admin-registration-notification', {
+          body: { profileId: profileData.id }
+        });
 
         if (notifyError) {
           console.error('Failed to send admin notification:', notifyError);
@@ -507,19 +536,22 @@ const HandwerkerOnboarding = () => {
         console.error('Admin notification error:', notifyErr);
       }
 
-      toast({
-        title: "Registrierung erfolgreich",
-        description: "Vielen Dank! Wir überprüfen Ihre Angaben und senden Ihnen innerhalb von 1-2 Werktagen Ihre Zugangsdaten per E-Mail.",
-        duration: 10000,
-      });
-
       // Clear saved draft
       localStorage.removeItem('handwerker-onboarding-draft');
       sessionStorage.removeItem('handwerker-upload-temp-id');
 
+      // Sign out the newly created user
+      await supabase.auth.signOut();
+
+      toast({
+        title: "Registrierung erfolgreich!",
+        description: "Ihre Zugangsdaten wurden per E-Mail versandt. Sie können sich jetzt anmelden und Ihr Profil vervollständigen.",
+        duration: 8000,
+      });
+
       console.log('=== REGISTRATION COMPLETE ===');
-      console.log('Navigating to homepage...');
-      navigate("/");
+      console.log('Navigating to auth page...');
+      navigate("/auth?registered=true");
     } catch (error) {
       console.error('=== REGISTRATION ERROR ===');
       console.error('Error type:', error?.constructor?.name);

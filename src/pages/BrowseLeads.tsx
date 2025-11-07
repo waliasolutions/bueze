@@ -127,6 +127,29 @@ const BrowseLeads = () => {
 
   const checkUserSubscription = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
+      // Check if user has an approved handwerker profile
+      const { data: profile } = await supabase
+        .from('handwerker_profiles')
+        .select('is_verified, verification_status')
+        .eq('user_id', user.id)
+        .single();
+
+      // If not verified, show message and redirect
+      if (!profile || !profile.is_verified || profile.verification_status !== 'approved') {
+        toast({
+          title: 'Profil nicht freigeschaltet',
+          description: 'Ihr Profil muss vom Admin-Team freigeschaltet werden, bevor Sie Aufträge durchsuchen können.',
+          variant: 'destructive',
+          duration: 6000,
+        });
+        navigate('/dashboard');
+        return;
+      }
+
       // TODO: Re-enable after types regenerate - DEMO MODE: Mock subscription access for pitch
       // setSubscriptionAccess({ 
       //   canViewLead: true, 
