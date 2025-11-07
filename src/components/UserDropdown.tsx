@@ -196,7 +196,7 @@ export const UserDropdown = () => {
         </Button>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent align="end" className="w-64 bg-surface border-line-200">
+      <DropdownMenuContent align="end" className="w-64 bg-surface border-line-200 shadow-xl z-[100]">
         <DropdownMenuLabel className="pb-2">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium text-ink-900">
@@ -213,24 +213,27 @@ export const UserDropdown = () => {
         
         <DropdownMenuSeparator className="bg-line-200" />
         
-        <DropdownMenuItem onClick={() => handleNavigateWithScroll('/dashboard')} className="cursor-pointer">
-          <LayoutDashboard className="mr-2 h-4 w-4" />
-          <span>Dashboard</span>
-        </DropdownMenuItem>
-        
         {isHandwerker ? (
           <>
+            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/handwerker-dashboard')} className="cursor-pointer">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Handwerker Dashboard</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleNavigateWithScroll('/search')} className="cursor-pointer">
               <Search className="mr-2 h-4 w-4" />
               <span>Leads durchsuchen</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/dashboard')} className="cursor-pointer">
-              <FileText className="mr-2 h-4 w-4" />
-              <span>Gekaufte Aufträge</span>
+            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/conversations')} className="cursor-pointer">
+              <MessageSquare className="mr-2 h-4 w-4" />
+              <span>Nachrichten</span>
             </DropdownMenuItem>
           </>
         ) : (
           <>
+            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/dashboard')} className="cursor-pointer">
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleNavigateWithScroll('/dashboard')} className="cursor-pointer">
               <FileText className="mr-2 h-4 w-4" />
               <span>Meine Aufträge</span>
@@ -239,13 +242,12 @@ export const UserDropdown = () => {
               <Plus className="mr-2 h-4 w-4" />
               <span>Auftrag erstellen</span>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/conversations')} className="cursor-pointer">
+              <MessageSquare className="mr-2 h-4 w-4" />
+              <span>Nachrichten</span>
+            </DropdownMenuItem>
           </>
         )}
-        
-        <DropdownMenuItem onClick={() => handleNavigateWithScroll('/conversations')} className="cursor-pointer">
-          <MessageSquare className="mr-2 h-4 w-4" />
-          <span>Nachrichten</span>
-        </DropdownMenuItem>
         
         <DropdownMenuSeparator className="bg-line-200" />
 
