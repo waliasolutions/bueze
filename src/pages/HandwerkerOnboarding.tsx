@@ -203,6 +203,10 @@ const HandwerkerOnboarding = () => {
       // Company Information validation
       if (!formData.companyName.trim()) {
         newErrors.companyName = "Firmenname ist erforderlich";
+      } else if (formData.companyName.trim().length < 2) {
+        newErrors.companyName = "Firmenname muss mindestens 2 Zeichen lang sein";
+      } else if (/^(test|asdf|dummy|example|aaa|zzz)/i.test(formData.companyName.trim())) {
+        newErrors.companyName = "Bitte geben Sie einen gültigen Firmennamen ein";
       }
       if (!formData.companyLegalForm) {
         newErrors.companyLegalForm = "Rechtsform ist erforderlich";
@@ -219,14 +223,24 @@ const HandwerkerOnboarding = () => {
       // Name, Email, Phone: ALWAYS required for ALL legal forms
       if (!formData.firstName.trim()) {
         newErrors.firstName = "Vorname ist erforderlich";
+      } else if (formData.firstName.trim().length < 2) {
+        newErrors.firstName = "Vorname muss mindestens 2 Zeichen lang sein";
+      } else if (/^(test|asdf|dummy|example|aaa|zzz)/i.test(formData.firstName.trim())) {
+        newErrors.firstName = "Bitte geben Sie einen gültigen Vornamen ein";
       }
       if (!formData.lastName.trim()) {
         newErrors.lastName = "Nachname ist erforderlich";
+      } else if (formData.lastName.trim().length < 2) {
+        newErrors.lastName = "Nachname muss mindestens 2 Zeichen lang sein";
+      } else if (/^(test|asdf|dummy|example|aaa|zzz)/i.test(formData.lastName.trim())) {
+        newErrors.lastName = "Bitte geben Sie einen gültigen Nachnamen ein";
       }
       if (!formData.email.trim()) {
         newErrors.email = "E-Mail-Adresse ist erforderlich";
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
         newErrors.email = "Ungültige E-Mail-Adresse";
+      } else if (/^(test@test|example@example|asdf@|dummy@)/i.test(formData.email.trim())) {
+        newErrors.email = "Bitte geben Sie eine gültige E-Mail-Adresse ein";
       }
       if (!formData.phoneNumber.trim()) {
         newErrors.phoneNumber = "Telefonnummer ist erforderlich";

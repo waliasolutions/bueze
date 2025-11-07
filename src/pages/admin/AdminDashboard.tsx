@@ -17,9 +17,12 @@ import {
   ArrowRight,
   TrendingUp,
   Briefcase,
-  FileText
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 interface DashboardStats {
   pendingCount: number;
@@ -31,13 +34,45 @@ interface DashboardStats {
 
 interface PendingHandwerker {
   id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  company_name: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  company_name: string | null;
   created_at: string;
   categories: string[];
+  phone_number: string | null;
+  business_address: string | null;
 }
+
+const isRecentRegistration = (createdAt: string) => {
+  const daysSinceCreation = Math.floor(
+    (new Date().getTime() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return daysSinceCreation <= 7;
+};
+
+const calculateCompleteness = (handwerker: PendingHandwerker) => {
+  const fields = [
+    handwerker.first_name,
+    handwerker.last_name,
+    handwerker.email,
+    handwerker.phone_number,
+    handwerker.company_name,
+    handwerker.business_address,
+  ];
+  const filledFields = fields.filter(f => f && f.trim()).length;
+  return Math.round((filledFields / fields.length) * 100);
+};
+
+const looksLikeTestData = (handwerker: PendingHandwerker) => {
+  const testPatterns = /^(test|asdf|dummy|example|aaa|zzz)/i;
+  return (
+    testPatterns.test(handwerker.first_name || '') ||
+    testPatterns.test(handwerker.last_name || '') ||
+    testPatterns.test(handwerker.company_name || '') ||
+    (handwerker.email && /^(test@test|example@example|asdf@|dummy@)/i.test(handwerker.email))
+  );
+};
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -52,10 +87,17 @@ const AdminDashboard = () => {
     activeLeads: 0,
   });
   const [recentPending, setRecentPending] = useState<PendingHandwerker[]>([]);
+  const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days'>('all');
 
   useEffect(() => {
     checkAdminAccess();
   }, []);
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadDashboardData();
+    }
+  }, [dateFilter, isAdmin]);
 
   const checkAdminAccess = async () => {
     try {
@@ -102,7 +144,7 @@ const AdminDashboard = () => {
       // Get handwerker stats
       const { data: handwerkerData, error: handwerkerError } = await supabase
         .from('handwerker_profiles')
-        .select('id, verification_status, first_name, last_name, email, company_name, created_at, categories');
+        .select('id, verification_status, first_name, last_name, email, company_name, created_at, categories, phone_number, business_address');
 
       if (handwerkerError) throw handwerkerError;
 
@@ -127,11 +169,23 @@ const AdminDashboard = () => {
         activeLeads: activeLeads.length,
       });
 
-      // Get recent 5 pending handwerkers
+      // Apply date filter
+      let filteredPending = pending;
+      if (dateFilter === '7days') {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        filteredPending = pending.filter(h => new Date(h.created_at) >= sevenDaysAgo);
+      } else if (dateFilter === '30days') {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        filteredPending = pending.filter(h => new Date(h.created_at) >= thirtyDaysAgo);
+      }
+
+      // Get recent pending handwerkers
       setRecentPending(
-        pending
+        filteredPending
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 5)
+          .slice(0, 10)
           .map(h => ({
             id: h.id,
             first_name: h.first_name,
@@ -140,6 +194,8 @@ const AdminDashboard = () => {
             company_name: h.company_name,
             created_at: h.created_at,
             categories: h.categories || [],
+            phone_number: h.phone_number,
+            business_address: h.business_address,
           }))
       );
     } catch (error) {
@@ -331,67 +387,105 @@ const AdminDashboard = () => {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Neueste ausstehende Registrierungen</CardTitle>
+                    <CardTitle>Kürzlich eingegangene Registrierungen</CardTitle>
                     <CardDescription>
-                      Kürzlich eingereichte Handwerker-Profile
+                      Handwerker-Registrierungen, die auf Überprüfung warten
                     </CardDescription>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate('/admin/approvals')}
-                  >
-                    Alle anzeigen
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Select value={dateFilter} onValueChange={(value: 'all' | '7days' | '30days') => setDateFilter(value)}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Alle anzeigen</SelectItem>
+                        <SelectItem value="7days">Letzte 7 Tage</SelectItem>
+                        <SelectItem value="30days">Letzte 30 Tage</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/admin/approvals')}
+                    >
+                      Alle anzeigen
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentPending.map((handwerker) => (
-                    <div 
-                      key={handwerker.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold">
-                            {handwerker.first_name} {handwerker.last_name}
+                  {recentPending.map((handwerker) => {
+                    const isRecent = isRecentRegistration(handwerker.created_at);
+                    const completeness = calculateCompleteness(handwerker);
+                    const isSuspicious = looksLikeTestData(handwerker);
+                    
+                    return (
+                      <div 
+                        key={handwerker.id}
+                        className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold">
+                              {handwerker.first_name || '(Kein Name)'} {handwerker.last_name || ''}
+                            </p>
+                            {handwerker.company_name && (
+                              <span className="text-sm text-muted-foreground">
+                                • {handwerker.company_name}
+                              </span>
+                            )}
+                            {isRecent && (
+                              <Badge variant="default" className="text-xs">
+                                NEU
+                              </Badge>
+                            )}
+                            {isSuspicious && (
+                              <Badge variant="destructive" className="text-xs">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Verdächtig
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {handwerker.email || '(Keine E-Mail)'}
                           </p>
-                          {handwerker.company_name && (
-                            <span className="text-sm text-muted-foreground">
-                              • {handwerker.company_name}
-                            </span>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>{formatDate(handwerker.created_at)}</span>
+                            <div className="flex items-center gap-1">
+                              <div className={cn(
+                                "h-2 w-2 rounded-full",
+                                completeness >= 80 ? "bg-green-500" :
+                                completeness >= 50 ? "bg-yellow-500" : "bg-red-500"
+                              )} />
+                              <span>Vollständigkeit: {completeness}%</span>
+                            </div>
+                          </div>
+                          {handwerker.categories.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {handwerker.categories.slice(0, 3).map((cat) => (
+                                <Badge key={cat} variant="secondary" className="text-xs">
+                                  {cat}
+                                </Badge>
+                              ))}
+                              {handwerker.categories.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{handwerker.categories.length - 3}
+                                </Badge>
+                              )}
+                            </div>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {handwerker.email}
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {handwerker.categories.slice(0, 3).map((cat) => (
-                            <Badge key={cat} variant="secondary" className="text-xs">
-                              {cat}
-                            </Badge>
-                          ))}
-                          {handwerker.categories.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{handwerker.categories.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 ml-4">
-                        <Badge variant="outline" className="whitespace-nowrap">
-                          {formatDate(handwerker.created_at)}
-                        </Badge>
                         <Button
                           size="sm"
                           onClick={() => navigate('/admin/approvals')}
+                          className="ml-4"
                         >
                           Prüfen
                         </Button>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
