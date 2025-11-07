@@ -18,7 +18,8 @@ import {
   TrendingUp,
   Briefcase,
   FileText,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -79,6 +80,7 @@ const AdminDashboard = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     pendingCount: 0,
     approvedCount: 0,
@@ -141,23 +143,36 @@ const AdminDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
+      setIsRefreshing(true);
+      console.log('Loading dashboard data...');
+      
       // Get handwerker stats
       const { data: handwerkerData, error: handwerkerError } = await supabase
         .from('handwerker_profiles')
         .select('id, verification_status, first_name, last_name, email, company_name, created_at, categories, phone_number, business_address');
 
-      if (handwerkerError) throw handwerkerError;
+      if (handwerkerError) {
+        console.error('Error fetching handwerker:', handwerkerError);
+        throw handwerkerError;
+      }
+
+      console.log(`Fetched ${handwerkerData?.length || 0} handwerker profiles`);
 
       const pending = handwerkerData?.filter(h => h.verification_status === 'pending') || [];
       const approved = handwerkerData?.filter(h => h.verification_status === 'approved') || [];
       const rejected = handwerkerData?.filter(h => h.verification_status === 'rejected') || [];
+
+      console.log(`Pending: ${pending.length}, Approved: ${approved.length}, Rejected: ${rejected.length}`);
 
       // Get lead stats
       const { data: leadsData, error: leadsError } = await supabase
         .from('leads')
         .select('id, status');
 
-      if (leadsError) throw leadsError;
+      if (leadsError) {
+        console.error('Error fetching leads:', leadsError);
+        throw leadsError;
+      }
 
       const activeLeads = leadsData?.filter(l => l.status === 'active') || [];
 
@@ -181,6 +196,8 @@ const AdminDashboard = () => {
         filteredPending = pending.filter(h => new Date(h.created_at) >= thirtyDaysAgo);
       }
 
+      console.log(`Filtered pending (${dateFilter}): ${filteredPending.length}`);
+
       // Get recent pending handwerkers
       setRecentPending(
         filteredPending
@@ -198,6 +215,11 @@ const AdminDashboard = () => {
             business_address: h.business_address,
           }))
       );
+      
+      toast({
+        title: 'Dashboard aktualisiert',
+        description: 'Daten erfolgreich neu geladen.',
+      });
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast({
@@ -205,6 +227,8 @@ const AdminDashboard = () => {
         description: 'Dashboard-Daten konnten nicht geladen werden.',
         variant: 'destructive',
       });
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -238,12 +262,33 @@ const AdminDashboard = () => {
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-ink-900 mb-2">
-              Admin Dashboard
-            </h1>
-            <p className="text-ink-600">
-              Übersicht und Verwaltung der Plattform
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-ink-900 mb-2">
+                  Admin Dashboard
+                </h1>
+                <p className="text-ink-600">
+                  Übersicht und Verwaltung der Plattform
+                </p>
+              </div>
+              <Button 
+                onClick={loadDashboardData}
+                disabled={isRefreshing}
+                variant="outline"
+              >
+                {isRefreshing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Aktualisiere...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Aktualisieren
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* Stats Grid */}
@@ -382,27 +427,27 @@ const AdminDashboard = () => {
           </div>
 
           {/* Recent Pending Handwerkers */}
-          {stats.pendingCount > 0 && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Kürzlich eingegangene Registrierungen</CardTitle>
-                    <CardDescription>
-                      Handwerker-Registrierungen, die auf Überprüfung warten
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Select value={dateFilter} onValueChange={(value: 'all' | '7days' | '30days') => setDateFilter(value)}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Alle anzeigen</SelectItem>
-                        <SelectItem value="7days">Letzte 7 Tage</SelectItem>
-                        <SelectItem value="30days">Letzte 30 Tage</SelectItem>
-                      </SelectContent>
-                    </Select>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Kürzlich eingegangene Registrierungen</CardTitle>
+                  <CardDescription>
+                    Handwerker-Registrierungen, die auf Überprüfung warten
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Select value={dateFilter} onValueChange={(value: 'all' | '7days' | '30days') => setDateFilter(value)}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle anzeigen</SelectItem>
+                      <SelectItem value="7days">Letzte 7 Tage</SelectItem>
+                      <SelectItem value="30days">Letzte 30 Tage</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {stats.pendingCount > 0 && (
                     <Button 
                       variant="outline" 
                       onClick={() => navigate('/admin/approvals')}
@@ -410,10 +455,21 @@ const AdminDashboard = () => {
                       Alle anzeigen
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
-                  </div>
+                  )}
                 </div>
-              </CardHeader>
-              <CardContent>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {recentPending.length === 0 ? (
+                <Alert>
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {stats.pendingCount === 0 
+                      ? 'Keine ausstehenden Registrierungen. Alle Handwerker-Anträge wurden bearbeitet.'
+                      : `Keine Registrierungen im ausgewählten Zeitraum (${dateFilter === '7days' ? 'Letzte 7 Tage' : dateFilter === '30days' ? 'Letzte 30 Tage' : 'Alle'}). Versuchen Sie einen anderen Filter.`}
+                  </AlertDescription>
+                </Alert>
+              ) : (
                 <div className="space-y-4">
                   {recentPending.map((handwerker) => {
                     const isRecent = isRecentRegistration(handwerker.created_at);
@@ -484,21 +540,21 @@ const AdminDashboard = () => {
                           Prüfen
                         </Button>
                       </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          {stats.pendingCount === 0 && (
-            <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertDescription>
-                Keine ausstehenden Handwerker-Freigaben. Alle Registrierungen wurden bearbeitet.
-              </AlertDescription>
-            </Alert>
-          )}
+        {stats.pendingCount === 0 && (
+          <Alert>
+            <CheckCircle className="h-4 w-4" />
+            <AlertDescription>
+              Keine ausstehenden Handwerker-Freigaben. Alle Registrierungen wurden bearbeitet.
+            </AlertDescription>
+          </Alert>
+        )}
         </div>
       </main>
       <Footer />

@@ -372,6 +372,9 @@ export interface AdminRegistrationData {
   phone: string;
   companyName: string;
   categories: string[];
+  serviceAreas: string[];
+  logoUrl: string;
+  businessAddress: string;
   profileId: string;
   submittedAt: string;
 }
@@ -578,6 +581,18 @@ export const adminRegistrationNotificationTemplate = (data: AdminRegistrationDat
           <td style="padding: 8px 0; font-weight: 600; color: #666;">Firma:</td>
           <td style="padding: 8px 0;">${data.companyName || 'Nicht angegeben'}</td>
         </tr>
+        ${data.businessAddress ? `
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Geschäftsadresse:</td>
+          <td style="padding: 8px 0;">${data.businessAddress}</td>
+        </tr>
+        ` : ''}
+        ${data.serviceAreas && data.serviceAreas.length > 0 ? `
+        <tr>
+          <td style="padding: 8px 0; font-weight: 600; color: #666;">Servicegebiet (PLZ):</td>
+          <td style="padding: 8px 0;">${data.serviceAreas.join(', ')}</td>
+        </tr>
+        ` : ''}
         <tr>
           <td style="padding: 8px 0; font-weight: 600; color: #666;">Kategorien:</td>
           <td style="padding: 8px 0;">${categoriesText}</td>
@@ -587,6 +602,12 @@ export const adminRegistrationNotificationTemplate = (data: AdminRegistrationDat
           <td style="padding: 8px 0;">${data.submittedAt}</td>
         </tr>
       </table>
+      ${data.logoUrl ? `
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+          <p style="margin: 0 0 10px 0; font-weight: 600; color: #666;">Logo:</p>
+          <img src="${data.logoUrl}" alt="Firmenlogo" style="max-width: 200px; max-height: 100px; border-radius: 4px;" />
+        </div>
+      ` : ''}
     </div>
     
     <div style="margin-top: 30px; text-align: center;">

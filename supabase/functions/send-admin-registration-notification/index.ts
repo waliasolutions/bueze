@@ -65,6 +65,9 @@ serve(async (req) => {
       phone: profile.phone_number || 'N/A',
       companyName: profile.company_name || '',
       categories: profile.categories || [],
+      serviceAreas: profile.service_areas || [],
+      logoUrl: profile.logo_url || '',
+      businessAddress: profile.business_address || '',
       profileId: profile.id,
       submittedAt: formatSwissDateTime(profile.created_at)
     };
