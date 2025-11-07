@@ -193,13 +193,24 @@ export const Header = () => {
                 <UserDropdown />
               </div>
             ) : (
-              <Button onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                navigate('/submit-lead');
-              }} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Auftrag erstellen
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    navigate('/auth');
+                  }}
+                >
+                  Anmelden
+                </Button>
+                <Button onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  navigate('/submit-lead');
+                }} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Auftrag erstellen
+                </Button>
+              </div>
             )}
           </div>
 
