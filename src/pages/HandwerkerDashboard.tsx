@@ -542,7 +542,7 @@ const HandwerkerDashboard = () => {
 
               <div className="flex gap-3">
                 <Button 
-                  onClick={() => navigate('/handwerker-profile-edit')} 
+                  onClick={() => navigate('/handwerker-profile/edit')} 
                   className="flex-1"
                 >
                   <User className="h-4 w-4 mr-2" />
