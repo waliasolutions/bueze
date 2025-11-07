@@ -4,6 +4,7 @@ import { Menu, X, Plus, Shield, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
+import { AdminNotifications } from './AdminNotifications';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -175,64 +176,67 @@ export const Header = () => {
             {user ? (
               <div className="flex items-center gap-3">
                 {isAdmin && (
-                  <NavigationMenu>
-                    <NavigationMenuList>
-                      <NavigationMenuItem>
-                        <NavigationMenuTrigger className="gap-2 text-brand-600 hover:text-brand-700 bg-transparent hover:bg-transparent data-[state=open]:bg-transparent">
-                          <Shield className="h-4 w-4" />
-                          Admin
-                        </NavigationMenuTrigger>
-                        <NavigationMenuContent>
-                          <ul className="grid w-[240px] gap-1 p-2 bg-white">
-                            <li>
-                              <NavigationMenuLink asChild>
-                                <button
-                                  onClick={() => {
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    navigate('/admin/dashboard');
-                                  }}
-                                  className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                >
-                                  <div className="text-sm font-medium leading-none">Dashboard</div>
-                                  <p className="text-xs text-muted-foreground mt-1">Admin-Übersicht</p>
-                                </button>
-                              </NavigationMenuLink>
-                            </li>
-                            <li>
-                              <NavigationMenuLink asChild>
-                                <button
-                                  onClick={() => {
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    navigate('/admin/approvals');
-                                  }}
-                                  className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                >
-                                  <div className="text-sm font-medium leading-none">Handwerker</div>
-                                  <p className="text-xs text-muted-foreground mt-1">Freigaben verwalten</p>
-                                </button>
-                              </NavigationMenuLink>
-                            </li>
-                            {isSuperAdmin && (
+                  <>
+                    <AdminNotifications />
+                    <NavigationMenu>
+                      <NavigationMenuList>
+                        <NavigationMenuItem>
+                          <NavigationMenuTrigger className="gap-2 text-brand-600 hover:text-brand-700 bg-transparent hover:bg-transparent data-[state=open]:bg-transparent">
+                            <Shield className="h-4 w-4" />
+                            Admin
+                          </NavigationMenuTrigger>
+                          <NavigationMenuContent>
+                            <ul className="grid w-[240px] gap-1 p-2 bg-white">
                               <li>
                                 <NavigationMenuLink asChild>
                                   <button
                                     onClick={() => {
                                       window.scrollTo({ top: 0, behavior: 'smooth' });
-                                      navigate('/admin/users');
+                                      navigate('/admin/dashboard');
                                     }}
                                     className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                   >
-                                    <div className="text-sm font-medium leading-none">Benutzer</div>
-                                    <p className="text-xs text-muted-foreground mt-1">Rollen verwalten</p>
+                                    <div className="text-sm font-medium leading-none">Dashboard</div>
+                                    <p className="text-xs text-muted-foreground mt-1">Admin-Übersicht</p>
                                   </button>
                                 </NavigationMenuLink>
                               </li>
-                            )}
-                          </ul>
-                        </NavigationMenuContent>
-                      </NavigationMenuItem>
-                    </NavigationMenuList>
-                  </NavigationMenu>
+                              <li>
+                                <NavigationMenuLink asChild>
+                                  <button
+                                    onClick={() => {
+                                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                                      navigate('/admin/approvals');
+                                    }}
+                                    className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                  >
+                                    <div className="text-sm font-medium leading-none">Handwerker</div>
+                                    <p className="text-xs text-muted-foreground mt-1">Freigaben verwalten</p>
+                                  </button>
+                                </NavigationMenuLink>
+                              </li>
+                              {isSuperAdmin && (
+                                <li>
+                                  <NavigationMenuLink asChild>
+                                    <button
+                                      onClick={() => {
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        navigate('/admin/users');
+                                      }}
+                                      className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                    >
+                                      <div className="text-sm font-medium leading-none">Benutzer</div>
+                                      <p className="text-xs text-muted-foreground mt-1">Rollen verwalten</p>
+                                    </button>
+                                  </NavigationMenuLink>
+                                </li>
+                              )}
+                            </ul>
+                          </NavigationMenuContent>
+                        </NavigationMenuItem>
+                      </NavigationMenuList>
+                    </NavigationMenu>
+                  </>
                 )}
                 <Button variant="outline" onClick={() => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });

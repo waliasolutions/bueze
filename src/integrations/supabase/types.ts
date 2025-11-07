@@ -76,6 +76,39 @@ export type Database = {
           },
         ]
       }
+      admin_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          metadata: Json | null
+          read: boolean
+          related_id: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          metadata?: Json | null
+          read?: boolean
+          related_id?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          metadata?: Json | null
+          read?: boolean
+          related_id?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       admin_profiles: {
         Row: {
           created_at: string | null
@@ -955,6 +988,44 @@ export type Database = {
           wohnort?: string
         }
         Relationships: []
+      }
+      handwerker_approval_history: {
+        Row: {
+          action: string
+          admin_email: string
+          admin_id: string
+          created_at: string
+          handwerker_profile_id: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          admin_email: string
+          admin_id: string
+          created_at?: string
+          handwerker_profile_id: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          admin_email?: string
+          admin_id?: string
+          created_at?: string
+          handwerker_profile_id?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handwerker_approval_history_handwerker_profile_id_fkey"
+            columns: ["handwerker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "handwerker_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       handwerker_profiles: {
         Row: {
