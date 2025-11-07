@@ -96,7 +96,7 @@ export const AdminNotifications = () => {
     markAsRead(notification.id);
     
     if (notification.type === 'new_handwerker_registration' && notification.related_id) {
-      navigate(`/admin/handwerker?highlight=${notification.related_id}`);
+      navigate(`/admin/handwerker-verification?highlight=${notification.related_id}`);
       setIsOpen(false);
     }
   };
