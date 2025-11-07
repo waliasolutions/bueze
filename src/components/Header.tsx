@@ -214,7 +214,7 @@ export const Header = () => {
                     navigate('/auth');
                   }}
                 >
-                  Anmelden
+                  Login
                 </Button>
                 <Button onClick={() => {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -342,7 +342,7 @@ export const Header = () => {
                       setIsMenuOpen(false);
                     }}
                   >
-                    Anmelden
+                    Login
                   </Button>
                   <Button 
                     variant="default" 

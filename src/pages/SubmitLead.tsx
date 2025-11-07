@@ -856,7 +856,7 @@ const SubmitLead = () => {
                             onClick={() => setShowLoginForm(true)}
                             className="w-full"
                           >
-                            Anmelden
+                            Login
                           </Button>
                           
                           <div className="relative">
@@ -992,7 +992,7 @@ const SubmitLead = () => {
                               disabled={isLoggingIn}
                               className="w-full"
                             >
-                              {isLoggingIn ? 'Wird angemeldet...' : 'Anmelden'}
+                              {isLoggingIn ? 'Wird angemeldet...' : 'Login'}
                             </Button>
 
                             <Button

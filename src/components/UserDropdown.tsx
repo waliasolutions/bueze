@@ -170,7 +170,7 @@ export const UserDropdown = () => {
     return (
       <Button variant="ghost" onClick={() => handleNavigateWithScroll('/auth')}>
         <User className="h-4 w-4 mr-2" />
-        Anmelden
+        Login
       </Button>
     );
   }

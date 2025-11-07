@@ -120,7 +120,7 @@ export default function Auth() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Anmelden</CardTitle>
+            <CardTitle>Login</CardTitle>
             <CardDescription>
               Geben Sie Ihre Anmeldedaten ein, um auf Ihr Konto zuzugreifen.
             </CardDescription>
@@ -153,7 +153,7 @@ export default function Auth() {
               
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Anmelden
+                Login
               </Button>
             </form>
           </CardContent>

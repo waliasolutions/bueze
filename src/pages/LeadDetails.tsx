@@ -663,7 +663,7 @@ const LeadDetails = () => {
                     {!user && (
                       <p className="text-xs text-center text-muted-foreground mt-4">
                         <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/auth')}>
-                          Anmelden
+                          Login
                         </Button> um eine Offerte einzureichen
                       </p>
                     )}
