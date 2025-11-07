@@ -32,8 +32,8 @@ Gute Nachrichten! Ihr Handwerker-Profil bei Büeze.ch wurde erfolgreich geprüft
 
 Sie können jetzt:
 ✅ Alle aktiven Aufträge durchsuchen
-✅ Kontaktdaten von Auftraggebern einsehen (mit Abo)
-✅ Direkt mit interessierten Kunden in Kontakt treten
+✅ Offerten für passende Projekte einreichen
+✅ Kontaktdaten erhalten Sie nach Annahme Ihrer Offerte
 
 Hier geht's zu Ihrem Dashboard:
 https://bueze.ch/dashboard
