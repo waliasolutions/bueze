@@ -58,12 +58,12 @@ const HandwerkerProfileEdit = () => {
         return;
       }
 
-      // Check if user is an approved handwerker
+      // Check if user is a handwerker (pending or approved)
       const { data: profileData, error } = await supabase
         .from('handwerker_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .eq('verification_status', 'approved')
+        .in('verification_status', ['pending', 'approved'])
         .maybeSingle();
 
       if (error) throw error;
@@ -71,7 +71,7 @@ const HandwerkerProfileEdit = () => {
       if (!profileData) {
         toast({
           title: 'Zugriff verweigert',
-          description: 'Nur freigeschaltete Handwerker können ihr Profil bearbeiten.',
+          description: 'Sie müssen ein Handwerker-Konto haben, um Ihr Profil zu bearbeiten.',
           variant: 'destructive',
         });
         navigate('/dashboard');
