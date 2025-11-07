@@ -40,6 +40,7 @@ export const UserDropdown = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isHandwerker, setIsHandwerker] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -71,6 +72,15 @@ export const UserDropdown = () => {
             .maybeSingle();
           
           setIsAdmin(!!roleData);
+
+          // Check if user has handwerker profile
+          const { data: handwerkerData } = await supabase
+            .from('handwerker_profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          setIsHandwerker(!!handwerkerData);
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -101,9 +111,19 @@ export const UserDropdown = () => {
           .maybeSingle();
         
         setIsAdmin(!!roleData);
+
+        // Check if user has handwerker profile
+        const { data: handwerkerData } = await supabase
+          .from('handwerker_profiles')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        setIsHandwerker(!!handwerkerData);
       } else {
         setProfile(null);
         setIsAdmin(false);
+        setIsHandwerker(false);
       }
     });
 
@@ -142,7 +162,7 @@ export const UserDropdown = () => {
   };
 
   const getRoleLabel = () => {
-    if (profile?.role === 'handwerker') return 'Handwerker';
+    if (isHandwerker) return 'Handwerker';
     return 'Auftraggeber';
   };
 
@@ -154,8 +174,6 @@ export const UserDropdown = () => {
       </Button>
     );
   }
-
-  const isHandwerker = profile?.role === 'handwerker';
 
   return (
     <DropdownMenu>

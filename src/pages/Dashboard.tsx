@@ -164,17 +164,9 @@ const Dashboard = () => {
         .maybeSingle();
 
       if (handwerkerProfileData) {
-        setHandwerkerProfile(handwerkerProfileData);
-        // TODO: Re-enable after types regenerate - Mock subscription access for demo
-        // setSubscriptionAccess({ 
-        //   canViewLead: true, 
-        //   canPurchaseLead: true, 
-        //   isUnlimited: true, 
-        //   remainingViews: 999, 
-        //   requiresUpgrade: false,
-        //   leadPrice: 20,
-        //   planType: 'annual' 
-        // });
+        // User has handwerker profile - redirect to handwerker dashboard
+        navigate('/handwerker-dashboard');
+        return;
       }
 
       // Fetch user's purchases
@@ -211,7 +203,8 @@ const Dashboard = () => {
     return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
   };
 
-  const isHandwerker = profile?.role === 'handwerker';
+  // Handwerkers are redirected in fetchUserData, so this page is only for auftraggebers
+  const isHandwerker = false;
 
   if (loading) {
     return (
