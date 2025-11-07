@@ -77,7 +77,7 @@ const AdminDashboard = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!roleData || roleData.role !== 'admin') {
+      if (!roleData || (roleData.role !== 'admin' && roleData.role !== 'super_admin')) {
         toast({
           title: 'Zugriff verweigert',
           description: 'Sie haben keine Berechtigung für diese Seite.',
