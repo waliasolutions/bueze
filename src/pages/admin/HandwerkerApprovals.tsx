@@ -359,12 +359,12 @@ const HandwerkerApprovals = () => {
       
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        const adminEmail = user?.email || 'info@walia-solutions.ch';
+        const adminId = user?.id || null;
 
         const { error } = await supabase.functions.invoke('create-handwerker-account', {
           body: { 
             profileId: handwerker.id,
-            adminEmail: adminEmail,
+            adminId: adminId,
           }
         });
 
@@ -390,15 +390,15 @@ const HandwerkerApprovals = () => {
   const approveHandwerker = async (handwerker: PendingHandwerker) => {
     setApproving(handwerker.id);
     try {
-      // Get current user's email for admin tracking
+      // Get current user's ID for admin tracking
       const { data: { user } } = await supabase.auth.getUser();
-      const adminEmail = user?.email || 'info@walia-solutions.ch';
+      const adminId = user?.id || null;
 
       // Call edge function to create account and send credentials
       const { data, error } = await supabase.functions.invoke('create-handwerker-account', {
         body: { 
           profileId: handwerker.id,
-          adminEmail: adminEmail,
+          adminId: adminId,
         }
       });
 

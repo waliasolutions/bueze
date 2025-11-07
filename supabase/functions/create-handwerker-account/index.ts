@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface CreateAccountRequest {
   profileId: string;
-  adminEmail: string;
+  adminId: string | null;
 }
 
 function generateSecurePassword(length: number): string {
@@ -148,7 +148,7 @@ serve(async (req) => {
   }
 
   try {
-    const { profileId, adminEmail }: CreateAccountRequest = await req.json();
+    const { profileId, adminId }: CreateAccountRequest = await req.json();
     
     console.log('Creating account for profile:', profileId);
     
@@ -217,7 +217,7 @@ serve(async (req) => {
         is_verified: true,
         verification_status: 'approved',
         verified_at: new Date().toISOString(),
-        verified_by: adminEmail,
+        verified_by: adminId,
       })
       .eq('id', profileId);
 
