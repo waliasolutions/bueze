@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import HandwerkerOnboarding from "./pages/HandwerkerOnboarding";
 import HandwerkerDashboard from "./pages/HandwerkerDashboard";
+import HandwerkerProfileEdit from "./pages/HandwerkerProfileEdit";
 import SubmitLead from "./pages/SubmitLead";
 import LeadDetails from "./pages/LeadDetails";
 import EditLead from "./pages/EditLead";
@@ -76,6 +77,7 @@ const App = () => {
             <Route path="/auth" element={<Auth />} />
             <Route path="/handwerker-onboarding" element={<HandwerkerOnboarding />} />
             <Route path="/handwerker-dashboard" element={<HandwerkerDashboard />} />
+            <Route path="/handwerker-profile/edit" element={<HandwerkerProfileEdit />} />
             <Route path="/submit-lead" element={<SubmitLead />} />
             <Route path="/lead/:id" element={<LeadDetails />} />
             <Route path="/lead/:id/edit" element={<EditLead />} />

@@ -821,12 +821,28 @@ const HandwerkerDashboard = () => {
             <TabsContent value="profile" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Profil bearbeiten</CardTitle>
-                  <CardDescription>
-                    Aktualisieren Sie Ihre Profilinformationen
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Profil bearbeiten</CardTitle>
+                      <CardDescription>
+                        Aktualisieren Sie Ihre Profilinformationen
+                      </CardDescription>
+                    </div>
+                    <Button
+                      onClick={() => navigate('/handwerker-profile/edit')}
+                      variant="default"
+                    >
+                      Erweiterte Profileinstellungen
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <Alert className="bg-blue-50 border-blue-200">
+                    <AlertDescription className="text-blue-900">
+                      💡 <strong>Tipp:</strong> Bearbeiten Sie Ihre Bio, Stundensätze, Servicegebiete und Portfolio-Bilder in den erweiterten Profileinstellungen.
+                    </AlertDescription>
+                  </Alert>
+
                   {/* Logo Upload Section */}
                   <div className="space-y-3">
                     <Label htmlFor="logo-upload">Firmenlogo</Label>
