@@ -41,18 +41,20 @@ const ScrollToTop = () => {
   const { pathname, hash } = useLocation();
   
   React.useEffect(() => {
-    // If there's a hash, scroll to that element instead of top
-    if (hash) {
-      setTimeout(() => {
+    // Small delay to ensure route has changed and new content is rendered
+    const scrollTimer = setTimeout(() => {
+      if (hash) {
         const element = document.querySelector(hash);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth' });
         }
-      }, 0);
-    } else {
-      // No hash - scroll to top
-      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
-    }
+      } else {
+        // Use instant scroll to prevent race conditions with competing scroll animations
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }
+    }, 50);
+    
+    return () => clearTimeout(scrollTimer);
   }, [pathname, hash]);
   
   return null;

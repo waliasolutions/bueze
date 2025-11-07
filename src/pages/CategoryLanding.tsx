@@ -17,11 +17,6 @@ const CategoryLanding = () => {
   const { categorySlug } = useParams<{ categorySlug: string }>();
   const navigate = useNavigate();
   
-  // Scroll to top when category changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [categorySlug]);
-  
   const content = categorySlug ? categoryContent[categorySlug] : null;
   
   if (!content) {

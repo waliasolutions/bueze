@@ -44,11 +44,6 @@ export const UserDropdown = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleNavigateWithScroll = (path: string) => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    navigate(path);
-  };
-
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -143,7 +138,7 @@ export const UserDropdown = () => {
         title: 'Erfolgreich abgemeldet',
         description: 'Sie wurden erfolgreich abgemeldet.',
       });
-      handleNavigateWithScroll('/');
+      navigate('/');
     }
   };
 
@@ -168,7 +163,7 @@ export const UserDropdown = () => {
 
   if (isLoading || !user) {
     return (
-      <Button variant="ghost" onClick={() => handleNavigateWithScroll('/auth')}>
+      <Button variant="ghost" onClick={() => navigate('/auth')}>
         <User className="h-4 w-4 mr-2" />
         Login
       </Button>
@@ -215,34 +210,34 @@ export const UserDropdown = () => {
         
         {isHandwerker ? (
           <>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/handwerker-dashboard')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/handwerker-dashboard')} className="cursor-pointer">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               <span>Handwerker Dashboard</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/search')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/search')} className="cursor-pointer">
               <Search className="mr-2 h-4 w-4" />
               <span>Leads durchsuchen</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/conversations')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/conversations')} className="cursor-pointer">
               <MessageSquare className="mr-2 h-4 w-4" />
               <span>Nachrichten</span>
             </DropdownMenuItem>
           </>
         ) : (
           <>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/dashboard')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               <span>Dashboard</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/dashboard')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
               <FileText className="mr-2 h-4 w-4" />
               <span>Meine Aufträge</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/submit-lead')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/submit-lead')} className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
               <span>Auftrag erstellen</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/conversations')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/conversations')} className="cursor-pointer">
               <MessageSquare className="mr-2 h-4 w-4" />
               <span>Nachrichten</span>
             </DropdownMenuItem>
@@ -253,11 +248,11 @@ export const UserDropdown = () => {
 
         {isAdmin && (
           <>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/admin/approvals')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/admin/approvals')} className="cursor-pointer">
               <ShieldCheck className="mr-2 h-4 w-4" />
               <span>Handwerker-Freigaben</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleNavigateWithScroll('/admin/handwerker-verification')} className="cursor-pointer">
+            <DropdownMenuItem onClick={() => navigate('/admin/handwerker-verification')} className="cursor-pointer">
               <ShieldCheck className="mr-2 h-4 w-4" />
               <span>Handwerker-Verifizierung</span>
             </DropdownMenuItem>
@@ -265,7 +260,7 @@ export const UserDropdown = () => {
           </>
         )}
         
-        <DropdownMenuItem onClick={() => handleNavigateWithScroll('/profile')} className="cursor-pointer">
+        <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
           <Settings className="mr-2 h-4 w-4" />
           <span>Profil</span>
         </DropdownMenuItem>
