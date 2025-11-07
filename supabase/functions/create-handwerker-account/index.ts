@@ -228,20 +228,7 @@ serve(async (req) => {
 
     console.log('Profile updated with user_id');
 
-    // 5. Create user_roles entry
-    const { error: roleError } = await supabaseAdmin
-      .from('user_roles')
-      .insert({
-        user_id: authUser.user.id,
-        role: 'handwerker',
-      });
-
-    if (roleError) {
-      console.error('Error creating user role:', roleError);
-      throw new Error(`Failed to create user role: ${roleError.message}`);
-    }
-
-    console.log('User role created');
+    // Note: user_roles entry is automatically created by handle_new_user() trigger
 
     // 6. Send welcome email with credentials
     await sendWelcomeEmail(profile.email, {

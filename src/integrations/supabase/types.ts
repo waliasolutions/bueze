@@ -2594,7 +2594,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "department_admin" | "user" | "super_admin"
+      app_role:
+        | "admin"
+        | "department_admin"
+        | "user"
+        | "super_admin"
+        | "handwerker"
       budget_type: "fixed" | "hourly" | "estimate"
       canton:
         | "AG"
@@ -2889,7 +2894,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "department_admin", "user", "super_admin"],
+      app_role: [
+        "admin",
+        "department_admin",
+        "user",
+        "super_admin",
+        "handwerker",
+      ],
       budget_type: ["fixed", "hourly", "estimate"],
       canton: [
         "AG",
