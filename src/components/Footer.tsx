@@ -37,12 +37,16 @@ export const Footer = () => {
 
   const handleNavigation = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
+    e.stopPropagation();
     
-    // Force scroll to top immediately
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    // Force scroll to top synchronously before navigation
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0; // For Safari
     
-    // Then navigate
-    navigate(href);
+    // Small delay to ensure scroll completes before navigation
+    setTimeout(() => {
+      navigate(href);
+    }, 10);
   };
 
   return (
