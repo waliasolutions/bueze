@@ -110,9 +110,9 @@ const HandwerkerApprovals = () => {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .in('role', ['admin', 'super_admin']);
 
-      if (!roleData || (roleData.role !== 'admin' && roleData.role !== 'super_admin')) {
+      if (!roleData || roleData.length === 0) {
         toast({
           title: 'Zugriff verweigert',
           description: 'Sie haben keine Berechtigung für diese Seite.',

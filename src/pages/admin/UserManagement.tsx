@@ -90,9 +90,9 @@ export default function UserManagement() {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
-        .maybeSingle();
+        .in('role', ['super_admin']);
 
-      if (!roleData || roleData.role !== 'super_admin') {
+      if (!roleData || roleData.length === 0) {
         toast({
           title: 'Zugriff verweigert',
           description: 'Nur Super Administratoren können auf diese Seite zugreifen.',

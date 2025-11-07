@@ -89,10 +89,9 @@ export default function HandwerkerVerification() {
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .in('role', ['admin', 'super_admin'])
-      .maybeSingle();
+      .in('role', ['admin', 'super_admin']);
 
-        if (!roleData) {
+        if (!roleData || roleData.length === 0) {
           toast({
             title: "Zugriff verweigert",
             description: "Diese Seite ist nur für Administratoren zugänglich.",
