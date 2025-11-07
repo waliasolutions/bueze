@@ -625,36 +625,37 @@ const HandwerkerApprovals = () => {
                             />
                           )}
                           <div className="flex-1">
-                          <CardTitle className="text-xl">
-                            {handwerker.first_name} {handwerker.last_name}
-                            {handwerker.company_name && (
-                              <span className="text-sm font-normal text-muted-foreground ml-2">
-                                ({handwerker.company_name})
-                              </span>
-                            )}
-                          </CardTitle>
-                          <CardDescription className="mt-2 space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4" />
-                              {handwerker.email}
-                            </div>
-                            {handwerker.phone_number && (
+                            <CardTitle className="text-xl">
+                              {handwerker.first_name} {handwerker.last_name}
+                              {handwerker.company_name && (
+                                <span className="text-sm font-normal text-muted-foreground ml-2">
+                                  ({handwerker.company_name})
+                                </span>
+                              )}
+                            </CardTitle>
+                            <CardDescription className="mt-2 space-y-1">
                               <div className="flex items-center gap-2">
-                                <Phone className="h-4 w-4" />
-                                {handwerker.phone_number}
+                                <Mail className="h-4 w-4" />
+                                {handwerker.email}
                               </div>
-                            )}
-                          </CardDescription>
-                          
-                          {/* Completeness Score */}
-                          <div className="mt-4 space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">Vollständigkeit des Profils</span>
-                              <Badge variant={completeness.percentage >= 80 ? "default" : completeness.percentage >= 50 ? "secondary" : "destructive"}>
-                                {completeness.percentage}%
-                              </Badge>
+                              {handwerker.phone_number && (
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4" />
+                                  {handwerker.phone_number}
+                                </div>
+                              )}
+                            </CardDescription>
+                            
+                            {/* Completeness Score */}
+                            <div className="mt-4 space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Vollständigkeit des Profils</span>
+                                <Badge variant={completeness.percentage >= 80 ? "default" : completeness.percentage >= 50 ? "secondary" : "destructive"}>
+                                  {completeness.percentage}%
+                                </Badge>
+                              </div>
+                              <Progress value={completeness.percentage} className="h-2" />
                             </div>
-                            <Progress value={completeness.percentage} className="h-2" />
                           </div>
                         </div>
                         <Badge variant="outline" className="flex items-center gap-1 ml-4">
