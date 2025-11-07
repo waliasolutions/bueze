@@ -49,80 +49,65 @@ export const UserDropdown = () => {
   };
 
   useEffect(() => {
-    // DEMO MODE: Mock user for pitch presentation
-    const mockUser = { id: 'demo-user-123', email: 'demo@bueze.ch' } as any;
-    setUser(mockUser);
-    
-    const mockProfile: UserProfile = {
-      id: 'demo-user-123',
-      email: 'demo@bueze.ch',
-      full_name: 'Demo User',
-      role: 'handwerker',
-      avatar_url: undefined
+    const fetchUserData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+        
+        if (user) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          setProfile(profileData);
+
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .in('role', ['admin', 'super_admin'])
+            .maybeSingle();
+          
+          setIsAdmin(!!roleData);
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    setProfile(mockProfile);
-    setIsAdmin(false);
-    setIsLoading(false);
-    
-    // const fetchUserData = async () => {
-    //   try {
-    //     const { data: { user } } = await supabase.auth.getUser();
-    //     setUser(user);
-    //     
-    //     if (user) {
-    //       const { data: profileData } = await supabase
-    //         .from('profiles')
-    //         .select('*')
-    //         .eq('id', user.id)
-    //         .single();
-    //       
-    //       setProfile(profileData);
-    //
-    //       const { data: roleData } = await supabase
-    //         .from('user_roles')
-    //         .select('role')
-    //         .eq('user_id', user.id)
-    //         .eq('role', 'admin')
-    //         .maybeSingle();
-    //       
-    //       setIsAdmin(!!roleData);
-    //     }
-    //   } catch (error) {
-    //     console.error('Error fetching user data:', error);
-    //   } finally {
-    //     setIsLoading(false);
-    //   }
-    // };
-    //
-    // fetchUserData();
-    //
-    // const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-    //   setUser(session?.user ?? null);
-    //   
-    //   if (session?.user) {
-    //     const { data: profileData } = await supabase
-    //       .from('profiles')
-    //       .select('*')
-    //       .eq('id', session.user.id)
-    //       .single();
-    //     
-    //     setProfile(profileData);
-    //
-    //     const { data: roleData } = await supabase
-    //       .from('user_roles')
-    //       .select('role')
-    //       .eq('user_id', session.user.id)
-    //       .eq('role', 'admin')
-    //       .maybeSingle();
-    //     
-    //     setIsAdmin(!!roleData);
-    //   } else {
-    //     setProfile(null);
-    //     setIsAdmin(false);
-    //   }
-    // });
-    //
-    // return () => subscription.unsubscribe();
+
+    fetchUserData();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        setProfile(profileData);
+
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .in('role', ['admin', 'super_admin'])
+          .maybeSingle();
+        
+        setIsAdmin(!!roleData);
+      } else {
+        setProfile(null);
+        setIsAdmin(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSignOut = async () => {

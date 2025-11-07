@@ -149,13 +149,12 @@ const BrowseLeads = () => {
         pageSize 
       });
       
-      // DEMO MODE: Mock user for pitch presentation
-      const mockUser = { id: 'demo-user-123', email: 'demo@bueze.ch' };
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // if (!user) {
-      //   navigate('/auth');
-      //   return;
-      // }
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
 
       // Calculate pagination range
       const { from, to } = calculatePagination({ page: currentPage, pageSize });
