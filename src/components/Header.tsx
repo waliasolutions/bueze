@@ -17,7 +17,6 @@ import logo from '@/assets/bueze-logo.png';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isHandwerkerExpanded, setIsHandwerkerExpanded] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
@@ -84,13 +83,8 @@ export const Header = () => {
   const navItems = [
     { label: 'So funktioniert es', href: '/#how-it-works' },
     { label: 'Kategorien', href: '/kategorien' },
-    { 
-      label: 'Für Handwerker', 
-      submenu: [
-        { label: 'Für Handwerker', href: '/handwerker' },
-        { label: 'Preise', href: '/pricing' }
-      ]
-    },
+    { label: 'Für Handwerker', href: '/handwerker' },
+    { label: 'Preise', href: '/pricing' },
   ];
 
   return (
@@ -106,71 +100,35 @@ export const Header = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <NavigationMenu className="hidden lg:flex">
-            <NavigationMenuList className="gap-8">
-              {navItems.map((item, index) => {
-                // Handle hash links
-                if (item.href?.startsWith('/#')) {
-                  return (
-                    <NavigationMenuItem key={index}>
-                      <a
-                        href={item.href}
-                        onClick={(e) => handleNavClick(item.href, e)}
-                        className="text-ink-700 hover:text-brand-600 transition-colors font-medium cursor-pointer"
-                      >
-                        {item.label}
-                      </a>
-                    </NavigationMenuItem>
-                  );
-                }
-                
-                // Handle regular links
-                if (item.href) {
-                  return (
-                    <NavigationMenuItem key={index}>
-                      <Link
-                        to={item.href}
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                        className="text-ink-700 hover:text-brand-600 transition-colors font-medium"
-                      >
-                        {item.label}
-                      </Link>
-                    </NavigationMenuItem>
-                  );
-                }
-                
-                // Handle dropdown menu
-                if (item.submenu) {
-                  return (
-                    <NavigationMenuItem key={index}>
-                      <NavigationMenuTrigger className="text-ink-700 hover:text-brand-600 transition-colors font-medium bg-transparent hover:bg-transparent data-[state=open]:bg-transparent">
-                        {item.label}
-                      </NavigationMenuTrigger>
-                      <NavigationMenuContent>
-                        <ul className="grid w-[200px] gap-1 p-2 bg-white">
-                          {item.submenu.map((subItem, subIndex) => (
-                            <li key={subIndex}>
-                              <NavigationMenuLink asChild>
-                                <Link
-                                  to={subItem.href}
-                                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                                  className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                >
-                                  <div className="text-sm font-medium leading-none">{subItem.label}</div>
-                                </Link>
-                              </NavigationMenuLink>
-                            </li>
-                          ))}
-                        </ul>
-                      </NavigationMenuContent>
-                    </NavigationMenuItem>
-                  );
-                }
-                
-                return null;
-              })}
-            </NavigationMenuList>
-          </NavigationMenu>
+          <nav className="hidden lg:flex items-center gap-8">
+            {navItems.map((item, index) => {
+              // Handle hash links
+              if (item.href?.startsWith('/#')) {
+                return (
+                  <a
+                    key={index}
+                    href={item.href}
+                    onClick={(e) => handleNavClick(item.href, e)}
+                    className="text-ink-700 hover:text-brand-600 transition-colors font-medium cursor-pointer"
+                  >
+                    {item.label}
+                  </a>
+                );
+              }
+              
+              // Handle regular links
+              return (
+                <Link
+                  key={index}
+                  to={item.href}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="text-ink-700 hover:text-brand-600 transition-colors font-medium"
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
 
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
@@ -296,60 +254,20 @@ export const Header = () => {
                 );
               }
               
-              // Handle regular links without submenu
-              if (item.href) {
-                return (
-                  <Link
-                    key={index}
-                    to={item.href}
-                    className="block py-2 text-ink-700 hover:text-brand-600 transition-colors font-medium"
-                    onClick={() => {
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                      setIsMenuOpen(false);
-                    }}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              }
-              
-              // Handle expandable menu with submenu
-              if (item.submenu) {
-                return (
-                  <div key={index} className="space-y-1">
-                    <button
-                      onClick={() => setIsHandwerkerExpanded(!isHandwerkerExpanded)}
-                      className="w-full flex items-center justify-between py-2 text-ink-700 hover:text-brand-600 transition-colors font-medium"
-                    >
-                      <span>{item.label}</span>
-                      <ChevronDown 
-                        className={`h-4 w-4 transition-transform ${
-                          isHandwerkerExpanded ? 'rotate-180' : ''
-                        }`}
-                      />
-                    </button>
-                    {isHandwerkerExpanded && (
-                      <div className="pl-4 space-y-1 border-l-2 border-brand-200">
-                        {item.submenu.map((subItem, subIndex) => (
-                          <Link
-                            key={subIndex}
-                            to={subItem.href}
-                            className="block py-2 text-ink-600 hover:text-brand-600 transition-colors"
-                            onClick={() => {
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                              setIsMenuOpen(false);
-                            }}
-                          >
-                            {subItem.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              
-              return null;
+              // Handle regular links
+              return (
+                <Link
+                  key={index}
+                  to={item.href}
+                  className="block py-2 text-ink-700 hover:text-brand-600 transition-colors font-medium"
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  {item.label}
+                </Link>
+              );
             })}
             <div className="flex flex-col gap-3 pt-4 border-t border-line-200">
               {user ? (
