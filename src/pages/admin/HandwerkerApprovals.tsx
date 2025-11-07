@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Progress } from '@/components/ui/progress';
 
 interface PendingHandwerker {
   id: string;
-  user_id: string | null; // Nullable for guest registrations
+  user_id: string | null;
   is_verified: boolean;
   categories: string[];
   service_areas: string[];
@@ -23,9 +25,27 @@ interface PendingHandwerker {
   last_name: string | null;
   email: string | null;
   phone_number: string | null;
+  personal_address: string | null;
+  personal_zip: string | null;
+  personal_city: string | null;
+  personal_canton: string | null;
   company_name: string | null;
+  company_legal_form: string | null;
+  uid_number: string | null;
+  mwst_number: string | null;
+  business_address: string | null;
+  business_zip: string | null;
   business_city: string | null;
   business_canton: string | null;
+  iban: string | null;
+  bank_name: string | null;
+  liability_insurance_provider: string | null;
+  liability_insurance_policy_number: string | null;
+  insurance_valid_until: string | null;
+  trade_license_number: string | null;
+  tax_id: string | null;
+  logo_url: string | null;
+  bio: string | null;
   verification_status: string;
 }
 
@@ -98,9 +118,27 @@ const HandwerkerApprovals = () => {
           last_name,
           email,
           phone_number,
+          personal_address,
+          personal_zip,
+          personal_city,
+          personal_canton,
           company_name,
+          company_legal_form,
+          uid_number,
+          mwst_number,
+          business_address,
+          business_zip,
           business_city,
           business_canton,
+          iban,
+          bank_name,
+          liability_insurance_provider,
+          liability_insurance_policy_number,
+          insurance_valid_until,
+          trade_license_number,
+          tax_id,
+          logo_url,
+          bio,
           verification_status
         `)
         .eq('verification_status', 'pending')
@@ -117,6 +155,72 @@ const HandwerkerApprovals = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const calculateCompleteness = (handwerker: PendingHandwerker) => {
+    let score = 0;
+    let total = 0;
+    
+    const requiredFields = [
+      handwerker.first_name,
+      handwerker.last_name,
+      handwerker.email,
+      handwerker.phone_number,
+      handwerker.company_name,
+      handwerker.categories?.length > 0,
+      handwerker.service_areas?.length > 0,
+      handwerker.business_city || handwerker.business_canton
+    ];
+    
+    const optionalFields = [
+      handwerker.uid_number,
+      handwerker.mwst_number,
+      handwerker.iban,
+      handwerker.liability_insurance_provider,
+      handwerker.trade_license_number,
+      handwerker.verification_documents?.length > 0,
+      handwerker.logo_url
+    ];
+    
+    total = requiredFields.length + optionalFields.length;
+    score = requiredFields.filter(Boolean).length * 2 + optionalFields.filter(Boolean).length;
+    
+    return {
+      score,
+      total: total * 2,
+      percentage: Math.round((score / (total * 2)) * 100),
+      isComplete: requiredFields.every(Boolean)
+    };
+  };
+
+  const downloadDocument = async (documentUrl: string, fileName: string) => {
+    try {
+      const { data: { publicUrl } } = supabase.storage
+        .from('handwerker-documents')
+        .getPublicUrl(documentUrl);
+      
+      const response = await fetch(publicUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast({
+        title: 'Download fehlgeschlagen',
+        description: 'Dokument konnte nicht heruntergeladen werden.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const formatIBAN = (iban: string | null) => {
+    if (!iban) return null;
+    return iban.replace(/(.{4})/g, '$1 ').trim();
   };
 
   const approveHandwerker = async (handwerker: PendingHandwerker) => {
@@ -237,111 +341,338 @@ const HandwerkerApprovals = () => {
             </Alert>
           ) : (
             <div className="space-y-4">
-              {pendingHandwerkers.map((handwerker) => (
-                <Card key={handwerker.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-xl">
-                          {handwerker.first_name} {handwerker.last_name}
-                          {handwerker.company_name && (
-                            <span className="text-sm font-normal text-ink-600 ml-2">
-                              ({handwerker.company_name})
-                            </span>
-                          )}
-                        </CardTitle>
-                        <CardDescription className="mt-2 space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
-                            {handwerker.email}
+              {pendingHandwerkers.map((handwerker) => {
+                const completeness = calculateCompleteness(handwerker);
+                
+                return (
+                  <Card key={handwerker.id}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-xl">
+                            {handwerker.first_name} {handwerker.last_name}
+                            {handwerker.company_name && (
+                              <span className="text-sm font-normal text-muted-foreground ml-2">
+                                ({handwerker.company_name})
+                              </span>
+                            )}
+                          </CardTitle>
+                          <CardDescription className="mt-2 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-4 w-4" />
+                              {handwerker.email}
+                            </div>
+                            {handwerker.phone_number && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4" />
+                                {handwerker.phone_number}
+                              </div>
+                            )}
+                          </CardDescription>
+                          
+                          {/* Completeness Score */}
+                          <div className="mt-4 space-y-2">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground">Vollständigkeit des Profils</span>
+                              <Badge variant={completeness.percentage >= 80 ? "default" : completeness.percentage >= 50 ? "secondary" : "destructive"}>
+                                {completeness.percentage}%
+                              </Badge>
+                            </div>
+                            <Progress value={completeness.percentage} className="h-2" />
                           </div>
-                          {handwerker.phone_number && (
+                        </div>
+                        <Badge variant="outline" className="flex items-center gap-1 ml-4">
+                          <Clock className="h-3 w-3" />
+                          Ausstehend
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-4">
+                      <Accordion type="multiple" className="w-full">
+                        {/* Personal Information */}
+                        <AccordionItem value="personal">
+                          <AccordionTrigger className="text-sm font-semibold">
                             <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4" />
-                              {handwerker.phone_number}
+                              <User className="h-4 w-4" />
+                              Persönliche Informationen
                             </div>
-                          )}
-                          {(handwerker.business_city || handwerker.business_canton) && (
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-3 pt-2">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Name:</span>
+                                  <p className="text-sm">{handwerker.first_name} {handwerker.last_name}</p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">E-Mail:</span>
+                                  <p className="text-sm">{handwerker.email}</p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Telefon:</span>
+                                  <p className="text-sm">{handwerker.phone_number || 'Nicht angegeben'}</p>
+                                </div>
+                              </div>
+                              {(handwerker.personal_address || handwerker.personal_city) && (
+                                <div className="pt-2 border-t">
+                                  <span className="text-sm font-medium text-muted-foreground">Privatadresse:</span>
+                                  <p className="text-sm">
+                                    {handwerker.personal_address && <>{handwerker.personal_address}<br /></>}
+                                    {handwerker.personal_zip} {handwerker.personal_city}
+                                    {handwerker.personal_canton && `, ${handwerker.personal_canton}`}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Company Information */}
+                        <AccordionItem value="company">
+                          <AccordionTrigger className="text-sm font-semibold">
                             <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              {[handwerker.business_city, handwerker.business_canton]
-                                .filter(Boolean)
-                                .join(', ')}
+                              <Building2 className="h-4 w-4" />
+                              Firmeninformationen
                             </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-3 pt-2">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Firmenname:</span>
+                                  <p className="text-sm">{handwerker.company_name || 'Nicht angegeben'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Rechtsform:</span>
+                                  <div className="mt-1">
+                                    {handwerker.company_legal_form ? (
+                                      <Badge variant="secondary">{handwerker.company_legal_form}</Badge>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground">Nicht angegeben</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">UID-Nummer:</span>
+                                  <p className="text-sm font-mono">{handwerker.uid_number || 'Nicht angegeben'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">MWST-Nummer:</span>
+                                  <p className="text-sm font-mono">{handwerker.mwst_number || 'Nicht angegeben'}</p>
+                                </div>
+                              </div>
+                              {(handwerker.business_address || handwerker.business_city) && (
+                                <div className="pt-2 border-t">
+                                  <span className="text-sm font-medium text-muted-foreground">Geschäftsadresse:</span>
+                                  <p className="text-sm">
+                                    {handwerker.business_address && <>{handwerker.business_address}<br /></>}
+                                    {handwerker.business_zip} {handwerker.business_city}
+                                    {handwerker.business_canton && `, ${handwerker.business_canton}`}
+                                  </p>
+                                  {handwerker.personal_address === handwerker.business_address && 
+                                   handwerker.personal_city === handwerker.business_city && (
+                                    <Badge variant="outline" className="mt-2">Gleich wie Privatadresse</Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Banking Information */}
+                        <AccordionItem value="banking">
+                          <AccordionTrigger className="text-sm font-semibold">
+                            <div className="flex items-center gap-2">
+                              <CreditCard className="h-4 w-4" />
+                              Bankinformationen
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-3 pt-2">
+                              <div className="grid grid-cols-1 gap-4">
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">IBAN:</span>
+                                  <p className="text-sm font-mono">{formatIBAN(handwerker.iban) || 'Nicht angegeben'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Bank:</span>
+                                  <p className="text-sm">{handwerker.bank_name || 'Nicht angegeben'}</p>
+                                </div>
+                              </div>
+                              {!handwerker.iban && (
+                                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-md">
+                                  <AlertTriangle className="h-4 w-4" />
+                                  <span className="text-sm">Bankinformationen fehlen</span>
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Insurance & Licenses */}
+                        <AccordionItem value="insurance">
+                          <AccordionTrigger className="text-sm font-semibold">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4" />
+                              Versicherungen & Lizenzen
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-3 pt-2">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Haftpflichtversicherung:</span>
+                                  <p className="text-sm">{handwerker.liability_insurance_provider || 'Nicht angegeben'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Policen-Nummer:</span>
+                                  <p className="text-sm font-mono">{handwerker.liability_insurance_policy_number || 'Nicht angegeben'}</p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Gültig bis:</span>
+                                  <p className="text-sm">
+                                    {handwerker.insurance_valid_until 
+                                      ? new Date(handwerker.insurance_valid_until).toLocaleDateString('de-CH')
+                                      : 'Nicht angegeben'
+                                    }
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground">Gewerbeschein:</span>
+                                  <p className="text-sm">{handwerker.trade_license_number || handwerker.business_license || 'Nicht angegeben'}</p>
+                                </div>
+                              </div>
+                              {!handwerker.liability_insurance_provider && (
+                                <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md">
+                                  <AlertTriangle className="h-4 w-4" />
+                                  <span className="text-sm">Versicherungsinformationen fehlen</span>
+                                </div>
+                              )}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+
+                        {/* Documents & Logo */}
+                        <AccordionItem value="documents">
+                          <AccordionTrigger className="text-sm font-semibold">
+                            <div className="flex items-center gap-2">
+                              <FileText className="h-4 w-4" />
+                              Dokumente & Logo
+                              {handwerker.verification_documents?.length > 0 && (
+                                <Badge variant="secondary" className="ml-2">{handwerker.verification_documents.length}</Badge>
+                              )}
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-4 pt-2">
+                              {/* Logo */}
+                              {handwerker.logo_url && (
+                                <div>
+                                  <span className="text-sm font-medium text-muted-foreground block mb-2">Logo:</span>
+                                  <div className="border rounded-lg p-4 bg-muted/30 inline-block">
+                                    <img 
+                                      src={handwerker.logo_url} 
+                                      alt="Firmenlogo" 
+                                      className="h-16 w-auto object-contain"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Verification Documents */}
+                              <div>
+                                <span className="text-sm font-medium text-muted-foreground block mb-2">Verifizierungsdokumente:</span>
+                                {handwerker.verification_documents && handwerker.verification_documents.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {handwerker.verification_documents.map((doc, index) => (
+                                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                                        <div className="flex items-center gap-2">
+                                          <FileText className="h-4 w-4 text-muted-foreground" />
+                                          <span className="text-sm">Dokument {index + 1}</span>
+                                        </div>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => downloadDocument(doc, `dokument-${index + 1}`)}
+                                        >
+                                          <Download className="h-4 w-4 mr-1" />
+                                          Download
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-3 rounded-md">
+                                    <AlertTriangle className="h-4 w-4" />
+                                    <span className="text-sm">Keine Dokumente hochgeladen</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+
+                      {/* Categories and Service Areas - Always Visible */}
+                      <div className="pt-4 space-y-4">
+                        <div>
+                          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                            <Briefcase className="h-4 w-4" />
+                            Kategorien
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {handwerker.categories.map((category) => (
+                              <Badge key={category} variant="secondary">
+                                {category}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                            <MapPin className="h-4 w-4" />
+                            Einsatzgebiete
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {handwerker.service_areas.map((area) => (
+                              <Badge key={area} variant="outline">
+                                {area}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3 pt-4 border-t">
+                        <Button
+                          onClick={() => approveHandwerker(handwerker)}
+                          disabled={approving === handwerker.id}
+                          className="flex-1"
+                        >
+                          {approving === handwerker.id ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4 mr-2" />
                           )}
-                        </CardDescription>
+                          Freischalten
+                        </Button>
+                        <Button
+                          onClick={() => rejectHandwerker(handwerker)}
+                          disabled={approving === handwerker.id}
+                          variant="outline"
+                          className="flex-1"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Ablehnen
+                        </Button>
                       </div>
-                      <Badge variant="outline" className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Ausstehend
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h4 className="text-sm font-semibold text-ink-900 mb-2 flex items-center gap-2">
-                        <Briefcase className="h-4 w-4" />
-                        Kategorien
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {handwerker.categories.map((category) => (
-                          <Badge key={category} variant="secondary">
-                            {category}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-semibold text-ink-900 mb-2 flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Einsatzgebiete
-                      </h4>
-                      <div className="flex flex-wrap gap-2">
-                        {handwerker.service_areas.map((area) => (
-                          <Badge key={area} variant="outline">
-                            {area}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    {handwerker.business_license && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-ink-900 mb-2 flex items-center gap-2">
-                          <FileText className="h-4 w-4" />
-                          Gewerbeschein
-                        </h4>
-                        <p className="text-sm text-ink-600">{handwerker.business_license}</p>
-                      </div>
-                    )}
-
-                    <div className="flex gap-3 pt-4">
-                      <Button
-                        onClick={() => approveHandwerker(handwerker)}
-                        disabled={approving === handwerker.id}
-                        className="flex-1"
-                      >
-                        {approving === handwerker.id ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                        )}
-                        Freischalten
-                      </Button>
-                      <Button
-                        onClick={() => rejectHandwerker(handwerker)}
-                        disabled={approving === handwerker.id}
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Ablehnen
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>
