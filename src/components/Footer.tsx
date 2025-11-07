@@ -68,11 +68,21 @@ export const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Mail className="h-4 w-4" />
-                <span>info@bueeze.ch</span>
+                <a 
+                  href="mailto:info@bueeze.ch"
+                  className="hover:text-brand-400 transition-colors"
+                >
+                  info@bueeze.ch
+                </a>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Phone className="h-4 w-4" />
-                <span>+41 41 558 22 33</span>
+                <a 
+                  href="tel:+41415582233"
+                  className="hover:text-brand-400 transition-colors"
+                >
+                  +41 41 558 22 33
+                </a>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <MapPin className="h-4 w-4" />
