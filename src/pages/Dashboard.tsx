@@ -36,6 +36,7 @@ interface Lead {
   max_purchases: number;
   quality_score: number;
   status: string;
+  proposals_count?: number;
 }
 
 interface Purchase {
@@ -392,18 +393,15 @@ const Dashboard = () => {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Interessenten</CardTitle>
+                <CardTitle className="text-sm font-medium">Offerten</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {isHandwerker 
-                    ? purchases.length
-                    : myLeads.reduce((sum, lead) => sum + lead.purchased_count, 0)
-                  }
+                  {myLeads.reduce((sum, lead) => sum + (lead.proposals_count || 0), 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {isHandwerker ? 'Aufträge angefragt' : 'Handwerker interessiert'}
+                  Total erhaltene Offerten
                 </p>
               </CardContent>
             </Card>
@@ -478,8 +476,8 @@ const Dashboard = () => {
                               <span className="font-semibold">{formatBudget(lead.budget_min, lead.budget_max)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Interessenten:</span>
-                              <span className="font-semibold">{lead.purchased_count} interessiert</span>
+                              <span className="text-muted-foreground">Offerten:</span>
+                              <span className="font-semibold">{lead.proposals_count || 0} erhalten</span>
                             </div>
                           </div>
                         </CardContent>

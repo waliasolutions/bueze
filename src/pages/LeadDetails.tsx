@@ -436,17 +436,10 @@ const LeadDetails = () => {
           {/* Simple Stats */}
           <Card className="mb-6">
             <CardContent className="pt-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="text-center p-4 bg-muted/50 rounded-lg">
-                  <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="text-3xl font-bold">{lead.purchased_count}</p>
-                  <p className="text-sm text-muted-foreground">Handwerker interessiert</p>
-                </div>
-                <div className="text-center p-4 bg-muted/50 rounded-lg">
-                  <Eye className="h-8 w-8 mx-auto mb-2 text-primary" />
-                  <p className="text-3xl font-bold">{lead.max_purchases - lead.purchased_count}</p>
-                  <p className="text-sm text-muted-foreground">Plätze noch verfügbar</p>
-                </div>
+              <div className="text-center p-4 bg-muted/50 rounded-lg">
+                <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
+                <p className="text-3xl font-bold">{lead.proposals_count || 0}</p>
+                <p className="text-sm text-muted-foreground">Offerten erhalten</p>
               </div>
             </CardContent>
           </Card>

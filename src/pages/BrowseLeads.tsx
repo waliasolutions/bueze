@@ -194,10 +194,8 @@ const BrowseLeads = () => {
         throw error;
       }
 
-      // Filter out leads that have reached max purchases (client-side for now)
-      const availableLeads = (leadsData || []).filter(
-        (lead: Lead) => lead.purchased_count < lead.max_purchases
-      );
+      // All active leads are visible to handwerkers
+      const availableLeads = leadsData || [];
 
       logWithCorrelation('BrowseLeads: Leads fetched', { 
         count: availableLeads.length,
