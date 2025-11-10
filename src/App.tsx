@@ -34,6 +34,7 @@ import PricingPage from "./pages/legal/PricingPage";
 import MagicLinkHandler from "./pages/MagicLinkHandler";
 import OpportunityView from "./pages/OpportunityView";
 import ProposalReview from "./pages/ProposalReview";
+import ProposalsManagement from "./pages/ProposalsManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -107,6 +108,7 @@ const App = () => {
             <Route path="/magic" element={<MagicLinkHandler />} />
             <Route path="/opportunity/:leadId" element={<OpportunityView />} />
             <Route path="/proposals/:proposalId" element={<ProposalReview />} />
+            <Route path="/proposals" element={<ProposalsManagement />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

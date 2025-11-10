@@ -498,6 +498,13 @@ const Dashboard = () => {
 
             {!isHandwerker && (
               <TabsContent value="proposals" className="space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold">Erhaltene Offerten</h2>
+                  <Button onClick={() => navigate('/proposals')}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Alle Offerten verwalten
+                  </Button>
+                </div>
                 <ReceivedProposals userId={user?.id} />
               </TabsContent>
             )}

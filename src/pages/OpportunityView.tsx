@@ -94,23 +94,20 @@ const OpportunityView = () => {
     setSubmitting(true);
 
     try {
-      const { data: subscription } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .maybeSingle();
+      // Check if user can submit proposal
+      const { data: canSubmit, error: checkError } = await supabase
+        .rpc('can_submit_proposal', { handwerker_user_id: user.id });
 
-      if (subscription && (subscription as any).proposals_limit !== null) {
-        if ((subscription as any).used_proposals >= (subscription as any).proposals_limit) {
-          toast({
-            title: 'Kontingent erschöpft',
-            description: 'Sie haben Ihr monatliches Offerten-Limit erreicht. Bitte upgraden Sie Ihr Abo.',
-            variant: 'destructive'
-          });
-          navigate('/checkout');
-          return;
-        }
+      if (checkError) throw checkError;
+
+      if (!canSubmit) {
+        toast({
+          title: 'Kontingent erschöpft',
+          description: 'Sie haben Ihr monatliches Offerten-Limit erreicht. Bitte upgraden Sie Ihr Abo.',
+          variant: 'destructive'
+        });
+        navigate('/checkout');
+        return;
       }
 
       const { error: proposalError } = await supabase
@@ -125,13 +122,6 @@ const OpportunityView = () => {
         });
 
       if (proposalError) throw proposalError;
-
-      if (subscription) {
-        await supabase
-          .from('subscriptions')
-          .update({ used_proposals: ((subscription as any).used_proposals || 0) + 1 } as any)
-          .eq('user_id', user.id);
-      }
 
       toast({
         title: 'Offerte eingereicht!',

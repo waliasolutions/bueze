@@ -33,9 +33,10 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
   }, [userId]);
 
   const fetchSubscription = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('subscriptions')
+        .from('handwerker_subscriptions')
         .select('*')
         .eq('user_id', userId)
         .eq('status', 'active')
@@ -45,15 +46,39 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
 
       // Default to free plan if no subscription
       if (data) {
-        setSubscription(data as Subscription);
-      } else {
         setSubscription({
-          id: 'free',
+          id: data.id,
+          plan: data.plan_type as SubscriptionPlanType,
+          status: data.status,
+          used_proposals: data.proposals_used_this_period,
+          proposals_reset_at: data.current_period_end,
+          current_period_end: data.current_period_end,
+        });
+      } else {
+        // Create default free subscription
+        const { data: newSub, error: insertError } = await supabase
+          .from('handwerker_subscriptions')
+          .insert({
+            user_id: userId,
+            plan_type: 'free',
+            status: 'active',
+            proposals_used_this_period: 0,
+            proposals_limit: 5,
+            current_period_start: new Date().toISOString(),
+            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+
+        setSubscription({
+          id: newSub.id,
           plan: 'free',
           status: 'active',
           used_proposals: 0,
-          proposals_reset_at: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
-          current_period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+          proposals_reset_at: newSub.current_period_end,
+          current_period_end: newSub.current_period_end,
         });
       }
     } catch (error) {

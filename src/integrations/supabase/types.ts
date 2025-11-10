@@ -1171,6 +1171,51 @@ export type Database = {
         }
         Relationships: []
       }
+      handwerker_subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          id: string
+          plan_type: string
+          proposals_limit: number
+          proposals_used_this_period: number
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_type?: string
+          proposals_limit?: number
+          proposals_used_this_period?: number
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          id?: string
+          plan_type?: string
+          proposals_limit?: number
+          proposals_used_this_period?: number
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_proposals: {
         Row: {
           attachments: string[] | null
@@ -2562,6 +2607,10 @@ export type Database = {
           search_max: number
           search_min: number
         }
+        Returns: boolean
+      }
+      can_submit_proposal: {
+        Args: { handwerker_user_id: string }
         Returns: boolean
       }
       delete_expired_contact_requests: { Args: never; Returns: undefined }
