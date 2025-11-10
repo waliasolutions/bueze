@@ -282,8 +282,11 @@ const SubmitLead = () => {
       });
     }, 15000);
     
+    let user: any = null; // Declare user outside try block for error handling access
+    
     try {
-      let { data: { user } } = await supabase.auth.getUser();
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      user = currentUser;
       
       // If user is not authenticated, validate contact details and create account
       if (!user) {
@@ -351,6 +354,15 @@ const SubmitLead = () => {
         // User is already signed in after signUp, just refresh the session
         await supabase.auth.refreshSession();
 
+        // Add 300ms delay for session propagation through Supabase connection pool
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Verify session is available
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error('Session not available after signup. Please try logging in.');
+        }
+
         user = signUpData.user;
         
         toast({
@@ -370,7 +382,7 @@ const SubmitLead = () => {
       logWithCorrelation('Creating lead', { requestId, mediaCount: uploadedUrls.length });
 
       // Use supabaseQuery wrapper with optimized config
-      await supabaseQuery(async () => {
+      const leadResult = await supabaseQuery(async () => {
         return await supabase
           .from('leads')
           .insert({
@@ -395,6 +407,10 @@ const SubmitLead = () => {
         timeout: 5000,   // Reduce timeout to 5s
       });
 
+      if (!leadResult) {
+        throw new Error('Lead creation failed - no data returned');
+      }
+
       clearRequestId('create-lead');
       
       logWithCorrelation('Lead created successfully', { requestId });
@@ -406,18 +422,30 @@ const SubmitLead = () => {
 
       navigate('/dashboard');
     } catch (error) {
-      captureException(error as Error, { context: 'submitLead' });
-      logWithCorrelation('Lead creation failed', { error });
+      captureException(error as Error, { 
+        context: 'submitLead',
+        userId: user?.id
+      });
+      logWithCorrelation('Lead creation failed', { 
+        error,
+        userId: user?.id 
+      });
       
-      // Enhanced error messaging
+      // Enhanced error messaging with specific RLS handling
       const errorMessage = error instanceof Error ? error.message : 'Ein unerwarteter Fehler ist aufgetreten.';
       let userFriendlyMessage = errorMessage;
       
       // Add RLS-specific error handling
       if (errorMessage.includes('row-level security') || 
           errorMessage.includes('policy') ||
-          errorMessage.includes('permission denied')) {
-        userFriendlyMessage = 'Authentifizierungsfehler. Bitte laden Sie die Seite neu und versuchen Sie es erneut.';
+          errorMessage.includes('permission denied') ||
+          (error as any)?.code === '42501') {
+        userFriendlyMessage = 'Sitzung nicht bereit. Bitte warten Sie einen Moment und versuchen Sie es erneut, oder melden Sie sich erneut an.';
+        logWithCorrelation('RLS policy violation detected', { 
+          errorMessage,
+          errorCode: (error as any)?.code,
+          userId: user?.id
+        });
       } else if (errorMessage.includes('email')) {
         userFriendlyMessage = 'Problem mit der E-Mail-Adresse. Bitte überprüfen Sie Ihre Eingabe.';
       } else if (errorMessage.includes('password')) {
