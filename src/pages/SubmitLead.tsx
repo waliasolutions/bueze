@@ -348,21 +348,10 @@ const SubmitLead = () => {
 
         clearRequestId('create-account');
 
-        // Sign in the newly created user
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email: data.contactEmail,
-          password: data.contactPassword,
-        });
-
-        if (signInError) throw signInError;
-
-        // Add explicit session refresh
+        // User is already signed in after signUp, just refresh the session
         await supabase.auth.refreshSession();
 
-        // Small delay to ensure session is propagated
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        user = signInData.user;
+        user = signUpData.user;
         
         toast({
           title: "Konto erstellt",
@@ -380,7 +369,7 @@ const SubmitLead = () => {
       
       logWithCorrelation('Creating lead', { requestId, mediaCount: uploadedUrls.length });
 
-      // Use supabaseQuery wrapper with reduced retry config
+      // Use supabaseQuery wrapper with optimized config
       await supabaseQuery(async () => {
         return await supabase
           .from('leads')
@@ -402,9 +391,8 @@ const SubmitLead = () => {
             request_id: requestId,
           });
       }, {
-        maxAttempts: 2,  // Reduce from 4 to 2
-        timeout: 8000,   // Reduce from 10s to 8s
-        baseDelay: 500,  // Increase initial delay for session propagation
+        maxAttempts: 1,  // No retries for faster response
+        timeout: 5000,   // Reduce timeout to 5s
       });
 
       clearRequestId('create-lead');

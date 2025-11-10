@@ -126,13 +126,49 @@ const Dashboard = () => {
 
       setUser(user);
 
-      // Fetch user profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+      // Parallelize all data fetching for faster loading
+      const [
+        { data: profileData },
+        { data: leadsData },
+        { data: handwerkerProfileData },
+        { data: purchasesData }
+      ] = await Promise.all([
+        // Fetch user profile
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle(),
+        
+        // Fetch user's leads (exclude deleted)
+        supabase
+          .from('leads')
+          .select('*')
+          .eq('owner_id', user.id)
+          .neq('status', 'deleted')
+          .order('created_at', { ascending: false })
+          .limit(10),
+        
+        // Check if user is handwerker
+        supabase
+          .from('handwerker_profiles')
+          .select('id, is_verified')
+          .eq('user_id', user.id)
+          .maybeSingle(),
+        
+        // Fetch user's purchases
+        supabase
+          .from('lead_purchases')
+          .select(`
+            *,
+            lead:leads(*)
+          `)
+          .eq('buyer_id', user.id)
+          .order('purchased_at', { ascending: false })
+          .limit(10)
+      ]);
 
+      // Handle profile data
       if (profileData) {
         setProfile(profileData);
       } else {
@@ -145,43 +181,22 @@ const Dashboard = () => {
         });
       }
 
-      // Fetch user's leads (exclude deleted)
-      const { data: leadsData } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('owner_id', user.id)
-        .neq('status', 'deleted')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
+      // Set leads data
       setMyLeads(leadsData || []);
 
-      // Check if user is handwerker by checking handwerker_profiles table
-      const { data: handwerkerProfileData } = await supabase
-        .from('handwerker_profiles')
-        .select('id, is_verified')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
+      // Check if handwerker and redirect if needed
       if (handwerkerProfileData) {
-        // User has handwerker profile - redirect to handwerker dashboard
         navigate('/handwerker-dashboard');
         return;
       }
 
-      // Fetch user's purchases
-      const { data: purchasesData } = await supabase
-        .from('lead_purchases')
-        .select(`
-          *,
-          lead:leads(*)
-        `)
-        .eq('buyer_id', user.id)
-        .order('purchased_at', { ascending: false })
-        .limit(10);
-
+      // Set purchases data
       setPurchases(purchasesData || []);
-      logWithCorrelation('Dashboard: User data loaded', { leadsCount: leadsData?.length, purchasesCount: purchasesData?.length });
+      
+      logWithCorrelation('Dashboard: User data loaded', { 
+        leadsCount: leadsData?.length, 
+        purchasesCount: purchasesData?.length 
+      });
     } catch (error) {
       const categorized = trackError(error);
       captureException(error as Error, { 
