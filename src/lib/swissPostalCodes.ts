@@ -9,20 +9,22 @@ export interface PostalCodeEntry {
 }
 
 export interface OpenPLZLocality {
-  key: string;
-  name: string;
   postalCode: string;
+  name: string;
   commune: {
     key: string;
     name: string;
-    district: {
-      key: string;
-      name: string;
-      canton: {
-        key: string;
-        name: string;
-      };
-    };
+    shortName: string;
+  };
+  district: {
+    key: string;
+    name: string;
+    shortName: string;
+  };
+  canton: {
+    key: string;
+    name: string;
+    shortName: string;
   };
 }
 
@@ -55,9 +57,9 @@ export const searchByPostalCode = async (
     return data.map(locality => ({
       postalCode: locality.postalCode,
       name: locality.name,
-      canton: locality.commune.district.canton.key,
-      district: locality.commune.district.name,
-      commune: locality.commune.name,
+      canton: locality.canton?.key || locality.canton?.shortName || '',
+      district: locality.district?.name || '',
+      commune: locality.commune?.name || '',
     }));
   } catch (error) {
     captureException(error as Error, { context: 'searchByPostalCode' });
@@ -92,9 +94,9 @@ export const searchByCityName = async (
     return data.map(locality => ({
       postalCode: locality.postalCode,
       name: locality.name,
-      canton: locality.commune.district.canton.key,
-      district: locality.commune.district.name,
-      commune: locality.commune.name,
+      canton: locality.canton?.key || locality.canton?.shortName || '',
+      district: locality.district?.name || '',
+      commune: locality.commune?.name || '',
     }));
   } catch (error) {
     captureException(error as Error, { context: 'searchByCityName' });

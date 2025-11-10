@@ -401,15 +401,12 @@ const SubmitLead = () => {
             budget_type: 'estimate' as any,
             media_urls: uploadedUrls,
             request_id: requestId,
-          });
+          })
+          .select();
       }, {
         maxAttempts: 1,  // No retries for faster response
         timeout: 5000,   // Reduce timeout to 5s
       });
-
-      if (!leadResult) {
-        throw new Error('Lead creation failed - no data returned');
-      }
 
       clearRequestId('create-lead');
       
@@ -446,6 +443,16 @@ const SubmitLead = () => {
           errorCode: (error as any)?.code,
           userId: user?.id
         });
+      } else if (errorMessage.includes('duplicate key') || (error as any)?.code === '23505') {
+        // Lead was already created, just navigate
+        userFriendlyMessage = 'Auftrag wurde bereits erstellt.';
+        clearRequestId('create-lead');
+        toast({
+          title: "Auftrag erstellt",
+          description: "Ihr Auftrag wurde erfolgreich erstellt und ist jetzt sichtbar für Handwerker.",
+        });
+        navigate('/dashboard');
+        return;
       } else if (errorMessage.includes('email')) {
         userFriendlyMessage = 'Problem mit der E-Mail-Adresse. Bitte überprüfen Sie Ihre Eingabe.';
       } else if (errorMessage.includes('password')) {
