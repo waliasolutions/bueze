@@ -38,6 +38,7 @@ import OpportunityView from "./pages/OpportunityView";
 import ProposalReview from "./pages/ProposalReview";
 import ProposalsManagement from "./pages/ProposalsManagement";
 import NotFound from "./pages/NotFound";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -83,6 +84,7 @@ const App = () => {
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/handwerker-onboarding" element={<HandwerkerOnboarding />} />
             <Route path="/handwerker-dashboard" element={<HandwerkerDashboard />} />
             <Route path="/handwerker-profile/edit" element={<HandwerkerProfileEdit />} />
