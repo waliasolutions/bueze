@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
+import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
 
 interface Lead {
   id: string;
@@ -579,9 +580,19 @@ const HandwerkerDashboard = () => {
           {/* Page Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-3xl font-bold text-foreground">
-                Willkommen, {handwerkerProfile.first_name || 'Handwerker'}!
-              </h1>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Willkommen, {handwerkerProfile.first_name || 'Handwerker'}!
+                </h1>
+                {user && (
+                  <div className="flex items-center gap-3 mt-2">
+                    <HandwerkerStatusIndicator 
+                      userId={user.id} 
+                      verificationStatus={handwerkerProfile.verification_status}
+                    />
+                  </div>
+                )}
+              </div>
               {user && <ProposalLimitBadge userId={user.id} />}
             </div>
             <p className="text-muted-foreground">
