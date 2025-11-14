@@ -50,6 +50,7 @@ interface HandwerkerProfile {
   trade_license_number: string | null;
   insurance_valid_until: string | null;
   logo_url: string | null;
+  verification_status: string | null;
 }
 
 const HandwerkerProfileEdit = () => {
