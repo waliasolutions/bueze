@@ -31,6 +31,8 @@ export const Footer = () => {
       title: 'Rechtliches',
       links: [
         { label: 'AGB', href: '/legal/agb' },
+        { label: 'Impressum', href: '/impressum' },
+        { label: 'Datenschutz', href: '/datenschutz' },
       ]
     }
   ];

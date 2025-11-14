@@ -31,6 +31,8 @@ import HandwerkerVerification from "./pages/admin/HandwerkerVerification";
 import UserManagement from "./pages/admin/UserManagement";
 import AGB from "./pages/legal/AGB";
 import PricingPage from "./pages/legal/PricingPage";
+import Impressum from "./pages/legal/Impressum";
+import Datenschutz from "./pages/legal/Datenschutz";
 import MagicLinkHandler from "./pages/MagicLinkHandler";
 import OpportunityView from "./pages/OpportunityView";
 import ProposalReview from "./pages/ProposalReview";
@@ -104,6 +106,8 @@ const App = () => {
             <Route path="/admin/handwerker-verification" element={<HandwerkerVerification />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/legal/agb" element={<AGB />} />
+            <Route path="/impressum" element={<Impressum />} />
+            <Route path="/datenschutz" element={<Datenschutz />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/magic" element={<MagicLinkHandler />} />
             <Route path="/opportunity/:leadId" element={<OpportunityView />} />
