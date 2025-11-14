@@ -9,12 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Save, ArrowLeft, CheckCircle, Circle, Clock, User, Building2, Wallet, Shield } from 'lucide-react';
+import { Loader2, Upload, X, Save, ArrowLeft, CheckCircle, Circle, Clock, User, Building2, Wallet, Shield, Eye, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SWISS_CANTONS } from '@/config/cantons';
+import { ProfilePreview } from '@/components/ProfilePreview';
+import { ProfileCompletenessCard } from '@/components/ProfileCompletenessCard';
+import { HandwerkerStatusIndicator } from '@/components/HandwerkerStatusIndicator';
 
 interface HandwerkerProfile {
   id: string;
@@ -57,6 +60,7 @@ const HandwerkerProfileEdit = () => {
   const [uploading, setUploading] = useState(false);
   const [profile, setProfile] = useState<HandwerkerProfile | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   
   // Profile & Bio
   const [bio, setBio] = useState('');
@@ -545,74 +549,83 @@ const HandwerkerProfileEdit = () => {
               <h1 className="text-3xl font-bold text-ink-900 mb-2">
                 Profil bearbeiten
               </h1>
-              <p className="text-ink-600">
-                {profile.first_name} {profile.last_name}
-                {profile.company_name && ` • ${profile.company_name}`}
+              <p className="text-ink-600 flex items-center gap-3">
+                <span>
+                  {profile.first_name} {profile.last_name}
+                  {profile.company_name && ` • ${profile.company_name}`}
+                </span>
+                <HandwerkerStatusIndicator 
+                  userId={profile.id}
+                  verificationStatus={profile.verification_status || 'pending'}
+                  showLabel={false}
+                />
               </p>
             </div>
             
-            {lastSaved && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>Zuletzt gespeichert: {lastSaved.toLocaleTimeString('de-CH')}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-4">
+              {lastSaved && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  <span>Zuletzt gespeichert: {lastSaved.toLocaleTimeString('de-CH')}</span>
+                </div>
+              )}
+              
+              <Button
+                variant={isPreviewMode ? "default" : "outline"}
+                onClick={() => setIsPreviewMode(!isPreviewMode)}
+                className="gap-2"
+              >
+                {isPreviewMode ? (
+                  <>
+                    <Edit className="h-4 w-4" />
+                    Bearbeiten
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    Vorschau
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
-          {/* Profile Completion Progress */}
-          <Card className="mb-6 border-brand-300">
-            <CardContent className="pt-6">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-lg">Profil-Vollständigkeit</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Vervollständigen Sie Ihr Profil für bessere Sichtbarkeit
-                    </p>
-                  </div>
-                  <span className="text-2xl font-bold text-brand-600">
-                    {calculateProfileCompletion()}%
-                  </span>
-                </div>
-                <Progress value={calculateProfileCompletion()} className="h-3" />
-                
-                <div className="grid grid-cols-2 gap-2 mt-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    {bio && bio.trim().length > 50 ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span>Biografie</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {hourlyRateMin && hourlyRateMax ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span>Stundensätze</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {serviceAreas && serviceAreas.split(',').filter(a => a.trim()).length > 0 ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span>Servicegebiete</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    {portfolioUrls && portfolioUrls.length > 0 ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    ) : (
-                      <Circle className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span>Portfolio</span>
-                  </div>
-                </div>
+          {/* Show Preview or Edit Mode */}
+          {isPreviewMode ? (
+            <div className="mb-6">
+              <ProfilePreview profile={{
+                first_name: firstName,
+                last_name: lastName,
+                company_name: companyName,
+                bio: bio,
+                hourly_rate_min: hourlyRateMin ? parseInt(hourlyRateMin) : null,
+                hourly_rate_max: hourlyRateMax ? parseInt(hourlyRateMax) : null,
+                service_areas: serviceAreas.split(',').map(a => a.trim()).filter(a => a),
+                website: website,
+                logo_url: logoUrl,
+                portfolio_urls: portfolioUrls,
+              }} />
+            </div>
+          ) : (
+            <>
+              {/* Profile Completion Card */}
+              <div className="mb-6">
+                <ProfileCompletenessCard profile={{
+                  first_name: firstName,
+                  last_name: lastName,
+                  email: email,
+                  phone_number: phoneNumber,
+                  company_name: companyName,
+                  bio: bio,
+                  hourly_rate_min: hourlyRateMin ? parseInt(hourlyRateMin) : null,
+                  hourly_rate_max: hourlyRateMax ? parseInt(hourlyRateMax) : null,
+                  service_areas: serviceAreas.split(',').map(a => a.trim()).filter(a => a),
+                  portfolio_urls: portfolioUrls,
+                  logo_url: logoUrl,
+                  uid_number: uidNumber,
+                  iban: iban,
+                }} />
               </div>
-            </CardContent>
-          </Card>
 
           <Tabs defaultValue="profile" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
@@ -1177,6 +1190,8 @@ const HandwerkerProfileEdit = () => {
               </Card>
             </TabsContent>
           </Tabs>
+            </>
+          )}
 
           {/* Save Button */}
           <div className="flex justify-end gap-4 mt-6">
