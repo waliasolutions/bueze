@@ -1,7 +1,9 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Globe, Euro, Star } from 'lucide-react';
+import { MapPin, Globe, Euro, Star, Phone, Mail, Shield, Wrench, Building2, CheckCircle } from 'lucide-react';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { formatCantonDisplay } from '@/lib/cantonPostalCodes';
 
 interface ProfilePreviewProps {
   profile: {
@@ -15,6 +17,17 @@ interface ProfilePreviewProps {
     website: string | null;
     logo_url: string | null;
     portfolio_urls: string[];
+    phone_number: string | null;
+    email: string | null;
+    business_address: string | null;
+    business_city: string | null;
+    business_zip: string | null;
+    business_canton: string | null;
+    categories: string[];
+    company_legal_form: string | null;
+    liability_insurance_provider: string | null;
+    insurance_valid_until: string | null;
+    verification_status: string | null;
   };
 }
 
@@ -94,8 +107,67 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
             </div>
           )}
 
+          {/* Contact Information */}
+          {(profile.phone_number || profile.email || profile.business_address) && (
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <Phone className="h-5 w-5 text-brand-500" />
+                Kontaktinformationen
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                {profile.phone_number && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <a href={`tel:${profile.phone_number}`} className="text-brand-500 hover:underline">
+                      {profile.phone_number}
+                    </a>
+                  </div>
+                )}
+                {profile.email && (
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <a href={`mailto:${profile.email}`} className="text-brand-500 hover:underline">
+                      {profile.email}
+                    </a>
+                  </div>
+                )}
+                {(profile.business_address || profile.business_city) && (
+                  <div className="flex items-center gap-2 col-span-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>
+                      {profile.business_address && `${profile.business_address}, `}
+                      {profile.business_zip} {profile.business_city}
+                      {profile.business_canton && `, ${profile.business_canton}`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Services Offered */}
+          {profile.categories && profile.categories.length > 0 && (
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-brand-500" />
+                Angebotene Dienstleistungen
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {profile.categories.map((category, idx) => {
+                  const categoryInfo = subcategoryLabels[category];
+                  const label = categoryInfo?.label || category;
+                  return (
+                    <Badge key={idx} variant="default" className="text-sm px-3 py-1.5">
+                      {label}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Bio */}
-          <div>
+          <div className="border-t pt-6">
             <h3 className="font-semibold text-lg mb-2">Über uns</h3>
             {profile.bio ? (
               <p className="text-ink-700 leading-relaxed whitespace-pre-wrap">
@@ -110,7 +182,7 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
 
           {/* Portfolio */}
           {profile.portfolio_urls && profile.portfolio_urls.length > 0 && (
-            <div>
+            <div className="border-t pt-6">
               <h3 className="font-semibold text-lg mb-3">Portfolio</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {profile.portfolio_urls.map((url, index) => (
@@ -131,14 +203,54 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
 
           {/* Service Areas */}
           {profile.service_areas && profile.service_areas.length > 0 && (
-            <div>
+            <div className="border-t pt-6">
               <h3 className="font-semibold text-lg mb-3">Servicegebiete</h3>
               <div className="flex flex-wrap gap-2">
-                {profile.service_areas.map((area, index) => (
-                  <Badge key={index} variant="outline">
-                    {area}
-                  </Badge>
-                ))}
+                {profile.service_areas.map((area, index) => {
+                  const isCanton = area.length === 2 && area === area.toUpperCase();
+                  const displayText = isCanton ? formatCantonDisplay(area) : area;
+                  
+                  return (
+                    <Badge key={index} variant={isCanton ? "default" : "outline"}>
+                      {displayText}
+                    </Badge>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Professional Details */}
+          {(profile.company_legal_form || profile.liability_insurance_provider || profile.verification_status === 'approved') && (
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-lg mb-3">Professionelle Details</h3>
+              <div className="space-y-2 text-sm">
+                {profile.company_legal_form && (
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Rechtsform:</span>
+                    <span className="font-medium">{profile.company_legal_form}</span>
+                  </div>
+                )}
+                {profile.liability_insurance_provider && (
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-green-600" />
+                    <Badge variant="outline" className="border-green-600 text-green-700">
+                      Haftpflichtversichert
+                      {profile.insurance_valid_until && 
+                        ` bis ${new Date(profile.insurance_valid_until).toLocaleDateString('de-CH')}`
+                      }
+                    </Badge>
+                  </div>
+                )}
+                {profile.verification_status === 'approved' && (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-blue-600" />
+                    <Badge variant="outline" className="border-blue-600 text-blue-700">
+                      Verifiziertes Profil
+                    </Badge>
+                  </div>
+                )}
               </div>
             </div>
           )}
