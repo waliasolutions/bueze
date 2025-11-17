@@ -835,10 +835,24 @@ const HandwerkerProfileEdit = () => {
                 bio: bio,
                 hourly_rate_min: hourlyRateMin ? parseInt(hourlyRateMin) : null,
                 hourly_rate_max: hourlyRateMax ? parseInt(hourlyRateMax) : null,
-                service_areas: serviceAreas.split(',').map(a => a.trim()).filter(a => a),
-        website: website,
-        logo_url: logoUrl,
-        portfolio_urls: portfolioUrls,
+                service_areas: [
+                  ...selectedCantons,
+                  ...manualPostalCodes
+                ],
+                website: website,
+                logo_url: logoUrl,
+                portfolio_urls: portfolioUrls,
+                phone_number: phoneNumber,
+                email: email,
+                business_address: businessAddress,
+                business_city: businessCity,
+                business_zip: businessZip,
+                business_canton: businessCanton,
+                categories: categories,
+                company_legal_form: companyLegalForm,
+                liability_insurance_provider: liabilityInsuranceProvider,
+                insurance_valid_until: insuranceValidUntil,
+                verification_status: profile?.verification_status || null,
               }} />
             </div>
           ) : (
