@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 import { majorCategories } from '@/config/majorCategories';
+import { usePageContent } from '@/hooks/usePageContent';
 
 const homeCategories = Object.values(majorCategories)
   .filter(cat => cat.showOnHome)
@@ -10,6 +11,7 @@ const homeCategories = Object.values(majorCategories)
 
 export const Hero = () => {
   const navigate = useNavigate();
+  const { content, loading } = usePageContent('homepage_hero');
 
   const handleCategoryClick = (categorySlug: string) => {
     navigate(`/kategorien/${categorySlug}`);
@@ -24,11 +26,11 @@ export const Hero = () => {
           {/* Headlines */}
           <div className="space-y-6">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
-              Finden Sie den besten Handwerker.{' '}
-              <span className="text-brand-600">Für jedes Projekt.</span>
+              {content?.fields?.title || 'Finden Sie den besten Handwerker.'}{' '}
+              <span className="text-brand-600">{content?.fields?.titleHighlight || 'Für jedes Projekt.'}</span>
             </h1>
             <p className="text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto">
-              Erhalten Sie kostenlos mehrere Offerten von zertifizierten Handwerkern aus Ihrer Region.
+              {content?.fields?.subtitle || 'Erhalten Sie kostenlos mehrere Offerten von zertifizierten Handwerkern aus Ihrer Region.'}
             </p>
           </div>
 
@@ -43,7 +45,7 @@ export const Hero = () => {
                 hover:scale-105 active:scale-95
                 group"
             >
-              <span className="relative z-10">Auftrag erstellen</span>
+              <span className="relative z-10">{content?.fields?.ctaText || 'Auftrag erstellen'}</span>
               <ArrowRight className="relative z-10 ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
@@ -84,18 +86,16 @@ export const Hero = () => {
 
           {/* Trust Signals */}
           <div className="flex flex-wrap justify-center gap-8 text-sm text-ink-600 pt-8">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
-              <span>Über 100 geprüfte Betriebe</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
-              <span><strong className="text-brand-600">Kostenlos & unverbindlich</strong> für Auftraggeber</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
-              <span>Geprüfte Fachbetriebe</span>
-            </div>
+            {(content?.fields?.trustSignals || [
+              'Über 100 geprüfte Betriebe',
+              'Kostenlos & unverbindlich für Auftraggeber',
+              'Geprüfte Fachbetriebe'
+            ]).map((signal: string, index: number) => (
+              <div key={index} className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
+                <span dangerouslySetInnerHTML={{ __html: signal }} />
+              </div>
+            ))}
           </div>
         </div>
       </div>
