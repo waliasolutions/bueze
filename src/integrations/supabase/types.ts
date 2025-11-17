@@ -2160,6 +2160,30 @@ export type Database = {
           },
         ]
       }
+      site_seo_settings: {
+        Row: {
+          id: string
+          robots_txt: string
+          sitemap_last_generated: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          robots_txt?: string
+          sitemap_last_generated?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          robots_txt?: string
+          sitemap_last_generated?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       snippets: {
         Row: {
           country_id: string
