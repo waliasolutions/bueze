@@ -42,6 +42,7 @@ import ResetPassword from "./pages/ResetPassword";
 import ContentManagement from "./pages/admin/ContentManagement";
 import ContentEditor from "./pages/admin/ContentEditor";
 import SEOTools from "./pages/admin/SEOTools";
+import Sitemap from "./pages/Sitemap";
 
 const queryClient = new QueryClient();
 
@@ -121,6 +122,7 @@ const App = () => {
             <Route path="/opportunity/:leadId" element={<OpportunityView />} />
             <Route path="/proposals/:proposalId" element={<ProposalReview />} />
             <Route path="/proposals" element={<ProposalsManagement />} />
+            <Route path="/sitemap.xml" element={<Sitemap />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

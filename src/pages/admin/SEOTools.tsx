@@ -12,6 +12,7 @@ export default function SEOTools() {
   const { toast } = useToast();
   const [robotsTxt, setRobotsTxt] = useState('');
   const [lastGenerated, setLastGenerated] = useState<string | null>(null);
+  const [sitemapUrl, setSitemapUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
@@ -76,20 +77,22 @@ export default function SEOTools() {
 
       if (error) throw error;
 
-      // Update last generated timestamp
-      if (settingsId) {
-        await supabase
-          .from('site_seo_settings')
-          .update({ sitemap_last_generated: new Date().toISOString() })
-          .eq('id', settingsId);
+      // The edge function now returns JSON with url and timestamp
+      if (data?.url) {
+        setSitemapUrl(data.url);
       }
 
-      setLastGenerated(new Date().toISOString());
+      if (data?.timestamp) {
+        setLastGenerated(data.timestamp);
+      }
 
       toast({
         title: 'Sitemap generiert',
-        description: 'Die Sitemap wurde erfolgreich erstellt',
+        description: 'Die Sitemap wurde erfolgreich erstellt und ist verfügbar',
       });
+
+      // Refresh settings to get updated timestamp
+      fetchSEOSettings();
     } catch (error) {
       console.error('Error generating sitemap:', error);
       toast({
@@ -142,9 +145,23 @@ export default function SEOTools() {
                   Sitemap generieren
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Die Sitemap wird unter <code className="bg-muted px-2 py-1 rounded">/sitemap.xml</code> verfügbar sein
-              </p>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Die Sitemap ist verfügbar unter:
+                </p>
+                <div className="flex gap-2">
+                  <code className="bg-muted px-3 py-2 rounded flex-1 text-sm">
+                    https://bueeze.ch/sitemap.xml
+                  </code>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open('https://bueeze.ch/sitemap.xml', '_blank')}
+                  >
+                    Öffnen
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
