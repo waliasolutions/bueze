@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Save, ArrowLeft, CheckCircle, Circle, Clock, User, Building2, Wallet, Shield, Eye, Edit, FileText } from 'lucide-react';
+import { Loader2, Upload, X, Save, ArrowLeft, CheckCircle, Circle, Clock, User, Building2, Wallet, Shield, Eye, Edit, FileText, Briefcase } from 'lucide-react';
 import { PostalCodeInput } from '@/components/PostalCodeInput';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -19,6 +19,10 @@ import { SWISS_CANTONS } from '@/config/cantons';
 import { ProfilePreview } from '@/components/ProfilePreview';
 import { ProfileCompletenessCard } from '@/components/ProfileCompletenessCard';
 import { HandwerkerStatusIndicator } from '@/components/HandwerkerStatusIndicator';
+import { majorCategories } from '@/config/majorCategories';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { cn } from '@/lib/utils';
 
 interface HandwerkerProfile {
   id: string;
@@ -53,6 +57,7 @@ interface HandwerkerProfile {
   logo_url: string | null;
   verification_status: string | null;
   verification_documents: string[] | null;
+  categories: string[];
 }
 
 const HandwerkerProfileEdit = () => {
@@ -74,6 +79,10 @@ const HandwerkerProfileEdit = () => {
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([]);
   const [verificationDocuments, setVerificationDocuments] = useState<string[]>([]);
   const [tempPostalCode, setTempPostalCode] = useState('');
+  
+  // Categories
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
   
   // Personal Information
   const [firstName, setFirstName] = useState('');
@@ -191,7 +200,22 @@ const HandwerkerProfileEdit = () => {
       
       // Logo
       setLogoUrl(profileData.logo_url || '');
+      setPortfolioUrls(profileData.portfolio_urls || []);
       setVerificationDocuments(profileData.verification_documents || []);
+      
+      // Load categories
+      setCategories(profileData.categories || []);
+      
+      // Determine which major categories are selected based on subcategories
+      const majorCats = new Set<string>();
+      (profileData.categories || []).forEach((cat: string) => {
+        Object.values(majorCategories).forEach((majorCat) => {
+          if (majorCat.subcategories.includes(cat)) {
+            majorCats.add(majorCat.id);
+          }
+        });
+      });
+      setSelectedMajorCategories(Array.from(majorCats));
     } catch (error) {
       console.error('Error loading profile:', error);
       toast({
@@ -618,6 +642,9 @@ const HandwerkerProfileEdit = () => {
           // Logo
           logo_url: logoUrl || null,
           
+          // Categories
+          categories: categories as any,
+          
           updated_at: new Date().toISOString(),
         })
         .eq('id', profile.id);
@@ -771,8 +798,9 @@ const HandwerkerProfileEdit = () => {
               </div>
 
           <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="profile">Profil & Bio</TabsTrigger>
+              <TabsTrigger value="categories">Fachgebiete</TabsTrigger>
               <TabsTrigger value="company">Firma & Kontakt</TabsTrigger>
               <TabsTrigger value="banking">Banking & Versicherung</TabsTrigger>
               <TabsTrigger value="documents">Dokumente und Bilder</TabsTrigger>
@@ -924,6 +952,155 @@ const HandwerkerProfileEdit = () => {
                 </div>
               </CardContent>
             </Card>
+            </TabsContent>
+
+            {/* Categories Tab */}
+            <TabsContent value="categories" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
+                      <Briefcase className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle>Fachgebiete & Kategorien</CardTitle>
+                      <CardDescription>
+                        Wählen Sie Ihre Spezialisierungen für gezieltere Aufträge
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Major Categories */}
+                  <div>
+                    <h4 className="text-lg font-semibold mb-4">Hauptkategorien</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {Object.values(majorCategories).map((majorCat) => {
+                        const Icon = majorCat.icon;
+                        const isSelected = selectedMajorCategories.includes(majorCat.id);
+                        
+                        return (
+                          <Card
+                            key={majorCat.id}
+                            className={cn(
+                              "cursor-pointer transition-all hover:shadow-lg hover-scale",
+                              isSelected && "ring-2 ring-brand-600 bg-brand-50 shadow-lg"
+                            )}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedMajorCategories(prev => 
+                                  prev.filter(id => id !== majorCat.id)
+                                );
+                                setCategories(prev => 
+                                  prev.filter(cat => !majorCat.subcategories.includes(cat))
+                                );
+                              } else {
+                                setSelectedMajorCategories(prev => [...prev, majorCat.id]);
+                              }
+                            }}
+                          >
+                            <CardContent className="p-6 text-center">
+                              <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white mx-auto mb-3 transition-transform ${isSelected ? 'scale-110' : ''}`}>
+                                <Icon className="w-8 h-8" />
+                              </div>
+                              <p className="text-sm font-semibold">{majorCat.label}</p>
+                              {isSelected && (
+                                <Badge className="mt-3 bg-brand-600">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Gewählt
+                                </Badge>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Subcategories */}
+                  {selectedMajorCategories.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">Fachgebiete</h4>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Wählen Sie spezifische Fachgebiete für gezieltere Aufträge
+                      </p>
+                      
+                      <div className="space-y-4">
+                        {selectedMajorCategories.map(majorCatId => {
+                          const majorCat = majorCategories[majorCatId];
+                          const subcats = majorCat.subcategories
+                            .map(subId => subcategoryLabels[subId])
+                            .filter(Boolean);
+                          
+                          return (
+                            <Accordion key={majorCatId} type="single" collapsible defaultValue={majorCatId}>
+                              <AccordionItem value={majorCatId} className="border-2 rounded-lg px-4">
+                                <AccordionTrigger className="text-base font-semibold hover:no-underline">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white`}>
+                                      <majorCat.icon className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-lg">{majorCat.label}</span>
+                                    <Badge variant="secondary" className="ml-2">
+                                      {categories.filter(cat => majorCat.subcategories.includes(cat)).length} gewählt
+                                    </Badge>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="flex flex-wrap gap-3 pt-4 pb-2">
+                                    {subcats.map(subcat => {
+                                      const isSelected = categories.includes(subcat.value);
+                                      
+                                      return (
+                                        <Badge
+                                          key={subcat.value}
+                                          variant={isSelected ? "default" : "outline"}
+                                          className="cursor-pointer px-4 py-2 text-sm hover-scale hover:bg-brand-100"
+                                          onClick={() => {
+                                            if (isSelected) {
+                                              setCategories(prev => 
+                                                prev.filter(id => id !== subcat.value)
+                                              );
+                                            } else {
+                                              setCategories(prev => [...prev, subcat.value]);
+                                            }
+                                          }}
+                                        >
+                                          {subcat.label}
+                                          {isSelected && <CheckCircle className="ml-2 h-3 w-3" />}
+                                        </Badge>
+                                      );
+                                    })}
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Selected Categories Summary */}
+                  {categories.length > 0 && (
+                    <Card className="bg-blue-50 border-blue-200">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-3">
+                          <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="font-semibold text-blue-900">
+                              {categories.length} Fachgebiet{categories.length !== 1 ? 'e' : ''} gewählt
+                            </p>
+                            <p className="text-sm text-blue-700 mt-1">
+                              Ihre Auswahl hilft uns, passende Aufträge für Sie zu finden
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="company" className="space-y-6">
