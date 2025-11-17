@@ -113,9 +113,33 @@ export default function SEOTools() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">SEO Tools</h1>
-            <p className="text-muted-foreground">Sitemap und Robots.txt verwalten</p>
+            <h1 className="text-3xl font-bold text-foreground">SEO Tools</h1>
+            <p className="text-muted-foreground">Manage your site's SEO settings</p>
           </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid gap-4 md:grid-cols-3 mb-6">
+          <Card className="cursor-pointer hover:border-brand-500 transition-colors" onClick={() => navigate('/admin/seo/bulk-meta')}>
+            <CardHeader>
+              <CardTitle className="text-lg">Bulk Meta Management</CardTitle>
+              <CardDescription>Edit meta tags for all pages</CardDescription>
+            </CardHeader>
+          </Card>
+          
+          <Card className="cursor-pointer hover:border-brand-500 transition-colors" onClick={() => navigate('/admin/seo/gtm')}>
+            <CardHeader>
+              <CardTitle className="text-lg">GTM Configuration</CardTitle>
+              <CardDescription>Configure tracking & analytics</CardDescription>
+            </CardHeader>
+          </Card>
+          
+          <Card className="cursor-pointer hover:border-brand-500 transition-colors">
+            <CardHeader>
+              <CardTitle className="text-lg">SEO Health</CardTitle>
+              <CardDescription>Coming soon</CardDescription>
+            </CardHeader>
+          </Card>
         </div>
 
         <div className="space-y-6">
