@@ -19,7 +19,8 @@ import {
   Briefcase,
   FileText,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Globe
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -408,6 +409,27 @@ const AdminDashboard = () => {
                 >
                   <FileText className="h-4 w-4 mr-2" />
                   Inhalte bearbeiten
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5" />
+                  SEO Tools
+                </CardTitle>
+                <CardDescription>
+                  Sitemap & Robots.txt
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/admin/seo')}
+                >
+                  <Globe className="h-4 w-4 mr-2" />
+                  SEO verwalten
                 </Button>
               </CardContent>
             </Card>
