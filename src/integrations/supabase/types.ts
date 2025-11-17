@@ -1652,6 +1652,42 @@ export type Database = {
         }
         Relationships: []
       }
+      page_content: {
+        Row: {
+          content_type: string
+          created_at: string | null
+          fields: Json
+          id: string
+          page_key: string
+          seo: Json | null
+          status: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          content_type: string
+          created_at?: string | null
+          fields?: Json
+          id?: string
+          page_key: string
+          seo?: Json | null
+          status?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          content_type?: string
+          created_at?: string | null
+          fields?: Json
+          id?: string
+          page_key?: string
+          seo?: Json | null
+          status?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       payroll_calculations: {
         Row: {
           ahv_deduction: number | null
