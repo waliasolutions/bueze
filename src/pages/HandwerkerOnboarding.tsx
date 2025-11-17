@@ -23,6 +23,13 @@ import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
 import { cn } from "@/lib/utils";
 import { PostalCodeInput } from "@/components/PostalCodeInput";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  cantonToPostalCodes, 
+  calculatePostalCodeCount,
+  formatCantonDisplay,
+  getCantonFromPostalCode 
+} from "@/lib/cantonPostalCodes";
 
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
@@ -32,7 +39,9 @@ const HandwerkerOnboarding = () => {
   const [isAlreadyAuthenticated, setIsAlreadyAuthenticated] = useState(false);
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [serviceAreaInput, setServiceAreaInput] = useState('');
+  const [selectedCantons, setSelectedCantons] = useState<string[]>([]);
+  const [manualPostalCodes, setManualPostalCodes] = useState<string[]>([]);
+  const [tempPostalCode, setTempPostalCode] = useState('');
   const [uploadedFiles, setUploadedFiles] = useState<{
     insuranceDocument?: { name: string; uploadedAt: string; path: string };
     tradeLicense?: { name: string; uploadedAt: string; path: string };
@@ -97,6 +106,107 @@ const HandwerkerOnboarding = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const totalSteps = 5;
+
+  // Helper function to update formData.serviceAreas from cantons + manual codes
+  const updateFormDataServiceAreas = (cantons: string[], manualCodes: string[]) => {
+    const allAreas = [...cantons, ...manualCodes];
+    setFormData(prev => ({ ...prev, serviceAreas: allAreas }));
+  };
+
+  // Toggle canton selection
+  const toggleCanton = (canton: string) => {
+    setSelectedCantons(prev => {
+      const isSelected = prev.includes(canton);
+      const newSelection = isSelected 
+        ? prev.filter(c => c !== canton)
+        : [...prev, canton];
+      
+      updateFormDataServiceAreas(newSelection, manualPostalCodes);
+      
+      toast({
+        title: isSelected ? "Kanton entfernt" : "Kanton hinzugefügt",
+        description: isSelected 
+          ? `${canton} wurde entfernt`
+          : `${canton} wurde hinzugefügt - deckt ${calculatePostalCodeCount([canton])} PLZ ab`,
+      });
+      
+      return newSelection;
+    });
+  };
+
+  // Remove canton
+  const removeCanton = (canton: string) => {
+    setSelectedCantons(prev => {
+      const newSelection = prev.filter(c => c !== canton);
+      updateFormDataServiceAreas(newSelection, manualPostalCodes);
+      
+      toast({
+        title: "Kanton entfernt",
+        description: `${canton} wurde entfernt`,
+      });
+      
+      return newSelection;
+    });
+  };
+
+  // Add manual postal code
+  const addManualPostalCode = (postalCode: string) => {
+    const coveringCanton = selectedCantons.find(canton => {
+      const ranges = cantonToPostalCodes(canton);
+      return ranges.some(range => {
+        const [start, end] = range.split('-').map(Number);
+        const code = parseInt(postalCode);
+        return code >= start && code <= end;
+      });
+    });
+
+    if (coveringCanton) {
+      toast({
+        title: "Bereits abgedeckt",
+        description: `PLZ ${postalCode} ist bereits durch Kanton ${coveringCanton} abgedeckt`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (manualPostalCodes.includes(postalCode)) {
+      toast({
+        title: "Bereits vorhanden",
+        description: `PLZ ${postalCode} ist bereits in Ihren Servicegebieten`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setManualPostalCodes(prev => {
+      const newCodes = [...prev, postalCode];
+      updateFormDataServiceAreas(selectedCantons, newCodes);
+      
+      toast({
+        title: "PLZ hinzugefügt",
+        description: `PLZ ${postalCode} wurde hinzugefügt`,
+      });
+      
+      return newCodes;
+    });
+    
+    setTempPostalCode('');
+  };
+
+  // Remove manual postal code
+  const removeManualPostalCode = (postalCode: string) => {
+    setManualPostalCodes(prev => {
+      const newCodes = prev.filter(code => code !== postalCode);
+      updateFormDataServiceAreas(selectedCantons, newCodes);
+      
+      toast({
+        title: "PLZ entfernt",
+        description: `PLZ ${postalCode} wurde entfernt`,
+      });
+      
+      return newCodes;
+    });
+  };
   const progress = ((currentStep - 1) / totalSteps) * 100;
 
   // Check if user is already logged in and handle accordingly
@@ -137,6 +247,26 @@ const HandwerkerOnboarding = () => {
     
     checkAuthStatus();
   }, [navigate, toast]);
+
+  // Parse serviceAreas into cantons and manual postal codes when data is loaded
+  useEffect(() => {
+    if (formData.serviceAreas.length > 0) {
+      const cantons: string[] = [];
+      const manualCodes: string[] = [];
+      
+      formData.serviceAreas.forEach(area => {
+        // Check if it's a 2-letter canton code (uppercase)
+        if (area.length === 2 && area === area.toUpperCase() && /^[A-Z]{2}$/.test(area)) {
+          cantons.push(area);
+        } else {
+          manualCodes.push(area);
+        }
+      });
+      
+      setSelectedCantons(cantons);
+      setManualPostalCodes(manualCodes);
+    }
+  }, [formData.serviceAreas]);
 
   // Helper function to check if form has meaningful progress
   const hasSignificantProgress = () => {
@@ -1646,117 +1776,181 @@ const HandwerkerOnboarding = () => {
               </div>
             )}
 
-            {/* Service Areas */}
+            {/* Service Areas - Enhanced with Canton Selection */}
             <Card className="border-2 mt-6">
               <CardHeader>
-                <CardTitle className="text-lg">Einsatzgebiete</CardTitle>
+                <CardTitle className="text-lg">Servicegebiet Auswahl</CardTitle>
                 <CardDescription>
-                  Optional - Postleitzahlen, in denen Sie tätig sind
+                  Wählen Sie Kantone oder spezifische Postleitzahlen (optional)
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 {errors.serviceAreas && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{errors.serviceAreas}</AlertDescription>
                   </Alert>
                 )}
-                
-                <div className="space-y-3">
-                  <Label className="text-base font-medium">
-                    Postleitzahlen eingeben (optional)
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Einzelne PLZ: 8000, 8001, 9000 | Bereiche: 8000-8099 | Drücken Sie Enter oder Komma zum Hinzufügen
-                  </p>
-                  <Input
-                    placeholder="z.B. 8000, 8001-8099, 9000"
-                    value={serviceAreaInput}
-                    onChange={(e) => setServiceAreaInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ',') {
-                        e.preventDefault();
-                        const value = serviceAreaInput.trim();
-                        
-                        if (value) {
-                          // Parse PLZ input
-                          const parts = value.split(',').map(p => p.trim()).filter(p => p);
-                          const validAreas: string[] = [];
-                          
-                          for (const part of parts) {
-                            // Range: 8000-8099
-                            if (part.includes('-')) {
-                              const [start, end] = part.split('-').map(p => p.trim());
-                              const startNum = parseInt(start);
-                              const endNum = parseInt(end);
-                              
-                              if (/^\d{4}$/.test(start) && /^\d{4}$/.test(end) && 
-                                  startNum >= 1000 && startNum <= 9999 &&
-                                  endNum >= 1000 && endNum <= 9999 &&
-                                  startNum <= endNum) {
-                                 validAreas.push(part);
-                               } else {
-                                 toast({ title: "Fehler", description: `Ungültiger Bereich: ${part}`, variant: "destructive" });
-                               }
-                            }
-                            // Single PLZ: 8000
-                            else if (/^\d{4}$/.test(part)) {
-                              const num = parseInt(part);
-                              if (num >= 1000 && num <= 9999) {
-                                 validAreas.push(part);
-                               } else {
-                                 toast({ title: "Fehler", description: `Ungültige PLZ: ${part}`, variant: "destructive" });
-                               }
-                             } else {
-                               toast({ title: "Fehler", description: `Ungültige Eingabe: ${part}`, variant: "destructive" });
-                             }
-                          }
-                          
-                          if (validAreas.length > 0) {
-                            setFormData(prev => ({
-                              ...prev,
-                              serviceAreas: [...new Set([...prev.serviceAreas, ...validAreas])]
-                            }));
-                            setServiceAreaInput('');
-                            if (errors.serviceAreas) {
-                              setErrors(prev => ({ ...prev, serviceAreas: '' }));
-                            }
-                          }
-                        }
-                      }
-                    }}
-                    className="h-12 text-base"
-                  />
-                </div>
 
-                {formData.serviceAreas.length > 0 && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">
-                      Ausgewählte Einsatzgebiete ({formData.serviceAreas.length})
-                    </Label>
-                    <div className="flex flex-wrap gap-2 p-4 bg-muted/50 rounded-lg min-h-[80px]">
-                      {formData.serviceAreas.map((area, index) => (
-                        <Badge 
-                          key={index} 
-                          variant="secondary"
-                          className="px-3 py-2 text-sm font-medium cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors"
+                {/* Tabbed Selection Interface */}
+                <Tabs defaultValue="postal-codes" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="cantons">Nach Kantonen</TabsTrigger>
+                    <TabsTrigger value="postal-codes">Nach PLZ</TabsTrigger>
+                  </TabsList>
+                  
+                  {/* Canton Selection Tab */}
+                  <TabsContent value="cantons" className="space-y-4">
+                    <div className="space-y-3">
+                      <Label className="text-base font-medium">Kantone auswählen</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Wählen Sie ganze Kantone für eine breite Abdeckung
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                      {SWISS_CANTONS.map(canton => (
+                        <Badge
+                          key={canton.value}
+                          variant={selectedCantons.includes(canton.value) ? "default" : "outline"}
+                          className="cursor-pointer justify-center py-3 text-sm hover:scale-105 transition-transform"
+                          onClick={() => toggleCanton(canton.value)}
                         >
-                          {area}
+                          {canton.value}
+                          {selectedCantons.includes(canton.value) && (
+                            <CheckCircle className="ml-1 h-3 w-3" />
+                          )}
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    {selectedCantons.length > 0 && (
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <AlertDescription className="text-blue-900">
+                          Sie decken ca. <strong>{calculatePostalCodeCount(selectedCantons)}</strong> Postleitzahlen 
+                          in <strong>{selectedCantons.length}</strong> Kanton{selectedCantons.length > 1 ? 'en' : ''} ab
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </TabsContent>
+                  
+                  {/* Postal Code Selection Tab */}
+                  <TabsContent value="postal-codes" className="space-y-4">
+                    <div className="space-y-3">
+                      <Label className="text-base font-medium">Einzelne PLZ hinzufügen</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Suchen Sie nach spezifischen Postleitzahlen
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <PostalCodeInput
+                        value={tempPostalCode}
+                        onValueChange={setTempPostalCode}
+                        onAddressSelect={(address) => {
+                          if (tempPostalCode && tempPostalCode.length === 4) {
+                            addManualPostalCode(tempPostalCode);
+                          }
+                        }}
+                        placeholder="z.B. 8000 (Zürich eingeben und auswählen)"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Suchen Sie nach einer Postleitzahl und wählen Sie diese aus
+                      </p>
+                    </div>
+
+                    {manualPostalCodes.length > 0 && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">
+                          Hinzugefügte PLZ ({manualPostalCodes.length})
+                        </Label>
+                        <div className="flex flex-wrap gap-2 p-4 bg-muted/50 rounded-lg min-h-[60px]">
+                          {manualPostalCodes.map((code, idx) => (
+                            <Badge key={idx} variant="secondary" className="gap-1.5 pr-1.5 pl-3 py-1.5">
+                              <span>{code}</span>
+                              <X 
+                                className="h-3.5 w-3.5 cursor-pointer hover:text-destructive transition-colors" 
+                                onClick={() => removeManualPostalCode(code)}
+                              />
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {manualPostalCodes.length === 0 && (
+                      <div className="text-sm text-muted-foreground border border-dashed rounded-md p-4 text-center">
+                        Noch keine PLZ hinzugefügt
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+
+                {/* Unified Display - Show All Selected Areas */}
+                {(selectedCantons.length > 0 || manualPostalCodes.length > 0) && (
+                  <div className="space-y-3 pt-4 border-t">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-medium">Ihre Servicegebiete</Label>
+                      <Badge variant="outline" className="text-xs">
+                        {selectedCantons.length + manualPostalCodes.length} Einträge
+                      </Badge>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {/* Display selected cantons */}
+                      {selectedCantons.map(canton => (
+                        <Badge 
+                          key={canton} 
+                          variant="default" 
+                          className="gap-1.5 pr-1.5 pl-3 py-2"
+                        >
+                          <span className="font-semibold">{formatCantonDisplay(canton)}</span>
                           <X 
-                            className="ml-2 h-3 w-3" 
-                            onClick={() => {
-                              setFormData(prev => ({
-                                ...prev,
-                                serviceAreas: prev.serviceAreas.filter((_, i) => i !== index)
-                              }));
-                            }}
+                            className="h-3.5 w-3.5 cursor-pointer hover:text-destructive-foreground transition-colors" 
+                            onClick={() => removeCanton(canton)}
+                          />
+                        </Badge>
+                      ))}
+
+                      {/* Display manual postal codes */}
+                      {manualPostalCodes.map(code => (
+                        <Badge 
+                          key={code} 
+                          variant="secondary" 
+                          className="gap-1.5 pr-1.5 pl-3 py-2"
+                        >
+                          <span>{code}</span>
+                          <X 
+                            className="h-3.5 w-3.5 cursor-pointer hover:text-destructive transition-colors" 
+                            onClick={() => removeManualPostalCode(code)}
                           />
                         </Badge>
                       ))}
                     </div>
+
+                    {/* Summary Card */}
+                    <Card className="bg-muted/30">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Geschätzte Abdeckung:</span>
+                          <span className="font-semibold">
+                            {selectedCantons.length > 0 
+                              ? `~${calculatePostalCodeCount(selectedCantons)} PLZ` 
+                              : `${manualPostalCodes.length} PLZ`}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
 
+                {/* Empty State */}
+                {selectedCantons.length === 0 && manualPostalCodes.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                    <p className="text-sm">Noch keine Servicegebiete ausgewählt</p>
+                    <p className="text-xs mt-1">Wählen Sie Kantone oder fügen Sie PLZ hinzu</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -2012,9 +2206,16 @@ const HandwerkerOnboarding = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-2">Einsatzgebiete</p>
                       <div className="flex flex-wrap gap-2">
-                        {formData.serviceAreas.map((area) => (
-                          <Badge key={area} variant="outline">
-                            {area}
+                        {/* Show cantons with formatting */}
+                        {selectedCantons.map((canton) => (
+                          <Badge key={canton} variant="default">
+                            {formatCantonDisplay(canton)}
+                          </Badge>
+                        ))}
+                        {/* Show manual postal codes */}
+                        {manualPostalCodes.map((code) => (
+                          <Badge key={code} variant="secondary">
+                            {code}
                           </Badge>
                         ))}
                       </div>
@@ -2295,6 +2496,9 @@ const HandwerkerOnboarding = () => {
                     bio: "",
                   });
                   setSelectedMajorCategories([]);
+                  setSelectedCantons([]);
+                  setManualPostalCodes([]);
+                  setTempPostalCode('');
                   setUploadedFiles({});
                   setErrors({});
                   
