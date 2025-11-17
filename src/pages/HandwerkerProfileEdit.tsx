@@ -73,6 +73,7 @@ const HandwerkerProfileEdit = () => {
   const [website, setWebsite] = useState('');
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([]);
   const [verificationDocuments, setVerificationDocuments] = useState<string[]>([]);
+  const [tempPostalCode, setTempPostalCode] = useState('');
   
   // Personal Information
   const [firstName, setFirstName] = useState('');
@@ -513,6 +514,41 @@ const HandwerkerProfileEdit = () => {
     return Math.round((completed / total) * 100);
   };
 
+  const addServiceArea = (postalCode: string) => {
+    const areasArray = serviceAreas
+      .split(',')
+      .map(a => a.trim())
+      .filter(a => a);
+    
+    if (!areasArray.includes(postalCode)) {
+      const updatedAreas = [...areasArray, postalCode].join(', ');
+      setServiceAreas(updatedAreas);
+      toast({
+        title: "Servicegebiet hinzugefügt",
+        description: `PLZ ${postalCode} wurde hinzugefügt`,
+      });
+    } else {
+      toast({
+        title: "Bereits vorhanden",
+        description: `PLZ ${postalCode} ist bereits in Ihren Servicegebieten`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const removeServiceArea = (postalCode: string) => {
+    const areasArray = serviceAreas
+      .split(',')
+      .map(a => a.trim())
+      .filter(a => a && a !== postalCode);
+    
+    setServiceAreas(areasArray.join(', '));
+    toast({
+      title: "Servicegebiet entfernt",
+      description: `PLZ ${postalCode} wurde entfernt`,
+    });
+  };
+
   const handleSave = async (silent = false) => {
     if (!profile) return;
 
@@ -739,7 +775,7 @@ const HandwerkerProfileEdit = () => {
               <TabsTrigger value="profile">Profil & Bio</TabsTrigger>
               <TabsTrigger value="company">Firma & Kontakt</TabsTrigger>
               <TabsTrigger value="banking">Banking & Versicherung</TabsTrigger>
-              <TabsTrigger value="documents">Portfolio und Logo</TabsTrigger>
+              <TabsTrigger value="documents">Dokumente und Bilder</TabsTrigger>
             </TabsList>
 
             <TabsContent value="profile" className="space-y-6">
@@ -812,31 +848,58 @@ const HandwerkerProfileEdit = () => {
               <CardHeader>
                 <CardTitle>Servicegebiete</CardTitle>
                 <CardDescription>
-                  Geben Sie die Orte oder Postleitzahlen an, in denen Sie arbeiten
+                  Suchen Sie nach Postleitzahlen und fügen Sie diese zu Ihren Servicegebieten hinzu
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
+                {/* PostalCodeInput for adding areas */}
                 <div className="space-y-2">
-                  <Label htmlFor="service_areas">Servicegebiete</Label>
-                  <Input
-                    id="service_areas"
-                    value={serviceAreas}
-                    onChange={(e) => setServiceAreas(e.target.value)}
-                    placeholder="z.B. Zürich, 8000, Winterthur, 8400"
+                  <Label>PLZ hinzufügen</Label>
+                  <PostalCodeInput
+                    value={tempPostalCode}
+                    onValueChange={setTempPostalCode}
+                    onAddressSelect={(address) => {
+                      if (tempPostalCode && tempPostalCode.length === 4) {
+                        addServiceArea(tempPostalCode);
+                        setTempPostalCode('');
+                      }
+                    }}
+                    placeholder="z.B. 8000 eingeben"
                   />
-                  <p className="text-sm text-muted-foreground">
-                    Trennen Sie mehrere Gebiete durch Komma
+                  <p className="text-xs text-muted-foreground">
+                    Suchen Sie nach einer Postleitzahl und wählen Sie diese aus der Liste aus
                   </p>
-                  {serviceAreas && (
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      {serviceAreas.split(',').map((area, idx) => (
-                        <Badge key={idx} variant="secondary">
-                          {area.trim()}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
+
+                {/* Display selected areas as badges with remove option */}
+                {serviceAreas && serviceAreas.trim() && (
+                  <div className="space-y-2">
+                    <Label>Ihre Servicegebiete ({serviceAreas.split(',').filter(a => a.trim()).length})</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {serviceAreas.split(',').map((area, idx) => {
+                        const trimmedArea = area.trim();
+                        if (!trimmedArea) return null;
+                        
+                        return (
+                          <Badge key={idx} variant="secondary" className="gap-1.5 pr-1.5 pl-3 py-1.5">
+                            <span>{trimmedArea}</span>
+                            <X 
+                              className="h-3.5 w-3.5 cursor-pointer hover:text-destructive transition-colors" 
+                              onClick={() => removeServiceArea(trimmedArea)}
+                            />
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty state when no areas selected */}
+                {(!serviceAreas || !serviceAreas.trim()) && (
+                  <div className="text-sm text-muted-foreground border border-dashed rounded-md p-4 text-center">
+                    Noch keine Servicegebiete hinzugefügt. Suchen Sie oben nach einer PLZ und fügen Sie diese hinzu.
+                  </div>
+                )}
               </CardContent>
             </Card>
 
