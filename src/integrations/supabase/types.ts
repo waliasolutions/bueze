@@ -2162,22 +2162,43 @@ export type Database = {
       }
       site_seo_settings: {
         Row: {
+          default_meta_description: string | null
+          default_meta_title: string | null
+          default_og_image: string | null
+          google_analytics_id: string | null
+          google_search_console_verification: string | null
+          gtm_container_id: string | null
           id: string
           robots_txt: string
+          site_name: string | null
           sitemap_last_generated: string | null
           updated_at: string | null
           updated_by: string | null
         }
         Insert: {
+          default_meta_description?: string | null
+          default_meta_title?: string | null
+          default_og_image?: string | null
+          google_analytics_id?: string | null
+          google_search_console_verification?: string | null
+          gtm_container_id?: string | null
           id?: string
           robots_txt?: string
+          site_name?: string | null
           sitemap_last_generated?: string | null
           updated_at?: string | null
           updated_by?: string | null
         }
         Update: {
+          default_meta_description?: string | null
+          default_meta_title?: string | null
+          default_og_image?: string | null
+          google_analytics_id?: string | null
+          google_search_console_verification?: string | null
+          gtm_container_id?: string | null
           id?: string
           robots_txt?: string
+          site_name?: string | null
           sitemap_last_generated?: string | null
           updated_at?: string | null
           updated_by?: string | null

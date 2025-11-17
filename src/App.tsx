@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { initErrorTracking, generateCorrelationId } from "@/lib/errorTracking";
 import { PageTransition, TopLoadingBar } from "@/components/PageTransition";
+import { GlobalScriptManager } from "@/components/GlobalScriptManager";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import HandwerkerOnboarding from "./pages/HandwerkerOnboarding";
@@ -42,6 +43,8 @@ import ResetPassword from "./pages/ResetPassword";
 import ContentManagement from "./pages/admin/ContentManagement";
 import ContentEditor from "./pages/admin/ContentEditor";
 import SEOTools from "./pages/admin/SEOTools";
+import BulkMetaManager from "./pages/admin/BulkMetaManager";
+import GTMConfiguration from "./pages/admin/GTMConfiguration";
 import Sitemap from "./pages/Sitemap";
 
 const queryClient = new QueryClient();
@@ -79,6 +82,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        <GlobalScriptManager />
         <BrowserRouter>
           <ScrollToTop />
           <TopLoadingBar />
@@ -114,6 +118,8 @@ const App = () => {
             <Route path="/admin/content" element={<ContentManagement />} />
             <Route path="/admin/content/edit/:pageKey" element={<ContentEditor />} />
             <Route path="/admin/seo" element={<SEOTools />} />
+            <Route path="/admin/seo/bulk-meta" element={<BulkMetaManager />} />
+            <Route path="/admin/seo/gtm" element={<GTMConfiguration />} />
             <Route path="/legal/agb" element={<AGB />} />
             <Route path="/impressum" element={<Impressum />} />
             <Route path="/datenschutz" element={<Datenschutz />} />

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 
 interface DynamicHelmetProps {
   title?: string;
@@ -6,6 +7,7 @@ interface DynamicHelmetProps {
   canonical?: string;
   ogImage?: string;
   robotsMeta?: string;
+  schemaMarkup?: string;
 }
 
 export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
@@ -14,12 +16,13 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
   canonical,
   ogImage,
   robotsMeta = 'index,follow',
+  schemaMarkup,
 }) => {
+  const { settings } = useSiteSettings();
   useEffect(() => {
-    // Update title
-    if (title) {
-      document.title = title;
-    }
+    // Update title with fallback to default
+    const finalTitle = title || settings?.default_meta_title || 'Büeze.ch - Geprüfte Handwerker in der Schweiz finden';
+    document.title = finalTitle;
 
     // Update or create meta tags
     const updateMetaTag = (name: string, content: string, isProperty = false) => {
@@ -35,18 +38,27 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
       element.setAttribute('content', content);
     };
 
-    if (description) {
-      updateMetaTag('description', description);
-      updateMetaTag('og:description', description, true);
+    // Use provided values or fallback to defaults from settings
+    const finalDescription = description || settings?.default_meta_description || '';
+    const finalOgImage = ogImage || settings?.default_og_image || '';
+    const siteName = settings?.site_name || 'Büeze.ch';
+
+    if (finalDescription) {
+      updateMetaTag('description', finalDescription);
+      updateMetaTag('og:description', finalDescription, true);
     }
 
-    if (title) {
-      updateMetaTag('og:title', title, true);
+    if (finalTitle) {
+      updateMetaTag('og:title', finalTitle, true);
     }
 
-    if (ogImage) {
-      updateMetaTag('og:image', ogImage, true);
+    if (finalOgImage) {
+      updateMetaTag('og:image', finalOgImage, true);
     }
+
+    // Add site name
+    updateMetaTag('og:site_name', siteName, true);
+    updateMetaTag('og:type', 'website', true);
 
     if (robotsMeta) {
       updateMetaTag('robots', robotsMeta);
@@ -65,12 +77,25 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
       linkElement.setAttribute('href', canonical);
     }
 
+    // Inject schema markup if provided
+    if (schemaMarkup) {
+      let scriptTag = document.querySelector('script[type="application/ld+json"][data-dynamic-helmet]');
+      if (!scriptTag) {
+        scriptTag = document.createElement('script');
+        scriptTag.setAttribute('type', 'application/ld+json');
+        scriptTag.setAttribute('data-dynamic-helmet', 'true');
+        document.head.appendChild(scriptTag);
+      }
+      scriptTag.textContent = schemaMarkup;
+    }
+
     // Cleanup function
     return () => {
       // Reset to default title on unmount
-      document.title = 'Büeze.ch - Geprüfte Handwerker in der Schweiz finden';
+      const defaultTitle = settings?.default_meta_title || 'Büeze.ch - Geprüfte Handwerker in der Schweiz finden';
+      document.title = defaultTitle;
     };
-  }, [title, description, canonical, ogImage, robotsMeta]);
+  }, [title, description, canonical, ogImage, robotsMeta, schemaMarkup, settings]);
 
   return null;
 };
