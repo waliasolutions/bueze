@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MapPin, Globe, Euro, Star, Phone, Mail, Shield, Wrench, Building2, CheckCircle } from 'lucide-react';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { majorCategories } from '@/config/majorCategories';
@@ -33,6 +34,9 @@ interface ProfilePreviewProps {
 }
 
 export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
+  const [isLogoDialogOpen, setIsLogoDialogOpen] = useState(false);
+  const [selectedPortfolioImage, setSelectedPortfolioImage] = useState<string | null>(null);
+  
   const displayName = profile.company_name || 
     (profile.first_name && profile.last_name 
       ? `${profile.first_name} ${profile.last_name}` 
@@ -57,12 +61,16 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
         <CardHeader className="bg-gradient-to-r from-brand-50 to-brand-100 border-b">
           <div className="flex items-start gap-4">
             {/* Logo */}
-            <div className="h-20 w-20 rounded-lg bg-surface border-2 border-brand-200 flex items-center justify-center overflow-hidden flex-shrink-0">
+            <div 
+              className="h-20 w-20 rounded-lg bg-surface border-2 border-brand-200 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer hover:border-brand-400 transition-colors group"
+              onClick={() => profile.logo_url && setIsLogoDialogOpen(true)}
+              title="Logo vergrössern"
+            >
               {profile.logo_url ? (
                 <img 
                   src={profile.logo_url} 
                   alt={displayName}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-contain p-2 group-hover:scale-105 transition-transform"
                 />
               ) : (
                 <Star className="h-10 w-10 text-brand-400" />
@@ -220,12 +228,14 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
                 {profile.portfolio_urls.map((url, index) => (
                   <div 
                     key={index}
-                    className="aspect-video rounded-lg overflow-hidden bg-gray-100 border"
+                    className="aspect-video rounded-lg overflow-hidden bg-gray-100 border cursor-pointer hover:border-brand-400 hover:shadow-lg transition-all group"
+                    onClick={() => setSelectedPortfolioImage(url)}
+                    title="Bild vergrössern"
                   >
                     <img 
                       src={url} 
                       alt={`Portfolio ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     />
                   </div>
                 ))}
@@ -288,6 +298,45 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
           )}
         </CardContent>
       </Card>
+
+      {/* Logo Popup Dialog */}
+      <Dialog open={isLogoDialogOpen} onOpenChange={setIsLogoDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{displayName}</DialogTitle>
+            <DialogDescription>
+              Firmenlogo
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-center bg-muted/30 rounded-lg p-8 min-h-[400px]">
+            {profile.logo_url && (
+              <img 
+                src={profile.logo_url} 
+                alt={displayName}
+                className="max-h-[500px] max-w-full object-contain"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Portfolio Image Popup Dialog */}
+      <Dialog open={!!selectedPortfolioImage} onOpenChange={(open) => !open && setSelectedPortfolioImage(null)}>
+        <DialogContent className="max-w-5xl">
+          <DialogHeader>
+            <DialogTitle>Portfolio Bild</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center bg-muted/30 rounded-lg p-4">
+            {selectedPortfolioImage && (
+              <img 
+                src={selectedPortfolioImage} 
+                alt="Portfolio"
+                className="max-h-[700px] max-w-full object-contain rounded-lg"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
