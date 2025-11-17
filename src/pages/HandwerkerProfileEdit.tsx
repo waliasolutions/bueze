@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Save, ArrowLeft, CheckCircle, Circle, Clock, User, Building2, Wallet, Shield, Eye, Edit } from 'lucide-react';
+import { Loader2, Upload, X, Save, ArrowLeft, CheckCircle, Circle, Clock, User, Building2, Wallet, Shield, Eye, Edit, FileText } from 'lucide-react';
+import { PostalCodeInput } from '@/components/PostalCodeInput';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -51,6 +52,7 @@ interface HandwerkerProfile {
   insurance_valid_until: string | null;
   logo_url: string | null;
   verification_status: string | null;
+  verification_documents: string[] | null;
 }
 
 const HandwerkerProfileEdit = () => {
@@ -70,6 +72,7 @@ const HandwerkerProfileEdit = () => {
   const [serviceAreas, setServiceAreas] = useState('');
   const [website, setWebsite] = useState('');
   const [portfolioUrls, setPortfolioUrls] = useState<string[]>([]);
+  const [verificationDocuments, setVerificationDocuments] = useState<string[]>([]);
   
   // Personal Information
   const [firstName, setFirstName] = useState('');
@@ -187,6 +190,7 @@ const HandwerkerProfileEdit = () => {
       
       // Logo
       setLogoUrl(profileData.logo_url || '');
+      setVerificationDocuments(profileData.verification_documents || []);
     } catch (error) {
       console.error('Error loading profile:', error);
       toast({
@@ -295,6 +299,108 @@ const HandwerkerProfileEdit = () => {
       toast({
         title: 'Fehler',
         description: 'Bild konnte nicht entfernt werden.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0 || !profile) return;
+
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      for (const file of Array.from(files)) {
+        // Validate file type - accept PDF and images
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+        if (!allowedTypes.includes(file.type)) {
+          toast({
+            title: 'Ungültiger Dateityp',
+            description: `${file.name} ist kein gültiges Dokument (PDF, JPG oder PNG).`,
+            variant: 'destructive',
+          });
+          continue;
+        }
+
+        // Validate file size (max 10MB for documents)
+        if (file.size > 10 * 1024 * 1024) {
+          toast({
+            title: 'Datei zu groß',
+            description: `${file.name} ist größer als 10MB.`,
+            variant: 'destructive',
+          });
+          continue;
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/documents/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('handwerker-documents')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('handwerker-documents')
+          .getPublicUrl(fileName);
+
+        uploadedUrls.push(publicUrl);
+      }
+
+      setVerificationDocuments([...verificationDocuments, ...uploadedUrls]);
+      
+      toast({
+        title: 'Upload erfolgreich',
+        description: `${uploadedUrls.length} Dokument(e) hochgeladen.`,
+      });
+    } catch (error: any) {
+      console.error('Error uploading documents:', error);
+      toast({
+        title: 'Upload fehlgeschlagen',
+        description: error.message || 'Dokumente konnten nicht hochgeladen werden.',
+        variant: 'destructive',
+      });
+    } finally {
+      setUploading(false);
+      // Reset input
+      event.target.value = '';
+    }
+  };
+
+  const handleRemoveDocument = async (url: string) => {
+    try {
+      // Extract file path from URL
+      const urlParts = url.split('/handwerker-documents/');
+      if (urlParts.length === 2) {
+        const filePath = urlParts[1].split('?')[0];
+        
+        const { error } = await supabase.storage
+          .from('handwerker-documents')
+          .remove([filePath]);
+
+        if (error) throw error;
+      }
+
+      setVerificationDocuments(verificationDocuments.filter(u => u !== url));
+      
+      toast({
+        title: 'Dokument entfernt',
+        description: 'Das Dokument wurde entfernt.',
+      });
+    } catch (error: any) {
+      console.error('Error removing document:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Dokument konnte nicht entfernt werden.',
         variant: 'destructive',
       });
     }
@@ -602,9 +708,9 @@ const HandwerkerProfileEdit = () => {
                 hourly_rate_min: hourlyRateMin ? parseInt(hourlyRateMin) : null,
                 hourly_rate_max: hourlyRateMax ? parseInt(hourlyRateMax) : null,
                 service_areas: serviceAreas.split(',').map(a => a.trim()).filter(a => a),
-                website: website,
-                logo_url: logoUrl,
-                portfolio_urls: portfolioUrls,
+        website: website,
+        logo_url: logoUrl,
+        portfolio_urls: portfolioUrls,
               }} />
             </div>
           ) : (
@@ -633,7 +739,7 @@ const HandwerkerProfileEdit = () => {
               <TabsTrigger value="profile">Profil & Bio</TabsTrigger>
               <TabsTrigger value="company">Firma & Kontakt</TabsTrigger>
               <TabsTrigger value="banking">Banking & Versicherung</TabsTrigger>
-              <TabsTrigger value="documents">Dokumente & Logo</TabsTrigger>
+              <TabsTrigger value="documents">Portfolio und Logo</TabsTrigger>
             </TabsList>
 
             <TabsContent value="profile" className="space-y-6">
@@ -1070,7 +1176,7 @@ const HandwerkerProfileEdit = () => {
                 <CardHeader>
                   <CardTitle>Firmen-Logo</CardTitle>
                   <CardDescription>
-                    Laden Sie Ihr Firmenlogo hoch (max. 5MB, JPG, PNG, SVG oder WebP)
+                    Laden Sie Ihr Firmenlogo hoch (max. 5MB)
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -1125,7 +1231,97 @@ const HandwerkerProfileEdit = () => {
                 </CardContent>
               </Card>
 
-              {/* Portfolio remains the same but moved here */}
+              {/* Document Upload Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Versicherungsdokumente & Nachweise</CardTitle>
+                  <CardDescription>
+                    Laden Sie Ihre Haftpflichtversicherung und Handelsregisterauszug hoch (PDF oder Bild, max. 10MB)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Button
+                        variant="outline"
+                        onClick={() => document.getElementById('documentInput')?.click()}
+                        disabled={uploading}
+                        className="w-full sm:w-auto"
+                      >
+                        {uploading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Lädt hoch...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Dokumente hochladen
+                          </>
+                        )}
+                      </Button>
+                      <input
+                        id="documentInput"
+                        type="file"
+                        accept="application/pdf,image/jpeg,image/jpg,image/png"
+                        multiple
+                        className="hidden"
+                        onChange={handleDocumentUpload}
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Unterstützte Formate: PDF, JPG, PNG (max. 10MB pro Datei)
+                      </p>
+                    </div>
+
+                    {verificationDocuments.length > 0 && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+                        {verificationDocuments.map((url, index) => {
+                          const isPdf = url.toLowerCase().includes('.pdf');
+                          const fileName = url.split('/').pop()?.split('?')[0] || 'Dokument';
+                          
+                          return (
+                            <div key={index} className="relative border rounded-lg p-4 hover:border-primary transition-colors">
+                              <div className="flex flex-col items-center space-y-2">
+                                {isPdf ? (
+                                  <FileText className="h-16 w-16 text-muted-foreground" />
+                                ) : (
+                                  <img 
+                                    src={url} 
+                                    alt={`Dokument ${index + 1}`}
+                                    className="w-full h-32 object-cover rounded"
+                                  />
+                                )}
+                                <p className="text-xs text-center text-muted-foreground truncate w-full" title={fileName}>
+                                  {fileName}
+                                </p>
+                                <a 
+                                  href={url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-primary hover:underline"
+                                >
+                                  Ansehen
+                                </a>
+                              </div>
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2 h-6 w-6"
+                                onClick={() => handleRemoveDocument(url)}
+                                disabled={uploading}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Portfolio Images */}
               <Card>
                 <CardHeader>
                   <CardTitle>Portfolio-Bilder</CardTitle>
