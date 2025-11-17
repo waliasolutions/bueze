@@ -262,13 +262,16 @@ const HandwerkerProfileEdit = () => {
     if (!files || files.length === 0 || !profile) return;
 
     setUploading(true);
-    const uploadedUrls: string[] = [];
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      for (const file of Array.from(files)) {
+      const fileArray = Array.from(files);
+      const validFiles: File[] = [];
+
+      // Validate all files first
+      for (const file of fileArray) {
         // Validate file type
         if (!file.type.startsWith('image/')) {
           toast({
@@ -289,10 +292,20 @@ const HandwerkerProfileEdit = () => {
           continue;
         }
 
+        validFiles.push(file);
+      }
+
+      if (validFiles.length === 0) {
+        setUploading(false);
+        return;
+      }
+
+      // Upload all files in parallel
+      const uploadPromises = validFiles.map(async (file) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('handwerker-portfolio')
           .upload(fileName, file, {
             cacheControl: '3600',
@@ -305,9 +318,10 @@ const HandwerkerProfileEdit = () => {
           .from('handwerker-portfolio')
           .getPublicUrl(fileName);
 
-        uploadedUrls.push(publicUrl);
-      }
+        return publicUrl;
+      });
 
+      const uploadedUrls = await Promise.all(uploadPromises);
       setPortfolioUrls([...portfolioUrls, ...uploadedUrls]);
       
       toast({
@@ -363,15 +377,17 @@ const HandwerkerProfileEdit = () => {
     if (!files || files.length === 0 || !profile) return;
 
     setUploading(true);
-    const uploadedUrls: string[] = [];
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      for (const file of Array.from(files)) {
-        // Validate file type - accept PDF and images
-        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+      const fileArray = Array.from(files);
+      const validFiles: File[] = [];
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+
+      // Validate all files first
+      for (const file of fileArray) {
         if (!allowedTypes.includes(file.type)) {
           toast({
             title: 'Ungültiger Dateityp',
@@ -381,7 +397,6 @@ const HandwerkerProfileEdit = () => {
           continue;
         }
 
-        // Validate file size (max 10MB for documents)
         if (file.size > 10 * 1024 * 1024) {
           toast({
             title: 'Datei zu groß',
@@ -391,10 +406,20 @@ const HandwerkerProfileEdit = () => {
           continue;
         }
 
+        validFiles.push(file);
+      }
+
+      if (validFiles.length === 0) {
+        setUploading(false);
+        return;
+      }
+
+      // Upload all files in parallel
+      const uploadPromises = validFiles.map(async (file) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${user.id}/documents/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('handwerker-documents')
           .upload(fileName, file, {
             cacheControl: '3600',
@@ -407,9 +432,10 @@ const HandwerkerProfileEdit = () => {
           .from('handwerker-documents')
           .getPublicUrl(fileName);
 
-        uploadedUrls.push(publicUrl);
-      }
+        return publicUrl;
+      });
 
+      const uploadedUrls = await Promise.all(uploadPromises);
       setVerificationDocuments([...verificationDocuments, ...uploadedUrls]);
       
       toast({
@@ -641,7 +667,7 @@ const HandwerkerProfileEdit = () => {
   };
 
   const handleSave = async (silent = false) => {
-    if (!profile) return;
+    if (!profile || saving) return; // Prevent concurrent saves
 
     // Validation
     if (hourlyRateMin && hourlyRateMax) {
@@ -738,13 +764,14 @@ const HandwerkerProfileEdit = () => {
     }
   };
 
-  // Auto-save functionality
+  // Auto-save functionality with debouncing
   useEffect(() => {
-    if (!profile || loading) return;
+    if (!profile || loading || saving) return;
 
+    // Debounce: wait 2 seconds after last change before auto-saving
     const timeoutId = setTimeout(() => {
       handleSave(true);
-    }, 30000); // Auto-save every 30 seconds
+    }, 2000);
 
     return () => clearTimeout(timeoutId);
   }, [bio, hourlyRateMin, hourlyRateMax, serviceAreas, website, portfolioUrls,
@@ -752,7 +779,7 @@ const HandwerkerProfileEdit = () => {
       companyName, companyLegalForm, uidNumber, mwstNumber,
       businessAddress, businessZip, businessCity, businessCanton,
       iban, bankName, liabilityInsuranceProvider, policyNumber, tradeLicenseNumber, insuranceValidUntil,
-      logoUrl]);
+      logoUrl, categories, selectedCantons, manualPostalCodes, verificationDocuments]);
 
   if (loading) {
     return (
