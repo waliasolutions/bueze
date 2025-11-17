@@ -39,6 +39,8 @@ import ProposalReview from "./pages/ProposalReview";
 import ProposalsManagement from "./pages/ProposalsManagement";
 import NotFound from "./pages/NotFound";
 import ResetPassword from "./pages/ResetPassword";
+import ContentManagement from "./pages/admin/ContentManagement";
+import ContentEditor from "./pages/admin/ContentEditor";
 
 const queryClient = new QueryClient();
 
@@ -107,6 +109,8 @@ const App = () => {
             <Route path="/admin/approvals" element={<HandwerkerApprovals />} />
             <Route path="/admin/handwerker-verification" element={<HandwerkerVerification />} />
             <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/content" element={<ContentManagement />} />
+            <Route path="/admin/content/edit/:pageKey" element={<ContentEditor />} />
             <Route path="/legal/agb" element={<AGB />} />
             <Route path="/impressum" element={<Impressum />} />
             <Route path="/datenschutz" element={<Datenschutz />} />

@@ -394,26 +394,21 @@ const AdminDashboard = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Plattform-Aktivität
+                  <FileText className="h-5 w-5" />
+                  Content Management
                 </CardTitle>
                 <CardDescription>
-                  Letzte 30 Tage
+                  Website-Inhalte verwalten
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Neue Registrierungen</span>
-                  <span className="font-semibold">{stats.pendingCount + stats.approvedCount}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Neue Aufträge</span>
-                  <span className="font-semibold">{stats.totalLeads}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Aktive Aufträge</span>
-                  <span className="font-semibold">{stats.activeLeads}</span>
-                </div>
+              <CardContent className="space-y-2">
+                <Button 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/admin/content')}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Inhalte bearbeiten
+                </Button>
               </CardContent>
             </Card>
           </div>
