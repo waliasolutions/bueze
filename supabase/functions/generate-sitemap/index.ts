@@ -105,10 +105,48 @@ ${allRoutes.map((route) => `  <url>
   </url>`).join('\n')}
 </urlset>`;
 
-    return new Response(xml, {
+    // Upload to Supabase Storage
+    const { error: uploadError } = await supabaseClient.storage
+      .from('sitemaps')
+      .upload('sitemap.xml', xml, {
+        contentType: 'application/xml',
+        upsert: true, // Overwrite if exists
+      });
+
+    if (uploadError) {
+      console.error('Error uploading sitemap to storage:', uploadError);
+      throw uploadError;
+    }
+
+    console.log('Sitemap successfully uploaded to storage');
+
+    // Update the database with generation timestamp
+    const { error: updateError } = await supabaseClient
+      .from('site_seo_settings')
+      .update({
+        sitemap_last_generated: now,
+        updated_at: now,
+      })
+      .eq('id', '1');
+
+    if (updateError) {
+      console.error('Error updating sitemap timestamp:', updateError);
+    }
+
+    // Get public URL
+    const { data: urlData } = supabaseClient.storage
+      .from('sitemaps')
+      .getPublicUrl('sitemap.xml');
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: 'Sitemap generated and uploaded successfully',
+      url: urlData.publicUrl,
+      timestamp: now
+    }), {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'application/xml',
+        'Content-Type': 'application/json',
       },
     });
   } catch (error) {
