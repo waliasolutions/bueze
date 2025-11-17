@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Globe, Euro, Star, Phone, Mail, Shield, Wrench, Building2, CheckCircle } from 'lucide-react';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { majorCategories } from '@/config/majorCategories';
 import { formatCantonDisplay } from '@/lib/cantonPostalCodes';
 
 interface ProfilePreviewProps {
@@ -145,23 +146,54 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
             </div>
           )}
 
-          {/* Services Offered */}
+          {/* Services Offered - Organized by Major Categories */}
           {profile.categories && profile.categories.length > 0 && (
             <div className="border-t pt-6">
-              <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-brand-500" />
                 Angebotene Dienstleistungen
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {profile.categories.map((category, idx) => {
-                  const categoryInfo = subcategoryLabels[category];
-                  const label = categoryInfo?.label || category;
-                  return (
-                    <Badge key={idx} variant="default" className="text-sm px-3 py-1.5">
-                      {label}
-                    </Badge>
-                  );
-                })}
+              <div className="space-y-4">
+                {(() => {
+                  // Group categories by their major category
+                  const groupedCategories: Record<string, string[]> = {};
+                  
+                  profile.categories.forEach(categoryKey => {
+                    const categoryInfo = subcategoryLabels[categoryKey];
+                    if (categoryInfo && categoryInfo.majorCategoryId) {
+                      if (!groupedCategories[categoryInfo.majorCategoryId]) {
+                        groupedCategories[categoryInfo.majorCategoryId] = [];
+                      }
+                      groupedCategories[categoryInfo.majorCategoryId].push(categoryKey);
+                    }
+                  });
+
+                  return Object.entries(groupedCategories).map(([majorCatId, subcats]) => {
+                    const majorCat = majorCategories[majorCatId];
+                    if (!majorCat) return null;
+
+                    const MajorIcon = majorCat.icon;
+
+                    return (
+                      <div key={majorCatId} className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                          <MajorIcon className="h-4 w-4" />
+                          <span>{majorCat.label}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 pl-6">
+                          {subcats.map((subcat, idx) => {
+                            const subcatInfo = subcategoryLabels[subcat];
+                            return (
+                              <Badge key={idx} variant="secondary" className="text-sm px-3 py-1.5">
+                                {subcatInfo?.label || subcat}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           )}
