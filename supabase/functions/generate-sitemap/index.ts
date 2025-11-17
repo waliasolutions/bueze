@@ -33,13 +33,21 @@ Deno.serve(async (req) => {
     const baseUrl = 'https://bueeze.ch';
     const now = new Date().toISOString();
 
-    // Define static routes
+    // Define static routes (PUBLIC PAGES ONLY)
+    // Excluded routes (not indexed):
+    // - /auth, /reset-password (authentication)
+    // - /admin/* (admin panel)
+    // - /dashboard, /handwerker-dashboard (user accounts)
+    // - /submit-lead, /browse-leads, /lead-details/* (transactional)
+    // - /messages, /conversations (messaging)
+    // - /profile, /handwerker-profile-edit, /handwerker-onboarding (account management)
+    // - /checkout (payment flow)
+    // - /test-dashboard (testing)
     const staticRoutes = [
       { loc: '/', lastmod: now, priority: '1.0', changefreq: 'daily' },
       { loc: '/kategorien', lastmod: now, priority: '0.9', changefreq: 'weekly' },
       { loc: '/handwerker', lastmod: now, priority: '0.8', changefreq: 'weekly' },
       { loc: '/pricing', lastmod: now, priority: '0.7', changefreq: 'monthly' },
-      { loc: '/auth', lastmod: now, priority: '0.5', changefreq: 'monthly' },
       { loc: '/agb', lastmod: now, priority: '0.3', changefreq: 'monthly' },
       { loc: '/datenschutz', lastmod: now, priority: '0.3', changefreq: 'monthly' },
       { loc: '/impressum', lastmod: now, priority: '0.3', changefreq: 'monthly' },

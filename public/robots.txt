@@ -1,14 +1,44 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+
+# Disallow authentication and account pages
+Disallow: /auth
+Disallow: /reset-password
+
+# Disallow admin panel
+Disallow: /admin/
+
+# Disallow user dashboards
+Disallow: /dashboard
+Disallow: /handwerker-dashboard
+
+# Disallow transactional pages
+Disallow: /submit-lead
+Disallow: /browse-leads
+Disallow: /lead-details/
+Disallow: /edit-lead/
+Disallow: /opportunity-view/
+
+# Disallow messaging
+Disallow: /messages
+Disallow: /conversations
+
+# Disallow account management
+Disallow: /profile
+Disallow: /handwerker-profile-edit
+Disallow: /handwerker-onboarding
+
+# Disallow payment flow
+Disallow: /checkout
+
+# Disallow proposals management
+Disallow: /proposals-management
+Disallow: /proposal-review/
+
+# Disallow test pages
+Disallow: /test-dashboard
+
+# Disallow API endpoints
+Disallow: /api/
+
+Sitemap: https://bueeze.ch/sitemap.xml
