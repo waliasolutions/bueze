@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ArrowRight, CheckCircle, Clipboard, Users, Shield, Clock, Award, MapPin } from 'lucide-react';
 import { majorCategories } from '@/config/majorCategories';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
 
 const KategorienLanding = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const KategorienLanding = () => {
                 <Card 
                   key={category.id} 
                   className="border-border hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                  onClick={() => navigate(`/kategorien/${category.slug}`)}
+                  onClick={() => navigate(`/kategorie/${category.slug}`)}
                 >
                   <CardHeader>
                     <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${category.color} flex items-center justify-center text-white mb-4 shadow-md group-hover:scale-110 transition-transform duration-300`}>
@@ -50,7 +51,9 @@ const KategorienLanding = () => {
                       {category.description}
                     </CardDescription>
                     <div className="text-sm text-brand-600 font-medium">
-                      {category.subcategories.length} Dienstleistungen
+                      {category.subcategories
+                        .map(subId => subcategoryLabels[subId])
+                        .filter(Boolean).length} Dienstleistungen
                     </div>
                     <Button
                       variant="outline"

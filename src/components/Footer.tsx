@@ -88,7 +88,8 @@ export const Footer = () => {
                 {section.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
                     <Link 
-                      to={link.href} 
+                      to={link.href}
+                      onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                       className="text-ink-300 hover:text-brand-400 transition-colors text-sm"
                     >
                       {link.label}

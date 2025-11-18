@@ -96,30 +96,77 @@ const CategoryLanding = () => {
         <div className="container mx-auto px-4 max-w-6xl">
           <div className="grid md:grid-cols-3 gap-8">
             {content.services.map((service, idx) => {
-              const Icon = service.icon;
+              const ServiceIcon = service.icon;
               return (
-                <Card key={idx} className="border-border hover:shadow-lg transition-shadow duration-300">
+                <Card key={idx} className="border-border hover:shadow-lg transition-all duration-300">
                   <CardHeader>
-                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white mb-4 shadow-md">
-                      <Icon className="w-8 h-8" />
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white mb-4 shadow-md">
+                      <ServiceIcon className="w-7 h-7" />
                     </div>
                     <CardTitle className="text-xl text-ink-900">{service.title}</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
+                  <CardContent>
                     <CardDescription className="text-ink-700 leading-relaxed">
                       {service.description}
                     </CardDescription>
-                    <Button
-                      onClick={handleCTA}
-                      variant="outline"
-                      className="w-full border-brand-500 text-brand-600 hover:bg-brand-50"
-                    >
-                      Offerte einholen
-                    </Button>
                   </CardContent>
                 </Card>
               );
             })}
+          </div>
+          <div className="text-center mt-12">
+            <Button
+              onClick={handleCTA}
+              size="lg"
+              className="h-12 px-8 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
+            >
+              Jetzt Offerten einholen
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* SEO Content Section */}
+      <section className="py-16 bg-pastel-grey-50">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="prose prose-lg max-w-none text-ink-700 space-y-6">
+            <h2 className="text-3xl font-bold text-ink-900 mb-6">
+              Alles über {content.title}
+            </h2>
+            <p className="leading-relaxed">
+              {subcategoryInfo?.shortDescription || content.description}
+            </p>
+            
+            <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+              Wann brauchen Sie diese Dienstleistung?
+            </h3>
+            <p className="leading-relaxed">
+              Diese Dienstleistung wird häufig bei Renovierungen, Neubauten oder bei Reparaturbedarf benötigt. 
+              Qualifizierte Fachbetriebe bringen das nötige Know-how mit, um Ihr Projekt sicher, termingerecht und 
+              zu fairen Preisen umzusetzen. Dank ihrer Erfahrung können sie Sie auch bei der Materialauswahl, 
+              Planung und Kostenkalkulation unterstützen.
+            </p>
+            
+            <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+              Was beeinflusst die Kosten?
+            </h3>
+            <p className="leading-relaxed">
+              Die Kosten variieren je nach Umfang des Projekts, verwendeten Materialien, Arbeitsaufwand und regionalen 
+              Gegebenheiten. Durch Büeze.ch erhalten Sie kostenlos mehrere Offerten von geprüften Fachbetrieben aus 
+              Ihrer Region. So können Sie Preise transparent vergleichen und das beste Angebot für Ihre Bedürfnisse 
+              auswählen. Alle Betriebe verfügen über die nötigen Qualifikationen und Versicherungen.
+            </p>
+            
+            <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+              Fachbetriebe in Ihrer Region
+            </h3>
+            <p className="leading-relaxed">
+              In allen Schweizer Kantonen finden Sie über Büeze.ch qualifizierte Handwerker für diese Dienstleistung. 
+              Lokale Betriebe haben den Vorteil kurzer Anfahrtswege, kennen regionale Besonderheiten und können bei 
+              Fragen oder Problemen schnell vor Ort sein. Stellen Sie jetzt Ihre Anfrage und profitieren Sie von 
+              unserem Netzwerk geprüfter Fachbetriebe – kostenlos und unverbindlich.
+            </p>
           </div>
         </div>
       </section>
