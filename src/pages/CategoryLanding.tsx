@@ -53,7 +53,7 @@ const CategoryLanding = () => {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbLink href={`/kategorien/${majorCategory.slug}`}>
+                <BreadcrumbLink href={`/kategorie/${majorCategory.slug}`}>
                   {majorCategory.label}
                 </BreadcrumbLink>
               </BreadcrumbItem>

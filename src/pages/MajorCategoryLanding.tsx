@@ -2,6 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
@@ -29,9 +30,80 @@ const MajorCategoryLanding = () => {
   const subcategories = majorCategory.subcategories
     .map(subId => subcategoryLabels[subId])
     .filter(Boolean);
+
+  // Generate SEO meta tags based on category
+  const getSEOData = () => {
+    const baseUrl = 'https://bueeze.ch';
+    switch (majorCategorySlug) {
+      case 'bau-renovation':
+        return {
+          title: 'Bauarbeiter Schweiz | Bauhandwerker | Hausrenovation Schweiz | Büeze.ch',
+          description: 'Bauarbeiter in der Schweiz finden. Professionelle Bauhandwerker für Hausrenovation in der Schweiz. Kostenlos Offerten vergleichen.',
+          keywords: 'bauarbeiter in der schweiz, bauhandwerker schweiz, hausrenovation schweiz',
+          intro: 'Suchen Sie Bauarbeiter in der Schweiz? Unsere Bauhandwerker bieten professionelle Hausrenovation in der Schweiz. Vergleichen Sie Offerten von geprüften Baufachbetrieben.',
+          schemaServiceType: 'Bau & Renovation'
+        };
+      case 'elektroinstallationen':
+        return {
+          title: 'Elektrik Service Schweiz | Elektroinstallationen | Elektriker Schweiz',
+          description: 'Elektrik Service in der Schweiz. Professionelle Elektroinstallationen von geprüften Elektrikern. Kostenlos mehrere Offerten einholen.',
+          keywords: 'elektrik service schweiz, elektroinstallationen',
+          intro: 'Elektrik Service Schweiz: Unsere Elektriker bieten professionelle Elektroinstallationen für Privat- und Gewerbekunden. Sichere und normgerechte Elektroarbeiten.',
+          schemaServiceType: 'Elektroinstallationen'
+        };
+      case 'heizung-klima':
+        return {
+          title: 'Heizung & Sanitär Schweiz | Heizungsinstallationen | Büeze.ch',
+          description: 'Heizung & Sanitär Service in der Schweiz. Professionelle Heizungsinstallationen von zertifizierten Fachbetrieben.',
+          keywords: 'heizung & sanitär schweiz, heizungsinstallationen',
+          intro: 'Heizung & Sanitär Service in der Schweiz. Professionelle Heizungsinstallationen von zertifizierten Fachbetrieben für Ihr Zuhause.',
+          schemaServiceType: 'Heizung, Klima & Solar'
+        };
+      case 'sanitaer':
+        return {
+          title: 'Sanitär Service Schweiz | Sanitärinstallationen | Sanitär Notdienst',
+          description: 'Sanitär Service in der Schweiz. Zuverlässige Sanitärinstallationen und Notdienst. Mehrere Offerten kostenlos vergleichen.',
+          keywords: 'sanitär service schweiz, sanitärinstallationen',
+          intro: 'Sanitär Service in der Schweiz. Zuverlässige Sanitärinstallationen und Notdienst. Mehrere Offerten kostenlos vergleichen.',
+          schemaServiceType: 'Sanitär'
+        };
+      default:
+        return {
+          title: `${majorCategory.label} | Büeze.ch`,
+          description: majorCategory.description,
+          keywords: majorCategory.label.toLowerCase(),
+          intro: majorCategory.description,
+          schemaServiceType: majorCategory.label
+        };
+    }
+  };
+
+  const seoData = getSEOData();
+  const schemaMarkup = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "name": majorCategory.label,
+    "description": seoData.intro,
+    "provider": {
+      "@type": "Organization",
+      "name": "Büeze.ch",
+      "url": "https://bueeze.ch"
+    },
+    "serviceType": seoData.schemaServiceType,
+    "areaServed": {
+      "@type": "Country",
+      "name": "Schweiz"
+    }
+  });
   
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHelmet
+        title={seoData.title}
+        description={seoData.description}
+        canonical={`https://bueeze.ch/kategorie/${majorCategorySlug}`}
+        schemaMarkup={schemaMarkup}
+      />
       <Header />
       
       {/* Breadcrumbs */}
@@ -63,7 +135,7 @@ const MajorCategoryLanding = () => {
             {majorCategory.label}
           </h1>
           <p className="text-xl text-ink-700 max-w-3xl mx-auto mb-8">
-            {majorCategory.description}
+            {seoData.intro}
           </p>
           <Button
             onClick={() => navigate('/submit-lead')}

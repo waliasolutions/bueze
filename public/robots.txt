@@ -41,4 +41,13 @@ Disallow: /test-dashboard
 # Disallow API endpoints
 Disallow: /api/
 
+# Allow public pages
+Allow: /
+Allow: /handwerker
+Allow: /kategorie/
+Allow: /agb
+Allow: /impressum
+Allow: /datenschutz
+Allow: /preise
+
 Sitemap: https://bueeze.ch/sitemap.xml
