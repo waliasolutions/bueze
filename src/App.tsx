@@ -54,23 +54,17 @@ const ScrollToTop = () => {
   
   React.useEffect(() => {
     if (hash) {
-      // Scroll to hash fragment
+      // Scroll to hash fragment after content renders
       const scrollTimer = setTimeout(() => {
         const element = document.querySelector(hash);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth' });
         }
-      }, 100);
+      }, 200); // Increased to 200ms to wait for page transition
       return () => clearTimeout(scrollTimer);
     } else {
-      // Immediate scroll to top on route change
+      // Immediate scroll for regular navigation
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      
-      // Fallback scroll after content renders
-      const scrollTimer = setTimeout(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      }, 100);
-      return () => clearTimeout(scrollTimer);
     }
   }, [pathname, hash]);
   

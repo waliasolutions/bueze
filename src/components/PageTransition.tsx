@@ -6,11 +6,13 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
   const [isTransitioning, setIsTransitioning] = React.useState(false);
 
   React.useEffect(() => {
+    // Scroll immediately when route changes (before fade)
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    
+    // Then trigger fade transition
     setIsTransitioning(true);
     const timer = setTimeout(() => {
       setIsTransitioning(false);
-      // Ensure scroll to top after transition completes
-      window.scrollTo({ top: 0, behavior: 'instant' });
     }, 150);
     return () => clearTimeout(timer);
   }, [location.pathname]);
