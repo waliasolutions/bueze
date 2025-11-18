@@ -143,6 +143,24 @@ const SubmitLead = () => {
     checkAuth();
   }, []);
 
+  // Auto-select category from URL parameter
+  useEffect(() => {
+    if (preselectedCategory) {
+      // Validate category exists in our categories list
+      const categoryExists = categories.some(cat => cat.value === preselectedCategory);
+      
+      if (categoryExists) {
+        form.setValue('category', preselectedCategory);
+      } else {
+        toast({
+          title: "Ungültige Kategorie",
+          description: "Die ausgewählte Kategorie existiert nicht.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [preselectedCategory, toast, form]);
+
   const handleFileUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
