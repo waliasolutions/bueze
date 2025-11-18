@@ -15,7 +15,7 @@ const faqData = [
       },
       {
         q: 'Was kostet eine Anfrage bei Büeze.ch?',
-        a: 'Das Erstellen einer Anfrage ist für Sie komplett kostenlos und unverbindlich. Auch die Nutzung von Büeze.ch ist zu 100% kostenlos – Sie zahlen nur die Kosten, die Sie direkt mit dem Handwerker für die Ausführung der Arbeit vereinbaren. Büeze.ch verdient dabei nichts.'
+        a: 'Das Erstellen einer Anfrage ist für Sie als Auftraggeber komplett kostenlos und unverbindlich. Sie zahlen nur die Kosten, die Sie direkt mit dem Handwerker für die Ausführung der Arbeit vereinbaren. Büeze.ch finanziert sich ausschliesslich über Abonnements für Handwerksbetriebe, nicht über Vermittlungsgebühren.'
       }
     ]
   },
@@ -54,11 +54,11 @@ const faqData = [
     },
     {
       q: 'Wie funktioniert die Preisgestaltung für Handwerker?',
-      a: 'Mit einem Abo (ab CHF 90/Monat) können Sie unbegrenzt Offerten einreichen. Im Free-Plan sind 5 Offerten pro Monat enthalten. Sie reichen Ihre Offerte mit Preis, Zeitrahmen und Nachricht ein. Sobald der Kunde Ihre Offerte akzeptiert, erhalten beide Seiten die vollständigen Kontaktdaten – ohne Zusatzkosten. Sie zahlen nur für das Abo, nicht pro Kontakt.'
+      a: 'Im kostenlosen Free-Plan sind 5 Offerten pro Monat enthalten. Mit einem Abo (Monatlich CHF 90, 6 Monate CHF 510, Jährlich CHF 960) können Sie unbegrenzt Offerten einreichen. Sobald ein Kunde Ihre Offerte akzeptiert, erhalten beide Seiten die vollständigen Kontaktdaten – ohne Zusatzkosten pro Kontakt. Sie zahlen nur für das Abo, nicht für einzelne Vermittlungen.'
     },
     {
       q: 'Was passiert, wenn der Kunde meine Offerte nicht akzeptiert?',
-      a: 'Sie haben keine Kosten und Ihr Offerten-Kontingent wird nicht verbraucht, wenn eine Offerte abgelehnt wird. Nur eingereichte Offerten zählen zu Ihrer monatlichen Limite. Abgelehnte Offerten haben keinen Einfluss auf Ihr Kontingent oder Ihre Kosten.'
+      a: 'Abgelehnte Offerten werden nicht auf Ihr monatliches Kontingent angerechnet. Nur eingereichte Offerten zählen zu Ihrer Limite von 5 Offerten im Free-Plan. Bei Ablehnung durch den Kunden entstehen keine zusätzlichen Kosten und Ihr Kontingent bleibt unberührt.'
     },
     {
       q: 'Welche Informationen sehen Auftraggeber von mir?',
