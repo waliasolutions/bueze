@@ -25,12 +25,12 @@ export const Hero = () => {
           
           {/* Headlines */}
           <div className="space-y-6">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
-              {content?.fields?.title || 'Handwerker Marktplatz Schweiz – Finden Sie'}{' '}
-              <span className="text-brand-600">{content?.fields?.titleHighlight || 'lokale Handwerker'}</span>
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
+              {content?.fields?.title || 'Qualifizierte Handwerker für'}{' '}
+              <span className="text-brand-600">{content?.fields?.titleHighlight || 'Ihr Projekt finden'}</span>
             </h1>
             <p className="text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto">
-              {content?.fields?.subtitle || 'Unser Handwerker Portal verbindet Sie mit professionellen Handwerkern in der Schweiz. Egal ob Sie einen lokalen Handwerker für Renovationen, Reparaturen oder Neubauprojekte suchen – auf Büeze.ch finden Sie geprüfte Fachbetriebe aus Ihrer Region.'}
+              {content?.fields?.subtitle || 'Von Elektrik über Sanitär bis Renovation – stellen Sie kostenlos Ihre Anfrage ein und erhalten Sie passende Offerten von geprüften Fachbetrieben aus Ihrer Region. Einfach, schnell und unverbindlich.'}
             </p>
           </div>
 

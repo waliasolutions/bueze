@@ -21,6 +21,8 @@ import { captureException, logWithCorrelation } from '@/lib/errorTracking';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { PostalCodeInput } from '@/components/PostalCodeInput';
 import { cn } from '@/lib/utils';
+import { majorCategories } from '@/config/majorCategories';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
 
 const leadSchema = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
@@ -48,36 +50,17 @@ const leadSchema = z.object({
 
 type LeadFormData = z.infer<typeof leadSchema>;
 
-const categories = [
-  { value: 'elektriker', label: 'Elektrik', group: 'Elektroinstallationen' },
-  { value: 'elektro_hausinstallationen', label: 'Hausinstallationen', group: 'Elektroinstallationen' },
-  { value: 'elektro_beleuchtung', label: 'Beleuchtung', group: 'Elektroinstallationen' },
-  { value: 'elektro_smart_home', label: 'Smart Home', group: 'Elektroinstallationen' },
-  { value: 'elektro_wallbox', label: 'Wallbox / E-Mobilität', group: 'Elektroinstallationen' },
-  { value: 'sanitaer', label: 'Sanitär', group: 'Sanitär' },
-  { value: 'badezimmer', label: 'Badezimmer', group: 'Sanitär' },
-  { value: 'badewanne_dusche', label: 'Badewanne / Dusche', group: 'Sanitär' },
-  { value: 'heizung', label: 'Heizung', group: 'Heizung, Klima & Solar' },
-  { value: 'fussbodenheizung', label: 'Fussbodenheizung', group: 'Heizung, Klima & Solar' },
-  { value: 'photovoltaik', label: 'Photovoltaik', group: 'Heizung, Klima & Solar' },
-  { value: 'maler', label: 'Malerei', group: 'Innenausbau & Schreiner' },
-  { value: 'schreiner', label: 'Schreinerei', group: 'Innenausbau & Schreiner' },
-  { value: 'bodenleger', label: 'Bodenbeläge', group: 'Bodenbeläge' },
-  { value: 'parkett_laminat', label: 'Parkett / Laminat', group: 'Bodenbeläge' },
-  { value: 'bodenfliese', label: 'Bodenfliesen', group: 'Bodenbeläge' },
-  { value: 'dachdecker', label: 'Dacharbeiten', group: 'Bau & Renovation' },
-  { value: 'gartenbau', label: 'Gartenbau', group: 'Bau & Renovation' },
-  { value: 'metallbau', label: 'Metallbau', group: 'Bau & Renovation' },
-  { value: 'kuechenbau', label: 'Küchenbau', group: 'Küche' },
-  { value: 'kuechenplanung', label: 'Küchenplanung', group: 'Küche' },
-  { value: 'badumbau', label: 'Badumbau', group: 'Sanitär' },
-  { value: 'zimmermann', label: 'Zimmermann', group: 'Bau & Renovation' },
-  { value: 'maurer', label: 'Maurer', group: 'Bau & Renovation' },
-  { value: 'plattenleger', label: 'Plattenleger', group: 'Bodenbeläge' },
-  { value: 'gipser', label: 'Gipser', group: 'Innenausbau & Schreiner' },
-  { value: 'umzug', label: 'Transport & Umzug', group: 'Räumung & Entsorgung' },
-  { value: 'aufloesung_entsorgung', label: 'Auflösung / Entsorgung', group: 'Räumung & Entsorgung' },
-];
+// Generate categories dynamically from subcategoryLabels (SSOT)
+const categories = Object.values(majorCategories).flatMap(majorCat => 
+  majorCat.subcategories
+    .map(subId => subcategoryLabels[subId])
+    .filter(Boolean)
+    .map(sub => ({
+      value: sub.value,
+      label: sub.label,
+      group: majorCat.label
+    }))
+);
 
 // Group categories by major category
 const groupedCategories = categories.reduce((acc, cat) => {
