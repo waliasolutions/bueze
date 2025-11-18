@@ -7,7 +7,11 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
 
   React.useEffect(() => {
     setIsTransitioning(true);
-    const timer = setTimeout(() => setIsTransitioning(false), 150);
+    const timer = setTimeout(() => {
+      setIsTransitioning(false);
+      // Ensure scroll to top after transition completes
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }, 150);
     return () => clearTimeout(timer);
   }, [location.pathname]);
 

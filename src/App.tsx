@@ -53,20 +53,25 @@ const ScrollToTop = () => {
   const { pathname, hash } = useLocation();
   
   React.useEffect(() => {
-    // Small delay to ensure route has changed and new content is rendered
-    const scrollTimer = setTimeout(() => {
-      if (hash) {
+    if (hash) {
+      // Scroll to hash fragment
+      const scrollTimer = setTimeout(() => {
         const element = document.querySelector(hash);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth' });
         }
-      } else {
-        // Use instant scroll to prevent race conditions with competing scroll animations
+      }, 100);
+      return () => clearTimeout(scrollTimer);
+    } else {
+      // Immediate scroll to top on route change
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      
+      // Fallback scroll after content renders
+      const scrollTimer = setTimeout(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-      }
-    }, 50);
-    
-    return () => clearTimeout(scrollTimer);
+      }, 100);
+      return () => clearTimeout(scrollTimer);
+    }
   }, [pathname, hash]);
   
   return null;
