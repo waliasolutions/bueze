@@ -23,7 +23,7 @@ const KategorienLanding = () => {
             Alle Handwerk-Kategorien
           </h1>
           <p className="text-xl text-ink-700 leading-relaxed max-w-3xl mx-auto">
-            Wählen Sie die passende Kategorie für Ihr Projekt und erhalten Sie kostenlos mehrere Offerten von qualifizierten Handwerkern.
+            Beschreiben Sie Ihr Projekt. Erhalten Sie passende Offerten von Fachbetrieben aus Ihrer Region.
           </p>
         </div>
       </section>
