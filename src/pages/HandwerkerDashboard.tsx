@@ -12,28 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { 
-  Search, 
-  MapPin, 
-  Euro, 
-  Clock, 
-  Send, 
-  Eye,
-  FileText,
-  User,
-  Building2,
-  Mail,
-  Phone,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Loader2
-} from "lucide-react";
+import { Search, MapPin, Euro, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
 import { majorCategories } from "@/config/majorCategories";
-
 interface Lead {
   id: string;
   title: string;
@@ -48,7 +31,6 @@ interface Lead {
   created_at: string;
   proposals_count: number;
 }
-
 interface Proposal {
   id: string;
   lead_id: string;
@@ -64,7 +46,6 @@ interface Proposal {
     canton: string;
   };
 }
-
 interface HandwerkerProfile {
   id: string;
   first_name: string | null;
@@ -79,24 +60,25 @@ interface HandwerkerProfile {
   hourly_rate_max: number | null;
   verification_status: string;
 }
-
 const HandwerkerDashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfile | null>(null);
-  
+
   // Browse Leads Tab
   const [leads, setLeads] = useState<Lead[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  
+
   // Proposals Tab
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState(false);
-  
+
   // Profile Tab
   const [profileEditing, setProfileEditing] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -105,7 +87,7 @@ const HandwerkerDashboard = () => {
     hourly_rate_min: "",
     hourly_rate_max: "",
     phone_number: "",
-    logo_url: "",
+    logo_url: ""
   });
 
   // Proposal Form
@@ -113,148 +95,128 @@ const HandwerkerDashboard = () => {
     price_min: "",
     price_max: "",
     message: "",
-    estimated_duration_days: "",
+    estimated_duration_days: ""
   });
   const [submittingProposal, setSubmittingProposal] = useState(false);
-
   useEffect(() => {
     checkAuth();
   }, []);
-
   const checkAuth = async () => {
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
+      const {
+        data: {
+          user: currentUser
+        }
+      } = await supabase.auth.getUser();
       if (!currentUser) {
         navigate('/auth?role=handwerker');
         return;
       }
-
       setUser(currentUser);
-      
+
       // Fetch handwerker profile
-      const { data: profile, error } = await supabase
-        .from('handwerker_profiles')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .maybeSingle();
-      
+      const {
+        data: profile,
+        error
+      } = await supabase.from('handwerker_profiles').select('*').eq('user_id', currentUser.id).maybeSingle();
       if (error) {
         console.error('Error fetching profile:', error);
         toast({
           title: 'Fehler',
           description: 'Profil konnte nicht geladen werden.',
-          variant: 'destructive',
+          variant: 'destructive'
         });
         setLoading(false);
         return;
       }
-      
       if (!profile) {
         // No profile exists - redirect to onboarding
         navigate('/handwerker-onboarding');
         return;
       }
-      
       setHandwerkerProfile(profile);
-      
+
       // Set profile data for editing
       setProfileData({
         bio: profile.bio || '',
         phone_number: profile.phone_number || '',
         hourly_rate_min: profile.hourly_rate_min?.toString() || '',
         hourly_rate_max: profile.hourly_rate_max?.toString() || '',
-        logo_url: profile.logo_url || '',
+        logo_url: profile.logo_url || ''
       });
-      
+
       // Only fetch leads if verified
       if (profile.verification_status === 'approved') {
-        await Promise.all([
-          fetchLeads(profile.categories, profile.service_areas),
-          fetchProposals(currentUser.id)
-        ]);
+        await Promise.all([fetchLeads(profile.categories, profile.service_areas), fetchProposals(currentUser.id)]);
       }
-      
       setLoading(false);
     } catch (error) {
       console.error('Auth error:', error);
       navigate('/auth');
     }
   };
-
   const fetchHandwerkerProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('handwerker_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('handwerker_profiles').select('*').eq('user_id', userId).single();
       if (error) throw error;
-
       setHandwerkerProfile(data);
       setProfileData({
         bio: data.bio || "",
         hourly_rate_min: data.hourly_rate_min?.toString() || "",
         hourly_rate_max: data.hourly_rate_max?.toString() || "",
         phone_number: data.phone_number || "",
-        logo_url: data.logo_url || "",
+        logo_url: data.logo_url || ""
       });
 
       // Only fetch leads and proposals if approved
       if (data.verification_status === 'approved') {
-        await Promise.all([
-          fetchLeads(data.categories, data.service_areas),
-          fetchProposals(userId)
-        ]);
+        await Promise.all([fetchLeads(data.categories, data.service_areas), fetchProposals(userId)]);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
       toast({
         title: "Fehler",
         description: "Profil konnte nicht geladen werden.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const fetchLeads = async (categories: string[], serviceAreas: string[]) => {
     setLeadsLoading(true);
     try {
       // Fetch ALL active leads - let RLS handle visibility
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('leads').select('*').eq('status', 'active').order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
 
       // Filter client-side by category
       // Handwerker may have subcategories, leads may have major categories
       // Map subcategories to their major categories for matching
       let filteredLeads = data || [];
-      
       if (categories.length > 0) {
         filteredLeads = filteredLeads.filter(lead => {
           // Check if handwerker's categories include the lead's category directly
           if (categories.includes(lead.category)) {
             return true;
           }
-          
+
           // Check if lead's category is a major category and handwerker has a subcategory from it
           const leadMajorCat = Object.values(majorCategories).find(mc => mc.id === lead.category);
           if (leadMajorCat) {
             return categories.some(hwCat => leadMajorCat.subcategories.includes(hwCat));
           }
-          
+
           // Check if handwerker's category is a major category and lead has a subcategory from it
-          const handwerkerMajorCats = categories
-            .map(cat => Object.values(majorCategories).find(mc => mc.id === cat))
-            .filter(Boolean);
-          
+          const handwerkerMajorCats = categories.map(cat => Object.values(majorCategories).find(mc => mc.id === cat)).filter(Boolean);
           return handwerkerMajorCats.some(mc => mc?.subcategories.includes(lead.category));
         });
       }
@@ -265,13 +227,12 @@ const HandwerkerDashboard = () => {
           // Extract cantons (2 chars) and postal codes (4+ chars)
           const cantons = serviceAreas.filter(area => area.length === 2);
           const postalCodes = serviceAreas.filter(area => area.length >= 4);
-          
+
           // Match if lead's canton is in handwerker's cantons
           // OR if lead's zip is in handwerker's postal codes
           return cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
         });
       }
-
       setLeads(filteredLeads);
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -279,25 +240,23 @@ const HandwerkerDashboard = () => {
       setLeadsLoading(false);
     }
   };
-
   const fetchProposals = async (userId: string) => {
     setProposalsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('lead_proposals')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('lead_proposals').select(`
           *,
           leads (
             title,
             city,
             canton
           )
-        `)
-        .eq('handwerker_id', userId)
-        .order('submitted_at', { ascending: false });
-
+        `).eq('handwerker_id', userId).order('submitted_at', {
+        ascending: false
+      });
       if (error) throw error;
-
       setProposals(data || []);
     } catch (error) {
       console.error('Error fetching proposals:', error);
@@ -305,7 +264,6 @@ const HandwerkerDashboard = () => {
       setProposalsLoading(false);
     }
   };
-
   const handleSubmitProposal = async () => {
     if (!selectedLead || !user?.id) return;
 
@@ -314,19 +272,20 @@ const HandwerkerDashboard = () => {
       toast({
         title: "Fehlende Angaben",
         description: "Bitte füllen Sie alle Pflichtfelder aus.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setSubmittingProposal(true);
     try {
       // Check quota first
-      const { data: canSubmit, error: checkError } = await supabase
-        .rpc('can_submit_proposal', { handwerker_user_id: user.id });
-
+      const {
+        data: canSubmit,
+        error: checkError
+      } = await supabase.rpc('can_submit_proposal', {
+        handwerker_user_id: user.id
+      });
       if (checkError) throw checkError;
-
       if (!canSubmit) {
         toast({
           title: 'Kontingent erschöpft',
@@ -338,24 +297,21 @@ const HandwerkerDashboard = () => {
       }
 
       // Proceed with proposal insertion
-      const { error } = await supabase
-        .from('lead_proposals')
-        .insert({
-          lead_id: selectedLead.id,
-          handwerker_id: user.id,
-          price_min: parseInt(proposalForm.price_min),
-          price_max: parseInt(proposalForm.price_max),
-          message: proposalForm.message,
-          estimated_duration_days: proposalForm.estimated_duration_days ? 
-            parseInt(proposalForm.estimated_duration_days) : null,
-          status: 'pending',
-        });
-
+      const {
+        error
+      } = await supabase.from('lead_proposals').insert({
+        lead_id: selectedLead.id,
+        handwerker_id: user.id,
+        price_min: parseInt(proposalForm.price_min),
+        price_max: parseInt(proposalForm.price_max),
+        message: proposalForm.message,
+        estimated_duration_days: proposalForm.estimated_duration_days ? parseInt(proposalForm.estimated_duration_days) : null,
+        status: 'pending'
+      });
       if (error) throw error;
-
       toast({
         title: "Angebot gesendet",
-        description: "Ihr Angebot wurde erfolgreich übermittelt.",
+        description: "Ihr Angebot wurde erfolgreich übermittelt."
       });
 
       // Reset form and close dialog
@@ -363,7 +319,7 @@ const HandwerkerDashboard = () => {
         price_min: "",
         price_max: "",
         message: "",
-        estimated_duration_days: "",
+        estimated_duration_days: ""
       });
       setSelectedLead(null);
 
@@ -374,35 +330,30 @@ const HandwerkerDashboard = () => {
       toast({
         title: "Fehler",
         description: error.message || "Angebot konnte nicht gesendet werden.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSubmittingProposal(false);
     }
   };
-
   const handleUpdateProfile = async () => {
     if (!handwerkerProfile?.id) return;
-
     setProfileEditing(true);
     try {
-      const { error } = await supabase
-        .from('handwerker_profiles')
-        .update({
-          bio: profileData.bio,
-          hourly_rate_min: profileData.hourly_rate_min ? parseInt(profileData.hourly_rate_min) : null,
-          hourly_rate_max: profileData.hourly_rate_max ? parseInt(profileData.hourly_rate_max) : null,
-          phone_number: profileData.phone_number,
-          logo_url: profileData.logo_url,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', handwerkerProfile.id);
-
+      const {
+        error
+      } = await supabase.from('handwerker_profiles').update({
+        bio: profileData.bio,
+        hourly_rate_min: profileData.hourly_rate_min ? parseInt(profileData.hourly_rate_min) : null,
+        hourly_rate_max: profileData.hourly_rate_max ? parseInt(profileData.hourly_rate_max) : null,
+        phone_number: profileData.phone_number,
+        logo_url: profileData.logo_url,
+        updated_at: new Date().toISOString()
+      }).eq('id', handwerkerProfile.id);
       if (error) throw error;
-
       toast({
         title: "Profil aktualisiert",
-        description: "Ihre Änderungen wurden gespeichert.",
+        description: "Ihre Änderungen wurden gespeichert."
       });
 
       // Refresh profile
@@ -412,16 +363,14 @@ const HandwerkerDashboard = () => {
       toast({
         title: "Fehler",
         description: "Profil konnte nicht aktualisiert werden.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setProfileEditing(false);
     }
   };
-
   const handleLogoUpload = async (file: File) => {
     if (!user) return;
-
     try {
       // Validate file size (max 5MB for logos)
       const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -429,7 +378,7 @@ const HandwerkerDashboard = () => {
         toast({
           title: "Datei zu groß",
           description: "Das Logo darf maximal 5MB groß sein.",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
@@ -439,13 +388,11 @@ const HandwerkerDashboard = () => {
         toast({
           title: "Ungültiger Dateityp",
           description: "Bitte laden Sie eine Bilddatei hoch (JPG, PNG, SVG, WebP).",
-          variant: "destructive",
+          variant: "destructive"
         });
         return;
       }
-
       setLogoUploading(true);
-
       const fileExt = file.name.split('.').pop();
       const fileName = `logos/${user.id}/logo-${Date.now()}.${fileExt}`;
 
@@ -453,30 +400,28 @@ const HandwerkerDashboard = () => {
       if (profileData.logo_url) {
         const oldPath = profileData.logo_url.split('/handwerker-documents/')[1];
         if (oldPath) {
-          await supabase.storage
-            .from('handwerker-documents')
-            .remove([oldPath]);
+          await supabase.storage.from('handwerker-documents').remove([oldPath]);
         }
       }
 
       // Upload new logo
-      const { error: uploadError } = await supabase.storage
-        .from('handwerker-documents')
-        .upload(fileName, file);
-
+      const {
+        error: uploadError
+      } = await supabase.storage.from('handwerker-documents').upload(fileName, file);
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data } = supabase.storage
-        .from('handwerker-documents')
-        .getPublicUrl(fileName);
-
+      const {
+        data
+      } = supabase.storage.from('handwerker-documents').getPublicUrl(fileName);
       if (data?.publicUrl) {
-        setProfileData(prev => ({ ...prev, logo_url: data.publicUrl }));
-        
+        setProfileData(prev => ({
+          ...prev,
+          logo_url: data.publicUrl
+        }));
         toast({
           title: "Logo hochgeladen",
-          description: "Speichern Sie Ihr Profil, um die Änderungen zu übernehmen.",
+          description: "Speichern Sie Ihr Profil, um die Änderungen zu übernehmen."
         });
       }
     } catch (error) {
@@ -484,13 +429,12 @@ const HandwerkerDashboard = () => {
       toast({
         title: "Upload fehlgeschlagen",
         description: error instanceof Error ? error.message : "Logo konnte nicht hochgeladen werden.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLogoUploading(false);
     }
   };
-
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -505,7 +449,6 @@ const HandwerkerDashboard = () => {
         return <Badge>{status}</Badge>;
     }
   };
-
   const getUrgencyBadge = (urgency: string) => {
     switch (urgency) {
       case 'urgent':
@@ -518,18 +461,13 @@ const HandwerkerDashboard = () => {
         return <Badge variant="outline">{urgency}</Badge>;
     }
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+    return <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-      </div>
-    );
+      </div>;
   }
-
   if (!handwerkerProfile) {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-24">
           <Card>
@@ -545,14 +483,12 @@ const HandwerkerDashboard = () => {
           </Card>
         </main>
         <Footer />
-      </div>
-    );
+      </div>;
   }
 
   // Check verification status - show pending state
   if (handwerkerProfile.verification_status !== 'approved') {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8 pt-24">
           <Alert className="max-w-2xl mx-auto mb-6 border-brand-200 bg-brand-50">
@@ -589,18 +525,11 @@ const HandwerkerDashboard = () => {
               </div>
 
               <div className="flex gap-3">
-                <Button 
-                  onClick={() => navigate('/handwerker-profile/edit')} 
-                  className="flex-1"
-                >
+                <Button onClick={() => navigate('/handwerker-profile/edit')} className="flex-1">
                   <User className="h-4 w-4 mr-2" />
                   Profil vervollständigen
                 </Button>
-                <Button 
-                  onClick={() => navigate('/')} 
-                  variant="outline"
-                  className="flex-1"
-                >
+                <Button onClick={() => navigate('/')} variant="outline" className="flex-1">
                   Zur Startseite
                 </Button>
               </div>
@@ -608,18 +537,10 @@ const HandwerkerDashboard = () => {
           </Card>
         </main>
         <Footer />
-      </div>
-    );
+      </div>;
   }
-
-  const filteredLeads = leads.filter(lead =>
-    lead.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lead.city.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="min-h-screen bg-background">
+  const filteredLeads = leads.filter(lead => lead.title.toLowerCase().includes(searchTerm.toLowerCase()) || lead.description.toLowerCase().includes(searchTerm.toLowerCase()) || lead.city.toLowerCase().includes(searchTerm.toLowerCase()));
+  return <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-7xl mx-auto">
@@ -630,14 +551,9 @@ const HandwerkerDashboard = () => {
                 <h1 className="text-3xl font-bold text-foreground">
                   Willkommen, {handwerkerProfile.first_name || 'Handwerker'}!
                 </h1>
-                {user && (
-                  <div className="flex items-center gap-3 mt-2">
-                    <HandwerkerStatusIndicator 
-                      userId={user.id} 
-                      verificationStatus={handwerkerProfile.verification_status}
-                    />
-                  </div>
-                )}
+                {user && <div className="flex items-center gap-3 mt-2">
+                    <HandwerkerStatusIndicator userId={user.id} verificationStatus={handwerkerProfile.verification_status} />
+                  </div>}
               </div>
               {user && <ProposalLimitBadge userId={user.id} />}
             </div>
@@ -668,37 +584,26 @@ const HandwerkerDashboard = () => {
                 <CardHeader>
                   <CardTitle>Verfügbare Aufträge</CardTitle>
                   <CardDescription>
-                    Durchsuchen Sie Aufträge, die zu Ihren Fähigkeiten passen
+                    Durchsuchen Sie Aufträge, die zu Ihnen passen
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-4">
                     <div className="relative">
                       <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Aufträge durchsuchen..."
-                        className="pl-9"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
+                      <Input placeholder="Aufträge durchsuchen..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                     </div>
                   </div>
 
-                  {leadsLoading ? (
-                    <div className="text-center py-8">
+                  {leadsLoading ? <div className="text-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
-                    </div>
-                  ) : filteredLeads.length === 0 ? (
-                    <Alert>
+                    </div> : filteredLeads.length === 0 ? <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
                         Keine passenden Aufträge gefunden. Erweitern Sie Ihre Kategorien oder Einsatzgebiete im Profil.
                       </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <div className="space-y-4">
-                      {filteredLeads.map((lead) => (
-                        <Card key={lead.id} className="hover:border-brand-600 transition-colors">
+                    </Alert> : <div className="space-y-4">
+                      {filteredLeads.map(lead => <Card key={lead.id} className="hover:border-brand-600 transition-colors">
                           <CardHeader>
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -722,18 +627,16 @@ const HandwerkerDashboard = () => {
                             </p>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4 text-sm">
-                                {lead.budget_min && lead.budget_max && (
-                                  <div className="flex items-center gap-1">
+                                {lead.budget_min && lead.budget_max && <div className="flex items-center gap-1">
                                     <Euro className="h-4 w-4 text-muted-foreground" />
                                     <span>{lead.budget_min} - {lead.budget_max} CHF</span>
-                                  </div>
-                                )}
+                                  </div>}
                                 <div className="flex items-center gap-1 text-muted-foreground">
                                   <FileText className="h-4 w-4" />
                                   <span>{lead.proposals_count} Angebote</span>
                                 </div>
                               </div>
-                              <Dialog open={selectedLead?.id === lead.id} onOpenChange={(open) => !open && setSelectedLead(null)}>
+                              <Dialog open={selectedLead?.id === lead.id} onOpenChange={open => !open && setSelectedLead(null)}>
                                 <DialogTrigger asChild>
                                   <Button onClick={() => setSelectedLead(lead)}>
                                     <Send className="h-4 w-4 mr-2" />
@@ -751,67 +654,45 @@ const HandwerkerDashboard = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="space-y-2">
                                         <Label htmlFor="price_min">Preis von (CHF) *</Label>
-                                        <Input
-                                          id="price_min"
-                                          type="number"
-                                          placeholder="z.B. 5000"
-                                          value={proposalForm.price_min}
-                                          onChange={(e) => setProposalForm({ ...proposalForm, price_min: e.target.value })}
-                                        />
+                                        <Input id="price_min" type="number" placeholder="z.B. 5000" value={proposalForm.price_min} onChange={e => setProposalForm({
+                                    ...proposalForm,
+                                    price_min: e.target.value
+                                  })} />
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor="price_max">Preis bis (CHF) *</Label>
-                                        <Input
-                                          id="price_max"
-                                          type="number"
-                                          placeholder="z.B. 7000"
-                                          value={proposalForm.price_max}
-                                          onChange={(e) => setProposalForm({ ...proposalForm, price_max: e.target.value })}
-                                        />
+                                        <Input id="price_max" type="number" placeholder="z.B. 7000" value={proposalForm.price_max} onChange={e => setProposalForm({
+                                    ...proposalForm,
+                                    price_max: e.target.value
+                                  })} />
                                       </div>
                                     </div>
                                     <div className="space-y-2">
                                       <Label htmlFor="duration">Geschätzte Dauer (Tage)</Label>
-                                      <Input
-                                        id="duration"
-                                        type="number"
-                                        placeholder="z.B. 5"
-                                        value={proposalForm.estimated_duration_days}
-                                        onChange={(e) => setProposalForm({ ...proposalForm, estimated_duration_days: e.target.value })}
-                                      />
+                                      <Input id="duration" type="number" placeholder="z.B. 5" value={proposalForm.estimated_duration_days} onChange={e => setProposalForm({
+                                  ...proposalForm,
+                                  estimated_duration_days: e.target.value
+                                })} />
                                     </div>
                                     <div className="space-y-2">
                                       <Label htmlFor="message">Ihre Nachricht *</Label>
-                                      <Textarea
-                                        id="message"
-                                        placeholder="Beschreiben Sie, wie Sie den Auftrag ausführen würden..."
-                                        rows={6}
-                                        value={proposalForm.message}
-                                        onChange={(e) => setProposalForm({ ...proposalForm, message: e.target.value })}
-                                      />
+                                      <Textarea id="message" placeholder="Beschreiben Sie, wie Sie den Auftrag ausführen würden..." rows={6} value={proposalForm.message} onChange={e => setProposalForm({
+                                  ...proposalForm,
+                                  message: e.target.value
+                                })} />
                                     </div>
                                     <div className="flex justify-end gap-2">
-                                      <Button
-                                        variant="outline"
-                                        onClick={() => setSelectedLead(null)}
-                                      >
+                                      <Button variant="outline" onClick={() => setSelectedLead(null)}>
                                         Abbrechen
                                       </Button>
-                                      <Button
-                                        onClick={handleSubmitProposal}
-                                        disabled={submittingProposal}
-                                      >
-                                        {submittingProposal ? (
-                                          <>
+                                      <Button onClick={handleSubmitProposal} disabled={submittingProposal}>
+                                        {submittingProposal ? <>
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                             Wird gesendet...
-                                          </>
-                                        ) : (
-                                          <>
+                                          </> : <>
                                             <Send className="h-4 w-4 mr-2" />
                                             Angebot senden
-                                          </>
-                                        )}
+                                          </>}
                                       </Button>
                                     </div>
                                   </div>
@@ -819,10 +700,8 @@ const HandwerkerDashboard = () => {
                               </Dialog>
                             </div>
                           </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                        </Card>)}
+                    </div>}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -837,21 +716,15 @@ const HandwerkerDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {proposalsLoading ? (
-                    <div className="text-center py-8">
+                  {proposalsLoading ? <div className="text-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
-                    </div>
-                  ) : proposals.length === 0 ? (
-                    <Alert>
+                    </div> : proposals.length === 0 ? <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
                         Sie haben noch keine Angebote eingereicht. Durchsuchen Sie verfügbare Aufträge, um Angebote zu senden.
                       </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <div className="space-y-4">
-                      {proposals.map((proposal) => (
-                        <Card key={proposal.id}>
+                    </Alert> : <div className="space-y-4">
+                      {proposals.map(proposal => <Card key={proposal.id}>
                           <CardHeader>
                             <div className="flex items-start justify-between">
                               <div>
@@ -875,29 +748,25 @@ const HandwerkerDashboard = () => {
                                   <Euro className="h-4 w-4 text-muted-foreground" />
                                   <span>{proposal.price_min} - {proposal.price_max} CHF</span>
                                 </div>
-                                {proposal.estimated_duration_days && (
-                                  <div className="flex items-center gap-1">
+                                {proposal.estimated_duration_days && <div className="flex items-center gap-1">
                                     <Clock className="h-4 w-4 text-muted-foreground" />
                                     <span>{proposal.estimated_duration_days} Tage</span>
-                                  </div>
-                                )}
+                                  </div>}
                               </div>
                               <p className="text-sm text-muted-foreground line-clamp-2">
                                 {proposal.message}
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Gesendet: {new Date(proposal.submitted_at).toLocaleDateString('de-CH', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric'
-                                })}
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
                               </p>
                             </div>
                           </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
+                        </Card>)}
+                    </div>}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -913,10 +782,7 @@ const HandwerkerDashboard = () => {
                         Aktualisieren Sie Ihre Profilinformationen
                       </CardDescription>
                     </div>
-                    <Button
-                      onClick={() => navigate('/handwerker-profile/edit')}
-                      variant="default"
-                    >
+                    <Button onClick={() => navigate('/handwerker-profile/edit')} variant="default">
                       Erweiterte Profileinstellungen
                     </Button>
                   </div>
@@ -932,42 +798,21 @@ const HandwerkerDashboard = () => {
                   <div className="space-y-3">
                     <Label htmlFor="logo-upload">Firmenlogo</Label>
                     <div className="flex items-center gap-4">
-                      {profileData.logo_url && (
-                        <div className="h-24 w-24 rounded-lg border-2 bg-background flex items-center justify-center overflow-hidden">
-                          <img 
-                            src={profileData.logo_url}
-                            alt="Firmenlogo"
-                            className="h-full w-full object-contain"
-                          />
-                        </div>
-                      )}
+                      {profileData.logo_url && <div className="h-24 w-24 rounded-lg border-2 bg-background flex items-center justify-center overflow-hidden">
+                          <img src={profileData.logo_url} alt="Firmenlogo" className="h-full w-full object-contain" />
+                        </div>}
                       <div className="flex-1">
-                        <Input
-                          id="logo-upload"
-                          type="file"
-                          accept=".jpg,.jpeg,.png,.svg,.webp"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleLogoUpload(file);
-                          }}
-                          className="hidden"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => document.getElementById('logo-upload')?.click()}
-                          disabled={logoUploading}
-                        >
-                          {logoUploading ? (
-                            <>
+                        <Input id="logo-upload" type="file" accept=".jpg,.jpeg,.png,.svg,.webp" onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLogoUpload(file);
+                      }} className="hidden" />
+                        <Button type="button" variant="outline" onClick={() => document.getElementById('logo-upload')?.click()} disabled={logoUploading}>
+                          {logoUploading ? <>
                               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                               Wird hochgeladen...
-                            </>
-                          ) : (
-                            <>
+                            </> : <>
                               {profileData.logo_url ? 'Logo ändern' : 'Logo hochladen'}
-                            </>
-                          )}
+                            </>}
                         </Button>
                         <p className="text-xs text-muted-foreground mt-2">
                           JPG, PNG, SVG oder WebP (max. 5MB)
@@ -1011,81 +856,58 @@ const HandwerkerDashboard = () => {
                     <Label htmlFor="phone_number">Telefonnummer</Label>
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone_number"
-                        type="tel"
-                        placeholder="+41 79 123 45 67"
-                        value={profileData.phone_number}
-                        onChange={(e) => setProfileData({ ...profileData, phone_number: e.target.value })}
-                      />
+                      <Input id="phone_number" type="tel" placeholder="+41 79 123 45 67" value={profileData.phone_number} onChange={e => setProfileData({
+                      ...profileData,
+                      phone_number: e.target.value
+                    })} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="bio">Über mich / Firma</Label>
-                    <Textarea
-                      id="bio"
-                      placeholder="Beschreiben Sie Ihre Erfahrung und Spezialisierung..."
-                      rows={6}
-                      value={profileData.bio}
-                      onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                    />
+                    <Textarea id="bio" placeholder="Beschreiben Sie Ihre Erfahrung und Spezialisierung..." rows={6} value={profileData.bio} onChange={e => setProfileData({
+                    ...profileData,
+                    bio: e.target.value
+                  })} />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="hourly_rate_min">Stundensatz von (CHF)</Label>
-                      <Input
-                        id="hourly_rate_min"
-                        type="number"
-                        placeholder="z.B. 80"
-                        value={profileData.hourly_rate_min}
-                        onChange={(e) => setProfileData({ ...profileData, hourly_rate_min: e.target.value })}
-                      />
+                      <Input id="hourly_rate_min" type="number" placeholder="z.B. 80" value={profileData.hourly_rate_min} onChange={e => setProfileData({
+                      ...profileData,
+                      hourly_rate_min: e.target.value
+                    })} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="hourly_rate_max">Stundensatz bis (CHF)</Label>
-                      <Input
-                        id="hourly_rate_max"
-                        type="number"
-                        placeholder="z.B. 120"
-                        value={profileData.hourly_rate_max}
-                        onChange={(e) => setProfileData({ ...profileData, hourly_rate_max: e.target.value })}
-                      />
+                      <Input id="hourly_rate_max" type="number" placeholder="z.B. 120" value={profileData.hourly_rate_max} onChange={e => setProfileData({
+                      ...profileData,
+                      hourly_rate_max: e.target.value
+                    })} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label>Kategorien</Label>
                     <div className="flex flex-wrap gap-2">
-                      {handwerkerProfile.categories.map((cat) => (
-                        <Badge key={cat} variant="secondary">{cat}</Badge>
-                      ))}
+                      {handwerkerProfile.categories.map(cat => <Badge key={cat} variant="secondary">{cat}</Badge>)}
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label>Einsatzgebiete</Label>
                     <div className="flex flex-wrap gap-2">
-                      {handwerkerProfile.service_areas.map((area) => (
-                        <Badge key={area} variant="outline">{area}</Badge>
-                      ))}
+                      {handwerkerProfile.service_areas.map(area => <Badge key={area} variant="outline">{area}</Badge>)}
                     </div>
                   </div>
 
                   <div className="flex justify-end">
-                    <Button
-                      onClick={handleUpdateProfile}
-                      disabled={profileEditing}
-                    >
-                      {profileEditing ? (
-                        <>
+                    <Button onClick={handleUpdateProfile} disabled={profileEditing}>
+                      {profileEditing ? <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           Wird gespeichert...
-                        </>
-                      ) : (
-                        "Profil aktualisieren"
-                      )}
+                        </> : "Profil aktualisieren"}
                     </Button>
                   </div>
                 </CardContent>
@@ -1095,8 +917,6 @@ const HandwerkerDashboard = () => {
         </div>
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default HandwerkerDashboard;
