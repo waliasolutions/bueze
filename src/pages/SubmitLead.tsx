@@ -586,7 +586,7 @@ const SubmitLead = () => {
                                       onClick={() => setSelectedMajorCategory(majorCat.id)}
                                       className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-accent transition-all text-left group"
                                     >
-                                      <Icon className="w-8 h-8 text-primary group-hover:scale-110 transition-transform" />
+                                      <Icon className="w-8 h-8 text-primary group-hover:text-white group-hover:scale-110 transition-all" />
                                       <span className="text-sm font-medium text-center">
                                         {majorCat.label}
                                       </span>

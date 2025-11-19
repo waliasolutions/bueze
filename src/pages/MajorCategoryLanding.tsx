@@ -137,7 +137,7 @@ const MajorCategoryLanding = () => {
           <p className="text-xl text-ink-700 leading-relaxed max-w-3xl mx-auto">
             {seoData.intro}
           </p>
-          <div className="pt-6 space-y-3">
+          <div className="pt-6">
             <Button
               onClick={() => navigate('/submit-lead')}
               size="lg"
@@ -146,9 +146,6 @@ const MajorCategoryLanding = () => {
               Jetzt Auftrag erstellen
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <p className="text-sm text-ink-600">
-              Über 2'000 geprüfte Handwerker in der Schweiz
-            </p>
           </div>
         </div>
       </section>
