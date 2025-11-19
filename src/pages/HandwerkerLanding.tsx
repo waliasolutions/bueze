@@ -113,10 +113,10 @@ const HandwerkerLanding = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 mb-6">
-              Handwerker Finden – Sofort Aufträge Erhalten & Angebote Vergleichen
+              Mehr Aufträge für Ihr Handwerksunternehmen
             </h1>
             <p className="text-xl md:text-2xl text-ink-700 mb-8">
-              Als professioneller Handwerker in der Schweiz möchten Sie Aufträge für Handwerker finden, ohne lange zu suchen? Auf Büeze.ch erhalten Sie Handwerker Angebote direkt von interessierten Kunden. Vergleichen Sie Handwerker Angebote, reichen Sie Ihre Offerte ein und gewinnen Sie sofort neue Kunden.
+              Durchsuchen Sie täglich neue Aufträge aus Ihrer Region und Ihren Fachgebieten. Reichen Sie gezielt Offerten ein und gewinnen Sie die Projekte, die zu Ihnen passen.
             </p>
             <div className="py-10 flex justify-center mb-12">
               <Button
