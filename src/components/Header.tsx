@@ -92,8 +92,10 @@ export const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-
+          <div className="flex items-center cursor-pointer" onClick={() => {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            navigate('/');
+          }}>
             <img src={logo} alt="Büeze.ch" className="h-24 w-auto" />
           </div>
 
@@ -119,6 +121,7 @@ export const Header = () => {
                 <Link
                   key={index}
                   to={item.href}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                   className="text-ink-700 hover:text-brand-600 transition-colors font-medium"
                 >
                   {item.label}
@@ -145,7 +148,10 @@ export const Header = () => {
                               <li>
                                 <NavigationMenuLink asChild>
                                   <button
-                                    onClick={() => navigate('/admin/dashboard')}
+                                    onClick={() => {
+                                      window.scrollTo({ top: 0, behavior: 'instant' });
+                                      navigate('/admin/dashboard');
+                                    }}
                                     className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                   >
                                     <div className="text-sm font-medium leading-none">Dashboard</div>
@@ -156,7 +162,10 @@ export const Header = () => {
                               <li>
                                 <NavigationMenuLink asChild>
                                   <button
-                                    onClick={() => navigate('/admin/approvals')}
+                                    onClick={() => {
+                                      window.scrollTo({ top: 0, behavior: 'instant' });
+                                      navigate('/admin/approvals');
+                                    }}
                                     className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                   >
                                     <div className="text-sm font-medium leading-none">Handwerker</div>
@@ -168,7 +177,10 @@ export const Header = () => {
                                 <li>
                                   <NavigationMenuLink asChild>
                                     <button
-                                      onClick={() => navigate('/admin/users')}
+                                      onClick={() => {
+                                        window.scrollTo({ top: 0, behavior: 'instant' });
+                                        navigate('/admin/users');
+                                      }}
                                       className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                                     >
                                       <div className="text-sm font-medium leading-none">Benutzer</div>
@@ -184,7 +196,10 @@ export const Header = () => {
                     </NavigationMenu>
                   </>
                 )}
-                <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
+                <Button variant="outline" onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  navigate('/submit-lead');
+                }} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Auftrag erstellen
                 </Button>
@@ -194,11 +209,17 @@ export const Header = () => {
               <div className="flex items-center gap-3">
                 <Button 
                   variant="outline" 
-                  onClick={() => navigate('/auth')}
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                    navigate('/auth');
+                  }}
                 >
                   Login
                 </Button>
-                <Button onClick={() => navigate('/submit-lead')} className="gap-2">
+                <Button onClick={() => {
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  navigate('/submit-lead');
+                }} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Auftrag erstellen
                 </Button>
@@ -239,7 +260,10 @@ export const Header = () => {
                   key={index}
                   to={item.href}
                   className="block py-2 text-ink-700 hover:text-brand-600 transition-colors font-medium"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                    setIsMenuOpen(false);
+                  }}
                 >
                   {item.label}
                 </Link>
@@ -270,6 +294,7 @@ export const Header = () => {
                             variant="ghost"
                             className="justify-start w-full"
                             onClick={() => {
+                              window.scrollTo({ top: 0, behavior: 'instant' });
                               navigate('/admin/dashboard');
                               setIsMenuOpen(false);
                             }}
@@ -280,6 +305,7 @@ export const Header = () => {
                             variant="ghost"
                             className="justify-start w-full"
                             onClick={() => {
+                              window.scrollTo({ top: 0, behavior: 'instant' });
                               navigate('/admin/approvals');
                               setIsMenuOpen(false);
                             }}
@@ -291,6 +317,7 @@ export const Header = () => {
                               variant="ghost"
                               className="justify-start w-full"
                               onClick={() => {
+                                window.scrollTo({ top: 0, behavior: 'instant' });
                                 navigate('/admin/users');
                                 setIsMenuOpen(false);
                               }}
@@ -310,6 +337,7 @@ export const Header = () => {
                     variant="outline" 
                     className="justify-start gap-2 w-full" 
                     onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'instant' });
                       navigate('/auth');
                       setIsMenuOpen(false);
                     }}
@@ -320,6 +348,7 @@ export const Header = () => {
                     variant="default" 
                     className="justify-start gap-2 w-full" 
                     onClick={() => {
+                      window.scrollTo({ top: 0, behavior: 'instant' });
                       navigate('/submit-lead');
                       setIsMenuOpen(false);
                     }}

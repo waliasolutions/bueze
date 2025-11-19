@@ -14,6 +14,7 @@ export const Hero = () => {
   const { content, loading } = usePageContent('homepage_hero');
 
   const handleCategoryClick = (categorySlug: string) => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
     navigate(`/kategorie/${categorySlug}`);
   };
 
@@ -37,7 +38,10 @@ export const Hero = () => {
           {/* Primary CTA */}
           <div className="py-10 flex justify-center">
             <Button
-              onClick={() => navigate('/submit-lead')}
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'instant' });
+                navigate('/submit-lead');
+              }}
               size="lg"
               className="relative h-16 px-12 text-xl rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold 
                 shadow-lg hover:shadow-xl 
@@ -74,7 +78,10 @@ export const Hero = () => {
           {/* "All Categories" Button */}
           <div className="flex justify-center pt-8">
             <Button
-              onClick={() => navigate('/kategorien')}
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'instant' });
+                navigate('/kategorien');
+              }}
               variant="outline"
               size="lg"
               className="text-brand-600 border-brand-600 hover:bg-brand-50 border-2"
