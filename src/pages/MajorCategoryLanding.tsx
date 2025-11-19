@@ -153,9 +153,9 @@ const MajorCategoryLanding = () => {
       {/* Subcategories as Clean List */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 max-w-5xl">
-          <h2 className="text-3xl font-bold text-center mb-4 text-ink-900">
-            Unsere Dienstleistungen in {majorCategory.label}
-          </h2>
+        <h2 className="text-3xl font-bold text-center mb-4 text-ink-900">
+          Finden Sie Handwerker für diese {majorCategory.label}-Dienstleistungen
+        </h2>
           <p className="text-center text-ink-700 mb-16 max-w-2xl mx-auto">
             Finden Sie den passenden Handwerker für Ihr Projekt – kostenlos und unverbindlich
           </p>
