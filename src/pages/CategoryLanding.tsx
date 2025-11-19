@@ -93,31 +93,29 @@ const CategoryLanding = () => {
 
       {/* Service Types Section */}
       <section className="py-16 bg-white">
-        <div className="container mx-auto px-4 max-w-6xl">
+        <div className="container mx-auto px-4 max-w-4xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
               Diese Dienstleistungen können Sie beauftragen
             </h2>
             <p className="text-lg text-ink-700 max-w-2xl mx-auto">
-              Von kleinen Reparaturen bis zu grossen Projekten – finden Sie den passenden Fachbetrieb
+              Von kleinen Reparaturen bis zu grossen Projekten
             </p>
           </div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-3">
             {content.services.map((service, idx) => {
               const ServiceIcon = service.icon;
               return (
-                <div key={idx} className="p-6 rounded-lg border-2 border-border hover:border-brand-400 hover:shadow-lg transition-all bg-white">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white flex-shrink-0 shadow-md">
-                      <ServiceIcon className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-ink-900 mb-2">{service.title}</h3>
-                      <p className="text-sm text-ink-700 leading-relaxed">
-                        {service.description}
-                      </p>
-                    </div>
+                <div key={idx} className="flex items-start gap-4 p-4 rounded-lg hover:bg-pastel-grey-50 transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white flex-shrink-0">
+                    <ServiceIcon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-ink-900 mb-1">{service.title}</h3>
+                    <p className="text-sm text-ink-700 leading-relaxed">
+                      {service.description}
+                    </p>
                   </div>
                 </div>
               );
