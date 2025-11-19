@@ -210,8 +210,6 @@ export const majorCategories: Record<string, MajorCategory> = {
       'innenausbau_moebelbau',
       'fenster_tueren',
       'treppen',
-      'maler',
-      'gipser',
       'innenausbau_holz_metall',
       'innenausbau_sonstige'
     ],

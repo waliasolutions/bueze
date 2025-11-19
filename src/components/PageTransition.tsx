@@ -5,7 +5,7 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [isTransitioning, setIsTransitioning] = React.useState(false);
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     // CRITICAL: Scroll to top BEFORE fade transition for all non-hash navigations
     if (!location.hash) {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
