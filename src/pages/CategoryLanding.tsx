@@ -127,50 +127,6 @@ const CategoryLanding = () => {
         </div>
       </section>
 
-      {/* SEO Content Section */}
-      <section className="py-16 bg-pastel-grey-50">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="prose prose-lg max-w-none text-ink-700 space-y-6">
-            <h2 className="text-3xl font-bold text-ink-900 mb-6">
-              Alles über {content.title}
-            </h2>
-            <p className="leading-relaxed">
-              {subcategoryInfo?.shortDescription || content.description}
-            </p>
-            
-            <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-              Wann brauchen Sie diese Dienstleistung?
-            </h3>
-            <p className="leading-relaxed">
-              Diese Dienstleistung wird häufig bei Renovierungen, Neubauten oder bei Reparaturbedarf benötigt. 
-              Qualifizierte Fachbetriebe bringen das nötige Know-how mit, um Ihr Projekt sicher, termingerecht und 
-              zu fairen Preisen umzusetzen. Dank ihrer Erfahrung können sie Sie auch bei der Materialauswahl, 
-              Planung und Kostenkalkulation unterstützen.
-            </p>
-            
-            <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-              Was beeinflusst die Kosten?
-            </h3>
-            <p className="leading-relaxed">
-              Die Kosten variieren je nach Umfang des Projekts, verwendeten Materialien, Arbeitsaufwand und regionalen 
-              Gegebenheiten. Durch Büeze.ch erhalten Sie kostenlos mehrere Offerten von geprüften Fachbetrieben aus 
-              Ihrer Region. So können Sie Preise transparent vergleichen und das beste Angebot für Ihre Bedürfnisse 
-              auswählen. Alle Betriebe verfügen über die nötigen Qualifikationen und Versicherungen.
-            </p>
-            
-            <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-              Fachbetriebe in Ihrer Region
-            </h3>
-            <p className="leading-relaxed">
-              In allen Schweizer Kantonen finden Sie über Büeze.ch qualifizierte Handwerker für diese Dienstleistung. 
-              Lokale Betriebe haben den Vorteil kurzer Anfahrtswege, kennen regionale Besonderheiten und können bei 
-              Fragen oder Problemen schnell vor Ort sein. Stellen Sie jetzt Ihre Anfrage und profitieren Sie von 
-              unserem Netzwerk geprüfter Fachbetriebe – kostenlos und unverbindlich.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* How It Works */}
       <HowItWorks />
 

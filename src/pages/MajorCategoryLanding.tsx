@@ -442,6 +442,257 @@ const MajorCategoryLanding = () => {
         </div>
       </section>
       
+      {/* SEO Content Section - Positioned at bottom */}
+      <section className="py-16 bg-pastel-grey-50">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="prose prose-lg max-w-none text-ink-700 space-y-6">
+            {majorCategorySlug === 'elektroinstallationen' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Elektroinstallationen: Sicherheit und Technologie
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Elektrische Installationen gehören zu den anspruchsvollsten Arbeiten im Gebäudebereich. Die Schweizer Norm NIV (Niederspannungs-Installationsverordnung) definiert präzise Anforderungen an Planung, Ausführung und Prüfung elektrischer Anlagen. Nur ausgebildete Elektroinstallateure mit eidgenössischem Fachausweis dürfen selbstständig an Hausinstallationen arbeiten – eine Regelung, die der Sicherheit dient.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Von der Grundinstallation bis zur Smart-Home-Integration
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Moderne Elektroinstallationen umfassen deutlich mehr als Licht und Steckdosen. Netzwerkkabel für Internet und Telefonie, Ladestationen für Elektrofahrzeuge, Photovoltaik-Anlagen mit Speichersystemen und vernetzte Haustechnik erfordern vorausschauende Planung. Ein zukunftsfähiges Installationskonzept berücksichtigt bereits bei der Planung mögliche Erweiterungen und technologische Entwicklungen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Die Elektrifizierung von Heizungen (Wärmepumpen) und die zunehmende Verbreitung von Heimladestationen für Elektroautos stellen neue Anforderungen an Hausinstallationen. Viele ältere Gebäude benötigen eine Verstärkung des Hausanschlusses, um die zusätzliche Leistung bereitzustellen. Fachbetriebe analysieren die bestehende Installation und entwickeln Lösungen, die sowohl aktuelle als auch zukünftige Anforderungen erfüllen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Sicherheit und Wartung
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Elektrische Anlagen unterliegen in der Schweiz regelmäßigen Kontrollen. Eidgenössische Starkstrominspektorate (ESTI) überwachen die Einhaltung der Sicherheitsvorschriften. Bei Neubauten, größeren Umbauten und in bestimmten Zeitabständen sind Sicherheitsnachweise durch unabhängige Kontrollen erforderlich. Qualifizierte Elektrofachbetriebe kennen diese Anforderungen und stellen sicher, dass alle Installationen den geltenden Normen entsprechen.
+                </p>
+
+                <ul className="space-y-3 text-lg">
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>FI-Schutzschalter (RCD) sind Pflicht und schützen vor lebensgefährlichen Stromschlägen</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Überspannungsschutz verhindert Schäden an empfindlicher Elektronik durch Blitzschlag</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Selektive Absicherung ermöglicht gezielte Fehlersuche und minimiert Ausfallzeiten</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Dokumentation aller Installationen ist gesetzlich vorgeschrieben und für Wartung essenziell</span>
+                  </li>
+                </ul>
+
+                <p className="text-lg leading-relaxed">
+                  Bei der Auswahl eines Elektrofachbetriebs sollten Sie auf Mitgliedschaft im Verband Electrosuisse oder EIT.swiss achten. Diese Verbände setzen hohe Qualitätsstandards und bieten kontinuierliche Weiterbildung. Eine gültige Betriebshaftpflichtversicherung ist ebenfalls ein wichtiges Qualitätsmerkmal – sie schützt Sie im unwahrscheinlichen Fall von Installationsfehlern.
+                </p>
+              </>
+            )}
+            {majorCategorySlug === 'heizung-klima' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Heizung und Klima: Energieeffizienz und Komfort
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Die Heizungstechnik durchläuft derzeit einen fundamentalen Wandel. Fossile Brennstoffe werden zunehmend durch erneuerbare Energien ersetzt, während gleichzeitig die Anforderungen an Effizienz und Komfort steigen. Die Schweizer Energiestrategie 2050 und kantonale Energiegesetze beschleunigen diese Entwicklung durch Förderprogramme und teilweise durch Vorgaben beim Heizungsersatz.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Systemvielfalt und Auswahlkriterien
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Wärmepumpen dominieren bei Neubauten und Heizungssanierungen. Sie nutzen Umweltwärme aus Luft, Erdreich oder Grundwasser und wandeln diese mit elektrischer Energie in Heizwärme um. Die Jahresarbeitszahl (JAZ) gibt an, wie effizient eine Wärmepumpe arbeitet – Werte über 3,5 gelten als gut. Die tatsächliche Effizienz hängt stark von der Gebäudeisolation und der Vorlauftemperatur ab: Fußbodenheizungen mit niedrigen Vorlauftemperaturen arbeiten deutlich effizienter als Radiatoren mit hohen Temperaturen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Holzheizungen (Pellets, Schnitzel, Stückholz) bieten eine Alternative mit erneuerbarer Energie. Sie erfordern jedoch Lagerraum, regelmäßige Wartung und produzieren Emissionen, die je nach Standort bewilligungspflichtig sein können. Moderne Pelletheizungen sind weitgehend automatisiert und erreichen hohe Wirkungsgrade, benötigen aber mehr Platz und Aufmerksamkeit als Wärmepumpen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Klimatisierung und Lüftung
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Klimaanlagen werden auch in der Schweiz wichtiger, da Hitzesommer häufiger werden. Reversible Wärmepumpen können sowohl heizen als auch kühlen – eine platzsparende Lösung für ganzjährigen Komfort. Split-Geräte sind einfach nachzurüsten, während zentrale Lüftungsanlagen mit Wärmerückgewinnung bei Neubauten Standard werden. Solche Anlagen versorgen alle Räume mit frischer Luft, filtern Pollen und sparen Energie durch Wärmerückgewinnung aus der Abluft.
+                </p>
+
+                <ul className="space-y-3 text-lg">
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Gebäudehülle bestimmt Heizleistung: Isolation vor Heizung erneuern spart Kosten</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Hydraulischer Abgleich optimiert Wärmeverteilung und senkt Energieverbrauch um 10-15%</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Förderprogramme: Viele Kantone unterstützen Umstieg auf erneuerbare Energien finanziell</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Wartungsverträge sichern Effizienz und verlängern Lebensdauer der Anlage</span>
+                  </li>
+                </ul>
+              </>
+            )}
+            {majorCategorySlug === 'sanitaer' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Sanitärtechnik: Planung, Installation und Wartung
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Sanitärinstallationen verbinden technische Präzision mit Gestaltungswünschen. Die SIA-Normen 385/1 (Trinkwasserinstallationen) und 385/2 (Abwasseranlagen) definieren in der Schweiz technische Mindestanforderungen. Gleichzeitig spielen ästhetische Aspekte eine wichtige Rolle, da Badezimmer und Küchen zu den am intensivsten genutzten Räumen gehören.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Wassertechnologie und Hygiene
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Trinkwasserhygiene hat in den letzten Jahren an Bedeutung gewonnen. Legionellen – Bakterien, die sich in warmem Wasser vermehren – können gesundheitliche Risiken bergen. Moderne Warmwasserkonzepte vermeiden Stagnation durch Zirkulationssysteme oder dezentrale Durchlauferhitzer. Die Temperaturhaltung im gesamten System ist entscheidend: Warmwasser sollte mindestens 60°C erreichen, während Kaltwasser unter 25°C bleiben muss.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Wasserenthärtung kann in Gebieten mit hartem Wasser sinnvoll sein. Kalkablagerungen verkürzen die Lebensdauer von Armaturen, Boilern und Haushaltsgeräten. Moderne Enthärtungsanlagen arbeiten sparsam und regenerieren sich automatisch. Die Investition amortisiert sich durch geringeren Energieverbrauch und längere Lebensdauer der Anlagen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Badsanierung und Barrierefreiheit
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Badezimmersanierungen erfordern koordinierte Planung zwischen Sanitär, Elektro, Plattenlegern und oft auch Zimmerleuten. Die Abfolge der Arbeiten ist entscheidend: Erst Rohinstallation, dann Abdichtung und Fliesen, zuletzt die Montage der Apparate. Erfahrene Sanitärfachbetriebe koordinieren diese Gewerke und stellen sicher, dass alle Schnittstellen funktionieren.
+                </p>
+
+                <ul className="space-y-3 text-lg">
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Bodengleiche Duschen sind nicht überall umsetzbar – Geschossdecke bestimmt Machbarkeit</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Vorwandinstallationen ermöglichen flexible Raumgestaltung und einfache Wartung</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Wassersparende Armaturen reduzieren Verbrauch ohne Komfortverlust</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Abdichtung ist kritisch: Fehler zeigen sich oft erst nach Jahren</span>
+                  </li>
+                </ul>
+              </>
+            )}
+            {majorCategorySlug === 'bau-renovation' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Bau und Renovation: Von der Planung bis zur Vollendung
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Bauprojekte in der Schweiz unterliegen strengen Vorschriften. Baubewilligungen, Lärmschutzauflagen, Arbeitssicherheit und Entsorgungsvorschriften müssen beachtet werden. Professionelle Baufachbetriebe kennen die kantonalen und kommunalen Besonderheiten und stellen sicher, dass Ihr Projekt rechtskonform umgesetzt wird.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Renovationsprojekte richtig planen
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Erfolgreiche Renovationen beginnen mit einer gründlichen Bestandsaufnahme. Bausubstanz, Statik, Schadstoffe und versteckte Installationen können Überraschungen bergen. Erfahrene Bauunternehmer erkennen potenzielle Probleme frühzeitig und kalkulieren entsprechende Reserven ein. Eine realistische Planung verhindert Budgetüberschreitungen und zeitliche Verzögerungen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Energetische Sanierungen gewinnen an Bedeutung. Die Kombination von Fassadendämmung, Fensterersatz und Heizungserneuerung bringt die größten Einsparungen. Das Gebäudeprogramm von Bund und Kantonen fördert solche Maßnahmen mit attraktiven Beiträgen. Ein Fachbetrieb mit Erfahrung in energetischen Sanierungen kann Fördermöglichkeiten aufzeigen und die Antragsstellung unterstützen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Koordination und Bauablauf
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Größere Renovationen erfordern die Koordination mehrerer Gewerke. Ein Baumeister oder Generalunternehmer übernimmt diese Rolle und stellt sicher, dass alle Arbeiten in der richtigen Reihenfolge und Qualität ausgeführt werden. Dies entlastet Sie als Bauherr erheblich und schafft klare Verantwortlichkeiten.
+                </p>
+
+                <ul className="space-y-3 text-lg">
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Detaillierte Offerten mit Leistungsverzeichnis vermeiden spätere Diskussionen</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Festpreisvereinbarungen bieten Kostensicherheit, verlangen aber präzise Planung</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Regelmäßige Bausitzungen halten alle Beteiligten auf dem Laufenden</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Bauabnahme mit Mängelliste schützt Ihre Interessen</span>
+                  </li>
+                </ul>
+              </>
+            )}
+            {/* Default content for other major categories */}
+            {!['elektroinstallationen', 'heizung-klima', 'sanitaer', 'bau-renovation'].includes(majorCategorySlug) && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Fachkompetenz und Qualitätsstandards
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Die Schweiz verfügt über ein dichtes Netz qualifizierter Fachbetriebe in allen Handwerksbereichen. Das duale Bildungssystem mit Berufslehre und höherer Fachausbildung stellt sicher, dass Handwerker fundiertes theoretisches Wissen mit praktischer Erfahrung verbinden. Meisterprüfungen und eidgenössische Fachausweise belegen hohe Qualifikationen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Regionale Unterschiede und lokale Expertise
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Die verschiedenen Regionen der Schweiz haben teilweise unterschiedliche Baumaterialien, Bauweisen und klimatische Anforderungen. Betriebe mit regionaler Verankerung kennen diese Besonderheiten: Alpine Regionen stellen andere Anforderungen an Gebäudehüllen und Heizungen als das Mittelland, während städtische Gebiete oft spezielle Lärmschutz- und Denkmalschutzauflagen haben.
+                </p>
+
+                <ul className="space-y-3 text-lg">
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Mitgliedschaft in Berufsverbänden signalisiert Engagement für Qualität</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Referenzen und Bewertungen geben Einblick in Zuverlässigkeit und Qualität</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Transparente Kommunikation und detaillierte Offerten schaffen Vertrauen</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-brand-600 mr-3">•</span>
+                    <span>Garantieleistungen und Versicherungsschutz sind wichtige Qualitätsmerkmale</span>
+                  </li>
+                </ul>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );
