@@ -1,7 +1,34 @@
-// Subcategory label mappings for email templates
-// This is a simplified version focused on labels only for email display
-
 export const subcategoryLabels: Record<string, string> = {
+  // ============================================
+  // NEW MERGED SUBCATEGORIES (simplified names for emails)
+  // ============================================
+  
+  // Bau & Renovation
+  "bau_hochbau_rohbau": "Hochbau & Rohbau",
+  "bau_holzbau_zimmerei": "Holzbau & Zimmerei",
+  "bau_dacharbeiten": "Dacharbeiten",
+  "bau_fassadenarbeiten": "Fassadenarbeiten",
+  "bau_abbruch_durchbrueche": "Abbruch & Durchbrüche",
+  "bau_renovierung_umbau": "Renovierung & Umbau",
+  "bau_sonstige": "Sonstige Bauarbeiten",
+  
+  // Elektroinstallationen
+  "elektro_beleuchtung_geraete": "Beleuchtung & Geräte",
+  "elektro_smart_home_netzwerk": "Smart Home & Netzwerk",
+  "elektro_pruefung_sicherheit": "Prüfung & Sicherheit",
+  "elektro_sonstige": "Sonstige Elektroarbeiten",
+  
+  // Innenausbau
+  "innenausbau_moebelbau": "Möbelbau",
+  "innenausbau_holz_metall": "Innenausbau (Holz/Metall)",
+  
+  // Räumung
+  "raeumung_sonstige": "Sonstige Dienstleistungen",
+  
+  // ============================================
+  // EXISTING SUBCATEGORIES (kept for backward compatibility)
+  // ============================================
+  
   // Elektroinstallationen
   "electrician_installation": "Elektroinstallationen",
   "electrician_repair": "Elektriker Reparaturen",
