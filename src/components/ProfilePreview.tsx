@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MapPin, Globe, Euro, Star, Phone, Mail, Shield, Wrench, Building2, CheckCircle } from 'lucide-react';
+import { MapPin, Globe, Coins, Star, Phone, Mail, Shield, Wrench, Building2, CheckCircle } from 'lucide-react';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { majorCategories } from '@/config/majorCategories';
 import { formatCantonDisplay } from '@/lib/cantonPostalCodes';
@@ -109,7 +109,7 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
           {/* Rate Badge */}
           {hasRates && (
             <div className="flex items-center gap-2">
-              <Euro className="h-5 w-5 text-brand-500" />
+              <Coins className="h-5 w-5 text-brand-500" />
               <Badge variant="secondary" className="text-base px-4 py-1">
                 {rateDisplay}
               </Badge>
