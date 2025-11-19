@@ -592,7 +592,17 @@ const SubmitLead = () => {
                                       )}>
                                         <Icon className="w-8 h-8" />
                                       </div>
-                                      <p className="text-sm font-semibold">{majorCat.label}</p>
+                                      <p className="text-sm font-semibold leading-tight">
+                                        {majorCat.id === 'elektroinstallationen' ? (
+                                          <>
+                                            Elektro-
+                                            <br />
+                                            installationen
+                                          </>
+                                        ) : (
+                                          majorCat.label
+                                        )}
+                                      </p>
                                       {isSelected && (
                                         <Badge className="mt-3 bg-brand-600">
                                           <CheckCircle className="h-3 w-3 mr-1" />

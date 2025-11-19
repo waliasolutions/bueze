@@ -1692,7 +1692,17 @@ const HandwerkerOnboarding = () => {
                         <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white mx-auto mb-3 transition-transform ${isSelected ? 'scale-110' : ''}`}>
                           <Icon className="w-8 h-8" />
                         </div>
-                        <p className="text-sm font-semibold">{majorCat.label}</p>
+                              <p className="text-sm font-semibold leading-tight">
+                                {majorCat.id === 'elektroinstallationen' ? (
+                                  <>
+                                    Elektro-
+                                    <br />
+                                    installationen
+                                  </>
+                                ) : (
+                                  majorCat.label
+                                )}
+                              </p>
                         {isSelected && (
                           <Badge className="mt-3 bg-brand-600">
                             <CheckCircle className="h-3 w-3 mr-1" />
