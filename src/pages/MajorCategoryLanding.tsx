@@ -153,42 +153,41 @@ const MajorCategoryLanding = () => {
         </div>
       </section>
 
-      {/* Subcategories as Clickable Cards */}
+      {/* Subcategories as Clean List */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 max-w-6xl">
+        <div className="container mx-auto px-4 max-w-5xl">
           <h2 className="text-3xl font-bold text-center mb-4 text-ink-900">
             Unsere Dienstleistungen in {majorCategory.label}
           </h2>
-          <p className="text-center text-ink-700 mb-12 max-w-2xl mx-auto">
+          <p className="text-center text-ink-700 mb-16 max-w-2xl mx-auto">
             Finden Sie den passenden Handwerker für Ihr Projekt – kostenlos und unverbindlich
           </p>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 gap-4">
             {subcategories.map((subcat) => {
               const content = categoryContent[subcat.slug];
               const SubIcon = Icon;
               
               return (
-                <Card 
+                <button
                   key={subcat.value} 
                   id={subcat.value}
-                  className="border-2 border-border overflow-hidden hover:shadow-xl transition-all cursor-pointer group scroll-mt-24"
+                  className="flex items-center gap-4 p-4 rounded-lg hover:bg-pastel-blue-50 transition-colors cursor-pointer group text-left scroll-mt-24 border border-transparent hover:border-brand-200"
                   onClick={() => navigate(content ? `/submit-lead?category=${content.formCategory}` : '/submit-lead')}
                 >
-                  <CardHeader className="bg-gradient-to-r from-pastel-blue-50 to-surface">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-110 transition-transform`}>
-                        <SubIcon className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1">
-                        <CardTitle className="text-lg text-ink-900 group-hover:text-brand-600 transition-colors">{subcat.label}</CardTitle>
-                        <CardDescription className="text-sm text-ink-700 mt-1">
-                          {subcat.shortDescription || content?.description || 'Kostenlos Offerten einholen'}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                    <SubIcon className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-ink-900 group-hover:text-brand-600 transition-colors text-base">
+                      {subcat.label}
+                    </h3>
+                    <p className="text-sm text-ink-600 mt-0.5 line-clamp-1">
+                      {subcat.shortDescription || 'Kostenlos Offerten einholen'}
+                    </p>
+                  </div>
+                  <ArrowRight className="w-5 h-5 text-ink-400 group-hover:text-brand-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                </button>
               );
             })}
           </div>
