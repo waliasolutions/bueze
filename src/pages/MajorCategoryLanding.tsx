@@ -147,147 +147,12 @@ const MajorCategoryLanding = () => {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <p className="text-sm text-ink-600">
-              <strong className="text-brand-600">Kostenlos & unverbindlich</strong> – Offerten vergleichen
+              Über 2'000 geprüfte Handwerker in der Schweiz
             </p>
           </div>
         </div>
       </section>
 
-      {/* SEO Content Section */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="prose prose-lg max-w-none text-ink-700 space-y-6">
-            {majorCategorySlug === 'bau-renovation' && (
-              <>
-                <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Professionelle Bauarbeiter und Bauhandwerker in der Schweiz
-                </h2>
-                <p className="leading-relaxed">
-                  Eine Hausrenovation in der Schweiz ist ein komplexes Projekt, das erfahrene Bauarbeiter und qualifizierte Bauhandwerker erfordert. Ob Sie einen Dachstock ausbauen, Ihr Badezimmer sanieren oder eine komplette Fassadenrenovation planen – die Wahl des richtigen Bauhandwerkers entscheidet über Qualität, Kosten und Zeitrahmen Ihres Projekts. Büeze.ch verbindet Sie mit geprüften Baufachbetrieben aus Ihrer Region, die über die notwendigen Qualifikationen, Versicherungen und langjährige Erfahrung verfügen.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Welche Baudienstleistungen werden angeboten?
-                </h3>
-                <p className="leading-relaxed">
-                  Das Spektrum reicht von Parkett- und Laminatverlegung über Mauerarbeiten und Fassadensanierung bis zu kompletten Innenausbauten. Unsere Bauhandwerker in der Schweiz decken auch spezialisierte Bereiche ab: Trockenbau für flexible Raumgestaltung, Isolation für energieeffizientes Wohnen, Balkon- und Terrassenbau für Ihren Aussenbereich sowie Türen- und Fenstermontage. Jeder Bereich erfordert spezifisches Fachwissen – deshalb vermitteln wir Ihnen genau die Bauarbeiter, die zu Ihrem Projekt passen.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Warum professionelle Bauhandwerker beauftragen?
-                </h3>
-                <p className="leading-relaxed">
-                  Bei einer Hausrenovation in der Schweiz geht es um mehr als handwerkliches Geschick. Bauarbeiter müssen lokale Bauvorschriften kennen, mit verschiedenen Materialien umgehen können und koordiniert mit anderen Gewerken zusammenarbeiten. Professionelle Baufachbetriebe bringen nicht nur das technische Know-how mit, sondern auch die nötige Haftpflichtversicherung und Garantieleistungen. Sie beraten Sie bei der Materialwahl, erstellen realistische Zeitpläne und sorgen für ein sauberes, fachgerechtes Ergebnis, das den Wert Ihrer Immobilie langfristig steigert.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Bauarbeiter in Ihrer Region finden
-                </h3>
-                <p className="leading-relaxed">
-                  Von Zürich über Bern und Basel bis Luzern und St. Gallen – auf Büeze.ch finden Sie qualifizierte Bauhandwerker in allen Schweizer Regionen. Lokale Betriebe kennen die regionalen Besonderheiten, haben kurze Anfahrtswege und können schnell auf Ihre Anfrage reagieren. Durch unsere Plattform erhalten Sie mehrere Offerten zum Vergleich und können in Ruhe entscheiden, welcher Bauarbeiter am besten zu Ihrem Projekt und Budget passt. Transparenz, Qualität und faire Preise stehen dabei im Mittelpunkt.
-                </p>
-              </>
-            )}
-
-            {majorCategorySlug === 'elektroinstallationen' && (
-              <>
-                <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Professioneller Elektrik Service und Elektroinstallationen in der Schweiz
-                </h2>
-                <p className="leading-relaxed">
-                  Elektrik Service in der Schweiz erfordert höchste Sicherheitsstandards und Fachkompetenz. Vom einfachen Lampenwechsel bis zur kompletten Elektroinstallation im Neubau – nur geprüfte Elektriker dürfen diese Arbeiten ausführen. Bei Büeze.ch finden Sie ausschliesslich zertifizierte Elektrofachbetriebe mit gültiger Installationsbewilligung. Diese Elektriker in der Schweiz arbeiten nach den aktuellen NIV-Normen, kennen die lokalen Vorschriften und garantieren sichere, langlebige Installationen.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Welche Elektroinstallationen bieten wir an?
-                </h3>
-                <p className="leading-relaxed">
-                  Unsere Elektriker decken das komplette Spektrum ab: Hausinstallationen für Neu- und Umbauten, Installation und Erneuerung von Sicherungskästen und Unterverteilungen, Starkstromanschlüsse für Elektrogeräte, moderne Beleuchtungssysteme mit LED-Technologie und Smart Home-Lösungen. Auch Spezialgebiete wie Photovoltaik-Anlagen, E-Ladestationen, Netzwerk- und Datenverkabelung sowie Elektrokontrollen gehören zum Leistungsumfang. Für Notfälle steht Ihnen ein 24/7 Elektrik Service zur Verfügung, der bei Stromausfällen und Kurzschlüssen schnell reagiert.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Warum professionelle Elektriker beauftragen?
-                </h3>
-                <p className="leading-relaxed">
-                  Elektroinstallationen gehören zu den gefährlichsten Arbeiten am Bau. Fehler können zu Bränden, Stromschlägen oder Gerätedefekten führen. Deshalb ist in der Schweiz eine Installationsbewilligung Pflicht. Unsere Elektriker bringen nicht nur die rechtlich vorgeschriebene Qualifikation mit, sondern auch langjährige Erfahrung, umfassende Versicherung und Garantieleistungen. Sie kennen die aktuellen Sicherheitsnormen, verwenden geprüftes Material und dokumentieren alle Arbeiten für die obligatorische Sicherheitsprüfung. Das gibt Ihnen die Gewissheit, dass Ihre Elektroinstallation sicher und normgerecht ist.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Elektrik Service in Ihrer Region
-                </h3>
-                <p className="leading-relaxed">
-                  Ob in Zürich, Bern, Luzern, Basel oder Genf – qualifizierte Elektriker für Ihre Region finden Sie auf Büeze.ch. Lokale Elektrofachbetriebe haben kurze Anfahrtswege, kennen regionale Besonderheiten und bieten oft auch Notdienste an. Vergleichen Sie kostenlos mehrere Offerten von geprüften Elektrikern in Ihrer Nähe und profitieren Sie von transparenten Preisen, zuverlässiger Arbeit und kompetenter Beratung. Ihre Sicherheit steht an erster Stelle.
-                </p>
-              </>
-            )}
-
-            {majorCategorySlug === 'heizung-klima' && (
-              <>
-                <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Professionelle Heizung & Sanitär Service und Heizungsinstallationen in der Schweiz
-                </h2>
-                <p className="leading-relaxed">
-                  Eine funktionierende Heizung ist das Herzstück jedes Schweizer Zuhauses – besonders in den kalten Wintermonaten. Ob Ölheizung, Gasheizung, Wärmepumpe oder moderne Pelletheizung: Professionelle Heizungsinstallationen erfordern Fachwissen, Erfahrung und die richtigen Werkzeuge. Bei Büeze.ch finden Sie zertifizierte Fachbetriebe für Heizung & Sanitär Service, die nicht nur installieren, sondern auch warten, reparieren und energieeffizient modernisieren. Investieren Sie in die richtige Heizungslösung und senken Sie langfristig Ihre Energiekosten.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Welche Heizungsinstallationen bieten wir an?
-                </h3>
-                <p className="leading-relaxed">
-                  Unsere Heizungsfachleute decken alle Systeme ab: Installation und Wartung von Ölheizungen, Gasheizungen, Wärmepumpen (Luft, Sole, Wasser), Pellet- und Holzheizungen sowie Fernwärmeanschlüssen. Auch moderne Solarthermie-Anlagen, Fussbodenheizungen und Heizkörper gehören zum Leistungsspektrum. Neben Neuinstallationen bieten wir Heizungssanierung, regelmässige Wartung, Notdienste bei Heizungsausfällen und Energieberatung an. Klimaanlagen und Lüftungssysteme runden das Angebot ab – für ein angenehmes Raumklima das ganze Jahr über.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Warum professionellen Heizung & Sanitär Service wählen?
-                </h3>
-                <p className="leading-relaxed">
-                  Heizungsinstallationen sind komplex und unterliegen strengen Vorschriften. Fehler bei der Installation können zu hohen Energiekosten, Ausfällen im Winter oder sogar Sicherheitsrisiken führen. Zertifizierte Heizungsfachbetriebe kennen die aktuellen Energievorschriften, beraten Sie zu Förderprogrammen und garantieren eine fachgerechte Ausführung. Regelmässige Wartung durch Profis verlängert die Lebensdauer Ihrer Heizung, optimiert die Effizienz und verhindert teure Reparaturen. Mit einem erfahrenen Partner sind Sie auch im Notfall nicht allein.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Heizungsinstallationen in Ihrer Region
-                </h3>
-                <p className="leading-relaxed">
-                  Von Zürich bis Genf, von Basel bis Lugano – qualifizierte Heizungsfachbetriebe gibt es in jeder Schweizer Region. Lokale Betriebe kennen die klimatischen Bedingungen vor Ort, haben kurze Anfahrtswege und können bei Notfällen schnell reagieren. Über Büeze.ch erhalten Sie mehrere Offerten von geprüften Fachbetrieben für Heizung & Sanitär Service. Vergleichen Sie Preise, Leistungen und Referenzen – und entscheiden Sie sich für den Partner, der am besten zu Ihren Bedürfnissen passt.
-                </p>
-              </>
-            )}
-
-            {majorCategorySlug === 'sanitaer' && (
-              <>
-                <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Professioneller Sanitär Service und Sanitärinstallationen in der Schweiz
-                </h2>
-                <p className="leading-relaxed">
-                  Vom tropfenden Wasserhahn bis zur kompletten Badsanierung: Sanitär Service in der Schweiz umfasst ein breites Spektrum an Dienstleistungen. Qualifizierte Sanitärinstallateure sorgen für funktionierende Wasserleitungen, moderne Badezimmer und zuverlässige Abwassersysteme. Bei Büeze.ch finden Sie geprüfte Sanitärfachbetriebe, die nicht nur reparieren und installieren, sondern auch bei Notfällen wie Rohrbrüchen oder verstopften Abflüssen schnell zur Stelle sind. Vertrauen Sie auf Fachleute, die Ihr Sanitärsystem in einwandfreiem Zustand halten.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Welche Sanitärinstallationen bieten wir an?
-                </h3>
-                <p className="leading-relaxed">
-                  Unsere Sanitärfachbetriebe decken alle Bereiche ab: Badezimmerrenovation und -sanierung, Installation von Badewannen, Duschen, WCs und Waschbecken, Kücheninstallationen mit modernen Armaturen, Wasseraufbereitungsanlagen, Boiler-Service und -austausch, sowie Reparaturen an Wasserleitungen und Abflüssen. Auch Spezialgebiete wie Regenwassernutzung, Gartenbewässerung und barrierefreie Bäder gehören zum Leistungsumfang. Im Notfall steht ein 24/7 Sanitär Notdienst bereit, der bei Wasserschäden und Rohrbrüchen sofort eingreift.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Warum professionellen Sanitär Service beauftragen?
-                </h3>
-                <p className="leading-relaxed">
-                  Sanitärarbeiten erfordern präzises Arbeiten und fundiertes Wissen über Wasserdruck, Leitungssysteme und Hygiene-Vorschriften. Fehlerhafte Installationen können zu Wasserschäden, Schimmelbildung oder hohen Wasserkosten führen. Unsere Sanitärinstallateure bringen die notwendige Ausbildung, Erfahrung und Versicherung mit. Sie arbeiten sauber, verwenden hochwertige Materialien und garantieren für ihre Arbeit. Bei Notfällen können Sie auf schnelle Hilfe zählen – denn Wasserschäden dulden keinen Aufschub.
-                </p>
-                
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Sanitär Service in Ihrer Region
-                </h3>
-                <p className="leading-relaxed">
-                  Egal ob Sie in Zürich, Bern, Luzern, Basel oder einer anderen Schweizer Stadt wohnen – über Büeze.ch finden Sie schnell qualifizierte Sanitärfachbetriebe in Ihrer Nähe. Lokale Betriebe reagieren bei Notfällen schneller, kennen regionale Besonderheiten und bieten oft auch Wartungsverträge an. Vergleichen Sie kostenlos mehrere Offerten für Sanitärinstallationen und wählen Sie den Fachbetrieb, der Ihren Anforderungen am besten entspricht. Transparente Preise, zuverlässiger Service und kompetente Beratung – das erwartet Sie bei unseren Partner-Betrieben.
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-      
       {/* Subcategories as Rich Content Sections */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 max-w-6xl">
@@ -449,108 +314,105 @@ const MajorCategoryLanding = () => {
             {majorCategorySlug === 'elektroinstallationen' && (
               <>
                 <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Elektroinstallationen: Sicherheit und Technologie
+                  Elektroinstallationen: Was Sie wissen sollten
                 </h2>
                 
                 <p className="text-lg leading-relaxed">
-                  Elektrische Installationen gehören zu den anspruchsvollsten Arbeiten im Gebäudebereich. Die Schweizer Norm NIV (Niederspannungs-Installationsverordnung) definiert präzise Anforderungen an Planung, Ausführung und Prüfung elektrischer Anlagen. Nur ausgebildete Elektroinstallateure mit eidgenössischem Fachausweis dürfen selbstständig an Hausinstallationen arbeiten – eine Regelung, die der Sicherheit dient.
+                  Elektroarbeiten gehören zu den wenigen Handwerksarbeiten, die gesetzlich reguliert sind – und das aus gutem Grund. Ein Fehler kann im schlimmsten Fall lebensgefährlich sein. Deshalb dürfen nur ausgebildete Elektroinstallateure mit Fachausweis an Ihrer Hausinstallation arbeiten.
                 </p>
 
                 <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Von der Grundinstallation bis zur Smart-Home-Integration
+                  Von der Grundinstallation bis zur E-Ladestation
                 </h3>
                 
                 <p className="text-lg leading-relaxed">
-                  Moderne Elektroinstallationen umfassen deutlich mehr als Licht und Steckdosen. Netzwerkkabel für Internet und Telefonie, Ladestationen für Elektrofahrzeuge, Photovoltaik-Anlagen mit Speichersystemen und vernetzte Haustechnik erfordern vorausschauende Planung. Ein zukunftsfähiges Installationskonzept berücksichtigt bereits bei der Planung mögliche Erweiterungen und technologische Entwicklungen.
+                  Moderne Häuser brauchen mehr als nur Licht und Steckdosen. Wärmepumpen, Ladestationen für Elektroautos, Photovoltaik-Anlagen – all das stellt höhere Anforderungen an Ihre Elektroinstallation. Viele ältere Häuser kommen mit der zusätzlichen Last nicht zurecht und brauchen eine Verstärkung des Hausanschlusses.
                 </p>
 
                 <p className="text-lg leading-relaxed">
-                  Die Elektrifizierung von Heizungen (Wärmepumpen) und die zunehmende Verbreitung von Heimladestationen für Elektroautos stellen neue Anforderungen an Hausinstallationen. Viele ältere Gebäude benötigen eine Verstärkung des Hausanschlusses, um die zusätzliche Leistung bereitzustellen. Fachbetriebe analysieren die bestehende Installation und entwickeln Lösungen, die sowohl aktuelle als auch zukünftige Anforderungen erfüllen.
+                  Ein guter Elektriker analysiert zuerst Ihre bestehende Installation und plant dann mit Ihnen, wie Sie Ihre Wünsche umsetzen können – und zwar so, dass auch spätere Erweiterungen möglich bleiben.
                 </p>
 
                 <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Sicherheit und Wartung
+                  Worauf Sie achten sollten
                 </h3>
                 
-                <p className="text-lg leading-relaxed">
-                  Elektrische Anlagen unterliegen in der Schweiz regelmäßigen Kontrollen. Eidgenössische Starkstrominspektorate (ESTI) überwachen die Einhaltung der Sicherheitsvorschriften. Bei Neubauten, größeren Umbauten und in bestimmten Zeitabständen sind Sicherheitsnachweise durch unabhängige Kontrollen erforderlich. Qualifizierte Elektrofachbetriebe kennen diese Anforderungen und stellen sicher, dass alle Installationen den geltenden Normen entsprechen.
-                </p>
-
-                <ul className="space-y-3 text-lg">
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>FI-Schutzschalter (RCD) sind Pflicht und schützen vor lebensgefährlichen Stromschlägen</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Überspannungsschutz verhindert Schäden an empfindlicher Elektronik durch Blitzschlag</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Selektive Absicherung ermöglicht gezielte Fehlersuche und minimiert Ausfallzeiten</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Dokumentation aller Installationen ist gesetzlich vorgeschrieben und für Wartung essenziell</span>
-                  </li>
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Lassen Sie sich die Installationsbewilligung zeigen</li>
+                  <li>Fragen Sie nach der Sicherheitsprüfung nach Abschluss</li>
+                  <li>Moderne FI-Schutzschalter sind Pflicht, nicht optional</li>
+                  <li>Bei Altbauten: Prüfen Sie, ob die Leitungsquerschnitte ausreichen</li>
                 </ul>
-
-                <p className="text-lg leading-relaxed">
-                  Bei der Auswahl eines Elektrofachbetriebs sollten Sie auf Mitgliedschaft im Verband Electrosuisse oder EIT.swiss achten. Diese Verbände setzen hohe Qualitätsstandards und bieten kontinuierliche Weiterbildung. Eine gültige Betriebshaftpflichtversicherung ist ebenfalls ein wichtiges Qualitätsmerkmal – sie schützt Sie im unwahrscheinlichen Fall von Installationsfehlern.
-                </p>
               </>
             )}
             {majorCategorySlug === 'heizung-klima' && (
               <>
                 <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Heizung und Klima: Energieeffizienz und Komfort
+                  Heizung & Klima: Gut geplant spart Geld
                 </h2>
                 
                 <p className="text-lg leading-relaxed">
-                  Die Heizungstechnik durchläuft derzeit einen fundamentalen Wandel. Fossile Brennstoffe werden zunehmend durch erneuerbare Energien ersetzt, während gleichzeitig die Anforderungen an Effizienz und Komfort steigen. Die Schweizer Energiestrategie 2050 und kantonale Energiegesetze beschleunigen diese Entwicklung durch Förderprogramme und teilweise durch Vorgaben beim Heizungsersatz.
+                  Eine neue Heizung ist eine langfristige Investition. Moderne Wärmepumpen sind zwar teurer in der Anschaffung, rechnen sich aber über die Betriebskosten – vor allem, wenn Sie Fördergelder nutzen. Bund und Kantone unterstützen den Umstieg von fossilen Heizungen auf erneuerbare Systeme mit bis zu mehreren tausend Franken.
                 </p>
 
                 <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Systemvielfalt und Auswahlkriterien
+                  Was passt zu Ihrem Haus?
                 </h3>
                 
                 <p className="text-lg leading-relaxed">
-                  Wärmepumpen dominieren bei Neubauten und Heizungssanierungen. Sie nutzen Umweltwärme aus Luft, Erdreich oder Grundwasser und wandeln diese mit elektrischer Energie in Heizwärme um. Die Jahresarbeitszahl (JAZ) gibt an, wie effizient eine Wärmepumpe arbeitet – Werte über 3,5 gelten als gut. Die tatsächliche Effizienz hängt stark von der Gebäudeisolation und der Vorlauftemperatur ab: Fußbodenheizungen mit niedrigen Vorlauftemperaturen arbeiten deutlich effizienter als Radiatoren mit hohen Temperaturen.
+                  Nicht jede Heizung passt zu jedem Gebäude. Wärmepumpen funktionieren am besten in gut gedämmten Häusern mit Fussbodenheizung oder grossen Radiatoren. Ältere, schlecht isolierte Häuser brauchen höhere Vorlauftemperaturen – da kann eine Pelletheizung die bessere Wahl sein.
                 </p>
 
                 <p className="text-lg leading-relaxed">
-                  Holzheizungen (Pellets, Schnitzel, Stückholz) bieten eine Alternative mit erneuerbarer Energie. Sie erfordern jedoch Lagerraum, regelmäßige Wartung und produzieren Emissionen, die je nach Standort bewilligungspflichtig sein können. Moderne Pelletheizungen sind weitgehend automatisiert und erreichen hohe Wirkungsgrade, benötigen aber mehr Platz und Aufmerksamkeit als Wärmepumpen.
+                  Ein guter Heizungsinstallateur nimmt sich Zeit für eine Bestandsaufnahme: Wie ist die Dämmung? Welche Heizkörper sind vorhanden? Wie hoch ist Ihr Wärmebedarf? Erst dann schlägt er Ihnen passende Lösungen vor.
                 </p>
 
                 <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Klimatisierung und Lüftung
+                  Praktische Tipps
                 </h3>
                 
-                <p className="text-lg leading-relaxed">
-                  Klimaanlagen werden auch in der Schweiz wichtiger, da Hitzesommer häufiger werden. Reversible Wärmepumpen können sowohl heizen als auch kühlen – eine platzsparende Lösung für ganzjährigen Komfort. Split-Geräte sind einfach nachzurüsten, während zentrale Lüftungsanlagen mit Wärmerückgewinnung bei Neubauten Standard werden. Solche Anlagen versorgen alle Räume mit frischer Luft, filtern Pollen und sparen Energie durch Wärmerückgewinnung aus der Abluft.
-                </p>
-
-                <ul className="space-y-3 text-lg">
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Gebäudehülle bestimmt Heizleistung: Isolation vor Heizung erneuern spart Kosten</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Hydraulischer Abgleich optimiert Wärmeverteilung und senkt Energieverbrauch um 10-15%</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Förderprogramme: Viele Kantone unterstützen Umstieg auf erneuerbare Energien finanziell</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Wartungsverträge sichern Effizienz und verlängern Lebensdauer der Anlage</span>
-                  </li>
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Planen Sie Heizungssanierungen im Frühling oder Sommer</li>
+                  <li>Lassen Sie sich bei Förderanträgen helfen – viele Installateure übernehmen das</li>
+                  <li>Regelmässige Wartung verlängert die Lebensdauer erheblich</li>
+                  <li>Kombination mit Solarthermie kann sich lohnen</li>
                 </ul>
               </>
             )}
             {majorCategorySlug === 'sanitaer' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Sanitärinstallationen: Mehr als nur Rohre verlegen
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Ein neues Bad ist mehr als Handwerk – es ist Koordination. Sanitär, Elektro, Plattenleger, manchmal auch Schreiner: Alle Gewerke müssen in der richtigen Reihenfolge arbeiten. Ein erfahrener Sanitärinstallateur übernimmt diese Koordination und stellt sicher, dass keine Schnittstelle vergessen geht.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Badsanierung: Die richtige Reihenfolge zählt
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Erst kommen die Rohre, dann die Abdichtung, dann die Fliesen, zuletzt die Montage. Diese Reihenfolge ist fix – wer hier Fehler macht, zahlt doppelt. Abdichtungsfehler zeigen sich oft erst nach Jahren, wenn Wasser in die Decke darunter sickert.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Bodengleiche Duschen sind beliebt, aber nicht überall machbar. Die Geschossdecke muss genug hoch sein, um die Ablaufleitungen zu verstecken. Vorwandinstallationen bieten mehr Flexibilität und erleichtern spätere Reparaturen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Was Sie beachten sollten
+                </h3>
+                
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Wassersparende Armaturen amortisieren sich schnell</li>
+                  <li>In Gebieten mit hartem Wasser lohnt sich eine Enthärtungsanlage</li>
+                  <li>Warmwasser sollte mindestens 60°C erreichen (Legionellenschutz)</li>
+                  <li>Qualität bei Abdichtung zahlt sich langfristig aus</li>
+                </ul>
+              </>
+            )}
               <>
                 <h2 className="text-3xl font-bold text-ink-900 mb-6">
                   Sanitärtechnik: Planung, Installation und Wartung
@@ -601,6 +463,47 @@ const MajorCategoryLanding = () => {
               </>
             )}
             {majorCategorySlug === 'bau-renovation' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Bau & Renovation: Gut planen, besser bauen
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Umbauen ist oft komplexer als Neubauen. Sie müssen mit Überraschungen rechnen – veraltete Leitungen, Bausubstanz, die nicht den Erwartungen entspricht, unvorhergesehene statische Probleme. Ein erfahrener Bauunternehmer rechnet solche Risiken ein und plant Pufferzeiten.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Baubewilligungen nicht unterschätzen
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Fast alle Umbauten brauchen eine Bewilligung – auch wenn Sie "nur" ein Fenster vergrössern oder eine Wand entfernen. Was bewilligungspflichtig ist, regelt jede Gemeinde etwas anders. Ihr Bauunternehmer sollte die lokalen Vorschriften kennen und Sie bei den Anträgen unterstützen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Rechnen Sie mit 2-4 Monaten für das Bewilligungsverfahren. In dieser Zeit können Sie die Detailplanung verfeinern und Materialien auswählen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Koordination ist alles
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Bei grösseren Renovationen arbeiten oft fünf bis zehn verschiedene Gewerke zusammen. Wer koordiniert, wann welcher Handwerker kommt? Wer bestellt Material? Wer kontrolliert Qualität und Termine? Ein Generalunternehmer oder Bauleiter nimmt Ihnen diese Arbeit ab.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+                
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Planen Sie 10-15% Budget-Reserve für Unvorhergesehenes ein</li>
+                  <li>Fixpreisofferten geben Kostensicherheit</li>
+                  <li>Lassen Sie Zwischenabrechnungen von einem Fachmann prüfen</li>
+                  <li>Dokumentieren Sie den Baufortschritt mit Fotos</li>
+                </ul>
+              </>
+            )}
               <>
                 <h2 className="text-3xl font-bold text-ink-900 mb-6">
                   Bau und Renovation: Von der Planung bis zur Vollendung
