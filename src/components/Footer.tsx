@@ -8,9 +8,12 @@ import { subcategoryLabels } from '@/config/subcategoryLabels';
 export const Footer = () => {
   // Group subcategories by major category
   const categoriesWithSubs = Object.values(majorCategories).map(category => {
-    const subs = Object.values(subcategoryLabels)
-      .filter(sub => sub.majorCategoryId === category.id)
-      .slice(0, 8); // Limit to 8 subcategories per column for scannability
+    // Use the same approach as MajorCategoryLanding: only show subcategories 
+    // explicitly listed in category.subcategories array
+    const subs = category.subcategories
+      .map(subId => subcategoryLabels[subId])
+      .filter(Boolean) // Remove any undefined entries
+      .slice(0, 8); // Limit to 8 for scannability
     
     return {
       ...category,
