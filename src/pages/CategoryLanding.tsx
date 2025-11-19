@@ -85,15 +85,25 @@ const CategoryLanding = () => {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
             <p className="text-sm text-ink-600">
-              <strong className="text-brand-600">Kostenlos & unverbindlich</strong> für Auftraggeber
+              Über 2'000 geprüfte Handwerker in der Schweiz
             </p>
           </div>
         </div>
       </section>
 
       {/* Service Types Section */}
-      <section className="py-20 bg-white">
+      <section className="py-16 bg-white">
         <div className="container mx-auto px-4 max-w-6xl">
+          {/* Section heading */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
+              Diese Dienstleistungen können Sie beauftragen
+            </h2>
+            <p className="text-lg text-ink-700 max-w-2xl mx-auto">
+              Von kleinen Reparaturen bis zu grossen Projekten – finden Sie den passenden Fachbetrieb
+            </p>
+          </div>
+          
           <div className="grid md:grid-cols-3 gap-8">
             {content.services.map((service, idx) => {
               const ServiceIcon = service.icon;
@@ -114,16 +124,6 @@ const CategoryLanding = () => {
               );
             })}
           </div>
-          <div className="text-center mt-12">
-            <Button
-              onClick={handleCTA}
-              size="lg"
-              className="h-12 px-8 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
-            >
-              Jetzt Offerten einholen
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </div>
         </div>
       </section>
 
@@ -131,7 +131,7 @@ const CategoryLanding = () => {
       <HowItWorks />
 
       {/* Category-Specific FAQ */}
-      <section className="py-20 bg-pastel-blue-50">
+      <section className="py-24 bg-white">
         <div className="container mx-auto px-4 max-w-4xl">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
@@ -162,26 +162,23 @@ const CategoryLanding = () => {
       </section>
 
       {/* Final CTA Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 text-center space-y-6">
+      <section className="py-20 bg-gradient-to-br from-brand-50 to-pastel-blue-100 border-t border-border">
+        <div className="container mx-auto px-4 text-center space-y-6 max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-bold text-ink-900">
-            Bereit anzufangen?
+            Vergleichen Sie Offerten und sparen Sie Zeit
           </h2>
-          <p className="text-xl text-ink-700 max-w-2xl mx-auto">
-            Erstellen Sie jetzt Ihre kostenlose Anfrage und erhalten Sie mehrere Offerten von qualifizierten Handwerkern.
+          <p className="text-xl text-ink-700">
+            Beschreiben Sie Ihr Projekt in 3 Minuten. Erhalten Sie bis zu 5 passende Offerten von geprüften Fachbetrieben aus Ihrer Region.
           </p>
-          <div className="pt-4 space-y-3">
+          <div className="pt-4">
             <Button
               onClick={handleCTA}
               size="lg"
               className="h-14 px-10 text-lg rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
             >
-              Jetzt Auftrag erstellen
+              Kostenlose Anfrage erstellen
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
-            <p className="text-sm text-ink-600">
-              <strong className="text-brand-600">Kostenlos & unverbindlich</strong> für Auftraggeber
-            </p>
           </div>
         </div>
       </section>
