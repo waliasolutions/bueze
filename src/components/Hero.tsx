@@ -27,8 +27,8 @@ export const Hero = () => {
           {/* Headlines */}
           <div className="space-y-6">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
-              {content?.fields?.title || 'Handwerker aus Ihrer Region'}{' '}
-              <span className="text-brand-600">{content?.fields?.titleHighlight || 'in 3 Minuten finden'}</span>
+              {content?.fields?.title || 'Den richtigen Handwerker finden.'}{' '}
+              <span className="text-brand-600">{content?.fields?.titleHighlight || 'Für jedes Vorhaben.'}</span>
             </h1>
             <p className="text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto">
               {content?.fields?.subtitle || 'Beschreiben Sie Ihr Projekt und erhalten Sie passende Offerten von geprüften Fachbetrieben. Von Elektrik über Sanitär bis Renovation – einfach, kostenlos und unverbindlich.'}
