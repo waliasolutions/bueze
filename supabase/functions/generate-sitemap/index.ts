@@ -75,11 +75,9 @@ Deno.serve(async (req) => {
       'elektroinstallationen',
       'heizung-klima',
       'sanitaer',
-      'kuecheneinbau',
-      'innenausbau',
-      'entsorgung',
-      'garten-aussengestaltung',
-      'sonstige',
+      'kueche',
+      'innenausbau-schreiner',
+      'raeumung-entsorgung',
     ];
 
     majorCategories.forEach((slug) => {
