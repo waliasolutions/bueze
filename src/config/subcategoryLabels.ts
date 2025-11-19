@@ -13,9 +13,9 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_hausinstallationen',
     label: 'Hausinstallationen (Neu-/Umbau)',
     slug: 'elektro-hausinstallationen',
-    shortDescription: 'Leitungen, Steckdosen, Schalter und komplette Elektroinstallationen',
+    shortDescription: 'Leitungen, Steckdosen, Schalter, komplette Elektroinstallationen und Bauprovisorien',
     majorCategoryId: 'elektroinstallationen',
-    keywords: ['Elektroinstallation', 'Steckdosen', 'Schalter', 'Leitungen', 'Kabelzug']
+    keywords: ['Elektroinstallation', 'Steckdosen', 'Schalter', 'Leitungen', 'Kabelzug', 'Baustrom', 'Bauprovisorium']
   },
   elektro_unterverteilung: {
     value: 'elektro_unterverteilung',
@@ -80,14 +80,6 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     shortDescription: 'Ladestation privat, Lastmanagement, Anmeldung Netzbetreiber',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Wallbox', 'Ladestation', 'E-Auto', 'Elektroauto', 'Ladestation']
-  },
-  elektro_bauprovisorium: {
-    value: 'elektro_bauprovisorium',
-    label: 'Bauprovisorium (Baustrom)',
-    slug: 'elektro-bauprovisorium',
-    shortDescription: 'Provisorischer Anschluss für Baustellen',
-    majorCategoryId: 'elektroinstallationen',
-    keywords: ['Baustrom', 'Bauprovisorium', 'Bauanschluss']
   },
   elektro_erdung_blitzschutz: {
     value: 'elektro_erdung_blitzschutz',
@@ -297,29 +289,21 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     majorCategoryId: 'heizung_klima_solar',
     keywords: ['Cheminée', 'Kamin', 'Ofen', 'Cheminee']
   },
-  solarheizung: {
-    value: 'solarheizung',
-    label: 'Solarheizung',
-    slug: 'solarheizung',
-    shortDescription: 'Solarthermie für Warmwasser und Heizung',
+  solarthermie: {
+    value: 'solarthermie',
+    label: 'Solarthermie (Warmwasser)',
+    slug: 'solarthermie',
+    shortDescription: 'Solarthermie-Anlagen für Warmwasser und Heizungsunterstützung',
     majorCategoryId: 'heizung_klima_solar',
-    keywords: ['Solar', 'Solarthermie', 'Sonnenenergie']
+    keywords: ['Solarthermie', 'Solarkollektor', 'Warmwasser', 'Sonnenenergie']
   },
   photovoltaik: {
     value: 'photovoltaik',
-    label: 'Photovoltaik & Batteriespeicher',
+    label: 'Solar, Photovoltaik & Batteriespeicher',
     slug: 'photovoltaik',
-    shortDescription: 'PV-Anlagen und Stromspeicher',
+    shortDescription: 'PV-Anlagen, Solarthermie und Stromspeicher für nachhaltige Energiegewinnung',
     majorCategoryId: 'heizung_klima_solar',
-    keywords: ['Photovoltaik', 'PV', 'Solar', 'Batteriespeicher']
-  },
-  batteriespeicher: {
-    value: 'batteriespeicher',
-    label: 'Batteriespeicher',
-    slug: 'batteriespeicher',
-    shortDescription: 'Stromspeicher für PV-Anlagen',
-    majorCategoryId: 'heizung_klima_solar',
-    keywords: ['Batteriespeicher', 'Speicher', 'Batterie']
+    keywords: ['Photovoltaik', 'PV', 'Solar', 'Batteriespeicher', 'Solaranlage', 'Stromspeicher']
   },
   heizung_sonstige: {
     value: 'heizung_sonstige',
@@ -459,30 +443,6 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
   },
 
   // Keep existing for compatibility
-  sanitaer: {
-    value: 'sanitaer',
-    label: 'Sanitär',
-    slug: 'sanitaer',
-    shortDescription: 'Sanitärinstallationen',
-    majorCategoryId: 'sanitaer',
-    keywords: ['Sanitär']
-  },
-  heizung: {
-    value: 'heizung',
-    label: 'Heizung',
-    slug: 'heizung',
-    shortDescription: 'Heizungsinstallationen',
-    majorCategoryId: 'heizung_klima_solar',
-    keywords: ['Heizung']
-  },
-  klimatechnik: {
-    value: 'klimatechnik',
-    label: 'Klimatechnik',
-    slug: 'klimatechnik',
-    shortDescription: 'Klimaanlagen',
-    majorCategoryId: 'heizung_klima_solar',
-    keywords: ['Klima']
-  },
   maler: {
     value: 'maler',
     label: 'Maler',
