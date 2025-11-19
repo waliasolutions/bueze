@@ -90,10 +90,9 @@ export const majorCategories: Record<string, MajorCategory> = {
       'elektro_stoerung_notfall', 'elektro_beleuchtung',
       'elektro_geraete_anschliessen', 'elektro_netzwerk_multimedia',
       'elektro_sprechanlage', 'elektro_smart_home',
-      'elektro_wallbox', 'elektro_bauprovisorium',
-      'elektro_erdung_blitzschutz', 'elektro_sicherheitsnachweis',
-      'elektro_zaehler_anmeldung', 'elektro_notstrom',
-      'elektro_kleinauftraege', 'elektriker'
+      'elektro_wallbox', 'elektro_erdung_blitzschutz', 
+      'elektro_sicherheitsnachweis', 'elektro_zaehler_anmeldung', 
+      'elektro_notstrom', 'elektro_kleinauftraege', 'elektriker'
     ],
     color: 'from-yellow-500 to-yellow-600',
     showOnHome: true,
@@ -119,10 +118,9 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: Flame,
     description: 'Heizungen, Klimaanlagen, Solaranlagen und Energielösungen',
     subcategories: [
-      'heizung', 'fussbodenheizung', 'boiler', 
-      'klimaanlage_lueftung', 'klimatechnik', 'waermepumpen',
-      'cheminee_kamin_ofen', 'solarheizung', 'photovoltaik',
-      'batteriespeicher', 'heizung_sonstige'
+      'waermepumpen', 'fussbodenheizung', 'boiler', 
+      'klimaanlage_lueftung', 'cheminee_kamin_ofen', 
+      'photovoltaik', 'solarthermie', 'heizung_sonstige'
     ],
     color: 'from-orange-500 to-red-600',
     showOnHome: true,
@@ -148,8 +146,9 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: Droplet,
     description: 'Badezimmer, Sanitärinstallationen und Reparaturen',
     subcategories: [
-      'sanitaer', 'badezimmer', 'badewanne_dusche',
-      'klempnerarbeiten', 'badumbau', 'sanitaer_sonstige'
+      'badewanne_dusche', 'lavabo_waschbecken', 'wc_toilette',
+      'rohrleitung_leitungen', 'wasserhahn_armaturen', 'abwasser_entwässerung',
+      'boiler', 'sanitaer_sonstige', 'klempner'
     ],
     color: 'from-blue-500 to-cyan-600',
     showOnHome: true,

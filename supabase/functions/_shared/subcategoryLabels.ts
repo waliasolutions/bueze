@@ -33,12 +33,14 @@ export const subcategoryLabels: Record<string, string> = {
   "flooring_screeding": "Unterlagsboden & Spachtelung",
   
   // Heizung, Klima & Solar
-  "heating_installation": "Heizungsinstallation",
-  "heating_service": "Heizungswartung & Service",
-  "heating_floor": "Fussbodenheizung",
-  "heating_solar_thermal": "Solarthermie",
-  "heating_heat_pump": "Wärmepumpen",
-  "heating_ventilation": "Lüftung & Klimaanlage",
+  "waermepumpen": "Wärmepumpen",
+  "fussbodenheizung": "Fussbodenheizung",
+  "boiler": "Boiler",
+  "klimaanlage_lueftung": "Klimaanlage & Lüftungssysteme",
+  "cheminee_kamin_ofen": "Cheminée, Kamin und Ofen",
+  "photovoltaik": "Solar, Photovoltaik & Batteriespeicher",
+  "solarthermie": "Solarthermie (Warmwasser)",
+  "heizung_sonstige": "Sonstige Heizungsarbeiten",
   
   // Sanitär
   "plumber_installation": "Sanitärinstallationen",
