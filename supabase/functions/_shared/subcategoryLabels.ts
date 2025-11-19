@@ -22,7 +22,10 @@ export const subcategoryLabels: Record<string, string> = {
   "innenausbau_moebelbau": "Möbelbau",
   "innenausbau_holz_metall": "Innenausbau (Holz/Metall)",
   
-  // Räumung
+  // Räumung & Entsorgung
+  "raeumung": "Räumungsdienst",
+  "entsorgung": "Entsorgungsdienst",
+  "baureinigung": "Baureinigung",
   "raeumung_sonstige": "Sonstige Dienstleistungen",
   
   // ============================================
