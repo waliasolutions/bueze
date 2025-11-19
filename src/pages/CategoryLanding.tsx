@@ -32,7 +32,9 @@ const CategoryLanding = () => {
     : null;
 
   const handleCTA = () => {
-    navigate(`/submit-lead?category=${content.formCategory}`);
+    // Get the major category for this subcategory
+    const majorCategoryId = subcategoryInfo?.majorCategoryId;
+    navigate(`/submit-lead?category=${majorCategoryId || 'bau_renovation'}`);
   };
 
   return (

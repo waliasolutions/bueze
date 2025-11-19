@@ -139,7 +139,7 @@ const MajorCategoryLanding = () => {
           </p>
           <div className="pt-6">
             <Button
-              onClick={() => navigate('/submit-lead')}
+              onClick={() => navigate(`/submit-lead?category=${majorCategory.id}`)}
               size="lg"
               className="h-14 px-10 text-lg rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
             >
@@ -162,29 +162,26 @@ const MajorCategoryLanding = () => {
           
           <div className="grid md:grid-cols-2 gap-4">
             {subcategories.map((subcat) => {
-              const content = categoryContent[subcat.slug];
               const SubIcon = Icon;
               
               return (
-                <button
+                <div
                   key={subcat.value} 
                   id={subcat.value}
-                  className="flex items-center gap-4 p-4 rounded-lg hover:bg-pastel-blue-50 transition-colors cursor-pointer group text-left scroll-mt-24 border border-transparent hover:border-brand-200"
-                  onClick={() => navigate(content ? `/submit-lead?category=${content.formCategory}` : '/submit-lead')}
+                  className="flex items-center gap-4 p-4 rounded-lg border border-border bg-white scroll-mt-24"
                 >
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0`}>
                     <SubIcon className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-ink-900 group-hover:text-brand-600 transition-colors text-base">
+                    <h3 className="font-semibold text-ink-900 text-base">
                       {subcat.label}
                     </h3>
                     <p className="text-sm text-ink-600 mt-0.5 line-clamp-1">
-                      {subcat.shortDescription || 'Kostenlos Offerten einholen'}
+                      {subcat.shortDescription || 'Professionelle Dienstleistung'}
                     </p>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-ink-400 group-hover:text-brand-600 group-hover:translate-x-1 transition-all flex-shrink-0" />
-                </button>
+                </div>
               );
             })}
           </div>
@@ -230,7 +227,7 @@ const MajorCategoryLanding = () => {
           </p>
           <div className="pt-4">
             <Button
-              onClick={() => navigate('/submit-lead')}
+              onClick={() => navigate(`/submit-lead?category=${majorCategory.id}`)}
               size="lg"
               className="h-14 px-10 text-lg rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
             >
