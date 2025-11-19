@@ -413,55 +413,6 @@ const MajorCategoryLanding = () => {
                 </ul>
               </>
             )}
-              <>
-                <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Sanitärtechnik: Planung, Installation und Wartung
-                </h2>
-                
-                <p className="text-lg leading-relaxed">
-                  Sanitärinstallationen verbinden technische Präzision mit Gestaltungswünschen. Die SIA-Normen 385/1 (Trinkwasserinstallationen) und 385/2 (Abwasseranlagen) definieren in der Schweiz technische Mindestanforderungen. Gleichzeitig spielen ästhetische Aspekte eine wichtige Rolle, da Badezimmer und Küchen zu den am intensivsten genutzten Räumen gehören.
-                </p>
-
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Wassertechnologie und Hygiene
-                </h3>
-                
-                <p className="text-lg leading-relaxed">
-                  Trinkwasserhygiene hat in den letzten Jahren an Bedeutung gewonnen. Legionellen – Bakterien, die sich in warmem Wasser vermehren – können gesundheitliche Risiken bergen. Moderne Warmwasserkonzepte vermeiden Stagnation durch Zirkulationssysteme oder dezentrale Durchlauferhitzer. Die Temperaturhaltung im gesamten System ist entscheidend: Warmwasser sollte mindestens 60°C erreichen, während Kaltwasser unter 25°C bleiben muss.
-                </p>
-
-                <p className="text-lg leading-relaxed">
-                  Wasserenthärtung kann in Gebieten mit hartem Wasser sinnvoll sein. Kalkablagerungen verkürzen die Lebensdauer von Armaturen, Boilern und Haushaltsgeräten. Moderne Enthärtungsanlagen arbeiten sparsam und regenerieren sich automatisch. Die Investition amortisiert sich durch geringeren Energieverbrauch und längere Lebensdauer der Anlagen.
-                </p>
-
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Badsanierung und Barrierefreiheit
-                </h3>
-                
-                <p className="text-lg leading-relaxed">
-                  Badezimmersanierungen erfordern koordinierte Planung zwischen Sanitär, Elektro, Plattenlegern und oft auch Zimmerleuten. Die Abfolge der Arbeiten ist entscheidend: Erst Rohinstallation, dann Abdichtung und Fliesen, zuletzt die Montage der Apparate. Erfahrene Sanitärfachbetriebe koordinieren diese Gewerke und stellen sicher, dass alle Schnittstellen funktionieren.
-                </p>
-
-                <ul className="space-y-3 text-lg">
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Bodengleiche Duschen sind nicht überall umsetzbar – Geschossdecke bestimmt Machbarkeit</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Vorwandinstallationen ermöglichen flexible Raumgestaltung und einfache Wartung</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Wassersparende Armaturen reduzieren Verbrauch ohne Komfortverlust</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Abdichtung ist kritisch: Fehler zeigen sich oft erst nach Jahren</span>
-                  </li>
-                </ul>
-              </>
-            )}
             {majorCategorySlug === 'bau-renovation' && (
               <>
                 <h2 className="text-3xl font-bold text-ink-900 mb-6">
@@ -477,7 +428,7 @@ const MajorCategoryLanding = () => {
                 </h3>
                 
                 <p className="text-lg leading-relaxed">
-                  Fast alle Umbauten brauchen eine Bewilligung – auch wenn Sie "nur" ein Fenster vergrössern oder eine Wand entfernen. Was bewilligungspflichtig ist, regelt jede Gemeinde etwas anders. Ihr Bauunternehmer sollte die lokalen Vorschriften kennen und Sie bei den Anträgen unterstützen.
+                  Fast alle Umbauten brauchen eine Bewilligung – auch wenn Sie &quot;nur&quot; ein Fenster vergrössern oder eine Wand entfernen. Was bewilligungspflichtig ist, regelt jede Gemeinde etwas anders. Ihr Bauunternehmer sollte die lokalen Vorschriften kennen und Sie bei den Anträgen unterstützen.
                 </p>
 
                 <p className="text-lg leading-relaxed">
@@ -501,55 +452,6 @@ const MajorCategoryLanding = () => {
                   <li>Fixpreisofferten geben Kostensicherheit</li>
                   <li>Lassen Sie Zwischenabrechnungen von einem Fachmann prüfen</li>
                   <li>Dokumentieren Sie den Baufortschritt mit Fotos</li>
-                </ul>
-              </>
-            )}
-              <>
-                <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Bau und Renovation: Von der Planung bis zur Vollendung
-                </h2>
-                
-                <p className="text-lg leading-relaxed">
-                  Bauprojekte in der Schweiz unterliegen strengen Vorschriften. Baubewilligungen, Lärmschutzauflagen, Arbeitssicherheit und Entsorgungsvorschriften müssen beachtet werden. Professionelle Baufachbetriebe kennen die kantonalen und kommunalen Besonderheiten und stellen sicher, dass Ihr Projekt rechtskonform umgesetzt wird.
-                </p>
-
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Renovationsprojekte richtig planen
-                </h3>
-                
-                <p className="text-lg leading-relaxed">
-                  Erfolgreiche Renovationen beginnen mit einer gründlichen Bestandsaufnahme. Bausubstanz, Statik, Schadstoffe und versteckte Installationen können Überraschungen bergen. Erfahrene Bauunternehmer erkennen potenzielle Probleme frühzeitig und kalkulieren entsprechende Reserven ein. Eine realistische Planung verhindert Budgetüberschreitungen und zeitliche Verzögerungen.
-                </p>
-
-                <p className="text-lg leading-relaxed">
-                  Energetische Sanierungen gewinnen an Bedeutung. Die Kombination von Fassadendämmung, Fensterersatz und Heizungserneuerung bringt die größten Einsparungen. Das Gebäudeprogramm von Bund und Kantonen fördert solche Maßnahmen mit attraktiven Beiträgen. Ein Fachbetrieb mit Erfahrung in energetischen Sanierungen kann Fördermöglichkeiten aufzeigen und die Antragsstellung unterstützen.
-                </p>
-
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Koordination und Bauablauf
-                </h3>
-                
-                <p className="text-lg leading-relaxed">
-                  Größere Renovationen erfordern die Koordination mehrerer Gewerke. Ein Baumeister oder Generalunternehmer übernimmt diese Rolle und stellt sicher, dass alle Arbeiten in der richtigen Reihenfolge und Qualität ausgeführt werden. Dies entlastet Sie als Bauherr erheblich und schafft klare Verantwortlichkeiten.
-                </p>
-
-                <ul className="space-y-3 text-lg">
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Detaillierte Offerten mit Leistungsverzeichnis vermeiden spätere Diskussionen</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Festpreisvereinbarungen bieten Kostensicherheit, verlangen aber präzise Planung</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Regelmäßige Bausitzungen halten alle Beteiligten auf dem Laufenden</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Bauabnahme mit Mängelliste schützt Ihre Interessen</span>
-                  </li>
                 </ul>
               </>
             )}
