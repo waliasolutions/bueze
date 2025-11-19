@@ -650,45 +650,6 @@ const MajorCategoryLanding = () => {
                 </ul>
               </>
             )}
-            {/* Default content for other major categories */}
-            {!['elektroinstallationen', 'heizung-klima', 'sanitaer', 'bau-renovation'].includes(majorCategorySlug) && (
-              <>
-                <h2 className="text-3xl font-bold text-ink-900 mb-6">
-                  Fachkompetenz und Qualitätsstandards
-                </h2>
-                
-                <p className="text-lg leading-relaxed">
-                  Die Schweiz verfügt über ein dichtes Netz qualifizierter Fachbetriebe in allen Handwerksbereichen. Das duale Bildungssystem mit Berufslehre und höherer Fachausbildung stellt sicher, dass Handwerker fundiertes theoretisches Wissen mit praktischer Erfahrung verbinden. Meisterprüfungen und eidgenössische Fachausweise belegen hohe Qualifikationen.
-                </p>
-
-                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
-                  Regionale Unterschiede und lokale Expertise
-                </h3>
-                
-                <p className="text-lg leading-relaxed">
-                  Die verschiedenen Regionen der Schweiz haben teilweise unterschiedliche Baumaterialien, Bauweisen und klimatische Anforderungen. Betriebe mit regionaler Verankerung kennen diese Besonderheiten: Alpine Regionen stellen andere Anforderungen an Gebäudehüllen und Heizungen als das Mittelland, während städtische Gebiete oft spezielle Lärmschutz- und Denkmalschutzauflagen haben.
-                </p>
-
-                <ul className="space-y-3 text-lg">
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Mitgliedschaft in Berufsverbänden signalisiert Engagement für Qualität</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Referenzen und Bewertungen geben Einblick in Zuverlässigkeit und Qualität</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Transparente Kommunikation und detaillierte Offerten schaffen Vertrauen</span>
-                  </li>
-                  <li className="flex items-start">
-                    <span className="text-brand-600 mr-3">•</span>
-                    <span>Garantieleistungen und Versicherungsschutz sind wichtige Qualitätsmerkmale</span>
-                  </li>
-                </ul>
-              </>
-            )}
           </div>
         </div>
       </section>
