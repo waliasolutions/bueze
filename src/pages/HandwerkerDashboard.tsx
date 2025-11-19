@@ -32,6 +32,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
+import { majorCategories } from "@/config/majorCategories";
 
 interface Lead {
   id: string;
@@ -222,26 +223,54 @@ const HandwerkerDashboard = () => {
   const fetchLeads = async (categories: string[], serviceAreas: string[]) => {
     setLeadsLoading(true);
     try {
-      let query = supabase
+      // Fetch ALL active leads - let RLS handle visibility
+      const { data, error } = await supabase
         .from('leads')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      // Filter by service areas if available
-      if (serviceAreas.length > 0) {
-        // Cast to any to avoid TypeScript canton enum issues
-        query = query.in('canton', serviceAreas as any);
-      }
-
-      const { data, error } = await query;
-
       if (error) throw error;
 
-      // Filter by categories on client side
-      const filteredLeads = data?.filter(lead => 
-        categories.includes(lead.category)
-      ) || [];
+      // Filter client-side by category
+      // Handwerker may have subcategories, leads may have major categories
+      // Map subcategories to their major categories for matching
+      let filteredLeads = data || [];
+      
+      if (categories.length > 0) {
+        filteredLeads = filteredLeads.filter(lead => {
+          // Check if handwerker's categories include the lead's category directly
+          if (categories.includes(lead.category)) {
+            return true;
+          }
+          
+          // Check if lead's category is a major category and handwerker has a subcategory from it
+          const leadMajorCat = Object.values(majorCategories).find(mc => mc.id === lead.category);
+          if (leadMajorCat) {
+            return categories.some(hwCat => leadMajorCat.subcategories.includes(hwCat));
+          }
+          
+          // Check if handwerker's category is a major category and lead has a subcategory from it
+          const handwerkerMajorCats = categories
+            .map(cat => Object.values(majorCategories).find(mc => mc.id === cat))
+            .filter(Boolean);
+          
+          return handwerkerMajorCats.some(mc => mc?.subcategories.includes(lead.category));
+        });
+      }
+
+      // Filter by service areas (match canton OR postal codes)
+      if (serviceAreas.length > 0) {
+        filteredLeads = filteredLeads.filter(lead => {
+          // Extract cantons (2 chars) and postal codes (4+ chars)
+          const cantons = serviceAreas.filter(area => area.length === 2);
+          const postalCodes = serviceAreas.filter(area => area.length >= 4);
+          
+          // Match if lead's canton is in handwerker's cantons
+          // OR if lead's zip is in handwerker's postal codes
+          return cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
+        });
+      }
 
       setLeads(filteredLeads);
     } catch (error) {
@@ -292,6 +321,23 @@ const HandwerkerDashboard = () => {
 
     setSubmittingProposal(true);
     try {
+      // Check quota first
+      const { data: canSubmit, error: checkError } = await supabase
+        .rpc('can_submit_proposal', { handwerker_user_id: user.id });
+
+      if (checkError) throw checkError;
+
+      if (!canSubmit) {
+        toast({
+          title: 'Kontingent erschöpft',
+          description: 'Sie haben Ihr monatliches Offerten-Limit erreicht. Bitte upgraden Sie Ihr Abo.',
+          variant: 'destructive'
+        });
+        setSubmittingProposal(false);
+        return;
+      }
+
+      // Proceed with proposal insertion
       const { error } = await supabase
         .from('lead_proposals')
         .insert({

@@ -2838,6 +2838,15 @@ export type Database = {
         | "innenausbau_sonstige"
         | "aufloesung_entsorgung"
         | "individuelle_anfrage"
+        | "bau_renovation"
+        | "elektroinstallationen"
+        | "heizung_klima"
+        | "innenausbau_schreiner"
+        | "bodenbelaege"
+        | "kueche"
+        | "garten_umgebung"
+        | "reinigung_hauswartung"
+        | "raeumung_entsorgung"
       lead_status:
         | "draft"
         | "active"
@@ -3140,6 +3149,15 @@ export const Constants = {
         "innenausbau_sonstige",
         "aufloesung_entsorgung",
         "individuelle_anfrage",
+        "bau_renovation",
+        "elektroinstallationen",
+        "heizung_klima",
+        "innenausbau_schreiner",
+        "bodenbelaege",
+        "kueche",
+        "garten_umgebung",
+        "reinigung_hauswartung",
+        "raeumung_entsorgung",
       ],
       lead_status: [
         "draft",
