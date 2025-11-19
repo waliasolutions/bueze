@@ -176,43 +176,6 @@ const KategorienLanding = () => {
         </div>
       </section>
 
-      {/* Regional Services Section */}
-      <section className="py-20 bg-pastel-grey-50">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4 text-center">
-            Handwerker-Dienste in allen Schweizer Kantonen
-          </h2>
-          <p className="text-xl text-ink-700 text-center mb-12 max-w-3xl mx-auto">
-            Büeze.ch vermittelt Handwerker in der ganzen Schweiz. Egal ob Sie in einem städtischen Zentrum oder in einer ländlichen Region wohnen – über unsere Plattform erreichen Sie lokale Fachbetriebe in Ihrer Nähe.
-          </p>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { city: 'Zürich', description: 'Grösste Auswahl an Handwerkern für alle Kategorien' },
-              { city: 'Basel', description: 'Starkes Netzwerk für Renovierung und Sanierung' },
-              { city: 'Bern', description: 'Traditionelle Handwerksbetriebe mit Erfahrung' },
-              { city: 'Luzern', description: 'Qualifizierte Handwerker für Stadt und Umgebung' },
-              { city: 'Ostschweiz', description: 'St. Gallen, Thurgau, Appenzell' },
-              { city: 'Zentralschweiz', description: 'Uri, Schwyz, Obwalden, Nidwalden' },
-              { city: 'Aargau', description: 'Handwerker zwischen Stadt und Land' },
-              { city: 'Westschweiz', description: 'Service auch auf Französisch' },
-            ].map((region, index) => (
-              <Card key={index} className="border-border hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white mb-3">
-                    <MapPin className="w-6 h-6" />
-                  </div>
-                  <CardTitle className="text-lg text-ink-900">{region.city}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-ink-700 text-sm leading-relaxed">{region.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* FAQ Section */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 max-w-4xl">
