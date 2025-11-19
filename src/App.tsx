@@ -53,18 +53,15 @@ const ScrollToTop = () => {
   const { pathname, hash } = useLocation();
   
   React.useEffect(() => {
+    // Only handle hash fragment scrolling (regular scrolling handled by PageTransition)
     if (hash) {
-      // Scroll to hash fragment after content renders
       const scrollTimer = setTimeout(() => {
         const element = document.querySelector(hash);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth' });
         }
-      }, 200); // Increased to 200ms to wait for page transition
+      }, 200);
       return () => clearTimeout(scrollTimer);
-    } else {
-      // Immediate scroll for regular navigation
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
   }, [pathname, hash]);
   

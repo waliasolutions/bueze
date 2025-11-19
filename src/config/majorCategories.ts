@@ -241,7 +241,6 @@ export const majorCategories: Record<string, MajorCategory> = {
     subcategories: [
       'raeumung',
       'entsorgung',
-      'umzug',
       'baureinigung',
       'raeumung_sonstige'
     ],

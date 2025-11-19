@@ -122,7 +122,31 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     keywords: ['Holzarbeiten', 'Metallarbeiten', 'Innenausbau']
   },
 
-  // Räumung & Entsorgung (add sonstige)
+  // Räumung & Entsorgung
+  raeumung: {
+    value: 'raeumung',
+    label: 'Räumungsdienst',
+    slug: 'raeumungsdienst',
+    shortDescription: 'Wohnungs- und Hausräumungen',
+    majorCategoryId: 'raeumung_entsorgung',
+    keywords: ['Räumung', 'Wohnungsräumung', 'Hausräumung', 'Entrümpelung']
+  },
+  entsorgung: {
+    value: 'entsorgung',
+    label: 'Entsorgungsdienst',
+    slug: 'entsorgungsdienst',
+    shortDescription: 'Fachgerechte Entsorgung',
+    majorCategoryId: 'raeumung_entsorgung',
+    keywords: ['Entsorgung', 'Abfall', 'Sperrgut', 'Recycling']
+  },
+  baureinigung: {
+    value: 'baureinigung',
+    label: 'Baureinigung',
+    slug: 'baureinigung',
+    shortDescription: 'Endreinigung nach Bauarbeiten',
+    majorCategoryId: 'raeumung_entsorgung',
+    keywords: ['Baureinigung', 'Endreinigung', 'Baustelle', 'Reinigung']
+  },
   raeumung_sonstige: {
     value: 'raeumung_sonstige',
     label: 'Sonstige Dienstleistungen',

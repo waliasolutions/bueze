@@ -6,8 +6,7 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
   const [isTransitioning, setIsTransitioning] = React.useState(false);
 
   React.useEffect(() => {
-    // Only scroll to top if there's NO hash fragment
-    // (ScrollToTop component handles hash navigation)
+    // CRITICAL: Scroll to top BEFORE fade transition for all non-hash navigations
     if (!location.hash) {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }

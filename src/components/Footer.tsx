@@ -77,21 +77,23 @@ export const Footer = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
               {categoriesWithSubs.map((category) => (
                 <div key={category.id} className="space-y-3">
-                  <Link
-                    to={`/kategorie/${category.slug}`}
-                    className="font-semibold text-surface hover:text-brand-400 transition-colors block"
-                  >
-                    {category.label}
-                  </Link>
+                <Link
+                  to={`/kategorie/${category.slug}`}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
+                  className="font-semibold text-surface hover:text-brand-400 transition-colors block"
+                >
+                  {category.label}
+                </Link>
                   <ul className="space-y-2">
                     {category.subcategories.map((sub) => (
                       <li key={sub.value}>
-                        <Link 
-                          to={`/kategorie/${category.slug}#${sub.slug}`}
-                          className="text-ink-300 hover:text-brand-400 transition-colors text-sm block"
-                        >
-                          {sub.label}
-                        </Link>
+                      <Link 
+                        to={`/kategorie/${category.slug}#${sub.slug}`}
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
+                        className="text-ink-300 hover:text-brand-400 transition-colors text-sm block"
+                      >
+                        {sub.label}
+                      </Link>
                       </li>
                     ))}
                   </ul>
@@ -109,6 +111,7 @@ export const Footer = () => {
               <React.Fragment key={link.href}>
                 <Link
                   to={link.href}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                   className="text-ink-300 hover:text-brand-400 transition-colors text-sm"
                 >
                   {link.label}
