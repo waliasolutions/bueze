@@ -87,7 +87,6 @@ const SubmitLead = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [selectedMajorCategory, setSelectedMajorCategory] = useState<string | null>(null);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -128,19 +127,16 @@ const SubmitLead = () => {
   }, []);
 
   // Auto-select category from URL parameter
+  // Handle preselected category from URL parameter
   useEffect(() => {
     if (preselectedCategory) {
-      // Validate category exists in our categories list
-      const categoryExists = categories.some(cat => cat.value === preselectedCategory);
+      // Check if it's a major category ID
+      const isMajorCategory = Object.values(majorCategories).some(
+        cat => cat.id === preselectedCategory
+      );
       
-      if (categoryExists) {
+      if (isMajorCategory) {
         form.setValue('category', preselectedCategory);
-        
-        // Find and auto-select the major category for this subcategory
-        const subcategoryInfo = subcategoryLabels[preselectedCategory];
-        if (subcategoryInfo?.majorCategoryId) {
-          setSelectedMajorCategory(subcategoryInfo.majorCategoryId);
-        }
       } else {
         toast({
           title: "Ungültige Kategorie",
@@ -569,85 +565,41 @@ const SubmitLead = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Kategorie</FormLabel>
-                          
-                          {/* Step 1: Select Major Category */}
-                          {!selectedMajorCategory && (
-                            <div className="space-y-3">
-                              <p className="text-sm text-muted-foreground">
-                                Wählen Sie zunächst den Hauptbereich aus:
-                              </p>
-                              <div className="grid grid-cols-2 gap-3">
-                                {Object.values(majorCategories).map((majorCat) => {
-                                  const Icon = majorCat.icon;
-                                  return (
-                                    <button
-                                      key={majorCat.id}
-                                      type="button"
-                                      onClick={() => setSelectedMajorCategory(majorCat.id)}
-                                      className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-border hover:border-primary hover:bg-accent transition-all text-left group"
-                                    >
-                                      <Icon className="w-8 h-8 text-primary group-hover:text-white group-hover:scale-110 transition-all" />
-                                      <span className="text-sm font-medium text-center">
-                                        {majorCat.label}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
+                          <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground">
+                              Wählen Sie die passende Kategorie für Ihr Projekt:
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                              {Object.values(majorCategories).map((majorCat) => {
+                                const Icon = majorCat.icon;
+                                const isSelected = field.value === majorCat.id;
+                                return (
+                                  <button
+                                    key={majorCat.id}
+                                    type="button"
+                                    onClick={() => field.onChange(majorCat.id)}
+                                    className={cn(
+                                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all text-left group",
+                                      isSelected 
+                                        ? "border-brand-500 bg-brand-50" 
+                                        : "border-border hover:border-primary hover:bg-accent"
+                                    )}
+                                  >
+                                    <div className={cn(
+                                      "w-12 h-12 rounded-lg flex items-center justify-center text-white transition-all",
+                                      `bg-gradient-to-br ${majorCat.color}`,
+                                      isSelected ? "scale-110" : "group-hover:scale-110"
+                                    )}>
+                                      <Icon className="w-6 h-6" />
+                                    </div>
+                                    <span className="text-sm font-medium text-center">
+                                      {majorCat.label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
                             </div>
-                          )}
-
-                          {/* Step 2: Select Subcategory */}
-                          {selectedMajorCategory && (
-                            <div className="space-y-3">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm text-muted-foreground">
-                                  Wählen Sie die spezifische Dienstleistung:
-                                </p>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedMajorCategory(null);
-                                    field.onChange('');
-                                  }}
-                                  className="text-xs"
-                                >
-                                  Bereich ändern
-                                </Button>
-                              </div>
-                              <div className="p-3 rounded-lg bg-accent/50 border border-border mb-3">
-                                <p className="text-sm font-medium flex items-center gap-2">
-                                  {React.createElement(majorCategories[selectedMajorCategory].icon, { className: "w-4 h-4" })}
-                                  {majorCategories[selectedMajorCategory].label}
-                                </p>
-                              </div>
-                              <Select 
-                                onValueChange={(value) => {
-                                  field.onChange(value);
-                                }} 
-                                value={field.value}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Wählen Sie eine Dienstleistung" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {majorCategories[selectedMajorCategory].subcategories
-                                    .map(subId => subcategoryLabels[subId])
-                                    .filter(Boolean)
-                                    .map((sub) => (
-                                      <SelectItem key={sub.value} value={sub.value}>
-                                        {sub.label}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          )}
-                          
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
