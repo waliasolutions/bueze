@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronRight, Upload, X, FileIcon } from 'lucide-react';
+import { ChevronRight, Upload, X, FileIcon, CheckCircle } from 'lucide-react';
 import { uploadMultipleFiles, deleteLeadMedia } from '@/lib/fileUpload';
 import { supabaseQuery } from '@/lib/fetchHelpers';
 import { getOrCreateRequestId, clearRequestId } from '@/lib/idempotency';
@@ -23,6 +23,7 @@ import { PostalCodeInput } from '@/components/PostalCodeInput';
 import { cn } from '@/lib/utils';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { Badge } from '@/components/ui/badge';
 
 const leadSchema = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
@@ -569,33 +570,37 @@ const SubmitLead = () => {
                             <p className="text-sm text-muted-foreground">
                               Wählen Sie die passende Kategorie für Ihr Projekt:
                             </p>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                               {Object.values(majorCategories).map((majorCat) => {
                                 const Icon = majorCat.icon;
                                 const isSelected = field.value === majorCat.id;
+                                
                                 return (
-                                  <button
+                                  <Card
                                     key={majorCat.id}
-                                    type="button"
-                                    onClick={() => field.onChange(majorCat.id)}
                                     className={cn(
-                                      "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all text-left group",
-                                      isSelected 
-                                        ? "border-brand-500 bg-brand-50" 
-                                        : "border-border hover:border-primary hover:bg-accent"
+                                      "cursor-pointer transition-all hover:shadow-lg hover-scale",
+                                      isSelected && "ring-2 ring-brand-600 bg-brand-50 shadow-lg"
                                     )}
+                                    onClick={() => field.onChange(majorCat.id)}
                                   >
-                                    <div className={cn(
-                                      "w-12 h-12 rounded-lg flex items-center justify-center text-white transition-all",
-                                      `bg-gradient-to-br ${majorCat.color}`,
-                                      isSelected ? "scale-110" : "group-hover:scale-110"
-                                    )}>
-                                      <Icon className="w-6 h-6" />
-                                    </div>
-                                    <span className="text-sm font-medium text-center">
-                                      {majorCat.label}
-                                    </span>
-                                  </button>
+                                    <CardContent className="p-6 text-center">
+                                      <div className={cn(
+                                        "w-16 h-16 rounded-full flex items-center justify-center text-white mx-auto mb-3 transition-transform",
+                                        `bg-gradient-to-br ${majorCat.color}`,
+                                        isSelected ? 'scale-110' : ''
+                                      )}>
+                                        <Icon className="w-8 h-8" />
+                                      </div>
+                                      <p className="text-sm font-semibold">{majorCat.label}</p>
+                                      {isSelected && (
+                                        <Badge className="mt-3 bg-brand-600">
+                                          <CheckCircle className="h-3 w-3 mr-1" />
+                                          Gewählt
+                                        </Badge>
+                                      )}
+                                    </CardContent>
+                                  </Card>
                                 );
                               })}
                             </div>
