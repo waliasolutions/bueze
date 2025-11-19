@@ -76,7 +76,6 @@ export const Footer = () => {
                 <div key={category.id} className="space-y-3">
                   <Link
                     to={`/kategorie/${category.slug}`}
-                    onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                     className="font-semibold text-surface hover:text-brand-400 transition-colors block"
                   >
                     {category.label}
@@ -86,7 +85,6 @@ export const Footer = () => {
                       <li key={sub.value}>
                         <Link 
                           to={`/kategorie/${category.slug}#${sub.slug}`}
-                          onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                           className="text-ink-300 hover:text-brand-400 transition-colors text-sm block"
                         >
                           {sub.label}
@@ -108,7 +106,6 @@ export const Footer = () => {
               <React.Fragment key={link.href}>
                 <Link
                   to={link.href}
-                  onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
                   className="text-ink-300 hover:text-brand-400 transition-colors text-sm"
                 >
                   {link.label}

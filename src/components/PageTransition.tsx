@@ -6,8 +6,11 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
   const [isTransitioning, setIsTransitioning] = React.useState(false);
 
   React.useEffect(() => {
-    // Scroll immediately when route changes (before fade)
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    // Only scroll to top if there's NO hash fragment
+    // (ScrollToTop component handles hash navigation)
+    if (!location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
     
     // Then trigger fade transition
     setIsTransitioning(true);
@@ -15,7 +18,7 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
       setIsTransitioning(false);
     }, 150);
     return () => clearTimeout(timer);
-  }, [location.pathname]);
+  }, [location.pathname, location.hash]);
 
   return (
     <div
