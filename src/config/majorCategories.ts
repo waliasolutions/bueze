@@ -114,7 +114,7 @@ export const majorCategories: Record<string, MajorCategory> = {
   },
   heizung_klima_solar: {
     id: 'heizung_klima_solar',
-    slug: 'heizung-klima-solar',
+    slug: 'heizung-klima',
     label: 'Heizung, Klima & Solar',
     icon: Flame,
     description: 'Heizungen, Klimaanlagen, Solaranlagen und Energielösungen',
