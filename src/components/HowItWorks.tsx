@@ -1,8 +1,6 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Search, UserCheck, MessageSquare, ArrowRight } from 'lucide-react';
+import { Search, UserCheck, MessageSquare } from 'lucide-react';
 
 const steps = [
   {
@@ -27,10 +25,8 @@ const steps = [
 ];
 
 export const HowItWorks = () => {
-  const navigate = useNavigate();
-
   return (
-    <section id="how-it-works" className="py-20 bg-white">
+    <section id="how-it-works" className="py-20 bg-pastel-blue-50">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
@@ -78,18 +74,6 @@ export const HowItWorks = () => {
               </Card>
             );
           })}
-        </div>
-
-        {/* CTA Button */}
-        <div className="text-center mt-12">
-          <Button
-            size="lg"
-            onClick={() => navigate('/submit-lead')}
-            className="px-8 py-6 text-lg bg-brand-600 hover:bg-brand-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Jetzt Anfrage erstellen
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
         </div>
       </div>
     </section>
