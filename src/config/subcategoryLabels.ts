@@ -13,7 +13,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_hausinstallationen',
     label: 'Hausinstallationen (Neu-/Umbau)',
     slug: 'elektro-hausinstallationen',
-    shortDescription: 'Leitungen, Steckdosen, Schalter, komplette Elektroinstallationen und Bauprovisorien',
+    shortDescription: 'Steckdosen, Schalter, Leitungen',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Elektroinstallation', 'Steckdosen', 'Schalter', 'Leitungen', 'Kabelzug', 'Baustrom', 'Bauprovisorium']
   },
@@ -21,7 +21,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_unterverteilung',
     label: 'Sicherungskasten & Unterverteilung',
     slug: 'elektro-unterverteilung',
-    shortDescription: 'Verteiler ersetzen/erweitern, FI/RCD und LS nachrüsten',
+    shortDescription: 'Sicherungskasten erweitern',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Sicherungskasten', 'Verteiler', 'FI', 'RCD', 'LS', 'Tableau']
   },
@@ -29,7 +29,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_stoerung_notfall',
     label: 'Fehlersuche & Störungsbehebung',
     slug: 'elektro-stoerung-notfall',
-    shortDescription: 'Stromausfall, FI-Auslösung, Kurzschluss - 24h Notfall',
+    shortDescription: 'Störung beheben, 24h Notfall',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Notfall', 'Störung', 'Stromausfall', 'Kurzschluss', '24h']
   },
@@ -37,7 +37,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_beleuchtung',
     label: 'Beleuchtung & Leuchtenmontage',
     slug: 'elektro-beleuchtung',
-    shortDescription: 'LED-Umrüstung, Spots, Decken-/Pendelleuchten, Bewegungsmelder',
+    shortDescription: 'LED, Spots, Leuchten',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Beleuchtung', 'LED', 'Spots', 'Leuchten', 'Bewegungsmelder']
   },
@@ -45,7 +45,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_geraete_anschliessen',
     label: 'Geräte anschliessen (Küche/Haushalt)',
     slug: 'elektro-geraete-anschliessen',
-    shortDescription: 'Kochfeld, Backofen, Dampfabzug, Geschirrspüler, Waschmaschine',
+    shortDescription: 'Küchengeräte anschliessen',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Kochfeld', 'Backofen', 'Geschirrspüler', 'Waschmaschine', 'Boiler']
   },
@@ -53,7 +53,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_netzwerk_multimedia',
     label: 'Netzwerk & Multimedia',
     slug: 'elektro-netzwerk-multimedia',
-    shortDescription: 'LAN, Patchfeld, WLAN, TV/Multimedia, Telefon',
+    shortDescription: 'LAN, WLAN, TV',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Netzwerk', 'LAN', 'WLAN', 'TV', 'Multimedia', 'Telefon']
   },
@@ -61,7 +61,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_sprechanlage',
     label: 'Sprechanlage & Türkommunikation',
     slug: 'elektro-sprechanlage',
-    shortDescription: 'Audio/Video-Gegensprechanlage, Klingel, Zutritt',
+    shortDescription: 'Gegensprechanlage, Klingel',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Sprechanlage', 'Gegensprechanlage', 'Klingel', 'Videosprechanlage']
   },
@@ -69,7 +69,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_smart_home',
     label: 'Smart Home & Automation',
     slug: 'elektro-smart-home',
-    shortDescription: 'KNX, Loxone, Shelly, Hue, Storensteuerung, Szenen',
+    shortDescription: 'KNX, Loxone, Automation',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Smart Home', 'KNX', 'Loxone', 'Automation', 'Hausautomation']
   },
@@ -77,7 +77,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_wallbox',
     label: 'E-Mobilität (Wallbox)',
     slug: 'elektro-wallbox',
-    shortDescription: 'Ladestation privat, Lastmanagement, Anmeldung Netzbetreiber',
+    shortDescription: 'Ladestation installieren',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Wallbox', 'Ladestation', 'E-Auto', 'Elektroauto', 'Ladestation']
   },
@@ -85,7 +85,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_erdung_blitzschutz',
     label: 'Blitzschutz, Erdung & Potentialausgleich',
     slug: 'elektro-erdung-blitzschutz',
-    shortDescription: 'Erdung, Überspannungsschutz (SPD), Hauptpotentialausgleich',
+    shortDescription: 'Erdung, Überspannungsschutz',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Erdung', 'Blitzschutz', 'Überspannungsschutz', 'SPD']
   },
@@ -93,7 +93,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_sicherheitsnachweis',
     label: 'Sicherheitsnachweis & Kontrollen (NIV)',
     slug: 'elektro-sicherheitsnachweis',
-    shortDescription: 'SiNa, Periodische Kontrolle, Abnahmemessungen',
+    shortDescription: 'NIV, Sicherheitsprüfung',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['SiNa', 'Sicherheitsnachweis', 'NIV', 'Kontrolle', 'Abnahme']
   },
@@ -101,7 +101,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_zaehler_anmeldung',
     label: 'Zähler/Smart Meter & Anmeldung EW',
     slug: 'elektro-zaehler-anmeldung',
-    shortDescription: 'Zählerwechsel, Netzbetreiber-Anmeldung',
+    shortDescription: 'Zählerwechsel, Anmeldung',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Zähler', 'Smart Meter', 'Netzbetreiber', 'Anmeldung']
   },
@@ -109,7 +109,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_notstrom',
     label: 'Notstrom & Speicher (Haushalt)',
     slug: 'elektro-notstrom',
-    shortDescription: 'USV, Netz-/Notstromumschaltung',
+    shortDescription: 'USV, Notstromumschaltung',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Notstrom', 'USV', 'Speicher', 'Batteriespeicher']
   },
@@ -117,7 +117,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'elektro_kleinauftraege',
     label: 'Kleinaufträge (bis 2h)',
     slug: 'elektro-kleinauftraege',
-    shortDescription: 'Kleine Jobs: Steckdose, Leuchte, Schalter',
+    shortDescription: 'Steckdose, Leuchte, Schalter',
     majorCategoryId: 'elektroinstallationen',
     keywords: ['Kleinauftrag', 'kleine Reparatur', 'schnell']
   },
@@ -137,7 +137,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'metallbau',
     label: 'Metallbau',
     slug: 'metallbau',
-    shortDescription: 'Metallkonstruktionen, Geländer, Treppen',
+    shortDescription: 'Geländer, Treppen, Konstruktion',
     majorCategoryId: 'bau_renovation',
     keywords: ['Metall', 'Stahl', 'Geländer', 'Konstruktion']
   },
@@ -145,7 +145,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'holzbau',
     label: 'Holzbau',
     slug: 'holzbau',
-    shortDescription: 'Holzkonstruktionen, Dachstühle, Carports',
+    shortDescription: 'Dachstühle, Carports',
     majorCategoryId: 'bau_renovation',
     keywords: ['Holz', 'Dachstuhl', 'Carport', 'Holzkonstruktion']
   },
@@ -153,7 +153,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'mauerarbeit',
     label: 'Mauerarbeit',
     slug: 'mauerarbeit',
-    shortDescription: 'Mauern, Verputzen, Steinarbeiten',
+    shortDescription: 'Mauern, Verputzen',
     majorCategoryId: 'bau_renovation',
     keywords: ['Mauern', 'Maurer', 'Putz', 'Stein']
   },
@@ -161,7 +161,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'betonarbeiten',
     label: 'Betonarbeiten',
     slug: 'betonarbeiten',
-    shortDescription: 'Betonieren, Fundamente, Platten',
+    shortDescription: 'Fundamente, Platten',
     majorCategoryId: 'bau_renovation',
     keywords: ['Beton', 'Fundament', 'Bodenplatte']
   },
@@ -169,7 +169,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'fundament',
     label: 'Fundament',
     slug: 'fundament',
-    shortDescription: 'Fundamente erstellen und sanieren',
+    shortDescription: 'Fundamente erstellen',
     majorCategoryId: 'bau_renovation',
     keywords: ['Fundament', 'Grundierung', 'Basis']
   },
@@ -177,7 +177,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'kernbohrungen',
     label: 'Kernbohrungen',
     slug: 'kernbohrungen',
-    shortDescription: 'Kernbohrungen, Wanddurchbrüche',
+    shortDescription: 'Wanddurchbrüche',
     majorCategoryId: 'bau_renovation',
     keywords: ['Kernbohrung', 'Durchbruch', 'Bohren']
   },
@@ -185,7 +185,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'abbruch_durchbruch',
     label: 'Abbruch und Durchbruch',
     slug: 'abbruch-durchbruch',
-    shortDescription: 'Abbrucharbeiten, Durchbrüche, Demontage',
+    shortDescription: 'Abbruch, Demontage',
     majorCategoryId: 'bau_renovation',
     keywords: ['Abbruch', 'Durchbruch', 'Demontage', 'Abriss']
   },
@@ -193,7 +193,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'renovierung_sonstige',
     label: 'Sonstige Renovationarbeiten',
     slug: 'renovierung-sonstige',
-    shortDescription: 'Diverse Renovations- und Umbauarbeiten',
+    shortDescription: 'Renovations- und Umbauarbeiten',
     majorCategoryId: 'bau_renovation',
     keywords: ['Renovation', 'Umbau', 'Sanierung']
   },
@@ -201,7 +201,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'garage_carport',
     label: 'Garage / Garagentor & Carport',
     slug: 'garage-carport',
-    shortDescription: 'Garagen, Garagentore, Carports',
+    shortDescription: 'Garagen, Garagentore',
     majorCategoryId: 'bau_renovation',
     keywords: ['Garage', 'Garagentor', 'Carport']
   },
@@ -219,7 +219,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'parkett_laminat',
     label: 'Parkett und Laminat',
     slug: 'parkett-laminat',
-    shortDescription: 'Parkett und Laminat verlegen und renovieren',
+    shortDescription: 'Parkett, Laminat verlegen',
     majorCategoryId: 'bodenbelaege',
     keywords: ['Parkett', 'Laminat', 'Holzboden']
   },
@@ -227,7 +227,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'teppich_pvc_linoleum',
     label: 'Teppich, PVC und Linoleum',
     slug: 'teppich-pvc-linoleum',
-    shortDescription: 'Textile und elastische Bodenbeläge',
+    shortDescription: 'Teppich, PVC, Linoleum',
     majorCategoryId: 'bodenbelaege',
     keywords: ['Teppich', 'PVC', 'Linoleum', 'Vinyl']
   },
@@ -235,7 +235,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'bodenfliese',
     label: 'Bodenfliesen',
     slug: 'bodenfliesen',
-    shortDescription: 'Fliesen verlegen und sanieren',
+    shortDescription: 'Fliesen verlegen',
     majorCategoryId: 'bodenbelaege',
     keywords: ['Fliesen', 'Platten', 'Keramik']
   },
@@ -243,7 +243,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'bodenbelag_sonstige',
     label: 'Sonstige Bodenbelagsarbeiten',
     slug: 'bodenbelag-sonstige',
-    shortDescription: 'Weitere Bodenbeläge und Spezialarbeiten',
+    shortDescription: 'Weitere Bodenbeläge',
     majorCategoryId: 'bodenbelaege',
     keywords: ['Boden', 'Belag', 'Fussboden']
   },
@@ -253,7 +253,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'fussbodenheizung',
     label: 'Fussbodenheizung',
     slug: 'fussbodenheizung',
-    shortDescription: 'Fussbodenheizung installieren und warten',
+    shortDescription: 'Fussbodenheizung installieren',
     majorCategoryId: 'heizung_klima_solar',
     keywords: ['Fussbodenheizung', 'Bodenheizung']
   },
@@ -261,7 +261,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'boiler',
     label: 'Boiler',
     slug: 'boiler',
-    shortDescription: 'Warmwasserboiler installieren und warten',
+    shortDescription: 'Warmwasserboiler',
     majorCategoryId: 'heizung_klima_solar',
     keywords: ['Boiler', 'Warmwasser', 'Wassererwärmer']
   },
@@ -269,7 +269,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'klimaanlage_lueftung',
     label: 'Klimaanlage & Lüftungssysteme',
     slug: 'klimaanlage-lueftung',
-    shortDescription: 'Klimaanlagen und Lüftungen',
+    shortDescription: 'Klima, Lüftung',
     majorCategoryId: 'heizung_klima_solar',
     keywords: ['Klima', 'Lüftung', 'Klimaanlage']
   },
@@ -277,7 +277,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'waermepumpen',
     label: 'Wärmepumpen',
     slug: 'waermepumpen',
-    shortDescription: 'Wärmepumpen installieren und warten',
+    shortDescription: 'Wärmepumpen',
     majorCategoryId: 'heizung_klima_solar',
     keywords: ['Wärmepumpe', 'Heizung']
   },
@@ -285,7 +285,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'cheminee_kamin_ofen',
     label: 'Cheminée, Kamin und Ofen',
     slug: 'cheminee-kamin-ofen',
-    shortDescription: 'Cheminées, Kamine und Öfen',
+    shortDescription: 'Cheminée, Kamin, Ofen',
     majorCategoryId: 'heizung_klima_solar',
     keywords: ['Cheminée', 'Kamin', 'Ofen', 'Cheminee']
   },
@@ -293,7 +293,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'solarthermie',
     label: 'Solarthermie (Warmwasser)',
     slug: 'solarthermie',
-    shortDescription: 'Solarthermie-Anlagen für Warmwasser und Heizungsunterstützung',
+    shortDescription: 'Solarthermie für Warmwasser',
     majorCategoryId: 'heizung_klima_solar',
     keywords: ['Solarthermie', 'Solarkollektor', 'Warmwasser', 'Sonnenenergie']
   },
@@ -301,7 +301,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'photovoltaik',
     label: 'Solar, Photovoltaik & Batteriespeicher',
     slug: 'photovoltaik',
-    shortDescription: 'PV-Anlagen, Solarthermie und Stromspeicher für nachhaltige Energiegewinnung',
+    shortDescription: 'PV-Anlagen, Stromspeicher',
     majorCategoryId: 'heizung_klima_solar',
     keywords: ['Photovoltaik', 'PV', 'Solar', 'Batteriespeicher', 'Solaranlage', 'Stromspeicher']
   },
@@ -319,7 +319,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'badewanne_dusche',
     label: 'Badewanne und Dusche',
     slug: 'badewanne-dusche',
-    shortDescription: 'Badewannen und Duschen installieren',
+    shortDescription: 'Badewannen, Duschen',
     majorCategoryId: 'sanitaer',
     keywords: ['Badewanne', 'Dusche', 'Sanitär']
   },
@@ -327,7 +327,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'klempnerarbeiten',
     label: 'Klempnerarbeiten',
     slug: 'klempnerarbeiten',
-    shortDescription: 'Sanitärreparaturen und Installationen',
+    shortDescription: 'Sanitärreparaturen',
     majorCategoryId: 'sanitaer',
     keywords: ['Klempner', 'Sanitär', 'Reparatur']
   },
@@ -345,7 +345,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'kuechenplanung',
     label: 'Küchenplanung',
     slug: 'kuechenplanung',
-    shortDescription: 'Professionelle Küchenplanung',
+    shortDescription: 'Küchenplanung',
     majorCategoryId: 'kueche',
     keywords: ['Küche', 'Planung', 'Design']
   },
@@ -353,7 +353,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'kuechengeraete',
     label: 'Küchengeräte',
     slug: 'kuechengeraete',
-    shortDescription: 'Installation von Küchengeräten',
+    shortDescription: 'Küchengeräte',
     majorCategoryId: 'kueche',
     keywords: ['Küchengeräte', 'Einbaugeräte']
   },
@@ -361,7 +361,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'arbeitsplatten',
     label: 'Arbeitsplatten',
     slug: 'arbeitsplatten',
-    shortDescription: 'Küchenarbeitsplatten',
+    shortDescription: 'Arbeitsplatten',
     majorCategoryId: 'kueche',
     keywords: ['Arbeitsplatte', 'Küche']
   },
@@ -387,7 +387,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'moebelrestauration',
     label: 'Möbelrestauration',
     slug: 'moebelrestauration',
-    shortDescription: 'Restauration antiker Möbel',
+    shortDescription: 'Möbelrestaurierung',
     majorCategoryId: 'innenausbau_schreiner',
     keywords: ['Restauration', 'Antik', 'Möbel']
   },
@@ -395,7 +395,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'holzarbeiten_innen',
     label: 'Holzarbeiten (Innen)',
     slug: 'holzarbeiten-innen',
-    shortDescription: 'Innenausbau mit Holz',
+    shortDescription: 'Innenausbau Holz',
     majorCategoryId: 'innenausbau_schreiner',
     keywords: ['Holz', 'Innenausbau', 'Holzarbeiten']
   },
@@ -403,7 +403,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'metallarbeiten_innen',
     label: 'Metallarbeiten (Innen)',
     slug: 'metallarbeiten-innen',
-    shortDescription: 'Innenausbau mit Metall',
+    shortDescription: 'Innenausbau Metall',
     majorCategoryId: 'innenausbau_schreiner',
     keywords: ['Metall', 'Innenausbau']
   },
@@ -411,7 +411,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'treppen',
     label: 'Treppen',
     slug: 'treppen',
-    shortDescription: 'Treppen bauen und renovieren',
+    shortDescription: 'Treppen',
     majorCategoryId: 'innenausbau_schreiner',
     keywords: ['Treppe', 'Stiege', 'Holztreppe']
   },
@@ -429,7 +429,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'aufloesung_entsorgung',
     label: 'Auflösung und Entsorgung',
     slug: 'aufloesung-entsorgung',
-    shortDescription: 'Wohnungsauflösungen und Entsorgung',
+    shortDescription: 'Auflösungen, Entsorgung',
     majorCategoryId: 'raeumung_entsorgung',
     keywords: ['Entsorgung', 'Auflösung', 'Räumung']
   },
@@ -437,7 +437,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'individuelle_anfrage',
     label: 'Individuelle Anfrage',
     slug: 'individuelle-anfrage',
-    shortDescription: 'Spezielle Anfragen und Projekte',
+    shortDescription: 'Spezielle Projekte',
     majorCategoryId: 'raeumung_entsorgung',
     keywords: ['Individuell', 'Spezial', 'Anfrage']
   },
@@ -463,7 +463,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'bodenleger',
     label: 'Bodenleger',
     slug: 'bodenleger',
-    shortDescription: 'Bodenbeläge verlegen',
+    shortDescription: 'Bodenbeläge',
     majorCategoryId: 'bodenbelaege',
     keywords: ['Boden']
   },
@@ -471,7 +471,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'plattenleger',
     label: 'Plattenleger',
     slug: 'plattenleger',
-    shortDescription: 'Fliesen und Platten',
+    shortDescription: 'Fliesen, Platten',
     majorCategoryId: 'bodenbelaege',
     keywords: ['Platten']
   },
@@ -535,7 +535,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'zaun_torbau',
     label: 'Zaun- und Torbau',
     slug: 'zaun-torbau',
-    shortDescription: 'Zäune und Tore',
+    shortDescription: 'Zäune, Tore',
     majorCategoryId: 'bau_renovation',
     keywords: ['Zaun', 'Tor']
   },
@@ -543,7 +543,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'fenster_tueren',
     label: 'Fenster & Türen',
     slug: 'fenster-tueren',
-    shortDescription: 'Fenster und Türen',
+    shortDescription: 'Fenster, Türen',
     majorCategoryId: 'innenausbau_schreiner',
     keywords: ['Fenster', 'Türen']
   },
@@ -551,7 +551,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'kuechenbau',
     label: 'Küchenbau',
     slug: 'kuechenbau',
-    shortDescription: 'Küchen bauen',
+    shortDescription: 'Küchen',
     majorCategoryId: 'kueche',
     keywords: ['Küche']
   },
@@ -559,7 +559,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'badumbau',
     label: 'Badumbau',
     slug: 'badumbau',
-    shortDescription: 'Bäder umbauen',
+    shortDescription: 'Bäder',
     majorCategoryId: 'sanitaer',
     keywords: ['Bad']
   },
@@ -575,7 +575,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'umzug',
     label: 'Umzug',
     slug: 'umzug',
-    shortDescription: 'Umzugsservice',
+    shortDescription: 'Umzug',
     majorCategoryId: 'raeumung_entsorgung',
     keywords: ['Umzug']
   },
@@ -583,7 +583,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     value: 'reinigung',
     label: 'Reinigung',
     slug: 'reinigung',
-    shortDescription: 'Reinigungsservice',
+    shortDescription: 'Reinigung',
     majorCategoryId: 'raeumung_entsorgung',
     keywords: ['Reinigung']
   },
