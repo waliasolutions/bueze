@@ -153,7 +153,7 @@ const MajorCategoryLanding = () => {
         </div>
       </section>
 
-      {/* Subcategories as Rich Content Sections */}
+      {/* Subcategories as Clickable Cards */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4 max-w-6xl">
           <h2 className="text-3xl font-bold text-center mb-4 text-ink-900">
@@ -163,76 +163,32 @@ const MajorCategoryLanding = () => {
             Finden Sie den passenden Handwerker für Ihr Projekt – kostenlos und unverbindlich
           </p>
           
-          <div className="space-y-16">
-            {subcategories.map((subcat, index) => {
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subcategories.map((subcat) => {
               const content = categoryContent[subcat.slug];
               const SubIcon = Icon;
               
               return (
-                <div 
+                <Card 
                   key={subcat.value} 
                   id={subcat.value}
-                  className="scroll-mt-24"
+                  className="border-2 border-border overflow-hidden hover:shadow-xl transition-all cursor-pointer group scroll-mt-24"
+                  onClick={() => navigate(content ? `/submit-lead?category=${content.formCategory}` : '/submit-lead')}
                 >
-                  <Card className="border-2 border-border overflow-hidden hover:shadow-xl transition-shadow">
-                    <CardHeader className="bg-gradient-to-r from-pastel-blue-50 to-surface pb-6">
-                      <div className="flex items-start gap-4">
-                        <div className={`w-14 h-14 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0 shadow-md`}>
-                          <SubIcon className="w-7 h-7" />
-                        </div>
-                        <div className="flex-1">
-                          <CardTitle className="text-2xl text-ink-900 mb-2">{subcat.label}</CardTitle>
-                          <CardDescription className="text-base text-ink-700">
-                            {subcat.shortDescription || content?.description || ''}
-                          </CardDescription>
-                        </div>
+                  <CardHeader className="bg-gradient-to-r from-pastel-blue-50 to-surface">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0 shadow-md group-hover:scale-110 transition-transform`}>
+                        <SubIcon className="w-6 h-6" />
                       </div>
-                    </CardHeader>
-                    
-                    {content && content.services && content.services.length > 0 && (
-                      <CardContent className="pt-6">
-                        <div className="grid md:grid-cols-3 gap-4 mb-6">
-                          {content.services.slice(0, 3).map((service, idx) => {
-                            const ServiceIcon = service.icon;
-                            return (
-                              <div key={idx} className="p-4 rounded-lg bg-pastel-grey-50 border border-border">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <ServiceIcon className="w-5 h-5 text-brand-600" />
-                                  <h4 className="font-semibold text-ink-900">{service.title}</h4>
-                                </div>
-                                <p className="text-sm text-ink-700">{service.description}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        
-                        <div className="flex justify-center">
-                          <Button
-                            onClick={() => navigate(`/submit-lead?category=${content.formCategory}`)}
-                            className="h-12 px-8"
-                          >
-                            Offerte einholen für {subcat.label}
-                            <ArrowRight className="ml-2 w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    )}
-                    
-                    {(!content || !content.services || content.services.length === 0) && (
-                      <CardContent className="pt-6">
-                        <div className="flex justify-center">
-                          <Button
-                            onClick={() => navigate(`/submit-lead`)}
-                            className="h-12 px-8"
-                          >
-                            Offerte einholen für {subcat.label}
-                            <ArrowRight className="ml-2 w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    )}
-                  </Card>
-                </div>
+                      <div className="flex-1">
+                        <CardTitle className="text-lg text-ink-900 group-hover:text-brand-600 transition-colors">{subcat.label}</CardTitle>
+                        <CardDescription className="text-sm text-ink-700 mt-1">
+                          {subcat.shortDescription || content?.description || 'Kostenlos Offerten einholen'}
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                </Card>
               );
             })}
           </div>
@@ -241,25 +197,6 @@ const MajorCategoryLanding = () => {
       
       {/* How It Works Section */}
       <HowItWorks />
-      
-      {/* Benefits Section */}
-      <section className="py-16 bg-pastel-grey-50">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <h2 className="text-3xl font-bold text-center mb-12 text-ink-900">
-            Ihre Vorteile mit Büeze.ch
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {majorCategory.benefits.map((benefit, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-brand-600 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <CheckCircle className="w-4 h-4 text-white" />
-                </div>
-                <p className="text-ink-700 font-medium">{benefit}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
       
       {/* FAQ Section */}
       <section className="py-20 bg-white">
@@ -286,24 +223,25 @@ const MajorCategoryLanding = () => {
         </div>
       </section>
       
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-brand-600 to-brand-700 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Bereit für Ihr Projekt?
+      {/* Final CTA Section */}
+      <section className="py-20 bg-gradient-to-br from-brand-50 to-pastel-blue-100">
+        <div className="container mx-auto px-4 text-center space-y-6 max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-ink-900">
+            Vergleichen Sie Offerten und sparen Sie Zeit
           </h2>
-          <p className="text-xl mb-8 text-white/90">
-            Erstellen Sie jetzt Ihre Anfrage und erhalten Sie kostenlose Offerten
+          <p className="text-xl text-ink-700">
+            Beschreiben Sie Ihr Projekt in 3 Minuten. Erhalten Sie bis zu 5 passende Offerten von geprüften Fachbetrieben aus Ihrer Region.
           </p>
-          <Button 
-            size="lg"
-            variant="secondary"
-            onClick={() => navigate('/submit-lead')}
-            className="h-14 px-10 text-lg"
-          >
-            Jetzt Auftrag erstellen
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
+          <div className="pt-4">
+            <Button
+              onClick={() => navigate('/submit-lead')}
+              size="lg"
+              className="h-14 px-10 text-lg rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
+            >
+              Kostenlose Anfrage erstellen
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </section>
       
@@ -452,6 +390,170 @@ const MajorCategoryLanding = () => {
                   <li>Fixpreisofferten geben Kostensicherheit</li>
                   <li>Lassen Sie Zwischenabrechnungen von einem Fachmann prüfen</li>
                   <li>Dokumentieren Sie den Baufortschritt mit Fotos</li>
+                </ul>
+              </>
+            )}
+            
+            {majorCategorySlug === 'bodenbelaege' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Bodenbeläge: Welcher Boden passt zu welchem Raum?
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Der richtige Bodenbelag ist mehr als eine Frage des Geschmacks. Im Eingang brauchen Sie etwas Robustes, das Schmutz verträgt. Im Wohnbereich zählt Gemütlichkeit. In Feuchträumen wie dem Bad muss der Boden wasserfest sein. Die Wahl beeinflusst nicht nur das Aussehen, sondern auch die Langlebigkeit und den Pflegeaufwand.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Parkett, Laminat oder Vinyl?
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Echtholzparkett sieht edel aus und lässt sich mehrmals abschleifen – hält also Jahrzehnte. Dafür ist es teurer und empfindlicher gegenüber Feuchtigkeit. Laminat ist günstiger, sieht modern auch gut aus, lässt sich aber nicht renovieren. Vinylböden sind wasserfest, fusswarm und pflegeleicht – ideal für Küchen und Bäder.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Ein guter Bodenleger berät Sie ehrlich: Wo lohnt sich die Investition in Echtholz, wo reicht eine günstigere Lösung? Wichtig ist auch der Unterbau: Eine gute Trittschalldämmung ist besonders in Mietwohnungen Pflicht und verhindert Ärger mit den Nachbarn.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+                
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Lassen Sie das Material vor dem Verlegen 48 Stunden im Raum akklimatisieren</li>
+                  <li>In Mietwohnungen: Prüfen Sie die Anforderungen an die Trittschalldämmung</li>
+                  <li>Bei Fussbodenheizung: Nicht jedes Material ist geeignet</li>
+                  <li>Fliesen in Feuchträumen: Achten Sie auf rutschfeste Oberflächen</li>
+                </ul>
+              </>
+            )}
+            
+            {majorCategorySlug === 'kueche' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Küche: Von der Planung bis zur Montage
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Eine neue Küche ist eine langfristige Investition. Die Planung beginnt mit präzisen Massaufnahmen – jeder Zentimeter zählt. Wo verlaufen Wasser- und Stromleitungen? Wo sind tragende Wände? Moderne Küchenbauer erstellen digitale 3D-Pläne, damit Sie sich Ihre neue Küche vorab vorstellen können.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Koordination zwischen Gewerken
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Nach der Planung kommt die Bestellung – und hier braucht es Geduld. Hochwertige Küchen haben oft Lieferzeiten von 8-12 Wochen. In dieser Zeit können Elektriker und Sanitär ihre Vorarbeiten erledigen: Steckdosen versetzen, Anschlüsse vorbereiten, eventuell Wände neu verputzen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Die Montage selbst dauert meist nur 1-2 Tage. Danach kommen Elektriker und Sanitär nochmals für die Endmontage. Ein erfahrener Küchenbauer koordiniert diese Termine und stellt sicher, dass alle Handwerker wissen, wann sie gebraucht werden.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Wo investieren, wo sparen?
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Investieren Sie in gute Scharniere und Schubladenauszüge – das sind die Teile, die Sie täglich nutzen. Bei den Fronten ist der Preis oft eine Geschmacksfrage. Grifflose Küchen sehen modern aus, kosten aber mehr. Geräte können Sie auch nachträglich upgraden – die Korpusse bleiben meist 20 Jahre und länger.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+                
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Planen Sie genug Arbeitsfläche zwischen Herd und Spüle ein</li>
+                  <li>Steckdosen über der Arbeitsplatte sind praktischer als versteckte Lösungen</li>
+                  <li>LED-Beleuchtung unter Hängeschränken kostet wenig, bringt viel</li>
+                  <li>Schubladen sind praktischer als Unterschränke mit Türen</li>
+                </ul>
+              </>
+            )}
+            
+            {majorCategorySlug === 'innenausbau-schreiner' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Innenausbau & Schreinerarbeiten: Massarbeit für Ihr Zuhause
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Standardmöbel passen selten perfekt. Schräge Wände, Nischen, ungewöhnliche Raumhöhen – oft braucht es Massanfertigungen, um den Raum optimal zu nutzen. Ein guter Schreiner denkt mit: Wo braucht es Stauraum? Wie lassen sich Kabel verstecken? Welches Holz passt zum Rest der Einrichtung?
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Massanfertigungen: Vorlaufzeit einplanen
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Hochwertige Schreinerarbeiten brauchen Zeit. Vom Erstgespräch bis zur Montage vergehen oft 6-10 Wochen – bei komplexen Projekten auch länger. Die Planung ist entscheidend: Präzise Masse, durchdachte Details, Materialauswahl. Wer hier sorgfältig arbeitet, vermeidet teure Nachbesserungen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Bei Einbaumöbeln spielen auch andere Gewerke eine Rolle: Braucht es zusätzliche Steckdosen? Beleuchtung? Müssen Wände vorbereitet werden? Klären Sie das frühzeitig, damit bei der Montage keine Überraschungen auftauchen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Holzarten und Oberflächen
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Massivholz ist robust und lässt sich renovieren, arbeitet aber – verzieht sich also leicht bei wechselnder Luftfeuchtigkeit. Furnierte Platten sind formstabiler und günstiger, sehen bei guter Verarbeitung aber fast gleich aus. Lackierte Oberflächen sind pflegeleicht, geöltes Holz fühlt sich natürlicher an, braucht aber regelmässige Pflege.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+                
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Fragen Sie nach Referenzprojekten – gute Schreiner zeigen gerne ihre Arbeit</li>
+                  <li>Klären Sie, ob Lieferung und Montage im Preis enthalten sind</li>
+                  <li>Bei grossen Möbeln: Passt es durch Türen und Treppenhaus?</li>
+                  <li>Lassen Sie sich Holzmuster zeigen – Farben wirken im Raum anders als im Katalog</li>
+                </ul>
+              </>
+            )}
+            
+            {majorCategorySlug === 'raeumung-entsorgung' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Räumung & Entsorgung: Professionelle Hilfe bei grossen Aufgaben
+                </h2>
+                
+                <p className="text-lg leading-relaxed">
+                  Wohnungsräumungen sind oft emotional belastend – nach einem Todesfall, vor einem Umzug, bei einer Messie-Wohnung. Professionelle Räumungsfirmen übernehmen nicht nur die körperliche Arbeit, sondern auch die fachgerechte Entsorgung und arbeiten diskret. Sie wissen, was in den Kehricht darf, was recycelt werden muss und was noch Wert hat.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Kosten: Wovon hängen sie ab?
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Der Preis richtet sich nach der Menge, der Zugänglichkeit und der Art des Materials. Eine 3-Zimmer-Wohnung im Erdgeschoss ist günstiger als dieselbe Wohnung im 4. Stock ohne Lift. Sperrmüll und Sondermüll (Farben, Chemikalien, Elektroschrott) kosten extra, weil sie speziell entsorgt werden müssen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Viele unterschätzen die Entsorgungsgebühren. In der Schweiz ist die Abfallentsorgung teuer – besonders bei grossen Mengen. Seriöse Firmen rechnen transparent ab und geben Ihnen vorab eine Schätzung. Bei Haushaltsauflösungen können wertvolle Gegenstände (Antiquitäten, funktionierende Möbel) die Kosten teilweise ausgleichen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Fristen einhalten
+                </h3>
+                
+                <p className="text-lg leading-relaxed">
+                  Bei Wohnungswechseln zählt jeder Tag. Steht die Abgabe der Wohnung bevor, müssen Sie terminlich sicher planen. Professionelle Räumungsfirmen schaffen eine durchschnittliche Wohnung in 1-2 Tagen – inklusive Endreinigung. Wichtig: Buchen Sie frühzeitig, besonders Ende Monat und am Quartalsende sind die Firmen oft ausgelastet.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+                
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Sortieren Sie vorher aus, was Sie behalten wollen – spart Kosten</li>
+                  <li>Fragen Sie nach Pauschalpreisen statt Stundenansätzen</li>
+                  <li>Klären Sie, ob Endreinigung im Preis enthalten ist</li>
+                  <li>Bei Erbschaften: Bewahren Sie wichtige Dokumente separat auf</li>
                 </ul>
               </>
             )}

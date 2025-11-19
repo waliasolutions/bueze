@@ -94,7 +94,6 @@ const CategoryLanding = () => {
       {/* Service Types Section */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4 max-w-6xl">
-          {/* Section heading */}
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
               Diese Dienstleistungen können Sie beauftragen
@@ -104,23 +103,23 @@ const CategoryLanding = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {content.services.map((service, idx) => {
               const ServiceIcon = service.icon;
               return (
-                <Card key={idx} className="border-border hover:shadow-lg transition-all duration-300">
-                  <CardHeader>
-                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white mb-4 shadow-md">
-                      <ServiceIcon className="w-7 h-7" />
+                <div key={idx} className="p-6 rounded-lg border-2 border-border hover:border-brand-400 hover:shadow-lg transition-all bg-white">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white flex-shrink-0 shadow-md">
+                      <ServiceIcon className="w-6 h-6" />
                     </div>
-                    <CardTitle className="text-xl text-ink-900">{service.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-ink-700 leading-relaxed">
-                      {service.description}
-                    </CardDescription>
-                  </CardContent>
-                </Card>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-ink-900 mb-2">{service.title}</h3>
+                      <p className="text-sm text-ink-700 leading-relaxed">
+                        {service.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               );
             })}
           </div>
