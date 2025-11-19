@@ -29,10 +29,14 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: Construction,
     description: 'Hochbau, Umbau, Abbruch und umfassende Renovationsarbeiten',
     subcategories: [
-      'metallbau', 'holzbau', 'mauerarbeit', 'betonarbeiten', 
-      'fundament', 'kernbohrungen', 'abbruch_durchbruch', 
-      'renovierung_umbau', 'betonsanierung_feuchtigkeit', 'garage_carport',
-      'maurer', 'zimmermann', 'dachdecker', 'fassadenbauer'
+      'bau_hochbau_rohbau',
+      'bau_holzbau_zimmerei',
+      'metallbau',
+      'bau_dacharbeiten',
+      'bau_fassadenarbeiten',
+      'bau_abbruch_durchbrueche',
+      'bau_renovierung_umbau',
+      'bau_sonstige'
     ],
     color: 'from-amber-500 to-orange-600',
     showOnHome: true,
@@ -86,12 +90,14 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: Zap,
     description: 'Alle elektrischen Installationen, Reparaturen und Smart Home',
     subcategories: [
-      'elektro_hausinstallationen', 'elektro_unterverteilung',
-      'elektro_stoerung_notfall', 'elektro_beleuchtung',
-      'elektro_geraete_anschliessen', 'elektro_netzwerk_multimedia',
-      'elektro_sprechanlage', 'elektro_smart_home',
-      'elektro_wallbox', 'elektro_erdung_blitzschutz', 
-      'elektro_sicherheitspruefung_elektrocheck', 'elektriker'
+      'elektro_hausinstallationen',
+      'elektro_unterverteilung',
+      'elektro_stoerung_notfall',
+      'elektro_beleuchtung_geraete',
+      'elektro_smart_home_netzwerk',
+      'elektro_wallbox',
+      'elektro_pruefung_sicherheit',
+      'elektro_sonstige'
     ],
     color: 'from-yellow-500 to-yellow-600',
     showOnHome: true,
@@ -193,17 +199,21 @@ export const majorCategories: Record<string, MajorCategory> = {
       'Mehrere Offerten kostenlos vergleichen'
     ]
   },
-  innenausbau_schreiner: {
-    id: 'innenausbau_schreiner',
+  innenausbau: {
+    id: 'innenausbau',
     slug: 'innenausbau-schreiner',
     label: 'Innenausbau & Schreiner',
     icon: Hammer,
     description: 'Möbelbau, Schreinerei und Innenausbau',
     subcategories: [
-      'schreiner', 'moebelbau', 'moebelrestauration',
-      'holzarbeiten_innen', 'metallarbeiten_innen',
-      'treppen', 'innenausbau_sonstige', 'fenster_tueren',
-      'maler', 'gipser'
+      'schreiner',
+      'innenausbau_moebelbau',
+      'fenster_tueren',
+      'treppen',
+      'maler',
+      'gipser',
+      'innenausbau_holz_metall',
+      'innenausbau_sonstige'
     ],
     color: 'from-purple-500 to-indigo-600',
     showOnHome: false,
@@ -229,8 +239,11 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: Trash2,
     description: 'Räumungen, Entsorgung und individuelle Anfragen',
     subcategories: [
-      'umzug', 'reinigung', 'aufloesung_entsorgung',
-      'individuelle_anfrage'
+      'raeumung',
+      'entsorgung',
+      'umzug',
+      'baureinigung',
+      'raeumung_sonstige'
     ],
     color: 'from-gray-500 to-slate-600',
     showOnHome: false,
