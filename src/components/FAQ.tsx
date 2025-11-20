@@ -15,7 +15,7 @@ const faqData = [
       },
       {
         q: 'Was kostet eine Anfrage bei Büeze.ch?',
-        a: 'Das Erstellen einer Anfrage ist für Sie als Auftraggeber komplett kostenlos und unverbindlich. Sie zahlen nur die Kosten, die Sie direkt mit dem Handwerker für die Ausführung der Arbeit vereinbaren. Büeze.ch finanziert sich ausschliesslich über Abonnements für Handwerksbetriebe, nicht über Vermittlungsgebühren.'
+        a: 'Das Erstellen einer Anfrage ist für Sie als Auftraggeber komplett kostenlos und unverbindlich. Sie zahlen nur die Kosten, die Sie direkt mit dem Handwerker für die Ausführung der Arbeit vereinbaren. Büeze.ch finanziert sich ausschliesslich über Abonnements für Handwerksbetriebe, nicht über Vermittlungsgebühren. Sie als Auftraggeber zahlen nichts – weder für die Anfrage noch für die Vermittlung.'
       }
     ]
   },
@@ -70,7 +70,7 @@ const faqData = [
     },
     {
       q: 'Muss ich auf jede Anfrage reagieren?',
-      a: 'Nein. Sie entscheiden selbst, welche Projekte für Sie interessant sind – es gibt keine Verpflichtung, auf jede Anfrage zu antworten. Beachten Sie jedoch: Wenn Sie nicht zeitnah reagieren, kann Ihre Anfrage je nach Dringlichkeit des Auftrags innerhalb weniger Stunden oder Tage an weitere Anbieter weitergeleitet werden. Im Dashboard sehen Sie auch die Dringlichkeit der einzelnen Aufträge, damit Sie selbst einschätzen können, welche Projekte Sie bevorzugt bearbeiten möchten. So behalten Sie volle Flexibilität, ohne Chancen zu verpassen.'
+      a: 'Nein. Sie entscheiden selbst, welche Projekte für Sie interessant sind – es gibt keine Verpflichtung, auf jede Anfrage zu antworten. Beachten Sie jedoch: Wenn Sie nicht zeitnah reagieren, können andere Handwerker schneller antworten und den Auftrag erhalten. Im Dashboard sehen Sie die Dringlichkeit der einzelnen Aufträge, damit Sie selbst einschätzen können, welche Projekte Sie bevorzugt bearbeiten möchten. So behalten Sie volle Flexibilität, ohne Chancen zu verpassen.'
     }
   ]
 }

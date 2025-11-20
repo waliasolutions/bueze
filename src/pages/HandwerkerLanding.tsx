@@ -82,7 +82,7 @@ const HandwerkerLanding = () => {
     },
     {
       question: 'Wie funktioniert die Preisgestaltung für Handwerker?',
-      answer: 'Mit einem Abo (ab CHF 90/Monat) können Sie unbegrenzt Offerten einreichen. Im Free-Plan sind 5 Offerten pro Monat enthalten. Sie reichen Ihre Offerte mit Preis, Zeitrahmen und Nachricht ein. Sobald der Kunde Ihre Offerte akzeptiert, erhalten beide Seiten die vollständigen Kontaktdaten – ohne Zusatzkosten. Sie zahlen nur für das Abo, nicht pro Kontakt.'
+      answer: 'Im kostenlosen Free-Plan können Sie 5 Offerten pro Monat einreichen. Mit einem Abo (ab CHF 90/Monat) reichen Sie unbegrenzt Offerten ein. Sie reichen Ihre Offerte mit Preis, Zeitrahmen und Nachricht ein. Sobald der Kunde Ihre Offerte akzeptiert, erhalten beide Seiten die vollständigen Kontaktdaten – ohne Zusatzkosten. Sie zahlen nur für das Abo, nicht pro Kontakt.'
     },
     {
       question: 'Welche Informationen sehen Auftraggeber von mir?',
