@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { DynamicHelmet } from '@/components/DynamicHelmet';
+import { usePageContent } from '@/hooks/usePageContent';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -11,9 +13,23 @@ import { subcategoryLabels } from '@/config/subcategoryLabels';
 
 const KategorienLanding = () => {
   const navigate = useNavigate();
+  const { content } = usePageContent('kategorien-overview');
+
+  const seoData = content?.seo || {
+    title: "Alle Handwerk-Kategorien | Handwerker Schweiz | Büeze.ch",
+    description: "Übersicht aller Handwerk-Kategorien. Finden Sie qualifizierte Handwerker in der Schweiz für Ihr Projekt. Kostenlos Offerten vergleichen.",
+    canonical: "https://bueeze.ch/kategorien"
+  };
 
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHelmet
+        title={seoData.title}
+        description={seoData.description}
+        canonical={seoData.canonical}
+        robotsMeta={seoData.robots}
+        ogImage={seoData.og_image}
+      />
       <Header />
       
       {/* Hero Section */}

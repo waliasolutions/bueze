@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
+import { usePageContent } from '@/hooks/usePageContent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
@@ -31,65 +32,46 @@ const MajorCategoryLanding = () => {
     .map(subId => subcategoryLabels[subId])
     .filter(Boolean);
 
-  // Generate SEO meta tags based on category
-  const getSEOData = () => {
-    const baseUrl = 'https://bueeze.ch';
+  // Fetch SEO data from database
+  const { content, loading } = usePageContent(`major-${majorCategorySlug}`);
+  
+  // Fallback SEO data if database fetch fails
+  const getFallbackSEOData = () => {
     switch (majorCategorySlug) {
       case 'bau-renovation':
         return {
           title: 'Bauarbeiter Schweiz | Bauhandwerker | Hausrenovation Schweiz | Büeze.ch',
           description: 'Bauarbeiter in der Schweiz finden. Professionelle Bauhandwerker für Hausrenovation in der Schweiz. Kostenlos Offerten vergleichen.',
-          keywords: 'bauarbeiter in der schweiz, bauhandwerker schweiz, hausrenovation schweiz',
-          intro: 'Sie planen eine Hausrenovation in der Schweiz? Finden Sie erfahrene Bauarbeiter und Bauhandwerker in Ihrer Region. Von der Planung bis zur Umsetzung begleiten Sie qualifizierte Fachleute durch Ihr Bauprojekt. Vergleichen Sie kostenlos mehrere Offerten von geprüften Baufachbetrieben.',
-          schemaServiceType: 'Bau & Renovation'
+          intro: 'Sie planen eine Hausrenovation in der Schweiz? Finden Sie erfahrene Bauarbeiter und Bauhandwerker in Ihrer Region.'
         };
       case 'elektroinstallationen':
         return {
           title: 'Elektrik Service Schweiz | Elektroinstallationen | Elektriker Schweiz',
-          description: 'Elektrik Service in der Schweiz. Professionelle Elektroinstallationen von geprüften Elektrikern. Kostenlos mehrere Offerten einholen.',
-          keywords: 'elektrik service schweiz, elektroinstallationen',
-          intro: 'Für sichere Elektroinstallationen braucht es Fachleute. Unser Elektrik Service verbindet Sie mit geprüften Elektrikern in der Schweiz – für Neubauten, Renovationen oder Notfälle. Alle Arbeiten erfolgen normgerecht und mit garantierter Sicherheit.',
-          schemaServiceType: 'Elektroinstallationen'
-        };
-      case 'heizung-klima':
-        return {
-          title: 'Heizung & Sanitär Schweiz | Heizungsinstallationen | Büeze.ch',
-          description: 'Heizung & Sanitär Service in der Schweiz. Professionelle Heizungsinstallationen von zertifizierten Fachbetrieben.',
-          keywords: 'heizung & sanitär schweiz, heizungsinstallationen',
-          intro: 'Eine zuverlässige Heizung ist das Herzstück jedes Zuhauses. Finden Sie zertifizierte Fachbetriebe für Heizungsinstallationen und Heizung & Sanitär Service in der Schweiz – kompetent, schnell und fair. Von der Wartung bis zum Komplettersatz.',
-          schemaServiceType: 'Heizung, Klima & Solar'
-        };
-      case 'sanitaer':
-        return {
-          title: 'Sanitär Service Schweiz | Sanitärinstallationen | Sanitär Notdienst',
-          description: 'Sanitär Service in der Schweiz. Zuverlässige Sanitärinstallationen und Notdienst. Mehrere Offerten kostenlos vergleichen.',
-          keywords: 'sanitär service schweiz, sanitärinstallationen',
-          intro: 'Vom tropfenden Wasserhahn bis zur kompletten Badsanierung: Unser Sanitär Service verbindet Sie mit erfahrenen Profis für Sanitärinstallationen in der ganzen Schweiz. Auch im Notfall sind wir für Sie da. Vergleichen Sie kostenlos mehrere Offerten.',
-          schemaServiceType: 'Sanitär'
+          description: 'Elektrik Service in der Schweiz. Professionelle Elektroinstallationen von geprüften Elektrikern.',
+          intro: 'Für sichere Elektroinstallationen braucht es Fachleute. Unser Elektrik Service verbindet Sie mit geprüften Elektrikern.'
         };
       default:
         return {
           title: `${majorCategory.label} | Büeze.ch`,
           description: majorCategory.description,
-          keywords: majorCategory.label.toLowerCase(),
-          intro: majorCategory.description,
-          schemaServiceType: majorCategory.label
+          intro: majorCategory.description
         };
     }
   };
 
-  const seoData = getSEOData();
+  const seoData = content?.seo || getFallbackSEOData();
+  const introText = content?.fields?.intro || seoData.intro;
   const schemaMarkup = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Service",
     "name": majorCategory.label,
-    "description": seoData.intro,
+    "description": introText,
     "provider": {
       "@type": "Organization",
       "name": "Büeze.ch",
       "url": "https://bueeze.ch"
     },
-    "serviceType": seoData.schemaServiceType,
+    "serviceType": majorCategory.label,
     "areaServed": {
       "@type": "Country",
       "name": "Schweiz"
@@ -99,9 +81,11 @@ const MajorCategoryLanding = () => {
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
-        title={seoData.title}
-        description={seoData.description}
-        canonical={`https://bueeze.ch/kategorie/${majorCategorySlug}`}
+        title={seoData.title || `${majorCategory.label} | Büeze.ch`}
+        description={seoData.description || majorCategory.description}
+        canonical={seoData.canonical || `https://bueeze.ch/kategorie/${majorCategorySlug}`}
+        robotsMeta={seoData.robots}
+        ogImage={seoData.og_image}
         schemaMarkup={schemaMarkup}
       />
       <Header />
@@ -135,7 +119,7 @@ const MajorCategoryLanding = () => {
             {majorCategory.label}
           </h1>
           <p className="text-xl text-ink-700 leading-relaxed max-w-3xl mx-auto">
-            {seoData.intro}
+            {introText}
           </p>
           <div className="pt-6">
             <Button
