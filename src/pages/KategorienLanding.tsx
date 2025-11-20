@@ -249,7 +249,7 @@ const KategorienLanding = () => {
                 In welchen Regionen ist Büeze.ch aktiv?
               </AccordionTrigger>
               <AccordionContent className="text-ink-700 leading-relaxed">
-                Wir sind schweizweit aktiv – von grossen Städten wie Zürich, Basel, Bern und Luzern bis zu ländlichen Gemeinden in allen Kantonen. Unser Netzwerk wächst ständig, sodass Sie überall qualifizierte Handwerker finden können.
+                Wir sind schweizweit aktiv und bauen unser Handwerker-Netzwerk in allen Kantonen stetig aus. Ob in Zürich, Basel, Bern, Luzern oder ländlichen Regionen – geben Sie Ihre Anfrage ein, und wir zeigen Ihnen verfügbare Handwerker in Ihrer Nähe. Je nach Region kann die Anzahl verfügbarer Fachbetriebe variieren.
               </AccordionContent>
             </AccordionItem>
           </Accordion>

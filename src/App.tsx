@@ -73,6 +73,12 @@ const App = () => {
     // Initialize error tracking and correlation ID
     initErrorTracking();
     generateCorrelationId();
+    
+    // CRITICAL FIX: Disable browser's automatic scroll restoration
+    // This prevents the browser from competing with React's manual scroll-to-top
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
   }, []);
 
   return (
