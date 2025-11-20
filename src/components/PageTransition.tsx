@@ -5,17 +5,20 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [isTransitioning, setIsTransitioning] = React.useState(false);
 
+  React.useEffect(() => {
+    // Scroll to top immediately on ANY location change (pathname or hash)
+    // Must happen BEFORE any rendering or transition effects
+    window.scrollTo(0, 0);
+  }, [location.pathname, location.search]);
+
   React.useLayoutEffect(() => {
-    // CRITICAL: ALWAYS scroll to top on pathname changes (hash scrolling handled by ScrollToTop)
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    
-    // Then trigger fade transition
+    // Trigger fade transition AFTER scroll
     setIsTransitioning(true);
     const timer = setTimeout(() => {
       setIsTransitioning(false);
     }, 150);
     return () => clearTimeout(timer);
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   return (
     <div

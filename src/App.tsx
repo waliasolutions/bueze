@@ -49,6 +49,12 @@ import Sitemap from "./pages/Sitemap";
 
 const queryClient = new QueryClient();
 
+// CRITICAL: Set scroll restoration to manual IMMEDIATELY (before React renders)
+// This must happen at module load time, not in useEffect
+if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual';
+}
+
 const ScrollToTop = () => {
   const { pathname, hash } = useLocation();
   
@@ -73,12 +79,6 @@ const App = () => {
     // Initialize error tracking and correlation ID
     initErrorTracking();
     generateCorrelationId();
-    
-    // CRITICAL FIX: Disable browser's automatic scroll restoration
-    // This prevents the browser from competing with React's manual scroll-to-top
-    if ('scrollRestoration' in window.history) {
-      window.history.scrollRestoration = 'manual';
-    }
   }, []);
 
   return (
