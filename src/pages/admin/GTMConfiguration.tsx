@@ -16,20 +16,12 @@ export default function GTMConfiguration() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     gtm_container_id: '',
-    default_meta_title: '',
-    default_meta_description: '',
-    default_og_image: '',
-    site_name: '',
   });
 
   useEffect(() => {
     if (settings) {
       setFormData({
         gtm_container_id: settings.gtm_container_id || '',
-        default_meta_title: settings.default_meta_title || '',
-        default_meta_description: settings.default_meta_description || '',
-        default_og_image: settings.default_og_image || '',
-        site_name: settings.site_name || '',
       });
     }
   }, [settings]);
@@ -64,7 +56,7 @@ export default function GTMConfiguration() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-foreground">GTM Configuration</h1>
-          <p className="text-muted-foreground">Manage Google Tag Manager and default meta tags</p>
+          <p className="text-muted-foreground">Configure Google Tag Manager container ID</p>
         </div>
       </div>
 
@@ -99,60 +91,6 @@ export default function GTMConfiguration() {
             <p className="text-xs text-muted-foreground">
               Format: GTM-XXXXXXX. Get this from your Google Tag Manager account.
             </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Default Meta Tags</CardTitle>
-          <CardDescription>
-            Fallback meta tags used when pages don't have specific values
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="site-name">Site Name</Label>
-            <Input
-              id="site-name"
-              placeholder="Büeze.ch"
-              value={formData.site_name}
-              onChange={(e) => setFormData({ ...formData, site_name: e.target.value })}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="default-title">Default Meta Title</Label>
-            <Input
-              id="default-title"
-              placeholder="Büeze.ch - Geprüfte Handwerker in der Schweiz finden"
-              value={formData.default_meta_title}
-              onChange={(e) => setFormData({ ...formData, default_meta_title: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">Max 60 characters recommended</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="default-desc">Default Meta Description</Label>
-            <Textarea
-              id="default-desc"
-              placeholder="Finden Sie qualifizierte und geprüfte Handwerker in Ihrer Region..."
-              value={formData.default_meta_description}
-              onChange={(e) => setFormData({ ...formData, default_meta_description: e.target.value })}
-              rows={3}
-            />
-            <p className="text-xs text-muted-foreground">Max 160 characters recommended</p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="default-og">Default OG Image URL</Label>
-            <Input
-              id="default-og"
-              placeholder="https://bueeze.ch/og-image.jpg"
-              value={formData.default_og_image}
-              onChange={(e) => setFormData({ ...formData, default_og_image: e.target.value })}
-            />
-            <p className="text-xs text-muted-foreground">Used for social media sharing</p>
           </div>
         </CardContent>
       </Card>

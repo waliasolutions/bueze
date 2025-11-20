@@ -123,14 +123,14 @@ export default function SEOTools() {
           <Card className="cursor-pointer hover:border-brand-500 transition-colors" onClick={() => navigate('/admin/seo/bulk-meta')}>
             <CardHeader>
               <CardTitle className="text-lg">Bulk Meta Management</CardTitle>
-              <CardDescription>Edit meta tags for all pages</CardDescription>
+              <CardDescription>Manage meta tags for all pages and site-wide defaults</CardDescription>
             </CardHeader>
           </Card>
           
           <Card className="cursor-pointer hover:border-brand-500 transition-colors" onClick={() => navigate('/admin/seo/gtm')}>
             <CardHeader>
               <CardTitle className="text-lg">GTM Configuration</CardTitle>
-              <CardDescription>Configure tracking & analytics</CardDescription>
+              <CardDescription>Configure Google Tag Manager container ID for tracking</CardDescription>
             </CardHeader>
           </Card>
           

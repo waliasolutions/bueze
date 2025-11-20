@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,14 +15,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAllPageContent } from '@/hooks/usePageContent';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Search, Save, AlertCircle, CheckCircle, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Search, Save, AlertCircle, CheckCircle, Download, Upload, Globe } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ExternalLink } from 'lucide-react';
 
 interface PageMeta {
   id: string;
   page_key: string;
   content_type: string;
+  url?: string;
+  page_type?: string;
   seo: {
     title?: string;
     description?: string;
@@ -36,15 +42,39 @@ interface PageMeta {
 export default function BulkMetaManager() {
   const navigate = useNavigate();
   const { contents, loading, refetch } = useAllPageContent();
+  const { settings: siteSettings, updateSettings } = useSiteSettings();
   const [search, setSearch] = useState('');
+  const [pageTypeFilter, setPageTypeFilter] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<PageMeta['seo']>({});
   const [saving, setSaving] = useState(false);
+  const [defaultMetaData, setDefaultMetaData] = useState({
+    site_name: '',
+    default_meta_title: '',
+    default_meta_description: '',
+    default_og_image: '',
+  });
 
-  const filteredPages = contents.filter(page => 
-    page.page_key.toLowerCase().includes(search.toLowerCase()) ||
-    page.content_type.toLowerCase().includes(search.toLowerCase())
-  );
+  // Initialize default meta data from site settings
+  useEffect(() => {
+    if (siteSettings) {
+      setDefaultMetaData({
+        site_name: siteSettings.site_name || '',
+        default_meta_title: siteSettings.default_meta_title || '',
+        default_meta_description: siteSettings.default_meta_description || '',
+        default_og_image: siteSettings.default_og_image || '',
+      });
+    }
+  }, [siteSettings]);
+
+  const filteredPages = (contents as PageMeta[])?.filter(page => {
+    const matchesSearch =
+      page.page_key.toLowerCase().includes(search.toLowerCase()) ||
+      page.seo?.title?.toLowerCase().includes(search.toLowerCase()) ||
+      page.url?.toLowerCase().includes(search.toLowerCase());
+    const matchesType = pageTypeFilter === 'all' || page.page_type === pageTypeFilter;
+    return matchesSearch && matchesType;
+  }) || [];
 
   const handleEdit = (page: any) => {
     setEditingId(page.id);
@@ -74,6 +104,20 @@ export default function BulkMetaManager() {
   const handleCancel = () => {
     setEditingId(null);
     setEditData({});
+  };
+
+  const handleSaveDefaults = async () => {
+    setSaving(true);
+    try {
+      const result = await updateSettings(defaultMetaData);
+      if (result.success) {
+        toast.success('Default meta tags saved successfully');
+      } else {
+        toast.error('Failed to save: ' + result.error);
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getSeoHealthScore = (seo: PageMeta['seo']) => {
@@ -113,9 +157,67 @@ export default function BulkMetaManager() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-foreground">Bulk Meta Management</h1>
-          <p className="text-muted-foreground">Manage SEO meta tags for all pages</p>
+          <p className="text-muted-foreground">Manage SEO meta tags for all pages and site-wide defaults</p>
         </div>
       </div>
+
+      {/* Default Meta Tags Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5 text-brand-500" />
+            Default Meta Tags
+          </CardTitle>
+          <CardDescription>
+            Site-wide fallback meta tags used when individual pages don't have specific values
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="site_name">Site Name</Label>
+              <Input
+                id="site_name"
+                placeholder="Büeze.ch"
+                value={defaultMetaData.site_name}
+                onChange={(e) => setDefaultMetaData({ ...defaultMetaData, site_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="default_og_image">Default OG Image URL</Label>
+              <Input
+                id="default_og_image"
+                placeholder="https://..."
+                value={defaultMetaData.default_og_image}
+                onChange={(e) => setDefaultMetaData({ ...defaultMetaData, default_og_image: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="default_title">Default Meta Title</Label>
+            <Input
+              id="default_title"
+              placeholder="Site-wide default title"
+              value={defaultMetaData.default_meta_title}
+              onChange={(e) => setDefaultMetaData({ ...defaultMetaData, default_meta_title: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="default_description">Default Meta Description</Label>
+            <Textarea
+              id="default_description"
+              placeholder="Site-wide default description"
+              rows={3}
+              value={defaultMetaData.default_meta_description}
+              onChange={(e) => setDefaultMetaData({ ...defaultMetaData, default_meta_description: e.target.value })}
+            />
+          </div>
+          <Button onClick={handleSaveDefaults} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Saving...' : 'Save Defaults'}
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -169,21 +271,37 @@ export default function BulkMetaManager() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search pages..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
-            />
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by page key, title, or URL..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={pageTypeFilter} onValueChange={setPageTypeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Pages</SelectItem>
+                <SelectItem value="major_category">Major Categories</SelectItem>
+                <SelectItem value="homepage">Homepage</SelectItem>
+                <SelectItem value="handwerker">Handwerker</SelectItem>
+                <SelectItem value="legal">Legal Pages</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="rounded-md border border-border">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead>Page</TableHead>
+                  <TableHead>Page Key</TableHead>
+                  <TableHead>URL</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Meta Title</TableHead>
                   <TableHead>Description</TableHead>
@@ -201,8 +319,23 @@ export default function BulkMetaManager() {
                     <TableRow key={page.id} className={isEditing ? 'bg-secondary' : ''}>
                       <TableCell className="font-medium text-foreground">{page.page_key}</TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm">{page.url || '-'}</span>
+                          {page.url && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => window.open(page.url, '_blank')}
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline" className="text-ink-500">
-                          {page.content_type}
+                          {page.page_type || 'other'}
                         </Badge>
                       </TableCell>
                       <TableCell>
