@@ -32,17 +32,6 @@ export const GlobalScriptManager = () => {
       gtmNoscript.appendChild(gtmIframe);
       document.body.insertBefore(gtmNoscript, document.body.firstChild);
     }
-
-    // Inject Google Search Console verification
-    if (settings.google_search_console_verification) {
-      let metaTag = document.querySelector('meta[name="google-site-verification"]');
-      if (!metaTag) {
-        metaTag = document.createElement('meta');
-        metaTag.setAttribute('name', 'google-site-verification');
-        document.head.appendChild(metaTag);
-      }
-      metaTag.setAttribute('content', settings.google_search_console_verification);
-    }
   }, [settings]);
 
   return null;

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Shield, Code, BarChart3, Globe } from 'lucide-react';
+import { ArrowLeft, Save, Shield, Code } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function GTMConfiguration() {
@@ -16,8 +16,6 @@ export default function GTMConfiguration() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     gtm_container_id: '',
-    google_analytics_id: '',
-    google_search_console_verification: '',
     default_meta_title: '',
     default_meta_description: '',
     default_og_image: '',
@@ -28,8 +26,6 @@ export default function GTMConfiguration() {
     if (settings) {
       setFormData({
         gtm_container_id: settings.gtm_container_id || '',
-        google_analytics_id: settings.google_analytics_id || '',
-        google_search_console_verification: settings.google_search_console_verification || '',
         default_meta_title: settings.default_meta_title || '',
         default_meta_description: settings.default_meta_description || '',
         default_og_image: settings.default_og_image || '',
@@ -67,8 +63,8 @@ export default function GTMConfiguration() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold text-foreground">GTM & Analytics Configuration</h1>
-          <p className="text-muted-foreground">Manage tracking and default meta tags</p>
+          <h1 className="text-3xl font-bold text-foreground">GTM Configuration</h1>
+          <p className="text-muted-foreground">Manage Google Tag Manager and default meta tags</p>
         </div>
       </div>
 
@@ -81,81 +77,27 @@ export default function GTMConfiguration() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Code className="h-5 w-5 text-brand-500" />
-              Google Tag Manager
-            </CardTitle>
-            <CardDescription>
-              Configure GTM container for all tracking events and third-party scripts
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="gtm">GTM Container ID</Label>
-              <Input
-                id="gtm"
-                placeholder="GTM-XXXXXXX"
-                value={formData.gtm_container_id}
-                onChange={(e) => setFormData({ ...formData, gtm_container_id: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Find this in your Google Tag Manager account
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-brand-500" />
-              Google Analytics
-            </CardTitle>
-            <CardDescription>
-              Configure GA4 property for analytics tracking
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="ga4">GA4 Measurement ID</Label>
-              <Input
-                id="ga4"
-                placeholder="G-XXXXXXXXXX"
-                value={formData.google_analytics_id}
-                onChange={(e) => setFormData({ ...formData, google_analytics_id: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Configure this in GTM or enter directly here
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-brand-500" />
-            Search Console Verification
+            <Code className="h-5 w-5 text-brand-500" />
+            Google Tag Manager
           </CardTitle>
           <CardDescription>
-            Google Search Console site verification code
+            Configure GTM container for all tracking events and third-party scripts
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="gsc">Verification Code</Label>
+            <Label htmlFor="gtm">GTM Container ID</Label>
             <Input
-              id="gsc"
-              placeholder="google1234567890abcdef.html or verification code"
-              value={formData.google_search_console_verification}
-              onChange={(e) => setFormData({ ...formData, google_search_console_verification: e.target.value })}
+              id="gtm"
+              placeholder="GTM-XXXXXXX"
+              value={formData.gtm_container_id}
+              onChange={(e) => setFormData({ ...formData, gtm_container_id: e.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              Get this from Google Search Console → Settings → Ownership verification
+              Format: GTM-XXXXXXX. Get this from your Google Tag Manager account.
             </p>
           </div>
         </CardContent>
