@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
+import { usePageContent } from '@/hooks/usePageContent';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -10,6 +11,7 @@ import { Target, Coins, LayoutDashboard, ShieldCheck, UserPlus, ClipboardCheck, 
 
 const HandwerkerLanding = () => {
   const navigate = useNavigate();
+  const { content } = usePageContent('handwerker-landing');
 
   const schemaMarkup = JSON.stringify({
     "@context": "https://schema.org",
@@ -33,6 +35,12 @@ const HandwerkerLanding = () => {
       "description": "Kostenlose Registrierung für Handwerker – Zugang zu unbegrenzten Aufträgen"
     }
   });
+
+  const seoData = content?.seo || {
+    title: "Handwerker finden sofort | Aufträge für Handwerker | Handwerker Angebote",
+    description: "Handwerker finden sofort – erhalten Sie Aufträge für Handwerker und vergleichen Sie Handwerker Angebote. Kostenlose Registrierung für Handwerksbetriebe.",
+    canonical: "https://bueeze.ch/handwerker"
+  };
 
   const benefits = [
     {
@@ -101,9 +109,11 @@ const HandwerkerLanding = () => {
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
-        title="Handwerker Finden & Aufträge Sofort | Angebote Vergleichen | Büeze.ch"
-        description="Handwerker finden sofort – erhalten Sie Aufträge für Handwerker und vergleichen Sie Handwerker Angebote. Professionelle Handwerker für alle Projekte in der Schweiz."
-        canonical="https://bueeze.ch/handwerker"
+        title={seoData.title}
+        description={seoData.description}
+        canonical={seoData.canonical}
+        robotsMeta={seoData.robots}
+        ogImage={seoData.og_image}
         schemaMarkup={schemaMarkup}
       />
       <Header />

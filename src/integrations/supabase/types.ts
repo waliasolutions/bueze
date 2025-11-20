@@ -1659,10 +1659,12 @@ export type Database = {
           fields: Json
           id: string
           page_key: string
+          page_type: string | null
           seo: Json | null
           status: string
           updated_at: string | null
           updated_by: string | null
+          url: string | null
         }
         Insert: {
           content_type: string
@@ -1670,10 +1672,12 @@ export type Database = {
           fields?: Json
           id?: string
           page_key: string
+          page_type?: string | null
           seo?: Json | null
           status?: string
           updated_at?: string | null
           updated_by?: string | null
+          url?: string | null
         }
         Update: {
           content_type?: string
@@ -1681,10 +1685,12 @@ export type Database = {
           fields?: Json
           id?: string
           page_key?: string
+          page_type?: string | null
           seo?: Json | null
           status?: string
           updated_at?: string | null
           updated_by?: string | null
+          url?: string | null
         }
         Relationships: []
       }

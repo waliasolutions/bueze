@@ -1,12 +1,21 @@
 import React from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { DynamicHelmet } from '@/components/DynamicHelmet';
+import { usePageContent } from '@/hooks/usePageContent';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 
 const PricingPage = () => {
+  const { content } = usePageContent('pricing');
+
+  const seoData = content?.seo || {
+    title: "Preise & Abonnements | Handwerker Portal | Büeze.ch",
+    description: "Transparente Preise für Handwerksbetriebe. Wählen Sie das passende Abo und erhalten Sie Zugang zu Aufträgen in Ihrer Region.",
+    canonical: "https://bueeze.ch/pricing"
+  };
   const plans = [
     SUBSCRIPTION_PLANS.free,
     SUBSCRIPTION_PLANS.monthly,
@@ -16,6 +25,13 @@ const PricingPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHelmet
+        title={seoData.title}
+        description={seoData.description}
+        canonical={seoData.canonical}
+        robotsMeta={seoData.robots}
+        ogImage={seoData.og_image}
+      />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-6xl mx-auto">

@@ -5,8 +5,10 @@ import { HowItWorks } from '@/components/HowItWorks';
 import { FAQ } from '@/components/FAQ';
 import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
+import { usePageContent } from '@/hooks/usePageContent';
 
 const Index = () => {
+  const { content } = usePageContent('homepage');
   const schemaMarkup = JSON.stringify({
     "@context": "https://schema.org",
     "@graph": [
@@ -35,12 +37,20 @@ const Index = () => {
     ]
   });
 
+  const seoData = content?.seo || {
+    title: "Handwerker Marktplatz Schweiz | Lokaler Handwerker Finden | Büeze.ch",
+    description: "Handwerker Portal für die Schweiz. Finden Sie lokale Handwerker in Ihrer Region. Kostenlos mehrere Angebote vergleichen. Handwerker Schweiz – professionell und geprüft.",
+    canonical: "https://bueeze.ch/"
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
-        title="Handwerker Marktplatz Schweiz | Lokaler Handwerker Finden | Büeze.ch"
-        description="Handwerker Portal für die Schweiz. Finden Sie lokale Handwerker in Ihrer Region. Kostenlos mehrere Angebote vergleichen. Handwerker Schweiz – professionell und geprüft."
-        canonical="https://bueeze.ch/"
+        title={seoData.title}
+        description={seoData.description}
+        canonical={seoData.canonical}
+        robotsMeta={seoData.robots}
+        ogImage={seoData.og_image}
         schemaMarkup={schemaMarkup}
       />
       <Header />
