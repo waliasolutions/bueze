@@ -158,7 +158,7 @@ const OpportunityView = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-8">
         <Card className="max-w-3xl mx-auto">
           <CardHeader>
             <div className="flex items-start justify-between">
