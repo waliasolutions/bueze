@@ -79,6 +79,9 @@ const HandwerkerDashboard = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState(false);
 
+  // Tab State
+  const [activeTab, setActiveTab] = useState("leads");
+
   // Profile Tab
   const [profileEditing, setProfileEditing] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -596,7 +599,7 @@ const HandwerkerDashboard = () => {
             </p>
           </div>
 
-          <Tabs defaultValue="leads" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="leads">
                 <Search className="h-4 w-4 mr-2" />
