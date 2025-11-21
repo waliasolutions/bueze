@@ -754,5 +754,13 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     shortDescription: 'Spenglerarbeiten',
     majorCategoryId: 'bau_renovation',
     keywords: ['Spengler']
+  },
+  sanitaer: {
+    value: 'sanitaer',
+    label: 'Sanitär (Allgemein)',
+    slug: 'sanitaer',
+    shortDescription: 'Alle Sanitärarbeiten',
+    majorCategoryId: 'sanitaer',
+    keywords: ['Sanitär', 'Installation', 'Wasser']
   }
 };

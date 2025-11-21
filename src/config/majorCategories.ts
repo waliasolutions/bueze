@@ -29,14 +29,14 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: Construction,
     description: 'Hochbau, Umbau, Abbruch und umfassende Renovationsarbeiten',
     subcategories: [
-      'bau_hochbau_rohbau',
-      'bau_holzbau_zimmerei',
+      'mauerarbeit',
+      'holzbau',
       'metallbau',
-      'bau_dacharbeiten',
-      'bau_fassadenarbeiten',
-      'bau_abbruch_durchbrueche',
-      'bau_renovierung_umbau',
-      'bau_sonstige'
+      'betonarbeiten',
+      'fundament',
+      'kernbohrungen',
+      'abbruch_durchbruch',
+      'renovierung_sonstige'
     ],
     color: 'from-amber-500 to-orange-600',
     showOnHome: true,
@@ -93,11 +93,11 @@ export const majorCategories: Record<string, MajorCategory> = {
       'elektro_hausinstallationen',
       'elektro_unterverteilung',
       'elektro_stoerung_notfall',
-      'elektro_beleuchtung_geraete',
-      'elektro_smart_home_netzwerk',
+      'elektro_beleuchtung',
+      'elektro_smart_home',
+      'elektro_netzwerk_multimedia',
       'elektro_wallbox',
-      'elektro_pruefung_sicherheit',
-      'elektro_sonstige'
+      'elektro_sicherheitsnachweis'
     ],
     color: 'from-yellow-500 to-yellow-600',
     showOnHome: true,
@@ -125,7 +125,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     subcategories: [
       'waermepumpen', 'fussbodenheizung', 'boiler', 
       'klimaanlage_lueftung', 'cheminee_kamin_ofen', 
-      'solar_photovoltaik_batteriespeicher', 'solarthermie', 'heizung_sonstige'
+      'photovoltaik', 'solarthermie', 'heizung_sonstige'
     ],
     color: 'from-orange-500 to-red-600',
     showOnHome: true,
@@ -151,8 +151,8 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: Droplet,
     description: 'Badezimmer, Sanitärinstallationen und Reparaturen',
     subcategories: [
-      'badewanne_dusche', 'lavabo_waschbecken', 'wc_toilette',
-      'rohrleitung_leitungen', 'wasserhahn_armaturen', 'abwasser_entwässerung',
+      'badewanne_dusche', 'badezimmer', 'badumbau',
+      'klempnerarbeiten', 'sanitaer', 
       'boiler', 'sanitaer_sonstige'
     ],
     color: 'from-blue-500 to-cyan-600',
@@ -207,10 +207,11 @@ export const majorCategories: Record<string, MajorCategory> = {
     description: 'Möbelbau, Schreinerei und Innenausbau',
     subcategories: [
       'schreiner',
-      'innenausbau_moebelbau',
+      'moebelbau',
       'fenster_tueren',
       'treppen',
-      'innenausbau_holz_metall',
+      'holzarbeiten_innen',
+      'metallarbeiten_innen',
       'innenausbau_sonstige'
     ],
     color: 'from-purple-500 to-indigo-600',
@@ -237,10 +238,10 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: Trash2,
     description: 'Räumungen, Entsorgung und individuelle Anfragen',
     subcategories: [
-      'raeumung',
-      'entsorgung',
-      'baureinigung',
-      'raeumung_sonstige'
+      'aufloesung_entsorgung',
+      'umzug',
+      'reinigung',
+      'reinigung_hauswartung'
     ],
     color: 'from-gray-500 to-slate-600',
     showOnHome: false,
