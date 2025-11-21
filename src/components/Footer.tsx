@@ -88,8 +88,7 @@ export const Footer = () => {
                     {category.subcategories.map((sub) => (
                       <li key={sub.value}>
                       <Link 
-                        to={`/kategorie/${category.slug}#${sub.slug}`}
-                        onClick={() => window.scrollTo({ top: 0, behavior: 'instant' })}
+                        to={`/kategorie/${category.slug}#${sub.value}`}
                         className="text-ink-300 hover:text-brand-400 transition-colors text-sm block"
                       >
                         {sub.label}
