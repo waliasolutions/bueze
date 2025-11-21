@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Clock, Coins, Calendar, AlertCircle } from 'lucide-react';
+import { getUrgencyLabel } from '@/config/urgencyLevels';
 
 const OpportunityView = () => {
   const { leadId } = useParams();
@@ -196,7 +197,7 @@ const OpportunityView = () => {
                 <Clock className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <div className="text-sm text-muted-foreground">Dringlichkeit</div>
-                  <div className="font-medium capitalize">{lead.urgency}</div>
+                  <div className="font-medium">{getUrgencyLabel(lead.urgency)}</div>
                 </div>
               </div>
             </div>
