@@ -198,41 +198,75 @@ const HandwerkerDashboard = () => {
       });
       if (error) throw error;
 
-      // Filter client-side by category
-      // Handwerker may have subcategories, leads may have major categories
-      // Map subcategories to their major categories for matching
+      // Combined filter: BOTH category AND service area must match
       let filteredLeads = data || [];
-      if (categories.length > 0) {
-        filteredLeads = filteredLeads.filter(lead => {
+      
+      // Extract cantons (2 chars) and postal codes (4+ chars) once
+      const cantons = serviceAreas.filter(area => area.length === 2);
+      const postalCodes = serviceAreas.filter(area => area.length >= 4);
+      
+      // Apply combined filter with explicit AND logic
+      filteredLeads = filteredLeads.filter(lead => {
+        // CONDITION 1: Category Match (required if handwerker has categories)
+        let categoryMatches = false;
+        
+        if (categories.length === 0) {
+          // No category filter - show all categories
+          categoryMatches = true;
+        } else {
           // Check if handwerker's categories include the lead's category directly
           if (categories.includes(lead.category)) {
-            return true;
+            categoryMatches = true;
+          } else {
+            // Check if lead's category is a major category and handwerker has a subcategory from it
+            const leadMajorCat = Object.values(majorCategories).find(mc => mc.id === lead.category);
+            if (leadMajorCat) {
+              categoryMatches = categories.some(hwCat => leadMajorCat.subcategories.includes(hwCat));
+            }
+            
+            // Check if handwerker's category is a major category and lead has a subcategory from it
+            if (!categoryMatches) {
+              const handwerkerMajorCats = categories
+                .map(cat => Object.values(majorCategories).find(mc => mc.id === cat))
+                .filter(Boolean);
+              categoryMatches = handwerkerMajorCats.some(mc => mc?.subcategories.includes(lead.category));
+            }
           }
-
-          // Check if lead's category is a major category and handwerker has a subcategory from it
-          const leadMajorCat = Object.values(majorCategories).find(mc => mc.id === lead.category);
-          if (leadMajorCat) {
-            return categories.some(hwCat => leadMajorCat.subcategories.includes(hwCat));
-          }
-
-          // Check if handwerker's category is a major category and lead has a subcategory from it
-          const handwerkerMajorCats = categories.map(cat => Object.values(majorCategories).find(mc => mc.id === cat)).filter(Boolean);
-          return handwerkerMajorCats.some(mc => mc?.subcategories.includes(lead.category));
-        });
-      }
-
-      // Filter by service areas (match canton OR postal codes)
-      if (serviceAreas.length > 0) {
-        filteredLeads = filteredLeads.filter(lead => {
-          // Extract cantons (2 chars) and postal codes (4+ chars)
-          const cantons = serviceAreas.filter(area => area.length === 2);
-          const postalCodes = serviceAreas.filter(area => area.length >= 4);
-
+        }
+        
+        // CONDITION 2: Service Area Match (required if handwerker has service areas)
+        let serviceAreaMatches = false;
+        
+        if (serviceAreas.length === 0) {
+          // No service area filter - show all areas
+          serviceAreaMatches = true;
+        } else {
           // Match if lead's canton is in handwerker's cantons
           // OR if lead's zip is in handwerker's postal codes
-          return cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
-        });
-      }
+          serviceAreaMatches = cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
+        }
+        
+        // BOTH conditions must be true
+        const shouldShow = categoryMatches && serviceAreaMatches;
+        
+        // Debug logging for sanitaer leads
+        if (lead.category === 'sanitaer' || lead.category?.includes('sanitaer')) {
+          console.log('🔍 Sanitär Lead Filter:', {
+            leadId: lead.id,
+            leadCategory: lead.category,
+            leadZip: lead.zip,
+            leadCanton: lead.canton,
+            handwerkerCategories: categories,
+            handwerkerServiceAreas: serviceAreas,
+            categoryMatches,
+            serviceAreaMatches,
+            shouldShow
+          });
+        }
+        
+        return shouldShow;
+      });
+      
       setLeads(filteredLeads);
     } catch (error) {
       console.error('Error fetching leads:', error);
