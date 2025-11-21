@@ -30,7 +30,7 @@ export const Hero = () => {
               {content?.fields?.title || 'Den richtigen Handwerker für Ihr Projekt finden'}
             </h1>
             <p className="text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto">
-              {content?.fields?.subtitle || 'Kostenlose Offerten von geprüften Handwerkern.'}
+              {content?.fields?.subtitle || 'Erhalten Sie Offerten von geprüften Handwerkern für Ihr Projekt'}
             </p>
           </div>
 
