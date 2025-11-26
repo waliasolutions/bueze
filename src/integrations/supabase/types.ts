@@ -1025,6 +1025,13 @@ export type Database = {
             referencedRelation: "handwerker_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "handwerker_approval_history_handwerker_profile_id_fkey"
+            columns: ["handwerker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "handwerker_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       handwerker_profiles: {
@@ -2684,7 +2691,96 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      handwerker_profiles_public: {
+        Row: {
+          bio: string | null
+          business_canton: string | null
+          business_city: string | null
+          business_zip: string | null
+          categories:
+            | Database["public"]["Enums"]["handwerker_category"][]
+            | null
+          company_legal_form: string | null
+          company_name: string | null
+          created_at: string | null
+          first_name: string | null
+          hourly_rate_max: number | null
+          hourly_rate_min: number | null
+          id: string | null
+          is_verified: boolean | null
+          languages: string[] | null
+          last_name: string | null
+          logo_url: string | null
+          portfolio_urls: string[] | null
+          response_time_hours: number | null
+          search_text: unknown
+          service_areas: string[] | null
+          updated_at: string | null
+          user_id: string | null
+          verification_status: string | null
+          verified_at: string | null
+          website: string | null
+        }
+        Insert: {
+          bio?: string | null
+          business_canton?: string | null
+          business_city?: string | null
+          business_zip?: string | null
+          categories?:
+            | Database["public"]["Enums"]["handwerker_category"][]
+            | null
+          company_legal_form?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
+          id?: string | null
+          is_verified?: boolean | null
+          languages?: string[] | null
+          last_name?: string | null
+          logo_url?: string | null
+          portfolio_urls?: string[] | null
+          response_time_hours?: number | null
+          search_text?: unknown
+          service_areas?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+          verification_status?: string | null
+          verified_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          bio?: string | null
+          business_canton?: string | null
+          business_city?: string | null
+          business_zip?: string | null
+          categories?:
+            | Database["public"]["Enums"]["handwerker_category"][]
+            | null
+          company_legal_form?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          hourly_rate_max?: number | null
+          hourly_rate_min?: number | null
+          id?: string | null
+          is_verified?: boolean | null
+          languages?: string[] | null
+          last_name?: string | null
+          logo_url?: string | null
+          portfolio_urls?: string[] | null
+          response_time_hours?: number | null
+          search_text?: unknown
+          service_areas?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+          verification_status?: string | null
+          verified_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       budget_ranges_overlap: {
