@@ -314,7 +314,7 @@ const Profile = () => {
   };
 
   // Subscription handlers
-  const handleUpgradePlan = (planId: string, yearly: boolean) => {
+  const handleUpgradePlan = (planId: string) => {
     toast({
       title: "Upgrade wird vorbereitet",
       description: "Sie werden zur Zahlungsseite weitergeleitet...",
