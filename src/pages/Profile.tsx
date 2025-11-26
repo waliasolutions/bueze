@@ -346,7 +346,7 @@ const Profile = () => {
     );
   }
 
-  const isHandwerker = profile?.role === 'handwerker';
+  const isHandwerker = !!handwerkerProfile;
 
   return (
     <div className="min-h-screen bg-background">
