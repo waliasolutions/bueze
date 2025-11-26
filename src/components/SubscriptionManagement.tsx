@@ -3,76 +3,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Crown, Users, Calendar, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Crown, Calendar, AlertTriangle, Infinity as InfinityIcon } from 'lucide-react';
 import { formatDate } from '@/lib/swissTime';
-
-interface SubscriptionPlan {
-  id: string;
-  name: 'starter' | 'professional';
-  displayName: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
-  competitors: number;
-  includedLeads: number;
-  extraLeadPrice: number;
-  features: string[];
-}
+import { 
+  SUBSCRIPTION_PLAN_LIST,
+  type SubscriptionPlan,
+  type SubscriptionPlanType,
+  formatPrice,
+  formatPricePerMonth 
+} from '@/config/subscriptionPlans';
 
 interface CurrentSubscription {
   plan: SubscriptionPlan;
   isActive: boolean;
   currentPeriodStart: string;
   currentPeriodEnd: string;
-  usedLeads: number;
-  isYearly: boolean;
+  usedProposals: number;
   hasPaymentMethod: boolean;
 }
 
 interface SubscriptionManagementProps {
   currentSubscription: CurrentSubscription | null;
-  availablePlans: SubscriptionPlan[];
-  onUpgradePlan: (planId: string, yearly: boolean) => void;
+  availablePlans?: SubscriptionPlan[];
+  onUpgradePlan: (planId: SubscriptionPlanType) => void;
   onCancelSubscription: () => void;
   loading?: boolean;
 }
-
-const plans: SubscriptionPlan[] = [
-  {
-    id: 'starter',
-    name: 'starter',
-    displayName: 'Starter',
-    monthlyPrice: 49,
-    yearlyPrice: 490,
-    competitors: 4,
-    includedLeads: 10,
-    extraLeadPrice: 20,
-    features: [
-      '10 Leads pro Monat inklusive',
-      '4 Konkurrenten pro Lead',
-      'Standard Lead-Qualität',
-      'E-Mail Support',
-      'Basis-Dashboard'
-    ]
-  },
-  {
-    id: 'professional',
-    name: 'professional',
-    displayName: 'Professional',
-    monthlyPrice: 99,
-    yearlyPrice: 990,
-    competitors: 2,
-    includedLeads: 25,
-    extraLeadPrice: 15,
-    features: [
-      '25 Leads pro Monat inklusive',
-      'Nur 2 Konkurrenten pro Lead',
-      'Premium Lead-Qualität',
-      'Prioritäts-Support',
-      'Erweiterte Analytics',
-      'Lead-Vorschau verfügbar'
-    ]
-  }
-];
 
 export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
   currentSubscription,
@@ -81,14 +37,17 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
   loading = false
 }) => {
   const getUsagePercentage = () => {
-    if (!currentSubscription) return 0;
-    return (currentSubscription.usedLeads / currentSubscription.plan.includedLeads) * 100;
+    if (!currentSubscription || currentSubscription.plan.proposalsLimit === -1) return 0;
+    return (currentSubscription.usedProposals / currentSubscription.plan.proposalsLimit) * 100;
   };
 
-  const getRemainingLeads = () => {
-    if (!currentSubscription) return 0;
-    return Math.max(0, currentSubscription.plan.includedLeads - currentSubscription.usedLeads);
+  const getRemainingProposals = () => {
+    if (!currentSubscription || currentSubscription.plan.proposalsLimit === -1) return Infinity;
+    return Math.max(0, currentSubscription.plan.proposalsLimit - currentSubscription.usedProposals);
   };
+
+  // Get paid plans only (exclude free)
+  const paidPlans = SUBSCRIPTION_PLAN_LIST.filter(p => p.id !== 'free');
 
   if (!currentSubscription) {
     return (
@@ -99,16 +58,16 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
             Abonnement wählen
           </CardTitle>
           <CardDescription>
-            Wählen Sie ein Abonnement, um Leads zu kaufen und zu verwalten
+            Wählen Sie ein Abonnement, um unbegrenzt Offerten einzureichen
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
-            {plans.map((plan) => (
+          <div className="grid gap-4 md:grid-cols-3">
+            {paidPlans.map((plan) => (
               <div key={plan.id} className="border rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold">{plan.displayName}</h3>
-                  {plan.name === 'professional' && (
+                  {plan.popular && (
                     <Badge className="bg-gradient-to-r from-purple-600 to-blue-600">
                       Beliebt
                     </Badge>
@@ -117,26 +76,16 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                 
                 <div className="space-y-2 mb-4">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold">CHF {plan.monthlyPrice}</span>
-                    <span className="text-muted-foreground">/Monat</span>
+                    <span className="text-3xl font-bold">{formatPrice(plan.price)}</span>
                   </div>
-                  <p className="text-sm text-green-600">
-                    Jährlich: CHF {plan.yearlyPrice} (2 Monate gratis)
+                  <p className="text-sm text-muted-foreground">
+                    {formatPricePerMonth(plan)}
                   </p>
-                </div>
-
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>{plan.competitors} Konkurrenten pro Lead</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    <span>{plan.includedLeads} Leads pro Monat inklusive</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Extra Leads: CHF {plan.extraLeadPrice} pro Lead
-                  </div>
+                  {plan.savings && (
+                    <p className="text-sm text-green-600 font-medium">
+                      {plan.savings}
+                    </p>
+                  )}
                 </div>
 
                 <ul className="space-y-2 mb-6">
@@ -148,24 +97,14 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                   ))}
                 </ul>
 
-                <div className="space-y-2">
-                  <Button 
-                    className="w-full" 
-                    variant={plan.name === 'professional' ? 'default' : 'outline'}
-                    onClick={() => onUpgradePlan(plan.id, false)}
-                    disabled={loading}
-                  >
-                    Monatlich wählen
-                  </Button>
-                  <Button 
-                    className="w-full" 
-                    variant="secondary"
-                    onClick={() => onUpgradePlan(plan.id, true)}
-                    disabled={loading}
-                  >
-                    Jährlich wählen (2 Monate gratis)
-                  </Button>
-                </div>
+                <Button 
+                  className="w-full" 
+                  variant={plan.popular ? 'default' : 'outline'}
+                  onClick={() => onUpgradePlan(plan.id)}
+                  disabled={loading}
+                >
+                  Jetzt wählen
+                </Button>
               </div>
             ))}
           </div>
@@ -173,6 +112,9 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
       </Card>
     );
   }
+
+  const isUnlimited = currentSubscription.plan.proposalsLimit === -1;
+  const remainingProposals = getRemainingProposals();
 
   return (
     <div className="space-y-6">
@@ -195,49 +137,48 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                 <span className="font-medium">Zahlungsmethode erforderlich</span>
               </div>
               <p className="text-sm text-amber-700 mt-1">
-                Fügen Sie eine Zahlungsmethode hinzu, um Leads kaufen zu können.
+                Fügen Sie eine Zahlungsmethode hinzu, um Ihr Abonnement zu aktivieren.
               </p>
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="text-center p-4 bg-muted rounded-lg">
               <h4 className="font-medium text-lg">Plan</h4>
               <p className="text-2xl font-bold text-primary">{currentSubscription.plan.displayName}</p>
               <p className="text-sm text-muted-foreground">
-                {currentSubscription.isYearly ? 'Jährlich' : 'Monatlich'}
+                {formatPricePerMonth(currentSubscription.plan)}
               </p>
             </div>
             
             <div className="text-center p-4 bg-muted rounded-lg">
-              <h4 className="font-medium text-lg">Konkurrenten</h4>
-              <p className="text-2xl font-bold text-primary">{currentSubscription.plan.competitors}</p>
-              <p className="text-sm text-muted-foreground">pro Lead</p>
-            </div>
-            
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <h4 className="font-medium text-lg">Preis</h4>
-              <p className="text-2xl font-bold text-primary">
-                CHF {currentSubscription.isYearly 
-                  ? currentSubscription.plan.yearlyPrice 
-                  : currentSubscription.plan.monthlyPrice}
+              <h4 className="font-medium text-lg">Offerten-Limit</h4>
+              <p className="text-2xl font-bold text-primary flex items-center justify-center gap-2">
+                {isUnlimited ? (
+                  <>
+                    <InfinityIcon className="h-6 w-6" />
+                    <span>Unbegrenzt</span>
+                  </>
+                ) : (
+                  currentSubscription.plan.proposalsLimit
+                )}
               </p>
-              <p className="text-sm text-muted-foreground">
-                {currentSubscription.isYearly ? '/Jahr' : '/Monat'}
-              </p>
+              <p className="text-sm text-muted-foreground">pro Monat</p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Lead-Verbrauch diesen Monat</span>
-              <span>{currentSubscription.usedLeads} von {currentSubscription.plan.includedLeads}</span>
+          {!isUnlimited && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Offerten-Verbrauch diesen Monat</span>
+                <span>{currentSubscription.usedProposals} von {currentSubscription.plan.proposalsLimit}</span>
+              </div>
+              <Progress value={getUsagePercentage()} className="h-2" />
+              <p className="text-sm text-muted-foreground">
+                {remainingProposals} Offerten verbleibend bis {formatDate(currentSubscription.currentPeriodEnd)}
+              </p>
             </div>
-            <Progress value={getUsagePercentage()} className="h-2" />
-            <p className="text-sm text-muted-foreground">
-              {getRemainingLeads()} Leads verbleibend bis {formatDate(currentSubscription.currentPeriodEnd)}
-            </p>
-          </div>
+          )}
 
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
@@ -249,37 +190,41 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
       </Card>
 
       {/* Upgrade Options */}
-      {currentSubscription.plan.name === 'starter' && (
+      {currentSubscription.plan.id === 'free' && (
         <Card>
           <CardHeader>
-            <CardTitle>Upgrade auf Professional</CardTitle>
+            <CardTitle>Upgrade zu unbegrenzten Offerten</CardTitle>
             <CardDescription>
-              Erhalten Sie weniger Konkurrenten und mehr inklusive Leads
+              Reichen Sie unbegrenzt Offerten ein und wachsen Sie Ihr Geschäft
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 rounded-lg">
-              <h3 className="text-lg font-bold mb-2">Professional Plan Vorteile:</h3>
-              <ul className="space-y-1 mb-4">
-                <li className="text-sm flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 bg-primary rounded-full" />
-                  Nur 2 Konkurrenten (statt 4)
-                </li>
-                <li className="text-sm flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 bg-primary rounded-full" />
-                  25 Leads pro Monat (statt 10)
-                </li>
-                <li className="text-sm flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 bg-primary rounded-full" />
-                  CHF 15 pro Extra-Lead (statt CHF 20)
-                </li>
-              </ul>
-              <Button 
-                onClick={() => onUpgradePlan('professional', currentSubscription.isYearly)}
-                className="w-full"
-              >
-                Jetzt upgraden
-              </Button>
+            <div className="grid gap-4 md:grid-cols-3">
+              {paidPlans.map((plan) => (
+                <div key={plan.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold">{plan.displayName}</h3>
+                    {plan.popular && (
+                      <Badge variant="secondary">Beliebt</Badge>
+                    )}
+                  </div>
+                  <p className="text-2xl font-bold mb-1">{formatPrice(plan.price)}</p>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {formatPrice(plan.pricePerMonth)}/Monat
+                  </p>
+                  {plan.savings && (
+                    <p className="text-xs text-green-600 mb-3">{plan.savings}</p>
+                  )}
+                  <Button 
+                    onClick={() => onUpgradePlan(plan.id)}
+                    className="w-full"
+                    variant={plan.popular ? 'default' : 'outline'}
+                    size="sm"
+                  >
+                    Jetzt upgraden
+                  </Button>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
