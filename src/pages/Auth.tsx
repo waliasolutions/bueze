@@ -23,45 +23,46 @@ export default function Auth() {
     password: ''
   });
 
-  useEffect(() => {
+  const handlePostLoginRedirect = async (user: any) => {
+    // Check for admin/super_admin role FIRST
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
+    if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
+      navigate('/admin/dashboard');
+      return;
+    }
+    
+    // Check role from user metadata for handwerker
+    const userRole = user.user_metadata?.role;
+    
+    if (userRole === 'handwerker') {
+      const { data: existingProfile } = await supabase
+        .from('handwerker_profiles')
+        .select('id, verification_status')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (existingProfile) {
+        navigate('/handwerker-dashboard');
+      } else {
+        navigate('/handwerker-onboarding');
+      }
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        // Check for admin/super_admin role FIRST
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        
-        if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
-          // Admin users go to admin dashboard
-          navigate('/admin/dashboard');
-          return;
-        }
-        
-        // Then check role from user metadata for handwerker
-        const userRole = session.user.user_metadata?.role;
-        
-        if (userRole === 'handwerker') {
-          // Check if handwerker profile already exists
-          const { data: existingProfile } = await supabase
-            .from('handwerker_profiles')
-            .select('id, verification_status')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          if (existingProfile) {
-            // Profile exists - go to dashboard
-            navigate('/handwerker-dashboard');
-          } else {
-            // No profile - need onboarding
-            navigate('/handwerker-onboarding');
-          }
-        } else {
-          // Regular users go to regular dashboard
-          navigate('/dashboard');
-        }
+        // Defer database calls to avoid deadlock
+        setTimeout(() => {
+          handlePostLoginRedirect(session.user);
+        }, 0);
       }
     });
 
