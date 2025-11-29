@@ -18,15 +18,12 @@ export default function ResetPassword() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user arrived from password reset email
-    const checkResetToken = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // If there's a session with recovery token, user can reset password
-      if (session?.user) {
+    // Listen for PASSWORD_RECOVERY event - this is the correct way
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
         setIsValidToken(true);
-      } else {
-        // No valid session/token
+      } else if (event === 'SIGNED_OUT') {
+        // User signed out, no valid token
         toast({
           title: 'Ungültiger oder abgelaufener Link',
           description: 'Bitte fordern Sie einen neuen Link zum Zurücksetzen des Passworts an.',
@@ -34,9 +31,19 @@ export default function ResetPassword() {
         });
         setTimeout(() => navigate('/auth'), 3000);
       }
+    });
+
+    // Also check current session as fallback
+    const checkResetToken = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setIsValidToken(true);
+      }
     };
 
     checkResetToken();
+
+    return () => subscription.unsubscribe();
   }, [navigate, toast]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {

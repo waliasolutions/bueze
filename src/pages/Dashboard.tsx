@@ -118,6 +118,8 @@ const Dashboard = () => {
 
   const fetchUserData = async () => {
     try {
+      setLoading(true); // Ensure loading state is set
+      
       // Get real authenticated user
       const { data: { user } } = await supabase.auth.getUser();
       

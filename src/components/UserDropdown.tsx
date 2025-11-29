@@ -106,7 +106,15 @@ export const UserDropdown = () => {
   }, []);
 
   const handleSignOut = async () => {
+    // Enhanced logout - clear all session data
     const { error } = await supabase.auth.signOut();
+    
+    // Clear handwerker-related localStorage
+    localStorage.removeItem('handwerker-onboarding-draft');
+    
+    // Clear sessionStorage
+    sessionStorage.clear();
+    
     if (error) {
       toast({
         title: 'Fehler',
