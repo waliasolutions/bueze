@@ -1,6 +1,34 @@
 import { supabase } from '@/integrations/supabase/client';
 
 /**
+ * ============================================
+ * BÜEZE ROLE SYSTEM DOCUMENTATION
+ * ============================================
+ * 
+ * This software uses THREE primary roles:
+ * 
+ * 1. admin / super_admin
+ *    - Platform administrators who manage the system
+ *    - Can approve/reject handwerker registrations
+ *    - Can view all data and manage users
+ * 
+ * 2. handwerker
+ *    - Craftsmen/tradespeople who respond to leads
+ *    - Can browse and submit proposals for leads
+ *    - Must be verified by admin before accessing leads
+ * 
+ * 3. user / client
+ *    - Homeowners/clients who submit project leads
+ *    - Can create leads and review proposals
+ *    - 'user' is legacy name, 'client' is preferred
+ * 
+ * Note: Other roles (e.g., department_admin) exist in the 
+ * database but belong to other software projects sharing 
+ * this Supabase instance. They are NOT used by Büeze.
+ * ============================================
+ */
+
+/**
  * Unified Handwerker Detection
  * Checks if a user has a handwerker profile
  */
@@ -69,7 +97,32 @@ export const enhancedLogout = async (): Promise<void> => {
 };
 
 /**
- * Get user role (handwerker, admin, super_admin, or user)
+ * Check if user has client role (homeowner who submits leads)
+ * Accepts both 'user' (legacy) and 'client' roles
+ */
+export const isClient = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .in('role', ['user', 'client'])
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking client status:', error);
+      return false;
+    }
+    
+    return !!data;
+  } catch (error) {
+    console.error('Exception checking client status:', error);
+    return false;
+  }
+};
+
+/**
+ * Get user role (handwerker, admin, super_admin, user/client)
  */
 export const getUserRole = async (userId: string): Promise<string> => {
   try {
@@ -88,6 +141,11 @@ export const getUserRole = async (userId: string): Promise<string> => {
     const isHw = await isHandwerker(userId);
     if (isHw) {
       return 'handwerker';
+    }
+    
+    // Return 'client' if user has that role, otherwise default to 'user'
+    if (roleData && roleData.role === 'client') {
+      return 'client';
     }
     
     return 'user';

@@ -2832,6 +2832,7 @@ export type Database = {
         | "user"
         | "super_admin"
         | "handwerker"
+        | "client"
       budget_type: "fixed" | "hourly" | "estimate"
       canton:
         | "AG"
@@ -3141,6 +3142,7 @@ export const Constants = {
         "user",
         "super_admin",
         "handwerker",
+        "client",
       ],
       budget_type: ["fixed", "hourly", "estimate"],
       canton: [

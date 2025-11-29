@@ -24,9 +24,11 @@ interface User {
 }
 
 const AVAILABLE_ROLES = [
-  { value: 'user', label: 'User', description: 'Standard user with basic access' },
-  { value: 'admin', label: 'Admin', description: 'Administrator with elevated permissions' },
-  { value: 'super_admin', label: 'Super Admin', description: 'Full system access and user management' },
+  { value: 'user', label: 'Kunde (Legacy)', description: 'Kunde/Auftraggeber - erstellt Leads' },
+  { value: 'client', label: 'Kunde', description: 'Kunde/Auftraggeber - erstellt Leads' },
+  { value: 'handwerker', label: 'Handwerker', description: 'Handwerker - antwortet auf Leads' },
+  { value: 'admin', label: 'Administrator', description: 'Administrator mit erweiterten Rechten' },
+  { value: 'super_admin', label: 'Super Administrator', description: 'Vollzugriff auf System und Benutzerverwaltung' },
 ];
 
 const getRoleBadgeVariant = (role: string) => {
