@@ -145,8 +145,9 @@ export const UserDropdown = () => {
   };
 
   const getRoleLabel = () => {
+    if (isAdmin) return 'Administrator';
     if (isHandwerker) return 'Handwerker';
-    return 'Auftraggeber';
+    return 'Kunde';
   };
 
   if (isLoading || !user) {
