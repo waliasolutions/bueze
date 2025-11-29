@@ -157,29 +157,32 @@ const Profile = () => {
 
           // Fetch subscription data
           const { data: subscriptionData } = await supabase
-            .from('subscriptions')
+            .from('handwerker_subscriptions')
             .select('*')
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
 
           if (subscriptionData) {
+            const planDisplayName = subscriptionData.plan_type === 'free' ? 'Gratis' : 
+                                    subscriptionData.plan_type === 'starter' ? 'Starter' : 'Professional';
+            
             setCurrentSubscription({
               plan: {
-                id: subscriptionData.plan,
-                name: subscriptionData.plan,
-                displayName: subscriptionData.plan === 'starter' ? 'Starter' : 'Professional',
-                monthlyPrice: subscriptionData.plan === 'starter' ? 49 : 99,
-                yearlyPrice: subscriptionData.plan === 'starter' ? 490 : 990,
-                competitors: subscriptionData.plan === 'starter' ? 4 : 2,
-                includedLeads: subscriptionData.included_leads,
-                extraLeadPrice: subscriptionData.extra_lead_price / 100,
+                id: subscriptionData.plan_type,
+                name: subscriptionData.plan_type,
+                displayName: planDisplayName,
+                monthlyPrice: subscriptionData.plan_type === 'free' ? 0 : subscriptionData.plan_type === 'starter' ? 49 : 99,
+                yearlyPrice: subscriptionData.plan_type === 'free' ? 0 : subscriptionData.plan_type === 'starter' ? 490 : 990,
+                competitors: subscriptionData.plan_type === 'free' ? 10 : subscriptionData.plan_type === 'starter' ? 4 : 2,
+                includedLeads: subscriptionData.proposals_limit === -1 ? Infinity : subscriptionData.proposals_limit,
+                extraLeadPrice: 0,
                 features: []
               },
               isActive: subscriptionData.status === 'active',
               currentPeriodStart: subscriptionData.current_period_start,
               currentPeriodEnd: subscriptionData.current_period_end,
-              usedLeads: subscriptionData.used_leads || 0,
-              isYearly: false, // Default for now
+              usedLeads: subscriptionData.proposals_used_this_period || 0,
+              isYearly: false,
               hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified)
             });
           }

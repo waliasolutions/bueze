@@ -50,9 +50,14 @@ export const Header = () => {
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only synchronous state updates here
       setUser(session?.user ?? null);
+      
+      // Defer database calls to avoid deadlock
       if (session?.user) {
-        checkUser(); // Re-check user role
+        setTimeout(() => {
+          checkUser();
+        }, 0);
       } else {
         setUserRole(null);
       }

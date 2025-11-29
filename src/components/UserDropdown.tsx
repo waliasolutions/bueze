@@ -86,35 +86,15 @@ export const UserDropdown = () => {
 
     fetchUserData();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Only synchronous state updates here
       setUser(session?.user ?? null);
       
+      // Defer ALL database calls to avoid deadlock
       if (session?.user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        setProfile(profileData);
-
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .in('role', ['admin', 'super_admin'])
-          .maybeSingle();
-        
-        setIsAdmin(!!roleData);
-
-        // Check if user has handwerker profile
-        const { data: handwerkerData } = await supabase
-          .from('handwerker_profiles')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        
-        setIsHandwerker(!!handwerkerData);
+        setTimeout(() => {
+          fetchUserData();
+        }, 0);
       } else {
         setProfile(null);
         setIsAdmin(false);
