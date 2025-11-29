@@ -1,97 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useEffect } from 'react';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Crown, TrendingUp, Zap, AlertCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { SUBSCRIPTION_PLANS, type SubscriptionPlanType } from '@/config/subscriptionPlans';
-
-interface Subscription {
-  id: string;
-  plan: SubscriptionPlanType;
-  status: string;
-  used_proposals?: number;
-  proposals_reset_at?: string;
-  current_period_end: string;
-}
+import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 
 interface SubscriptionManagerProps {
   userId: string;
 }
 
 export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId }) => {
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+  const { subscription, loading, refetch } = useSubscription({ userId });
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSubscription();
+    refetch();
   }, [userId]);
-
-  const fetchSubscription = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('handwerker_subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (error) throw error;
-
-      // Default to free plan if no subscription
-      if (data) {
-        setSubscription({
-          id: data.id,
-          plan: data.plan_type as SubscriptionPlanType,
-          status: data.status,
-          used_proposals: data.proposals_used_this_period,
-          proposals_reset_at: data.current_period_end,
-          current_period_end: data.current_period_end,
-        });
-      } else {
-        // Create default free subscription
-        const { data: newSub, error: insertError } = await supabase
-          .from('handwerker_subscriptions')
-          .insert({
-            user_id: userId,
-            plan_type: 'free',
-            status: 'active',
-            proposals_used_this_period: 0,
-            proposals_limit: 5,
-            current_period_start: new Date().toISOString(),
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-          })
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-
-        setSubscription({
-          id: newSub.id,
-          plan: 'free',
-          status: 'active',
-          used_proposals: 0,
-          proposals_reset_at: newSub.current_period_end,
-          current_period_end: newSub.current_period_end,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Abo-Informationen konnten nicht geladen werden',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -105,12 +32,6 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
   if (!subscription) return null;
 
   const plan = SUBSCRIPTION_PLANS[subscription.plan];
-  const isUnlimited = plan.proposalsLimit === -1;
-  const usedProposals = subscription.used_proposals || 0;
-  const remainingProposals = isUnlimited ? 999 : Math.max(0, plan.proposalsLimit - usedProposals);
-  const usagePercentage = isUnlimited ? 0 : Math.min(100, (usedProposals / plan.proposalsLimit) * 100);
-  const resetDate = subscription.proposals_reset_at ? new Date(subscription.proposals_reset_at) : new Date();
-  const daysUntilReset = Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
   return (
     <div className="space-y-6">
@@ -144,31 +65,31 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Offerten-Kontingent</span>
               <span className="text-sm font-bold">
-                {isUnlimited 
+                {subscription.isUnlimited 
                   ? 'Unbegrenzt' 
-                  : `${usedProposals} / ${plan.proposalsLimit}`
+                  : `${subscription.usedProposals} / ${plan.proposalsLimit}`
                 }
               </span>
             </div>
-            {!isUnlimited && (
+            {!subscription.isUnlimited && (
               <>
-                <Progress value={usagePercentage} className="h-3 mb-2" />
+                <Progress value={subscription.usagePercentage} className="h-3 mb-2" />
                 <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                  Noch {remainingProposals} Offerte{remainingProposals !== 1 ? 'n' : ''} verfügbar · 
-                  Zurücksetzen in {daysUntilReset} Tag{daysUntilReset !== 1 ? 'en' : ''}
+                  Noch {subscription.remainingProposals} Offerte{subscription.remainingProposals !== 1 ? 'n' : ''} verfügbar · 
+                  Zurücksetzen in {subscription.daysUntilReset} Tag{subscription.daysUntilReset !== 1 ? 'en' : ''}
                 </p>
               </>
             )}
           </div>
 
           {/* Low Quota Warning */}
-          {!isUnlimited && remainingProposals <= 2 && remainingProposals > 0 && (
+          {subscription.isLow && (
             <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h4 className="font-semibold text-amber-900 mb-1">Kontingent fast aufgebraucht</h4>
                 <p className="text-sm text-amber-800">
-                  Sie haben nur noch {remainingProposals} Offerte{remainingProposals !== 1 ? 'n' : ''} übrig. 
+                  Sie haben nur noch {subscription.remainingProposals} Offerte{subscription.remainingProposals !== 1 ? 'n' : ''} übrig. 
                   Upgraden Sie jetzt für unbegrenzte Offerten.
                 </p>
               </div>
@@ -176,13 +97,13 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
           )}
 
           {/* Zero Quota Warning */}
-          {!isUnlimited && remainingProposals === 0 && (
+          {subscription.isDepleted && (
             <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
               <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h4 className="font-semibold text-red-900 mb-1">Kontingent erschöpft</h4>
                 <p className="text-sm text-red-800">
-                  Sie haben Ihr monatliches Limit erreicht. Upgraden Sie für unbegrenzte Offerten oder warten Sie {daysUntilReset} Tag{daysUntilReset !== 1 ? 'e' : ''} bis zur Zurücksetzung.
+                  Sie haben Ihr monatliches Limit erreicht. Upgraden Sie für unbegrenzte Offerten oder warten Sie {subscription.daysUntilReset} Tag{subscription.daysUntilReset !== 1 ? 'e' : ''} bis zur Zurücksetzung.
                 </p>
               </div>
             </div>

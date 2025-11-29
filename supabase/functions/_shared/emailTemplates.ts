@@ -284,7 +284,7 @@ export const proposalAcceptedClientTemplate = (data: ProposalAcceptedClientData)
       </ul>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen oder Problemen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueze.ch">info@bueze.ch</a>
+        Bei Fragen oder Problemen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
       </p>
     </div>
   `);

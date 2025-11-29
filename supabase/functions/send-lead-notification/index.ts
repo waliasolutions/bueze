@@ -31,7 +31,7 @@ serve(async (req) => {
     // Fetch lead details
     const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .select('*, profiles!leads_user_id_fkey(full_name, email)')
+      .select('*, profiles!leads_owner_id_fkey(full_name, email)')
       .eq('id', leadId)
       .single();
 
