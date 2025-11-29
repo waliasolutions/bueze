@@ -106,6 +106,8 @@ const HandwerkerDashboard = () => {
   }, []);
   const checkAuth = async () => {
     try {
+      setLoading(true); // Ensure loading state is set
+      
       const {
         data: {
           user: currentUser

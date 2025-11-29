@@ -15,12 +15,20 @@ export default function Auth() {
   const [isResetting, setIsResetting] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [signInData, setSignInData] = useState({
     email: '',
     password: ''
+  });
+
+  const [signUpData, setSignUpData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    fullName: ''
   });
 
   const handlePostLoginRedirect = async (user: any) => {
@@ -102,6 +110,68 @@ export default function Auth() {
     }
   };
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    // Validate passwords match
+    if (signUpData.password !== signUpData.confirmPassword) {
+      toast({
+        title: 'Fehler',
+        description: 'Die Passwörter stimmen nicht überein.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate password length
+    if (signUpData.password.length < 8) {
+      toast({
+        title: 'Fehler',
+        description: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: signUpData.email,
+        password: signUpData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: signUpData.fullName,
+          }
+        }
+      });
+
+      if (error) {
+        toast({
+          title: 'Registrierungsfehler',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Registrierung erfolgreich!',
+          description: 'Bitte überprüfen Sie Ihre E-Mail zur Bestätigung.',
+        });
+        setIsSignUp(false);
+      }
+    } catch (error) {
+      toast({
+        title: 'Fehler',
+        description: 'Ein unerwarteter Fehler ist aufgetreten.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -168,45 +238,107 @@ export default function Auth() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Login</CardTitle>
+            <CardTitle>{isSignUp ? 'Registrieren' : 'Login'}</CardTitle>
             <CardDescription>
-              Geben Sie Ihre Anmeldedaten ein, um auf Ihr Konto zuzugreifen.
+              {isSignUp 
+                ? 'Erstellen Sie ein neues Konto'
+                : 'Geben Sie Ihre Anmeldedaten ein, um auf Ihr Konto zuzugreifen.'}
             </CardDescription>
           </CardHeader>
           
           <CardContent>
-            <form onSubmit={handleSignIn} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="signin-email">E-Mail</Label>
-                <Input
-                  id="signin-email"
-                  type="email"
-                  placeholder="ihre@email.ch"
-                  value={signInData.email}
-                  onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="signin-password">Passwort</Label>
-                <Input
-                  id="signin-password"
-                  type="password"
-                  value={signInData.password}
-                  onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
-                  required
-                />
-              </div>
-              
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Login
-              </Button>
-            </form>
+            {isSignUp ? (
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signup-name">Name</Label>
+                  <Input
+                    id="signup-name"
+                    type="text"
+                    placeholder="Ihr Name"
+                    value={signUpData.fullName}
+                    onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
+                    required
+                  />
+                </div>
 
-            <div className="mt-4 text-center">
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-email">E-Mail</Label>
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    placeholder="ihre@email.ch"
+                    value={signUpData.email}
+                    onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="signup-password">Passwort</Label>
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    placeholder="Mindestens 8 Zeichen"
+                    value={signUpData.password}
+                    onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                    required
+                    minLength={8}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm">Passwort bestätigen</Label>
+                  <Input
+                    id="signup-confirm"
+                    type="password"
+                    placeholder="Passwort wiederholen"
+                    value={signUpData.confirmPassword}
+                    onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
+                    required
+                    minLength={8}
+                  />
+                </div>
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Registrieren
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="signin-email">E-Mail</Label>
+                  <Input
+                    id="signin-email"
+                    type="email"
+                    placeholder="ihre@email.ch"
+                    value={signInData.email}
+                    onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="signin-password">Passwort</Label>
+                  <Input
+                    id="signin-password"
+                    type="password"
+                    value={signInData.password}
+                    onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Login
+                </Button>
+              </form>
+            )}
+
+            <div className="mt-4 text-center space-y-2">
+              {!isSignUp && (
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="link" className="text-sm text-muted-foreground hover:text-foreground">
                     Passwort vergessen?
@@ -238,6 +370,19 @@ export default function Auth() {
                   </form>
                 </DialogContent>
               </Dialog>
+              )}
+
+              <div className="pt-2 border-t">
+                <Button 
+                  variant="link" 
+                  onClick={() => setIsSignUp(!isSignUp)}
+                  className="text-sm w-full"
+                >
+                  {isSignUp 
+                    ? 'Haben Sie bereits ein Konto? Hier anmelden' 
+                    : 'Noch kein Konto? Jetzt registrieren'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
