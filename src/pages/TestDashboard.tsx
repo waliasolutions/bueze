@@ -5,12 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
-  populateTestData, 
   testUsers, 
   testLeads, 
   createTestLead,
   createHandwerkerProfile 
 } from "@/utils/testData";
+import { populateTestData } from "@/utils/testDataPopulation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, XCircle, Users, FileText, Search, MessageSquare } from "lucide-react";
@@ -22,11 +22,7 @@ interface TestResult {
   details?: any;
 }
 
-interface PopulationResult {
-  users: any[];
-  leads: any[];
-  errors: string[];
-}
+import { PopulationResult } from "@/utils/testDataPopulation";
 
 export default function TestDashboard() {
   const [populationResult, setPopulationResult] = useState<PopulationResult | null>(null);
@@ -58,13 +54,13 @@ export default function TestDashboard() {
       if (result.errors.length > 0) {
         toast({
           title: "Partially Successful",
-          description: `Created ${result.users.length} users with ${result.errors.length} errors`,
+          description: `${result.message} with ${result.errors.length} errors`,
           variant: "destructive"
         });
       } else {
         toast({
           title: "Success",
-          description: `Created ${result.users.length} test users successfully`,
+          description: result.message,
         });
       }
     } catch (error) {
@@ -284,7 +280,8 @@ export default function TestDashboard() {
                   <Alert>
                     <AlertDescription>
                       <strong>Population Summary:</strong><br />
-                      ✅ Created {populationResult.users.length} users<br />
+                      ✅ Created {populationResult.created.homeowners} homeowners, {populationResult.created.handwerkers} handwerkers<br />
+                      ✅ Created {populationResult.created.leads} leads, {populationResult.created.proposals} proposals<br />
                       ❌ {populationResult.errors.length} errors
                     </AlertDescription>
                   </Alert>

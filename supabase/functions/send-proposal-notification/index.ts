@@ -36,13 +36,13 @@ serve(async (req) => {
         leads!lead_proposals_lead_id_fkey(
           id,
           title,
-          user_id,
-          profiles!leads_user_id_fkey(email, full_name)
+          owner_id,
+          profiles!leads_owner_id_fkey(email, full_name)
         ),
         handwerker_profiles!lead_proposals_handwerker_id_fkey(
           profiles!handwerker_profiles_user_id_fkey(full_name),
-          city,
-          average_rating
+          business_city,
+          hourly_rate_min
         )
       `)
       .eq('id', proposalId)
@@ -65,7 +65,7 @@ serve(async (req) => {
       .from('magic_tokens')
       .insert({
         token,
-        user_id: proposal.leads?.user_id,
+        user_id: proposal.leads?.owner_id,
         resource_type: 'proposal',
         resource_id: proposalId,
         expires_at: expiresAt.toISOString(),
@@ -81,10 +81,10 @@ serve(async (req) => {
     const emailHtml = newProposalNotificationTemplate({
       projectTitle: proposal.leads?.title || 'Ihr Projekt',
       handwerkerFirstName: firstName,
-      handwerkerCity: proposal.handwerker_profiles?.city || 'Region',
+      handwerkerCity: proposal.handwerker_profiles?.business_city || 'Region',
       priceMin: proposal.price_min,
       priceMax: proposal.price_max,
-      rating: proposal.handwerker_profiles?.average_rating,
+      rating: proposal.handwerker_profiles?.hourly_rate_min ? 4.5 : undefined,
       magicLink,
       clientName: proposal.leads?.profiles?.full_name || 'Kunde',
     });

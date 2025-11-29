@@ -22,6 +22,7 @@ import { X } from 'lucide-react';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
 import { SWISS_CANTONS } from '@/config/cantons';
 import ServiceAreaMap from '@/components/ServiceAreaMap';
+import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 import { Label } from '@/components/ui/label';
 
 const profileSchema = z.object({
@@ -163,26 +164,26 @@ const Profile = () => {
             .maybeSingle();
 
           if (subscriptionData) {
-            const planDisplayName = subscriptionData.plan_type === 'free' ? 'Gratis' : 
-                                    subscriptionData.plan_type === 'starter' ? 'Starter' : 'Professional';
+            const planType = subscriptionData.plan_type as 'free' | 'monthly' | '6_month' | 'annual';
+            const plan = SUBSCRIPTION_PLANS[planType];
             
             setCurrentSubscription({
               plan: {
-                id: subscriptionData.plan_type,
-                name: subscriptionData.plan_type,
-                displayName: planDisplayName,
-                monthlyPrice: subscriptionData.plan_type === 'free' ? 0 : subscriptionData.plan_type === 'starter' ? 49 : 99,
-                yearlyPrice: subscriptionData.plan_type === 'free' ? 0 : subscriptionData.plan_type === 'starter' ? 490 : 990,
-                competitors: subscriptionData.plan_type === 'free' ? 10 : subscriptionData.plan_type === 'starter' ? 4 : 2,
-                includedLeads: subscriptionData.proposals_limit === -1 ? Infinity : subscriptionData.proposals_limit,
+                id: plan.id,
+                name: plan.name,
+                displayName: plan.displayName,
+                monthlyPrice: plan.pricePerMonth,
+                yearlyPrice: plan.price,
+                competitors: 0, // Deprecated field
+                includedLeads: plan.proposalsLimit === -1 ? Infinity : plan.proposalsLimit,
                 extraLeadPrice: 0,
-                features: []
+                features: plan.features
               },
               isActive: subscriptionData.status === 'active',
               currentPeriodStart: subscriptionData.current_period_start,
               currentPeriodEnd: subscriptionData.current_period_end,
               usedLeads: subscriptionData.proposals_used_this_period || 0,
-              isYearly: false,
+              isYearly: plan.billingCycle !== 'monthly',
               hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified)
             });
           }
