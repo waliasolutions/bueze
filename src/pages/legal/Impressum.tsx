@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,9 +137,9 @@ const Impressum = () => {
                     </p>
                     <p className="mt-2">
                       Weitere Informationen finden Sie in unserer{' '}
-                      <a href="/datenschutz" className="text-brand-500 hover:text-brand-600">
+                      <Link to="/datenschutz" className="text-brand-500 hover:text-brand-600">
                         Datenschutzerklärung
-                      </a>.
+                      </Link>.
                     </p>
                   </div>
 
