@@ -36,9 +36,9 @@ serve(async (req) => {
         leads!lead_proposals_lead_id_fkey(
           id,
           title,
-          user_id,
+          owner_id,
           address,
-          profiles!leads_user_id_fkey(email, full_name, phone)
+          profiles!leads_owner_id_fkey(email, full_name, phone)
         ),
         handwerker_profiles!lead_proposals_handwerker_id_fkey(
           user_id,
@@ -59,7 +59,7 @@ serve(async (req) => {
       .from('conversations')
       .insert({
         lead_id: proposal.lead_id,
-        client_id: proposal.leads?.user_id,
+        homeowner_id: proposal.leads?.owner_id,
         handwerker_id: proposal.handwerker_profiles?.user_id,
       })
       .select()
