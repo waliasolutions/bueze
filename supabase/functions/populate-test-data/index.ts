@@ -122,8 +122,11 @@ serve(async (req) => {
     ];
 
     // Create homeowners
+    const homeownerIds: string[] = [];
     for (const homeowner of homeowners) {
       try {
+        let userId: string | null = null;
+        
         const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
           email: homeowner.email,
           password: 'Test1234!',
@@ -134,22 +137,38 @@ serve(async (req) => {
           }
         });
 
-        if (createError) throw createError;
+        if (createError && createError.message.includes('already been registered')) {
+          // User exists - look them up
+          console.log(`Homeowner ${homeowner.email} already exists, looking up...`);
+          const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+          const existingUser = existingUsers.users?.find(u => u.email === homeowner.email);
+          if (existingUser) {
+            userId = existingUser.id;
+            console.log(`Found existing homeowner: ${homeowner.email}`);
+          }
+        } else if (authData) {
+          userId = authData.user.id;
+          results.homeownersCreated++;
+          console.log(`Created homeowner: ${homeowner.email}`);
+        } else if (createError) {
+          throw createError;
+        }
 
-        await supabaseAdmin.from('profiles').upsert({
-          id: authData.user.id,
-          email: homeowner.email,
-          full_name: homeowner.name,
-          phone: homeowner.phone
-        });
+        if (userId) {
+          homeownerIds.push(userId);
+          
+          await supabaseAdmin.from('profiles').upsert({
+            id: userId,
+            email: homeowner.email,
+            full_name: homeowner.name,
+            phone: homeowner.phone
+          });
 
-        await supabaseAdmin.from('user_roles').upsert({
-          user_id: authData.user.id,
-          role: 'client'
-        });
-
-        results.homeownersCreated++;
-        console.log(`Created homeowner: ${homeowner.email}`);
+          await supabaseAdmin.from('user_roles').upsert({
+            user_id: userId,
+            role: 'client'
+          }, { onConflict: 'user_id, role' });
+        }
       } catch (error) {
         results.errors.push(`Homeowner ${homeowner.email}: ${error.message}`);
       }
@@ -159,6 +178,8 @@ serve(async (req) => {
     const handwerkerIds: string[] = [];
     for (const handwerker of handwerkers) {
       try {
+        let userId: string | null = null;
+        
         const { data: authData, error: createError } = await supabaseAdmin.auth.admin.createUser({
           email: handwerker.email,
           password: 'Test1234!',
@@ -168,64 +189,81 @@ serve(async (req) => {
           }
         });
 
-        if (createError) throw createError;
+        if (createError && createError.message.includes('already been registered')) {
+          // User exists - look them up
+          console.log(`Handwerker ${handwerker.email} already exists, looking up...`);
+          const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+          const existingUser = existingUsers.users?.find(u => u.email === handwerker.email);
+          if (existingUser) {
+            userId = existingUser.id;
+            console.log(`Found existing handwerker: ${handwerker.email}`);
+          }
+        } else if (authData) {
+          userId = authData.user.id;
+          results.handwerkersCreated++;
+          console.log(`Created handwerker: ${handwerker.email}`);
+        } else if (createError) {
+          throw createError;
+        }
 
-        await supabaseAdmin.from('profiles').upsert({
-          id: authData.user.id,
-          email: handwerker.email,
-          full_name: `${handwerker.firstName} ${handwerker.lastName}`
-        });
-
-        await supabaseAdmin.from('user_roles').upsert({
-          user_id: authData.user.id,
-          role: 'handwerker'
-        });
-
-        const { data: profileData } = await supabaseAdmin
-          .from('handwerker_profiles')
-          .insert({
-            user_id: authData.user.id,
+        if (userId) {
+          handwerkerIds.push(userId);
+          
+          await supabaseAdmin.from('profiles').upsert({
+            id: userId,
             email: handwerker.email,
-            first_name: handwerker.firstName,
-            last_name: handwerker.lastName,
-            company_name: handwerker.company,
-            categories: handwerker.categories,
-            service_areas: [handwerker.zip],
-            business_zip: handwerker.zip,
-            business_canton: handwerker.canton,
-            business_city: handwerker.city,
-            verification_status: 'approved',
-            is_verified: true,
-            verified_at: new Date().toISOString(),
-            bio: `Professioneller Handwerker mit jahrelanger Erfahrung in ${handwerker.categories.join(', ')}.`,
-            hourly_rate_min: 80,
-            hourly_rate_max: 120
-          })
-          .select()
-          .single();
+            full_name: `${handwerker.firstName} ${handwerker.lastName}`
+          });
 
-        await supabaseAdmin.from('handwerker_subscriptions').insert({
-          user_id: authData.user.id,
-          plan_type: 'free',
-          proposals_limit: 5,
-          proposals_used_this_period: 0,
-          status: 'active'
-        });
+          await supabaseAdmin.from('user_roles').upsert({
+            user_id: userId,
+            role: 'handwerker'
+          }, { onConflict: 'user_id, role' });
 
-        handwerkerIds.push(authData.user.id);
-        results.handwerkersCreated++;
-        console.log(`Created handwerker: ${handwerker.email}`);
+          // Use upsert for handwerker_profiles
+          await supabaseAdmin
+            .from('handwerker_profiles')
+            .upsert({
+              user_id: userId,
+              email: handwerker.email,
+              first_name: handwerker.firstName,
+              last_name: handwerker.lastName,
+              company_name: handwerker.company,
+              categories: handwerker.categories,
+              service_areas: [handwerker.zip],
+              business_zip: handwerker.zip,
+              business_canton: handwerker.canton,
+              business_city: handwerker.city,
+              verification_status: 'approved',
+              is_verified: true,
+              verified_at: new Date().toISOString(),
+              bio: `Professioneller Handwerker mit jahrelanger Erfahrung in ${handwerker.categories.join(', ')}.`,
+              hourly_rate_min: 80,
+              hourly_rate_max: 120
+            }, { onConflict: 'user_id' });
+
+          // Upsert subscription
+          await supabaseAdmin.from('handwerker_subscriptions').upsert({
+            user_id: userId,
+            plan_type: 'free',
+            proposals_limit: 5,
+            proposals_used_this_period: 0,
+            status: 'active'
+          }, { onConflict: 'user_id' });
+        }
       } catch (error) {
         console.error(`Error creating handwerker ${handwerker.email}:`, error);
         results.errors.push(`Handwerker ${handwerker.email}: ${error.message || JSON.stringify(error)}`);
       }
     }
 
-    // Get created homeowner IDs
-    const { data: homeownerProfiles } = await supabaseAdmin
-      .from('profiles')
-      .select('id, email')
-      .in('email', homeowners.map(h => h.email));
+    // Delete old test leads to avoid accumulation
+    if (homeownerIds.length > 0) {
+      console.log('Deleting old test leads...');
+      await supabaseAdmin.from('leads')
+        .delete()
+        .in('owner_id', homeownerIds);
+    }
 
     // Create leads
     const leadCategories = ['elektriker', 'maler', 'schreiner', 'sanitaer', 'dachdecker'];
@@ -246,10 +284,10 @@ serve(async (req) => {
     ];
 
     const leadIds: string[] = [];
-    if (homeownerProfiles && homeownerProfiles.length > 0) {
+    if (homeownerIds.length > 0) {
       for (let i = 0; i < 25; i++) {
         try {
-          const owner = homeownerProfiles[i % homeownerProfiles.length];
+          const ownerId = homeownerIds[i % homeownerIds.length];
           const city = cities[i % cities.length];
           const template = leadTemplates[i % leadTemplates.length];
           const category = leadCategories[i % leadCategories.length];
@@ -257,7 +295,7 @@ serve(async (req) => {
           const { data: leadData } = await supabaseAdmin
             .from('leads')
             .insert({
-              owner_id: owner.id,
+              owner_id: ownerId,
               title: `${template.title} ${i + 1}`,
               description: template.desc,
               category: category,
