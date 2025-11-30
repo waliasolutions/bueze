@@ -13,7 +13,9 @@ import {
 // Using edge function for test data population with service role permissions
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, Users, FileText, Search, MessageSquare } from "lucide-react";
+import { CheckCircle, XCircle, Users, FileText, Search, MessageSquare, ShieldAlert, LogIn } from "lucide-react";
+import { Session, User } from "@supabase/supabase-js";
+import { Link } from "react-router-dom";
 
 interface TestResult {
   name: string;
@@ -29,7 +31,64 @@ export default function TestDashboard() {
   const [isPopulating, setIsPopulating] = useState(false);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunningTests, setIsRunningTests] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const { toast } = useToast();
+
+  // Check authentication and admin status
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Check admin role when user changes
+        if (session?.user) {
+          setTimeout(() => {
+            checkAdminRole(session.user.id);
+          }, 0);
+        } else {
+          setIsAdmin(false);
+          setAuthLoading(false);
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        checkAdminRole(session.user.id);
+      } else {
+        setAuthLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkAdminRole = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .in('role', ['admin', 'super_admin'])
+        .single();
+
+      setIsAdmin(!!data && !error);
+    } catch (error) {
+      console.error('Error checking admin role:', error);
+      setIsAdmin(false);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   const updateTestResult = (name: string, status: TestResult['status'], message?: string, details?: any) => {
     setTestResults(prev => {
@@ -46,6 +105,24 @@ export default function TestDashboard() {
   };
 
   const handlePopulateData = async () => {
+    if (!session) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in as an admin to populate test data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isAdmin) {
+      toast({
+        title: "Admin Access Required",
+        description: "You need admin or super_admin role to populate test data.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsPopulating(true);
     try {
       // Call edge function with service role permissions
@@ -53,19 +130,26 @@ export default function TestDashboard() {
         body: {}
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Edge function returned an error');
+      }
+
+      if (!data) {
+        throw new Error('No data returned from edge function');
+      }
 
       setPopulationResult({
         success: data.success,
         message: data.message,
         created: {
-          homeowners: data.results.homeownersCreated,
-          handwerkers: data.results.handwerkersCreated,
-          leads: data.results.leadsCreated,
-          proposals: data.results.proposalsCreated,
+          homeowners: data.results?.homeownersCreated || 0,
+          handwerkers: data.results?.handwerkersCreated || 0,
+          leads: data.results?.leadsCreated || 0,
+          proposals: data.results?.proposalsCreated || 0,
           conversations: 0
         },
-        errors: data.results.errors || []
+        errors: data.results?.errors || []
       });
       
       if (data.success) {
@@ -82,9 +166,10 @@ export default function TestDashboard() {
       }
     } catch (error) {
       console.error('Population error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
-        title: "Error",
-        description: error.message || "Failed to populate test data. Check console for details.",
+        title: "Error Populating Data",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -264,6 +349,46 @@ export default function TestDashboard() {
         </p>
       </div>
 
+      {/* Authentication Status Banner */}
+      <div className="mx-auto max-w-2xl">
+        {authLoading ? (
+          <Alert>
+            <AlertDescription className="flex items-center gap-2">
+              <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              Checking authentication status...
+            </AlertDescription>
+          </Alert>
+        ) : !user ? (
+          <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Please log in as an admin to use this dashboard.</span>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/auth">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Log In
+                </Link>
+              </Button>
+            </AlertDescription>
+          </Alert>
+        ) : !isAdmin ? (
+          <Alert variant="destructive">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Access Denied:</strong> You are logged in as {user.email}, but you need admin or super_admin role to populate test data.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription>
+              <strong>Authenticated:</strong> Logged in as {user.email} 
+              <Badge variant="default" className="ml-2">Admin</Badge>
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+
       <Tabs defaultValue="population" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="population">Data Population</TabsTrigger>
@@ -286,11 +411,26 @@ export default function TestDashboard() {
             <CardContent className="space-y-4">
               <Button 
                 onClick={handlePopulateData} 
-                disabled={isPopulating}
+                disabled={isPopulating || !user || !isAdmin}
                 className="w-full"
+                title={
+                  !user 
+                    ? "Please log in first" 
+                    : !isAdmin 
+                    ? "Admin access required" 
+                    : "Populate test data"
+                }
               >
                 {isPopulating ? "Populating..." : "Populate Test Data"}
               </Button>
+              
+              {(!user || !isAdmin) && (
+                <p className="text-sm text-muted-foreground text-center">
+                  {!user 
+                    ? "You must be logged in as an admin to populate test data." 
+                    : "You need admin or super_admin role to use this feature."}
+                </p>
+              )}
 
               {populationResult && (
                 <div className="space-y-2">
