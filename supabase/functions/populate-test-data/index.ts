@@ -74,7 +74,7 @@ serve(async (req) => {
         firstName: 'Hans', 
         lastName: 'Elektro',
         company: 'Elektro Hans GmbH',
-        categories: ['electrician'],
+        categories: ['elektriker'],
         zip: '8001',
         canton: 'ZH',
         city: 'Zürich'
@@ -84,7 +84,7 @@ serve(async (req) => {
         firstName: 'Maria', 
         lastName: 'Farben',
         company: 'Malermeister Farben',
-        categories: ['painter'],
+        categories: ['maler'],
         zip: '3011',
         canton: 'BE',
         city: 'Bern'
@@ -94,7 +94,7 @@ serve(async (req) => {
         firstName: 'Karl', 
         lastName: 'Holz',
         company: 'Schreinerei Holz AG',
-        categories: ['carpenter'],
+        categories: ['schreiner'],
         zip: '4051',
         canton: 'BS',
         city: 'Basel'
@@ -104,7 +104,7 @@ serve(async (req) => {
         firstName: 'Stefan', 
         lastName: 'Warm',
         company: 'Heizung & Sanitär Warm',
-        categories: ['plumber', 'heating'],
+        categories: ['sanitaer', 'heizung'],
         zip: '6003',
         canton: 'LU',
         city: 'Luzern'
@@ -114,7 +114,7 @@ serve(async (req) => {
         firstName: 'Andreas', 
         lastName: 'Dach',
         company: 'Dachdeckerei Dach',
-        categories: ['roofer'],
+        categories: ['dachdecker'],
         zip: '9000',
         canton: 'SG',
         city: 'St. Gallen'
@@ -197,7 +197,7 @@ serve(async (req) => {
             verification_status: 'approved',
             is_verified: true,
             verified_at: new Date().toISOString(),
-            bio: `Professioneller ${handwerker.categories[0]} mit jahrelanger Erfahrung.`,
+            bio: `Professioneller Handwerker mit jahrelanger Erfahrung in ${handwerker.categories.join(', ')}.`,
             hourly_rate_min: 80,
             hourly_rate_max: 120
           })
@@ -216,7 +216,8 @@ serve(async (req) => {
         results.handwerkersCreated++;
         console.log(`Created handwerker: ${handwerker.email}`);
       } catch (error) {
-        results.errors.push(`Handwerker ${handwerker.email}: ${error.message}`);
+        console.error(`Error creating handwerker ${handwerker.email}:`, error);
+        results.errors.push(`Handwerker ${handwerker.email}: ${error.message || JSON.stringify(error)}`);
       }
     }
 
@@ -227,7 +228,7 @@ serve(async (req) => {
       .in('email', homeowners.map(h => h.email));
 
     // Create leads
-    const leadCategories = ['electrician', 'painter', 'carpenter', 'plumber', 'roofer'];
+    const leadCategories = ['elektriker', 'maler', 'schreiner', 'sanitaer', 'dachdecker'];
     const cities = [
       { name: 'Zürich', zip: '8001', canton: 'ZH' },
       { name: 'Bern', zip: '3011', canton: 'BE' },
@@ -266,7 +267,7 @@ serve(async (req) => {
               budget_min: 1000 + (i * 500),
               budget_max: 3000 + (i * 1000),
               budget_type: i % 2 === 0 ? 'estimate' : 'fixed',
-              urgency: ['immediate', 'urgent', 'planning'][i % 3],
+              urgency: ['today', 'this_week', 'this_month', 'planning'][i % 4],
               status: 'active',
               proposal_deadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString()
             })
@@ -278,7 +279,8 @@ serve(async (req) => {
             results.leadsCreated++;
           }
         } catch (error) {
-          results.errors.push(`Lead ${i + 1}: ${error.message}`);
+          console.error(`Error creating lead ${i + 1}:`, error);
+          results.errors.push(`Lead ${i + 1}: ${error.message || JSON.stringify(error)}`);
         }
       }
     }
