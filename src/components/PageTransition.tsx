@@ -5,14 +5,8 @@ export const PageTransition = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const [isTransitioning, setIsTransitioning] = React.useState(false);
 
-  React.useLayoutEffect(() => {
-    // CRITICAL: Scroll BEFORE browser paints (useLayoutEffect runs synchronously)
-    // This prevents browser from restoring old scroll position
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-  }, [location.pathname, location.search]);
-
   React.useEffect(() => {
-    // Trigger fade transition AFTER scroll
+    // Trigger fade transition on route change
     setIsTransitioning(true);
     const timer = setTimeout(() => {
       setIsTransitioning(false);

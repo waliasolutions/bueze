@@ -58,8 +58,13 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 const ScrollToTop = () => {
   const { pathname, hash } = useLocation();
   
+  React.useLayoutEffect(() => {
+    // Scroll to top immediately on pathname change (before browser paints)
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   React.useEffect(() => {
-    // Only handle hash fragment scrolling (regular scrolling handled by PageTransition)
+    // Handle hash navigation separately (smooth scroll to anchors)
     if (hash) {
       const scrollTimer = setTimeout(() => {
         const element = document.querySelector(hash);
@@ -69,7 +74,7 @@ const ScrollToTop = () => {
       }, 200);
       return () => clearTimeout(scrollTimer);
     }
-  }, [pathname, hash]);
+  }, [hash]);
   
   return null;
 };
