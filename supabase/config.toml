@@ -1,1 +1,4 @@
 project_id = "ztthhdlhuhtwaaennfia"
+
+[functions.populate-test-data]
+verify_jwt = true
