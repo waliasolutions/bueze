@@ -10,7 +10,7 @@ import {
   createTestLead,
   createHandwerkerProfile 
 } from "@/utils/testData";
-import { populateTestData } from "@/utils/testDataPopulation";
+// Using edge function for test data population with service role permissions
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, XCircle, Users, FileText, Search, MessageSquare } from "lucide-react";
@@ -48,27 +48,44 @@ export default function TestDashboard() {
   const handlePopulateData = async () => {
     setIsPopulating(true);
     try {
-      const result = await populateTestData();
-      setPopulationResult(result);
+      // Call edge function with service role permissions
+      const { data, error } = await supabase.functions.invoke('populate-test-data', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      setPopulationResult({
+        success: data.success,
+        message: data.message,
+        created: {
+          homeowners: data.results.homeownersCreated,
+          handwerkers: data.results.handwerkersCreated,
+          leads: data.results.leadsCreated,
+          proposals: data.results.proposalsCreated,
+          conversations: 0
+        },
+        errors: data.results.errors || []
+      });
       
-      if (result.errors.length > 0) {
+      if (data.success) {
         toast({
-          title: "Partially Successful",
-          description: `${result.message} with ${result.errors.length} errors`,
-          variant: "destructive"
+          title: "Test Data Populated",
+          description: `Created ${data.results.homeownersCreated} homeowners, ${data.results.handwerkersCreated} handwerkers, ${data.results.leadsCreated} leads, and ${data.results.proposalsCreated} proposals.`,
         });
       } else {
         toast({
-          title: "Success",
-          description: result.message,
+          title: "Population Failed",
+          description: data.error || "Unknown error",
+          variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Error populating data:', error);
+      console.error('Population error:', error);
       toast({
         title: "Error",
-        description: "Failed to populate test data",
-        variant: "destructive"
+        description: error.message || "Failed to populate test data. Check console for details.",
+        variant: "destructive",
       });
     } finally {
       setIsPopulating(false);
