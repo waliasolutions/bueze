@@ -1688,8 +1688,6 @@ export type Database = {
         | "VS"
         | "ZG"
         | "ZH"
-      employment_status: "active" | "inactive" | "terminated"
-      employment_type: "full_time" | "part_time" | "temporary" | "intern"
       handwerker_category:
         | "elektriker"
         | "sanitaer"
@@ -1785,8 +1783,6 @@ export type Database = {
         | "paused"
         | "completed"
         | "deleted"
-      payroll_period_type: "monthly" | "weekly" | "bi_weekly"
-      payroll_status: "draft" | "calculated" | "approved" | "paid"
       proposal_status: "pending" | "accepted" | "rejected" | "withdrawn"
       subscription_plan:
         | "starter"
@@ -1823,19 +1819,8 @@ export type Database = {
         | "VS"
         | "ZG"
         | "ZH"
-      time_entry_status: "draft" | "submitted" | "approved" | "rejected"
       urgency_level: "today" | "this_week" | "this_month" | "planning"
       user_role: "homeowner" | "handwerker" | "admin"
-      vacation_request_status: "pending" | "approved" | "rejected" | "cancelled"
-      vacation_request_type:
-        | "vacation"
-        | "sick_leave"
-        | "unpaid_leave"
-        | "personal_day"
-        | "maternity"
-        | "paternity"
-      vacation_status: "pending" | "approved" | "rejected"
-      vacation_type: "annual" | "sick" | "maternity" | "paternity" | "unpaid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2000,8 +1985,6 @@ export const Constants = {
         "ZG",
         "ZH",
       ],
-      employment_status: ["active", "inactive", "terminated"],
-      employment_type: ["full_time", "part_time", "temporary", "intern"],
       handwerker_category: [
         "elektriker",
         "sanitaer",
@@ -2099,8 +2082,6 @@ export const Constants = {
         "completed",
         "deleted",
       ],
-      payroll_period_type: ["monthly", "weekly", "bi_weekly"],
-      payroll_status: ["draft", "calculated", "approved", "paid"],
       proposal_status: ["pending", "accepted", "rejected", "withdrawn"],
       subscription_plan: [
         "starter",
@@ -2139,20 +2120,8 @@ export const Constants = {
         "ZG",
         "ZH",
       ],
-      time_entry_status: ["draft", "submitted", "approved", "rejected"],
       urgency_level: ["today", "this_week", "this_month", "planning"],
       user_role: ["homeowner", "handwerker", "admin"],
-      vacation_request_status: ["pending", "approved", "rejected", "cancelled"],
-      vacation_request_type: [
-        "vacation",
-        "sick_leave",
-        "unpaid_leave",
-        "personal_day",
-        "maternity",
-        "paternity",
-      ],
-      vacation_status: ["pending", "approved", "rejected"],
-      vacation_type: ["annual", "sick", "maternity", "paternity", "unpaid"],
     },
   },
 } as const
