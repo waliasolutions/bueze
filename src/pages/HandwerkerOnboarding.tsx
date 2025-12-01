@@ -578,6 +578,20 @@ const HandwerkerOnboarding = () => {
         userEmail = formData.email;
         
         console.log('Auth account created successfully:', userId);
+
+        // Explicitly sign in to ensure session is established for RLS
+        console.log('Signing in to establish session...');
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: tempPassword,
+        });
+
+        if (signInError) {
+          console.error('SignIn error after signup:', signInError);
+          throw new Error('Anmeldung nach Registrierung fehlgeschlagen');
+        }
+
+        console.log('User signed in successfully');
       }
 
       // Use personal address for business if same address is selected
@@ -710,6 +724,11 @@ const HandwerkerOnboarding = () => {
         console.error('Error message:', error.message);
         console.error('Error details:', error.details);
         console.error('Error hint:', error.hint);
+        
+        // More user-friendly error messages
+        if (error.message.includes('row-level security') || error.message.includes('policy')) {
+          throw new Error('Berechtigungsfehler: Profil konnte nicht erstellt werden. Bitte kontaktieren Sie den Support.');
+        }
         throw error;
       }
       if (!profileData) {
@@ -2274,7 +2293,7 @@ const HandwerkerOnboarding = () => {
               <CheckCircle className="h-5 w-5 text-primary" />
               <AlertDescription className="text-base ml-2">
                 Bitte überprüfen Sie alle Angaben sorgfältig. Nach dem Absenden 
-                wird Ihr Profil innerhalb von 1-2 Werktagen durch unser Team verifiziert.
+                wird Ihr Profil innerhalb von 1-2 Werktagen durch unser Team geprüft.
               </AlertDescription>
             </Alert>
           </div>

@@ -351,8 +351,8 @@ const Dashboard = () => {
                     <CardTitle>Verifizierungs-Status</CardTitle>
                     <CardDescription>
                       {handwerkerProfile.is_verified 
-                        ? 'Ihr Profil ist geprüft und verifiziert' 
-                        : 'Verfolgen Sie den Fortschritt Ihrer Verifizierung'}
+                        ? 'Ihr Profil ist geprüft und freigeschaltet' 
+                        : 'Verfolgen Sie den Fortschritt Ihrer Prüfung'}
                     </CardDescription>
                   </div>
                   <Badge variant={handwerkerProfile.is_verified ? 'default' : 'secondary'}>
