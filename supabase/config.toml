@@ -5,3 +5,24 @@ verify_jwt = true
 
 [functions.reset-user-password]
 verify_jwt = true
+
+[functions.send-acceptance-emails]
+verify_jwt = false
+
+[functions.send-lead-notification]
+verify_jwt = false
+
+[functions.send-proposal-notification]
+verify_jwt = false
+
+[functions.send-admin-registration-notification]
+verify_jwt = false
+
+[functions.send-approval-email]
+verify_jwt = false
+
+[functions.send-rejection-email]
+verify_jwt = false
+
+[functions.send-handwerker-credentials]
+verify_jwt = false
