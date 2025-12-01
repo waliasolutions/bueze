@@ -25,6 +25,18 @@ export const Header = () => {
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMenuOpen]);
+
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
   const isSuperAdmin = userRole === 'super_admin';
 
@@ -219,9 +231,33 @@ export const Header = () => {
           </button>
         </div>
 
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="lg:hidden border-t border-line-200 py-4 space-y-2">
+        {/* Mobile Menu Backdrop */}
+        <div 
+          className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 ${
+            isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+          onClick={() => setIsMenuOpen(false)}
+        />
+
+        {/* Mobile Menu Slide-in Panel */}
+        <div 
+          className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-50 lg:hidden 
+            transform transition-transform duration-300 ease-out shadow-2xl
+            ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        >
+          {/* Menu Header */}
+          <div className="flex justify-between items-center p-4 border-b border-line-200 bg-pastel-pink/10">
+            <span className="font-bold text-lg text-ink-900">Menü</span>
+            <button 
+              onClick={() => setIsMenuOpen(false)}
+              className="p-2 hover:bg-pastel-pink/20 rounded-lg transition-colors"
+            >
+              <X className="h-6 w-6 text-ink-900" />
+            </button>
+          </div>
+          
+          {/* Menu Content */}
+          <div className="p-4 space-y-2 overflow-y-auto h-[calc(100%-80px)]">
             {navItems.map((item, index) => {
               // Handle hash links
               if (item.href?.startsWith('/#')) {
@@ -230,7 +266,7 @@ export const Header = () => {
                     key={index}
                     href={item.href}
                     onClick={(e) => handleNavClick(item.href, e)}
-                    className="block py-2 text-ink-700 hover:text-brand-600 transition-colors font-medium cursor-pointer"
+                    className="block py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium cursor-pointer"
                   >
                     {item.label}
                   </a>
@@ -242,21 +278,21 @@ export const Header = () => {
                 <Link
                   key={index}
                   to={item.href}
-                  className="block py-2 text-ink-700 hover:text-brand-600 transition-colors font-medium"
+                  className="block py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.label}
                 </Link>
               );
             })}
-            <div className="flex flex-col gap-3 pt-4 border-t border-line-200">
+            <div className="flex flex-col gap-3 pt-4 border-t border-line-200 mt-4">
               {user ? (
                 <div className="space-y-3">
                   {isAdmin && (
                     <div className="space-y-2">
                       <button
                         onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
-                        className="w-full flex items-center justify-between py-2 text-brand-600 hover:text-brand-700 transition-colors font-medium"
+                        className="w-full flex items-center justify-between py-3 px-4 text-brand-600 hover:text-brand-700 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
                       >
                         <span className="flex items-center gap-2">
                           <Shield className="h-4 w-4" />
@@ -272,7 +308,7 @@ export const Header = () => {
                         <div className="pl-4 space-y-1 border-l-2 border-brand-200">
                           <Button
                             variant="ghost"
-                            className="justify-start w-full"
+                            className="justify-start w-full hover:bg-pastel-pink/20"
                             onClick={() => {
                               navigate('/admin/dashboard');
                               setIsMenuOpen(false);
@@ -282,7 +318,7 @@ export const Header = () => {
                           </Button>
                           <Button
                             variant="ghost"
-                            className="justify-start w-full"
+                            className="justify-start w-full hover:bg-pastel-pink/20"
                             onClick={() => {
                               navigate('/admin/approvals');
                               setIsMenuOpen(false);
@@ -293,7 +329,7 @@ export const Header = () => {
                           {isSuperAdmin && (
                             <Button
                               variant="ghost"
-                              className="justify-start w-full"
+                              className="justify-start w-full hover:bg-pastel-pink/20"
                               onClick={() => {
                                 navigate('/admin/users');
                                 setIsMenuOpen(false);
@@ -335,7 +371,7 @@ export const Header = () => {
               )}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </header>
   );

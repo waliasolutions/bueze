@@ -7,8 +7,21 @@ export const GlobalScriptManager = () => {
   useEffect(() => {
     if (!settings) return;
 
-    // Inject GTM
-    if (settings.gtm_container_id && !document.querySelector(`script[data-gtm="${settings.gtm_container_id}"]`)) {
+    // Check cookie consent before injecting GTM
+    const checkConsent = () => {
+      const consentString = localStorage.getItem('bueeze_cookie_consent');
+      if (!consentString) return false; // No consent given yet
+      
+      try {
+        const consent = JSON.parse(consentString);
+        return consent.analytics === true; // Only inject if analytics is accepted
+      } catch {
+        return false;
+      }
+    };
+
+    // Inject GTM only if analytics consent is given
+    if (settings.gtm_container_id && checkConsent() && !document.querySelector(`script[data-gtm="${settings.gtm_container_id}"]`)) {
       // GTM script
       const gtmScript = document.createElement('script');
       gtmScript.setAttribute('data-gtm', settings.gtm_container_id);
@@ -32,6 +45,20 @@ export const GlobalScriptManager = () => {
       gtmNoscript.appendChild(gtmIframe);
       document.body.insertBefore(gtmNoscript, document.body.firstChild);
     }
+
+    // Listen for consent changes
+    const handleConsentUpdate = (event: CustomEvent) => {
+      const consent = event.detail;
+      // If analytics consent is now given and GTM not loaded, reload page
+      if (consent.analytics && !document.querySelector(`script[data-gtm="${settings.gtm_container_id}"]`)) {
+        window.location.reload();
+      }
+    };
+
+    window.addEventListener('cookieConsentUpdated', handleConsentUpdate as EventListener);
+    return () => {
+      window.removeEventListener('cookieConsentUpdated', handleConsentUpdate as EventListener);
+    };
   }, [settings]);
 
   return null;

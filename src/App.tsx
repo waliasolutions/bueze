@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { initErrorTracking, generateCorrelationId } from "@/lib/errorTracking";
 import { PageTransition, TopLoadingBar } from "@/components/PageTransition";
 import { GlobalScriptManager } from "@/components/GlobalScriptManager";
+import { CookieBanner } from "@/components/CookieBanner";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import HandwerkerOnboarding from "./pages/HandwerkerOnboarding";
@@ -103,6 +104,7 @@ const App = () => {
           <TopLoadingBar />
           <Toaster />
           <Sonner />
+          <CookieBanner />
           <PageTransition>
             <Routes>
             <Route path="/" element={<Index />} />
