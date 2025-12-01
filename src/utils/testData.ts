@@ -27,7 +27,7 @@ export interface TestUser {
 export interface TestLead {
   title: string;
   description: string;
-  category: 'elektriker' | 'sanitaer' | 'heizung' | 'klimatechnik' | 'maler' | 'gipser' | 'bodenleger' | 'plattenleger' | 'schreiner' | 'maurer' | 'zimmermann' | 'dachdecker' | 'fassadenbauer' | 'gartenbau' | 'pflasterarbeiten' | 'zaun_torbau' | 'fenster_tueren' | 'kuechenbau' | 'badumbau' | 'umzug' | 'reinigung' | 'schlosserei' | 'spengler';
+  category: 'bau_renovation' | 'bodenbelaege' | 'elektroinstallationen' | 'heizung_klima_solar' | 'sanitaer' | 'kueche' | 'innenausbau_schreiner' | 'garten_umgebung' | 'raeumung_entsorgung' | 'reinigung_hauswartung';
   budget_min: number;
   budget_max: number;
   urgency: 'today' | 'this_week' | 'this_month' | 'planning';
@@ -514,7 +514,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Badezimmer komplett renovieren",
     description: "Wir möchten unser 15m² grosses Badezimmer komplett renovieren. Neue Fliesen, moderne Sanitäranlagen, bodengleiche Dusche und LED-Beleuchtung. Das Badezimmer ist im 1. Stock eines Einfamilienhauses.",
-    category: "badumbau",
+    category: "sanitaer",
     budget_min: 15000,
     budget_max: 25000,
     urgency: "planning",
@@ -526,7 +526,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Elektroinstallation für Neubau",
     description: "Elektroinstallation für ein neues Einfamilienhaus (150m²) mit Smart Home System, PV-Anlage und Wallbox für E-Auto. Moderne LED-Beleuchtung und KNX-System gewünscht.",
-    category: "elektriker",
+    category: "elektroinstallationen",
     budget_min: 25000,
     budget_max: 40000,
     urgency: "this_month",
@@ -538,7 +538,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Küche nach Mass anfertigen",
     description: "Massgeschreinerte Küche für offenen Wohnbereich. L-Form mit Kochinsel, hochwertige Materialien (Eiche massiv). Inklusive Planung und Montage aller Geräte.",
-    category: "kuechenbau",
+    category: "kueche",
     budget_min: 30000,
     budget_max: 50000,
     urgency: "planning",
@@ -550,7 +550,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Heizung modernisieren",
     description: "Alte Ölheizung durch moderne Wärmepumpe ersetzen. Einfamilienhaus 180m², bestehende Radiatoren sollen wenn möglich weiter verwendet werden. Fördergelder bereits beantragt.",
-    category: "heizung",
+    category: "heizung_klima_solar",
     budget_min: 20000,
     budget_max: 35000,
     urgency: "this_week",
@@ -562,7 +562,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Wohnzimmer und Flur streichen",
     description: "Wohnzimmer (35m²) und Flur (15m²) neu streichen. Wände vorbereiten, grundieren und 2x streichen. Hochwertige Farbe gewünscht. Möbel können selbst weggeräumt werden.",
-    category: "maler",
+    category: "bau_renovation",
     budget_min: 2500,
     budget_max: 4500,
     urgency: "this_month",
@@ -574,7 +574,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Dachausbau mit Velux Fenstern",
     description: "Dachboden zu Wohnraum ausbauen (60m²). 4 Velux Fenster, Isolation, Trockenbau, Elektro- und Sanitärinstallation. Soll als Büro und Gästezimmer genutzt werden.",
-    category: "zimmermann",
+    category: "bau_renovation",
     budget_min: 45000,
     budget_max: 70000,
     urgency: "planning",
@@ -586,7 +586,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Gartenschuppen bauen",
     description: "Holzschuppen im Garten erstellen (3x4m). Fundament vorhanden, benötigt Holzkonstruktion, Dach mit Ziegeln und eine Tür. Soll als Geräte- und Werkzeugschuppen dienen.",
-    category: "schreiner",
+    category: "innenausbau_schreiner",
     budget_min: 4000,
     budget_max: 8000,
     urgency: "this_month",
@@ -610,7 +610,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Terrassenbau mit Steinplatten",
     description: "Neue Terrasse (8x6m) mit Natursteinplatten erstellen. Unterbau, Drainage und Verlegung. Anschluss an bestehende Hauswand und integrierte LED-Beleuchtung.",
-    category: "pflasterarbeiten",
+    category: "bau_renovation",
     budget_min: 12000,
     budget_max: 18000,
     urgency: "planning",
@@ -622,7 +622,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Neues Dach für Einfamilienhaus",
     description: "Komplette Dachsanierung eines 1960er Einfamilienhauses. Neue Ziegel, Isolation, Dachrinnen und Integration von 15 Solarpanels. Fläche ca. 180m².",
-    category: "dachdecker",
+    category: "bau_renovation",
     budget_min: 35000,
     budget_max: 55000,
     urgency: "this_month",
@@ -634,7 +634,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Alte Treppe renovieren",
     description: "Holztreppe im Einfamilienhaus abschleifen, reparieren und neu lackieren. 14 Stufen mit Geländer. Soll wieder im ursprünglichen Eichenholz erstrahlen.",
-    category: "schreiner",
+    category: "innenausbau_schreiner",
     budget_min: 3500,
     budget_max: 6000,
     urgency: "planning",
@@ -646,7 +646,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Elektrische Rollläden installieren",
     description: "Installation von 8 elektrischen Rollläden in Neubau-Einfamilienhaus. Steuerung via Smart Home System und manuelle Bedienung. Inklusive Verkabelung.",
-    category: "elektriker",
+    category: "elektroinstallationen",
     budget_min: 8000,
     budget_max: 12000,
     urgency: "this_week",
@@ -658,7 +658,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Parkett im Wohnbereich verlegen",
     description: "Eiche Parkett in Wohnzimmer, Esszimmer und Flur verlegen (ca. 65m²). Unterboden vorbereiten, verleimen und versiegeln. Hochwertige Qualität gewünscht.",
-    category: "bodenleger",
+    category: "bodenbelaege",
     budget_min: 6500,
     budget_max: 11000,
     urgency: "planning",
@@ -670,7 +670,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Garten neu gestalten",
     description: "Komplette Neugestaltung eines 400m² Gartens. Rasen, Bepflanzung, Gehwege, kleiner Teich und automatische Bewässerung. Familiengarten mit Spielbereich.",
-    category: "gartenbau",
+    category: "garten_umgebung",
     budget_min: 15000,
     budget_max: 25000,
     urgency: "planning",
@@ -682,7 +682,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Fassade isolieren und verputzen",
     description: "Aussenwärmedämmung für 1970er Einfamilienhaus. 220m² Fassadenfläche isolieren, verputzen und streichen. Minergie-Standard angestrebt.",
-    category: "gipser",
+    category: "bau_renovation",
     budget_min: 22000,
     budget_max: 35000,
     urgency: "planning",
@@ -706,7 +706,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Carport aus Holz bauen",
     description: "Holzcarport für 2 Autos erstellen (7x6m). Flachdach mit leichter Neigung, offene Konstruktion. Fundament vorhanden, nur Holzkonstruktion benötigt.",
-    category: "zimmermann",
+    category: "bau_renovation",
     budget_min: 8000,
     budget_max: 14000,
     urgency: "this_month",
@@ -718,7 +718,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Kellerboden sanieren",
     description: "Betonboden im Keller schleifen, grundieren und versiegeln. 45m² Fläche. Hohe Feuchtigkeit vorhanden, entsprechende Behandlung nötig.",
-    category: "gipser",
+    category: "bau_renovation",
     budget_min: 2200,
     budget_max: 4000,
     urgency: "planning",

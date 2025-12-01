@@ -43,30 +43,17 @@ interface Lead {
   proposals_count?: number;
 }
 
-const categoryLabels = {
-  elektriker: 'Elektriker',
+const categoryLabels: Record<string, string> = {
+  bau_renovation: 'Bau & Renovation',
+  bodenbelaege: 'Bodenbeläge',
+  elektroinstallationen: 'Elektroinstallationen',
+  heizung_klima_solar: 'Heizung, Klima & Solar',
   sanitaer: 'Sanitär',
-  heizung: 'Heizungsinstallateur',
-  klimatechnik: 'Klimatechnik',
-  maler: 'Maler',
-  gipser: 'Gipser',
-  bodenleger: 'Bodenleger',
-  plattenleger: 'Plattenleger',
-  schreiner: 'Schreiner',
-  maurer: 'Maurer',
-  zimmermann: 'Zimmermann',
-  dachdecker: 'Dachdecker',
-  fassadenbauer: 'Fassadenbauer',
-  gartenbau: 'Gartenbau',
-  pflasterarbeiten: 'Pflasterarbeiten',
-  zaun_torbau: 'Zaun- und Torbau',
-  fenster_tueren: 'Fenster & Türen',
-  kuechenbau: 'Küchenbau',
-  badumbau: 'Badumbau',
-  umzug: 'Umzug & Transport',
-  reinigung: 'Reinigung',
-  schlosserei: 'Schlosserei',
-  spengler: 'Spengler'
+  kueche: 'Küche',
+  innenausbau_schreiner: 'Innenausbau & Schreiner',
+  garten_umgebung: 'Garten & Umgebung',
+  raeumung_entsorgung: 'Räumung & Entsorgung',
+  reinigung_hauswartung: 'Reinigung & Hauswartung',
 };
 
 const urgencyLabels = {
@@ -218,15 +205,9 @@ const BrowseLeads = () => {
       );
     }
 
-    // Filter by major category
+    // Filter by major category (direct comparison now)
     if (selectedMajorCategory && selectedMajorCategory !== 'all') {
-      const majorCatSubcategories = Object.values(subcategoryLabels)
-        .filter((sub) => sub.majorCategoryId === selectedMajorCategory)
-        .map((sub) => sub.value);
-      
-      filtered = filtered.filter(lead => 
-        majorCatSubcategories.includes(lead.category)
-      );
+      filtered = filtered.filter(lead => lead.category === selectedMajorCategory);
     }
 
     if (selectedCanton && selectedCanton !== 'all') {
@@ -313,44 +294,24 @@ const BrowseLeads = () => {
             </Alert>
           )} */}
 
-          {/* Filters */}
-          <Card className="mb-8">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="h-5 w-5" />
-                  Filter
-                </CardTitle>
-                {hasActiveFilters && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={clearFilters}
-                    className="text-muted-foreground"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Zurücksetzen
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Search */}
-              <div>
+          {/* Compact Filter Bar */}
+          <div className="mb-6 p-4 bg-muted/30 rounded-lg border">
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Search Input */}
+              <div className="flex-1">
                 <Input
-                  placeholder="Nach Auftrag, Ort oder Beschreibung suchen..."
+                  placeholder="Suche..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full"
                 />
               </div>
-
-              {/* Category Filter */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Hauptkategorie</label>
+              
+              {/* Filters in a row */}
+              <div className="flex flex-wrap gap-2">
                 <Select value={selectedMajorCategory} onValueChange={setSelectedMajorCategory}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Alle Bereiche" />
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Kategorie" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle Bereiche</SelectItem>
@@ -361,87 +322,84 @@ const BrowseLeads = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                
+                <Select value={selectedCanton} onValueChange={setSelectedCanton}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Kanton" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Kantone</SelectItem>
+                    {SWISS_CANTONS.map((canton) => (
+                      <SelectItem key={canton.value} value={canton.value}>
+                        {canton.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={selectedUrgency} onValueChange={setSelectedUrgency}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Dringlichkeit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Zeitrahmen</SelectItem>
+                    {Object.entries(urgencyLabels).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters}>
+                    <X className="h-4 w-4 mr-1" />
+                    Zurücksetzen
+                  </Button>
+                )}
               </div>
-
-              {/* Location and Urgency */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Kanton</label>
-                  <Select value={selectedCanton} onValueChange={setSelectedCanton}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Region wählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Kantone</SelectItem>
-                      {SWISS_CANTONS.map((canton) => (
-                        <SelectItem key={canton.value} value={canton.value}>
-                          {canton.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Dringlichkeit</label>
-                  <Select value={selectedUrgency} onValueChange={setSelectedUrgency}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Zeitrahmen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Zeitrahmen</SelectItem>
-                      {Object.entries(urgencyLabels).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            </div>
+            
+            {/* Active Filters - inline badges */}
+            {hasActiveFilters && (
+              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+                {selectedMajorCategory !== 'all' && (
+                  <Badge variant="secondary" className="gap-1">
+                    {Object.values(majorCategories).find(c => c.id === selectedMajorCategory)?.label}
+                    <X 
+                      className="h-3 w-3 cursor-pointer" 
+                      onClick={() => setSelectedMajorCategory('all')}
+                    />
+                  </Badge>
+                )}
+                {selectedCanton !== 'all' && (
+                  <Badge variant="secondary" className="gap-1">
+                    {SWISS_CANTONS.find(c => c.value === selectedCanton)?.label}
+                    <X 
+                      className="h-3 w-3 cursor-pointer" 
+                      onClick={() => setSelectedCanton('all')}
+                    />
+                  </Badge>
+                )}
+                {selectedUrgency !== 'all' && (
+                  <Badge variant="secondary" className="gap-1">
+                    {urgencyLabels[selectedUrgency as keyof typeof urgencyLabels]}
+                    <X 
+                      className="h-3 w-3 cursor-pointer" 
+                      onClick={() => setSelectedUrgency('all')}
+                    />
+                  </Badge>
+                )}
+                {searchTerm && (
+                  <Badge variant="secondary" className="gap-1">
+                    "{searchTerm}"
+                    <X 
+                      className="h-3 w-3 cursor-pointer" 
+                      onClick={() => setSearchTerm('')}
+                    />
+                  </Badge>
+                )}
               </div>
-
-              {/* Active Filters Display */}
-              {hasActiveFilters && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <span className="text-sm text-muted-foreground">Aktive Filter:</span>
-                  {selectedMajorCategory !== 'all' && (
-                    <Badge variant="secondary" className="gap-1">
-                      {Object.values(majorCategories).find(c => c.id === selectedMajorCategory)?.label}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => setSelectedMajorCategory('all')}
-                      />
-                    </Badge>
-                  )}
-                  {selectedCanton !== 'all' && (
-                    <Badge variant="secondary" className="gap-1">
-                      {SWISS_CANTONS.find(c => c.value === selectedCanton)?.label}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => setSelectedCanton('all')}
-                      />
-                    </Badge>
-                  )}
-                  {selectedUrgency !== 'all' && (
-                    <Badge variant="secondary" className="gap-1">
-                      {urgencyLabels[selectedUrgency as keyof typeof urgencyLabels]}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => setSelectedUrgency('all')}
-                      />
-                    </Badge>
-                  )}
-                  {searchTerm && (
-                    <Badge variant="secondary" className="gap-1">
-                      Suche: "{searchTerm}"
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => setSearchTerm('')}
-                      />
-                    </Badge>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            )}
+          </div>
 
           {/* Results */}
           <div className="mb-4 flex items-center justify-between">

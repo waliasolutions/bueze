@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { initErrorTracking, generateCorrelationId } from "@/lib/errorTracking";
-import { PageTransition, TopLoadingBar } from "@/components/PageTransition";
 import { GlobalScriptManager } from "@/components/GlobalScriptManager";
 import { CookieBanner } from "@/components/CookieBanner";
 import Index from "./pages/Index";
@@ -101,12 +100,10 @@ const App = () => {
           }}
         >
           <ScrollToTop />
-          <TopLoadingBar />
           <Toaster />
           <Sonner />
           <CookieBanner />
-          <PageTransition>
-            <Routes>
+          <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -149,7 +146,6 @@ const App = () => {
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-          </PageTransition>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
