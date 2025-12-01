@@ -105,9 +105,10 @@ export const Header = () => {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-sm border-b border-line-200">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+    <>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-sm border-b border-line-200">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
             <img src={logo} alt="Büeze.ch" className="h-24 w-auto" />
@@ -230,21 +231,23 @@ export const Header = () => {
             {isMenuOpen ? <X className="h-8 w-8" /> : <Menu className="h-8 w-8" />}
           </button>
         </div>
+        </div>
+      </header>
 
-        {/* Mobile Menu Backdrop */}
-        <div 
-          className={`fixed inset-0 bg-black/50 z-[110] lg:hidden transition-opacity duration-300 ${
-            isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-          }`}
-          onClick={() => setIsMenuOpen(false)}
-        />
+      {/* Mobile Menu Backdrop */}
+      <div 
+        className={`fixed inset-0 bg-black/50 z-[110] lg:hidden transition-opacity duration-300 ${
+          isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setIsMenuOpen(false)}
+      />
 
-        {/* Mobile Menu Slide-in Panel */}
-        <div 
-          className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-[111] lg:hidden 
-            transform transition-transform duration-300 ease-out shadow-2xl
-            ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        >
+      {/* Mobile Menu Slide-in Panel */}
+      <div 
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-[111] lg:hidden 
+          transform transition-transform duration-300 ease-out shadow-2xl
+          ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+      >
           {/* Menu Header */}
           <div className="flex justify-between items-center p-4 border-b border-line-200 bg-pastel-pink/10">
             <span className="font-bold text-lg text-ink-900">Menü</span>
@@ -372,7 +375,6 @@ export const Header = () => {
             </div>
           </div>
         </div>
-      </div>
-    </header>
-  );
-};
+      </>
+    );
+  };
