@@ -474,6 +474,27 @@ const AdminDashboard = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Lead-Verwaltung
+                </CardTitle>
+                <CardDescription>
+                  Alle Aufträge und Offerten im Überblick
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/admin/leads')}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Aufträge & Offerten verwalten
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
                   Handwerker-Verwaltung
                 </CardTitle>
