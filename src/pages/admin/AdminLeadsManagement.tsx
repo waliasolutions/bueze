@@ -150,21 +150,38 @@ export default function AdminLeadsManagement() {
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch leads
+      const { data: leadsData, error: leadsError } = await supabase
         .from("leads")
-        .select(`
-          *,
-          owner:profiles!leads_owner_id_fkey(full_name, email, phone)
-        `)
+        .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (leadsError) throw leadsError;
 
-      const formattedLeads = data?.map((lead: any) => ({
+      // Get unique owner IDs
+      const ownerIds = [...new Set(leadsData?.map(l => l.owner_id).filter(Boolean))];
+      
+      // Fetch owners
+      let owners: Record<string, any> = {};
+      if (ownerIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone")
+          .in("id", ownerIds);
+        
+        if (!profilesError && profilesData) {
+          profilesData.forEach(p => {
+            owners[p.id] = p;
+          });
+        }
+      }
+
+      // Combine data
+      const formattedLeads = leadsData?.map((lead: any) => ({
         ...lead,
-        owner_name: lead.owner?.full_name,
-        owner_email: lead.owner?.email,
-        owner_phone: lead.owner?.phone,
+        owner_name: owners[lead.owner_id]?.full_name || "Unbekannt",
+        owner_email: owners[lead.owner_id]?.email || "Unbekannt",
+        owner_phone: owners[lead.owner_id]?.phone,
       })) || [];
 
       setLeads(formattedLeads);
@@ -177,35 +194,45 @@ export default function AdminLeadsManagement() {
   };
 
   const fetchProposalsForLead = async (leadId: string) => {
-    if (proposals[leadId]) return; // Already fetched
+    if (proposals[leadId]) return;
 
     try {
-      const { data, error } = await supabase
+      // Fetch proposals
+      const { data: proposalsData, error: proposalsError } = await supabase
         .from("lead_proposals")
-        .select(`
-          *,
-          handwerker:handwerker_profiles!lead_proposals_handwerker_id_fkey(
-            first_name,
-            last_name,
-            company_name,
-            email,
-            phone_number,
-            business_city
-          )
-        `)
+        .select("*")
         .eq("lead_id", leadId)
         .order("submitted_at", { ascending: false });
 
-      if (error) throw error;
+      if (proposalsError) throw proposalsError;
 
-      const formattedProposals = data?.map((proposal: any) => ({
+      // Get handwerker IDs
+      const handwerkerIds = [...new Set(proposalsData?.map(p => p.handwerker_id).filter(Boolean))];
+      
+      // Fetch handwerker profiles
+      let handwerkers: Record<string, any> = {};
+      if (handwerkerIds.length > 0) {
+        const { data: hwData } = await supabase
+          .from("handwerker_profiles")
+          .select("user_id, first_name, last_name, company_name, email, phone_number, business_city")
+          .in("user_id", handwerkerIds);
+        
+        if (hwData) {
+          hwData.forEach(h => {
+            handwerkers[h.user_id] = h;
+          });
+        }
+      }
+
+      // Combine data
+      const formattedProposals = proposalsData?.map((proposal: any) => ({
         ...proposal,
-        handwerker_first_name: proposal.handwerker?.first_name,
-        handwerker_last_name: proposal.handwerker?.last_name,
-        handwerker_company_name: proposal.handwerker?.company_name,
-        handwerker_email: proposal.handwerker?.email,
-        handwerker_phone: proposal.handwerker?.phone_number,
-        handwerker_city: proposal.handwerker?.business_city,
+        handwerker_first_name: handwerkers[proposal.handwerker_id]?.first_name,
+        handwerker_last_name: handwerkers[proposal.handwerker_id]?.last_name,
+        handwerker_company_name: handwerkers[proposal.handwerker_id]?.company_name,
+        handwerker_email: handwerkers[proposal.handwerker_id]?.email,
+        handwerker_phone: handwerkers[proposal.handwerker_id]?.phone_number,
+        handwerker_city: handwerkers[proposal.handwerker_id]?.business_city,
       })) || [];
 
       setProposals((prev) => ({ ...prev, [leadId]: formattedProposals }));
@@ -253,16 +280,16 @@ export default function AdminLeadsManagement() {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Lead-Verwaltung</h1>
-            <p className="text-muted-foreground mt-1">Alle Aufträge und Offerten im Überblick</p>
-          </div>
-          <Button onClick={fetchLeads} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Aktualisieren
-          </Button>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Lead-Verwaltung</h1>
+          <p className="text-muted-foreground mt-1">Alle Aufträge und Offerten im Überblick</p>
         </div>
+        <Button onClick={fetchLeads} disabled={loading} className="shrink-0">
+          <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          Aktualisieren
+        </Button>
+      </div>
 
         <Card className="mb-6">
           <CardHeader>
@@ -321,6 +348,20 @@ export default function AdminLeadsManagement() {
           </CardContent>
         </Card>
 
+      {loading ? (
+        <Card className="p-12">
+          <div className="flex justify-center items-center">
+            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="ml-3 text-muted-foreground">Lade Aufträge...</span>
+          </div>
+        </Card>
+      ) : filteredLeads.length === 0 ? (
+        <Card className="p-12">
+          <div className="text-center text-muted-foreground">
+            Keine Aufträge gefunden
+          </div>
+        </Card>
+      ) : (
         <Card>
           <ScrollArea className="h-[600px]">
             <Table>
@@ -480,6 +521,7 @@ export default function AdminLeadsManagement() {
             </Table>
           </ScrollArea>
         </Card>
+      )}
 
         <Dialog open={!!selectedLead} onOpenChange={() => setSelectedLead(null)}>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
