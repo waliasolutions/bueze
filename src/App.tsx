@@ -59,8 +59,11 @@ const ScrollToTop = () => {
   const { pathname, hash } = useLocation();
   
   React.useLayoutEffect(() => {
-    // Scroll to top immediately on pathname change (before browser paints)
+    // Force scroll to top using multiple methods for cross-browser support
+    // This covers both window scrolling and body scrolling scenarios
     window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, [pathname]);
 
   React.useEffect(() => {
