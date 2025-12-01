@@ -382,8 +382,7 @@ const HandwerkerApprovals = () => {
             body: { 
               userId: handwerker.user_id,
               userName: `${handwerker.first_name} ${handwerker.last_name}`,
-              userEmail: handwerker.email,
-              type: 'approved'
+              userEmail: handwerker.email
             }
           });
 
@@ -430,8 +429,7 @@ const HandwerkerApprovals = () => {
         body: { 
           userId: handwerker.user_id,
           userName: `${handwerker.first_name} ${handwerker.last_name}`,
-          userEmail: handwerker.email,
-          type: 'approved'
+          userEmail: handwerker.email
         }
       });
 
