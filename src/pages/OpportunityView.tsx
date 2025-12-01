@@ -295,6 +295,12 @@ const OpportunityView = () => {
                   </p>
                 </div>
 
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <p className="text-sm text-blue-900">
+                    <strong>Datenschutz:</strong> Die Kontaktdaten des Kunden werden Ihnen erst nach Annahme Ihrer Offerte angezeigt.
+                  </p>
+                </div>
+
                 <Button 
                   type="submit" 
                   className="w-full"

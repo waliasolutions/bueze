@@ -12,14 +12,14 @@ const steps = [
   },
   {
     icon: UserCheck,
-    title: 'Handwerker erhalten',
-    description: 'Wir finden passende, geprüfte Handwerker in Ihrer Region.',
+    title: 'Offerten erhalten',
+    description: 'Geprüfte Handwerker senden Ihnen Offerten. Ihre Kontaktdaten bleiben geschützt.',
     step: '02'
   },
   {
     icon: MessageSquare,
-    title: 'Direkt vergleichen',
-    description: 'Erhalten Sie Offerten und wählen Sie den besten Anbieter.',
+    title: 'Handwerker auswählen',
+    description: 'Vergleichen Sie Offerten und wählen Sie den besten Anbieter. Erst nach Ihrer Zusage werden Kontaktdaten ausgetauscht.',
     step: '03'
   }
 ];
