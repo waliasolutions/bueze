@@ -42,7 +42,7 @@ Was Sie jetzt tun können:
 Sobald Ihr Profil geprüft und freigeschaltet wurde, erhalten Sie eine weitere E-Mail und können dann alle aktiven Aufträge durchsuchen und Offerten abgeben.
 
 Hier geht's zur Anmeldung:
-https://bueze.ch/auth
+https://bueeze.ch/auth
 
 Wir empfehlen Ihnen, Ihr Passwort nach der ersten Anmeldung zu ändern.
 

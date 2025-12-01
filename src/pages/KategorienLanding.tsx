@@ -94,7 +94,7 @@ const KategorienLanding = () => {
           </h2>
           <div className="prose prose-lg max-w-none text-ink-700 space-y-4 mb-12">
             <p className="leading-relaxed">
-              Ob Renovierung, Reparatur oder Neugestaltung – mit Büeze.ch finden Sie schnell und unkompliziert den passenden Handwerker für Ihr Projekt. Unsere Plattform verbindet Sie mit über 100 geprüften Handwerksbetrieben aus der ganzen Schweiz. Von Gartenarbeiten über Elektroinstallationen bis zu Malerarbeiten und Küchenmontage – alle Handwerk-Kategorien sind bei uns vertreten.
+              Ob Renovierung, Reparatur oder Neugestaltung – mit Büeze.ch finden Sie schnell und unkompliziert den passenden Handwerker für Ihr Projekt. Unsere Plattform verbindet Sie mit geprüften und verifizierten Handwerksbetrieben aus der ganzen Schweiz. Von Gartenarbeiten über Elektroinstallationen bis zu Malerarbeiten und Küchenmontage – alle Handwerk-Kategorien sind bei uns vertreten.
             </p>
             <p className="leading-relaxed">
               Der grosse Vorteil: Sie erstellen einmal eine Anfrage und erhalten mehrere Offerten von qualifizierten Fachbetrieben. So können Sie Preise, Leistungen und Verfügbarkeit direkt vergleichen – völlig kostenlos und unverbindlich. Alle registrierten Handwerker durchlaufen unseren Verifizierungsprozess, sodass Sie sich auf Qualität und Zuverlässigkeit verlassen können.
@@ -107,7 +107,7 @@ const KategorienLanding = () => {
           {/* Benefits Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
             {[
-              { icon: Shield, text: 'Über 100 geprüfte Handwerksbetriebe' },
+              { icon: Shield, text: 'Geprüfte Handwerksbetriebe schweizweit' },
               { icon: CheckCircle, text: 'Kostenlos & unverbindlich für Auftraggeber' },
               { icon: Users, text: 'Mehrere Offerten zum Vergleichen' },
               { icon: Clock, text: 'Schnelle Rückmeldung innert 24h' },
@@ -287,7 +287,7 @@ const KategorienLanding = () => {
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
           <p className="text-sm text-ink-600 mt-6">
-            ✓ Kostenlos & unverbindlich  ✓ Über 100 geprüfte Handwerker  ✓ Innert 24h Rückmeldung
+            ✓ Kostenlos & unverbindlich  ✓ Geprüfte Handwerker schweizweit  ✓ Innert 24h Rückmeldung
           </p>
         </div>
       </section>

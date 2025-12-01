@@ -59,7 +59,7 @@ const Datenschutz = () => {
                     Tätigkeitsbereiche, Servicezonen, Erfahrung, Zertifikate, Portfolio-Bilder</li>
                     <li><strong>Auftragsdaten:</strong> Projektbeschreibung, Budget, gewünschte Ausführungszeit, Fotos</li>
                     <li><strong>Kommunikationsdaten:</strong> Nachrichten zwischen Nutzern, Offerten, Kontaktdaten nach Annahme</li>
-                    <li><strong>Zahlungsdaten:</strong> Über Stripe verarbeitete Zahlungsinformationen (Kreditkartendaten werden 
+                    <li><strong>Zahlungsdaten:</strong> Über Stripe und Payrexx verarbeitete Zahlungsinformationen (Kreditkartendaten werden 
                     nicht bei uns gespeichert)</li>
                   </ul>
                 </div>
@@ -149,7 +149,16 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.3 SMTP2GO (E-Mail-Versand)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.3 Payrexx (Zahlungsabwicklung Schweiz)</h3>
+                    <ul className="list-disc pl-6 space-y-1">
+                      <li><strong>Zweck:</strong> Verarbeitung von Zahlungen über Schweizer Zahlungsmethoden</li>
+                      <li><strong>Standort:</strong> Schweiz</li>
+                      <li><strong>Datenschutz:</strong> <a href="https://www.payrexx.com/de-ch/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:text-brand-600">https://www.payrexx.com/de-ch/legal/privacy</a></li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">5.4 SMTP2GO (E-Mail-Versand)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li><strong>Zweck:</strong> Versand von Transaktions- und Benachrichtigungs-E-Mails</li>
                       <li><strong>Standort:</strong> Neuseeland</li>
@@ -158,7 +167,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.4 Google Analytics 4 (Webanalyse)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.5 Google Analytics 4 (Webanalyse)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li><strong>Zweck:</strong> Anonymisierte Analyse des Nutzerverhaltens</li>
                       <li><strong>Standort:</strong> USA (mit EU-Standardvertragsklauseln)</li>
@@ -169,7 +178,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.5 Google Tag Manager (Tag-Verwaltung)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.6 Google Tag Manager (Tag-Verwaltung)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li><strong>Zweck:</strong> Verwaltung und Auslieferung von Website-Tags für Analyse und Marketing</li>
                       <li><strong>Standort:</strong> USA (mit EU-Standardvertragsklauseln)</li>
@@ -179,7 +188,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.6 Andere Nutzer der Plattform</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.7 Andere Nutzer der Plattform</h3>
                     <p className="mb-2">
                       Bei Annahme einer Offerte werden vollständige Kontaktdaten (Name, Telefonnummer, E-Mail-Adresse, 
                       Projektadresse) zwischen Auftraggeber und Handwerker ausgetauscht. Dies ist für die Vertragsabwicklung 
