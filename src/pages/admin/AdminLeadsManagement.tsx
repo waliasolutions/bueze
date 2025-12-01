@@ -26,11 +26,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2 } from "lucide-react";
 import { majorCategories } from "@/config/majorCategories";
 import { SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel } from "@/config/urgencyLevels";
@@ -109,6 +110,9 @@ export default function AdminLeadsManagement() {
   const [loading, setLoading] = useState(true);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
   const [selectedLead, setSelectedLead] = useState<LeadWithOwner | null>(null);
+  const [actionLead, setActionLead] = useState<LeadWithOwner | null>(null);
+  const [showActionDialog, setShowActionDialog] = useState(false);
+  const [actionType, setActionType] = useState<'pause' | 'delete' | 'reactivate'>('pause');
   
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -253,6 +257,75 @@ export default function AdminLeadsManagement() {
     setExpandedLeads(newExpanded);
   };
 
+  const handleLeadAction = (lead: LeadWithOwner, action: 'pause' | 'delete' | 'reactivate') => {
+    setActionLead(lead);
+    setActionType(action);
+    setShowActionDialog(true);
+  };
+
+  const executeLeadAction = async () => {
+    if (!actionLead) return;
+
+    try {
+      let newStatus: 'active' | 'paused' | 'deleted';
+      let actionDescription: string;
+
+      switch (actionType) {
+        case 'pause':
+          newStatus = 'paused';
+          actionDescription = 'pausiert';
+          break;
+        case 'delete':
+          newStatus = 'deleted';
+          actionDescription = 'gelöscht';
+          break;
+        case 'reactivate':
+          newStatus = 'active';
+          actionDescription = 'reaktiviert';
+          break;
+      }
+
+      const { error } = await supabase
+        .from('leads')
+        .update({ status: newStatus })
+        .eq('id', actionLead.id);
+
+      if (error) throw error;
+
+      toast.success(`Auftrag wurde ${actionDescription}.`);
+
+      fetchLeads();
+      setShowActionDialog(false);
+      setActionLead(null);
+    } catch (error: any) {
+      console.error('Error updating lead status:', error);
+      toast.error(error.message || 'Beim Aktualisieren des Auftrags ist ein Fehler aufgetreten.');
+    }
+  };
+
+  const getActionDialogContent = () => {
+    switch (actionType) {
+      case 'pause':
+        return {
+          title: 'Auftrag pausieren',
+          description: 'Möchten Sie diesen Auftrag wirklich pausieren? Er wird nicht mehr für Handwerker sichtbar sein.',
+          actionLabel: 'Pausieren',
+        };
+      case 'delete':
+        return {
+          title: 'Auftrag löschen',
+          description: 'Möchten Sie diesen Auftrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.',
+          actionLabel: 'Löschen',
+        };
+      case 'reactivate':
+        return {
+          title: 'Auftrag reaktivieren',
+          description: 'Möchten Sie diesen Auftrag wieder aktivieren? Er wird dann wieder für Handwerker sichtbar sein.',
+          actionLabel: 'Reaktivieren',
+        };
+    }
+  };
+
   const filteredLeads = leads.filter((lead) => {
     if (statusFilter !== "all" && lead.status !== statusFilter) return false;
     if (categoryFilter !== "all" && lead.category !== categoryFilter) return false;
@@ -377,7 +450,7 @@ export default function AdminLeadsManagement() {
                   <TableHead>Dringlichkeit</TableHead>
                   <TableHead>Offerten</TableHead>
                   <TableHead>Erstellt</TableHead>
-                  <TableHead className="w-24">Aktionen</TableHead>
+                  <TableHead className="w-32">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -439,13 +512,46 @@ export default function AdminLeadsManagement() {
                           {format(new Date(lead.created_at), "dd.MM.yyyy", { locale: de })}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedLead(lead)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedLead(lead)}
+                              title="Details anzeigen"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            {lead.status === 'active' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleLeadAction(lead, 'pause')}
+                                title="Auftrag pausieren"
+                              >
+                                <Pause className="h-4 w-4 text-orange-600" />
+                              </Button>
+                            )}
+                            {lead.status === 'paused' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleLeadAction(lead, 'reactivate')}
+                                title="Auftrag reaktivieren"
+                              >
+                                <Play className="h-4 w-4 text-green-600" />
+                              </Button>
+                            )}
+                            {(lead.status === 'active' || lead.status === 'paused') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleLeadAction(lead, 'delete')}
+                                title="Auftrag löschen"
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                       <CollapsibleContent asChild>
@@ -576,6 +682,31 @@ export default function AdminLeadsManagement() {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Lead Action Confirmation Dialog */}
+        <AlertDialog open={showActionDialog} onOpenChange={setShowActionDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{getActionDialogContent().title}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {getActionDialogContent().description}
+                <br /><br />
+                <strong>Auftrag:</strong> {actionLead?.title}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setShowActionDialog(false);
+                setActionLead(null);
+              }}>
+                Abbrechen
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={executeLeadAction}>
+                {getActionDialogContent().actionLabel}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
     </div>
   );

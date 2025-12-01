@@ -779,7 +779,7 @@ const Profile = () => {
                       <label className="text-sm font-medium">Verifikation</label>
                       <p className="text-sm text-muted-foreground">
                         <Badge variant={handwerkerProfile.is_verified ? 'default' : 'secondary'}>
-                          {handwerkerProfile.is_verified ? 'Verifiziert' : 'Nicht verifiziert'}
+                          {handwerkerProfile.is_verified ? 'Geprüft' : 'Nicht geprüft'}
                         </Badge>
                       </p>
                     </div>
