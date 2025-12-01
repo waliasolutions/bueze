@@ -781,6 +781,21 @@ const HandwerkerOnboarding = () => {
 
       // If user was already logged in, just navigate without signing out
       if (isAlreadyAuthenticated) {
+        // Ensure handwerker role is assigned
+        console.log('Upserting handwerker role for user:', userId);
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .upsert(
+            { user_id: userId, role: 'handwerker' },
+            { onConflict: 'user_id,role' }
+          );
+        
+        if (roleError) {
+          console.error('Failed to assign handwerker role:', roleError);
+        } else {
+          console.log('Handwerker role assigned successfully');
+        }
+        
         toast({
           title: "Profil erstellt!",
           description: "Ihr Handwerker-Profil wurde erfolgreich erstellt.",

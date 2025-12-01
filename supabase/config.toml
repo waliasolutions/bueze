@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.send-handwerker-credentials]
 verify_jwt = false
+
+[functions.create-handwerker-account]
+verify_jwt = false
