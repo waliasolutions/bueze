@@ -90,7 +90,6 @@ const BrowseLeads = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMajorCategory, setSelectedMajorCategory] = useState('all');
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedCanton, setSelectedCanton] = useState('all');
   const [selectedUrgency, setSelectedUrgency] = useState('all');
   // TODO: Re-enable after types regenerate
@@ -101,13 +100,6 @@ const BrowseLeads = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Get subcategories for selected major category
-  const availableSubcategories = selectedMajorCategory !== 'all'
-    ? Object.values(subcategoryLabels).filter(
-        (sub) => sub.majorCategoryId === selectedMajorCategory
-      )
-    : Object.values(subcategoryLabels);
-
   useEffect(() => {
     logWithCorrelation('BrowseLeads: Page loaded');
     fetchLeads();
@@ -116,14 +108,7 @@ const BrowseLeads = () => {
 
   useEffect(() => {
     filterLeads();
-  }, [leads, searchTerm, selectedMajorCategory, selectedCategory, selectedCanton, selectedUrgency]);
-
-  // Reset subcategory when major category changes
-  useEffect(() => {
-    if (selectedMajorCategory !== 'all') {
-      setSelectedCategory('all');
-    }
-  }, [selectedMajorCategory]);
+  }, [leads, searchTerm, selectedMajorCategory, selectedCanton, selectedUrgency]);
 
   const checkUserSubscription = async () => {
     try {
@@ -233,7 +218,7 @@ const BrowseLeads = () => {
       );
     }
 
-    // Filter by major category first
+    // Filter by major category
     if (selectedMajorCategory && selectedMajorCategory !== 'all') {
       const majorCatSubcategories = Object.values(subcategoryLabels)
         .filter((sub) => sub.majorCategoryId === selectedMajorCategory)
@@ -242,11 +227,6 @@ const BrowseLeads = () => {
       filtered = filtered.filter(lead => 
         majorCatSubcategories.includes(lead.category)
       );
-    }
-
-    // Then filter by specific subcategory
-    if (selectedCategory && selectedCategory !== 'all') {
-      filtered = filtered.filter(lead => lead.category === selectedCategory);
     }
 
     if (selectedCanton && selectedCanton !== 'all') {
@@ -263,12 +243,11 @@ const BrowseLeads = () => {
   const clearFilters = () => {
     setSearchTerm('');
     setSelectedMajorCategory('all');
-    setSelectedCategory('all');
     setSelectedCanton('all');
     setSelectedUrgency('all');
   };
 
-  const hasActiveFilters = searchTerm || selectedMajorCategory !== 'all' || selectedCategory !== 'all' || selectedCanton !== 'all' || selectedUrgency !== 'all';
+  const hasActiveFilters = searchTerm || selectedMajorCategory !== 'all' || selectedCanton !== 'all' || selectedUrgency !== 'all';
 
   const handleViewOpportunity = (leadId: string) => {
     navigate(`/opportunity/${leadId}`);
@@ -366,45 +345,22 @@ const BrowseLeads = () => {
                 />
               </div>
 
-              {/* Category Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Hauptkategorie</label>
-                  <Select value={selectedMajorCategory} onValueChange={setSelectedMajorCategory}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Alle Bereiche" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Bereiche</SelectItem>
-                      {Object.values(majorCategories).map((major) => (
-                        <SelectItem key={major.id} value={major.id}>
-                          {major.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Unterkategorie</label>
-                  <Select 
-                    value={selectedCategory} 
-                    onValueChange={setSelectedCategory}
-                    disabled={availableSubcategories.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Spezifischer Bereich" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Unterkategorien</SelectItem>
-                      {availableSubcategories.map((sub) => (
-                        <SelectItem key={sub.value} value={sub.value}>
-                          {sub.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              {/* Category Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Hauptkategorie</label>
+                <Select value={selectedMajorCategory} onValueChange={setSelectedMajorCategory}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Alle Bereiche" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Bereiche</SelectItem>
+                    {Object.values(majorCategories).map((major) => (
+                      <SelectItem key={major.id} value={major.id}>
+                        {major.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Location and Urgency */}
@@ -452,15 +408,6 @@ const BrowseLeads = () => {
                       <X 
                         className="h-3 w-3 cursor-pointer" 
                         onClick={() => setSelectedMajorCategory('all')}
-                      />
-                    </Badge>
-                  )}
-                  {selectedCategory !== 'all' && (
-                    <Badge variant="secondary" className="gap-1">
-                      {subcategoryLabels[selectedCategory]?.label}
-                      <X 
-                        className="h-3 w-3 cursor-pointer" 
-                        onClick={() => setSelectedCategory('all')}
                       />
                     </Badge>
                   )}
