@@ -48,30 +48,17 @@ interface Profile {
   avatar_url?: string;
 }
 
-const categoryLabels = {
-  elektriker: 'Elektriker',
+const categoryLabels: Record<string, string> = {
+  bau_renovation: 'Bau & Renovation',
+  bodenbelaege: 'Bodenbeläge',
+  elektroinstallationen: 'Elektroinstallationen',
+  heizung_klima_solar: 'Heizung, Klima & Solar',
   sanitaer: 'Sanitär',
-  heizung: 'Heizungsinstallateur',
-  klimatechnik: 'Klimatechnik',
-  maler: 'Maler',
-  gipser: 'Gipser',
-  bodenleger: 'Bodenleger',
-  plattenleger: 'Plattenleger',
-  schreiner: 'Schreiner',
-  maurer: 'Maurer',
-  zimmermann: 'Zimmermann',
-  dachdecker: 'Dachdecker',
-  fassadenbauer: 'Fassadenbauer',
-  gartenbau: 'Gartenbau',
-  pflasterarbeiten: 'Pflasterarbeiten',
-  zaun_torbau: 'Zaun- und Torbau',
-  fenster_tueren: 'Fenster & Türen',
-  kuechenbau: 'Küchenbau',
-  badumbau: 'Badumbau',
-  umzug: 'Umzug & Transport',
-  reinigung: 'Reinigung',
-  schlosserei: 'Schlosserei',
-  spengler: 'Spengler'
+  kueche: 'Küche',
+  innenausbau_schreiner: 'Innenausbau & Schreiner',
+  garten_umgebung: 'Garten & Umgebung',
+  raeumung_entsorgung: 'Räumung & Entsorgung',
+  reinigung_hauswartung: 'Reinigung & Hauswartung',
 };
 
 const urgencyLabels = {
