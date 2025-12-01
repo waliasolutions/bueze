@@ -11,10 +11,10 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, userName, userEmail, type, reason } = await req.json();
+    const { userId, userName, userEmail } = await req.json();
     
-    if (!userId || !userEmail || !type) {
-      throw new Error('Missing required fields: userId, userEmail, and type are required');
+    if (!userId || !userEmail) {
+      throw new Error('Missing required fields: userId and userEmail are required');
     }
 
     const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
@@ -22,11 +22,8 @@ serve(async (req) => {
       throw new Error('SMTP2GO_API_KEY not configured');
     }
 
-    let subject, body;
-
-    if (type === 'approved') {
-      subject = 'Ihr Büeze.ch Profil wurde freigeschaltet';
-      body = `Hallo ${userName || 'Handwerker'},
+    const subject = 'Ihr Büeze.ch Profil wurde freigeschaltet';
+    const body = `Hallo ${userName || 'Handwerker'},
 
 Gute Nachrichten! Ihr Handwerker-Profil bei Büeze.ch wurde erfolgreich geprüft und freigeschaltet.
 
@@ -42,22 +39,6 @@ Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 
 Viel Erfolg!
 Ihr Büeze.ch Team`;
-    } else if (type === 'rejected') {
-      subject = 'Ihr Büeze.ch Profil - Rückmeldung';
-      body = `Hallo ${userName || 'Handwerker'},
-
-Vielen Dank für Ihr Interesse an Büeze.ch.
-
-Leider konnten wir Ihr Profil zum jetzigen Zeitpunkt nicht freischalten.
-${reason ? `\n\nGrund: ${reason}` : ''}
-
-Wenn Sie Fragen haben oder weitere Informationen bereitstellen möchten, kontaktieren Sie uns gerne unter info@bueeze.ch.
-
-Freundliche Grüsse
-Ihr Büeze.ch Team`;
-    } else {
-      throw new Error(`Invalid type: ${type}. Must be 'approved' or 'rejected'`);
-    }
 
     const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
       method: 'POST',
@@ -79,7 +60,7 @@ Ihr Büeze.ch Team`;
       throw new Error(`Email sending failed: ${JSON.stringify(emailData)}`);
     }
 
-    console.log('Email sent successfully:', { userId, userEmail, type });
+    console.log('Email sent successfully:', { userId, userEmail });
 
     return new Response(
       JSON.stringify({ 

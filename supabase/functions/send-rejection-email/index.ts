@@ -50,7 +50,7 @@ Was Sie tun können:
 - Rückfragen: Kontaktieren Sie uns für weitere Informationen
 
 Kontakt:
-E-Mail: info@walia-solutions.ch
+E-Mail: info@bueeze.ch
 Website: www.bueeze.ch
 
 Wir bedauern, Ihnen keine positivere Nachricht übermitteln zu können, 
