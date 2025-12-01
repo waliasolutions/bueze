@@ -20,10 +20,12 @@ import {
   FileText,
   AlertCircle,
   RefreshCw,
-  Globe
+  Globe,
+  Trash2
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 interface DashboardStats {
@@ -91,6 +93,7 @@ const AdminDashboard = () => {
   });
   const [recentPending, setRecentPending] = useState<PendingHandwerker[]>([]);
   const [dateFilter, setDateFilter] = useState<'all' | '7days' | '30days'>('all');
+  const [isResettingData, setIsResettingData] = useState(false);
 
   useEffect(() => {
     checkAdminAccess();
@@ -245,6 +248,51 @@ const AdminDashboard = () => {
     return `vor ${diffDays} Tag${diffDays > 1 ? 'en' : ''}`;
   };
 
+  const handleResetTestData = async () => {
+    try {
+      setIsResettingData(true);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('No session found');
+      }
+
+      const response = await fetch(
+        'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/reset-test-data',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to reset test data');
+      }
+
+      toast({
+        title: 'Testdaten gelöscht',
+        description: result.message,
+      });
+
+      // Reload dashboard data
+      await loadDashboardData();
+    } catch (error) {
+      console.error('Error resetting test data:', error);
+      toast({
+        title: 'Fehler',
+        description: error instanceof Error ? error.message : 'Testdaten konnten nicht gelöscht werden.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsResettingData(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -272,23 +320,75 @@ const AdminDashboard = () => {
                   Übersicht und Verwaltung der Plattform
                 </p>
               </div>
-              <Button 
-                onClick={loadDashboardData}
-                disabled={isRefreshing}
-                variant="outline"
-              >
-                {isRefreshing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Aktualisiere...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Aktualisieren
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      disabled={isResettingData}
+                      className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    >
+                      {isResettingData ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Lösche...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Testdaten löschen
+                        </>
+                      )}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Testdaten wirklich löschen?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Diese Aktion löscht alle Testbenutzer (@test.ch, @handwerk.ch) und deren zugehörige Daten:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>Benutzerprofile und Authentifizierung</li>
+                          <li>Handwerker-Profile</li>
+                          <li>Aufträge (Leads)</li>
+                          <li>Offerten und Käufe</li>
+                          <li>Nachrichten und Konversationen</li>
+                          <li>Bewertungen</li>
+                        </ul>
+                        <p className="mt-3 font-semibold text-destructive">
+                          Diese Aktion kann nicht rückgängig gemacht werden!
+                        </p>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={handleResetTestData}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Ja, Testdaten löschen
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                
+                <Button 
+                  onClick={loadDashboardData}
+                  disabled={isRefreshing}
+                  variant="outline"
+                >
+                  {isRefreshing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Aktualisiere...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Aktualisieren
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 
