@@ -185,7 +185,7 @@ const Impressum = () => {
                   </p>
                   <p className="mt-2">
                     <strong>Gerichtsstand:</strong> Bei Streitigkeiten aus der Nutzung dieser Website gilt als Gerichtsstand 
-                    der Sitz der Büeze GmbH in Goldau, Schweiz.
+                    Schwyz, Schweiz.
                   </p>
                 </div>
               </section>

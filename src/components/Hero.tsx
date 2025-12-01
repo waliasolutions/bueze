@@ -86,9 +86,9 @@ export const Hero = () => {
           {/* Trust Signals */}
           <div className="flex flex-wrap justify-center gap-8 text-sm text-ink-600 pt-8">
             {(content?.fields?.trustSignals || [
-              'Über 100 geprüfte Betriebe',
+              'Geprüfte Fachbetriebe schweizweit',
               'Kostenlos & unverbindlich für Auftraggeber',
-              'Geprüfte Fachbetriebe'
+              'Geprüfte und verifizierte Fachbetriebe'
             ]).map((signal: string, index: number) => (
               <div key={index} className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-brand-500 rounded-full"></div>

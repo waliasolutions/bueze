@@ -213,9 +213,9 @@ export const Header = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={toggleMenu}
-            className="lg:hidden p-2 text-ink-700 hover:text-brand-600 transition-colors"
+            className="lg:hidden p-2 text-ink-900 hover:text-brand-600 transition-colors"
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {isMenuOpen ? <X className="h-8 w-8" /> : <Menu className="h-8 w-8" />}
           </button>
         </div>
 

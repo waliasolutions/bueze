@@ -105,7 +105,7 @@ export const majorCategories: Record<string, MajorCategory> = {
       { question: 'Benötige ich für Elektroarbeiten eine Bewilligung?', answer: 'Für grössere Installationen ist eine Meldung beim lokalen Elektrizitätswerk erforderlich. Professionelle Elektriker kümmern sich um alle Formalitäten und erstellen den erforderlichen Sicherheitsnachweis (SiNa).' },
       { question: 'Wie schnell kann ein Elektriker bei einem Notfall kommen?', answer: 'Bei Notfällen wie Stromausfall oder gefährlichen Defekten reagieren viele Elektriker innerhalb weniger Stunden. Für geplante Arbeiten vereinbaren Sie einfach einen passenden Termin.' },
       { question: 'Was kostet eine Elektroinstallation?', answer: 'Die Kosten variieren je nach Umfang der Arbeiten. Eine neue Steckdose kostet weniger als eine komplette Hausinstallation. Mit Büeze.ch vergleichen Sie mehrere Offerten kostenlos.' },
-      { question: 'Sind Elektriker in der Schweiz zertifiziert?', answer: 'Ja, Elektroinstallationen dürfen nur von konzessionierten Elektrikern durchgeführt werden. Diese verfügen über die NIV-Bewilligung und sind beim lokalen Elektrizitätswerk registriert.' }
+      { question: 'Sind Elektriker in der Schweiz geprüft und verifiziert?', answer: 'Ja, Elektroinstallationen dürfen nur von konzessionierten Elektrikern durchgeführt werden. Diese verfügen über die NIV-Bewilligung und sind beim lokalen Elektrizitätswerk registriert.' }
     ],
     benefits: [
       'Konzessionierte Elektriker mit NIV-Bewilligung',
@@ -138,7 +138,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     benefits: [
       'Fachberatung zu umweltfreundlichen Heizsystemen',
       'Unterstützung bei Förderanträgen',
-      'Installation durch zertifizierte Heizungsspezialisten',
+      'Installation durch geprüfte und verifizierte Heizungsspezialisten',
       'Wartung und Notdienst verfügbar',
       'Energieeffiziente Lösungen',
       'Mehrere Offerten kostenlos vergleichen'

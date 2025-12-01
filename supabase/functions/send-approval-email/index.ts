@@ -36,7 +36,7 @@ Sie können jetzt:
 ✅ Kontaktdaten erhalten Sie nach Annahme Ihrer Offerte
 
 Hier geht's zu Ihrem Dashboard:
-https://bueze.ch/dashboard
+https://bueeze.ch/dashboard
 
 Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 

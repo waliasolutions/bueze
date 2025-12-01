@@ -150,7 +150,7 @@ export const testUsers: TestUser[] = [
       categories: ["elektriker"],
       hourly_rate_min: 90,
       hourly_rate_max: 140,
-      bio: "Zertifizierter Elektroinstallateur mit Spezialisierung auf Smart Home Systeme und Photovoltaik-Anlagen. Kundenorientiert und zuverlässig.",
+      bio: "Geprüfter und verifizierter Elektroinstallateur mit Spezialisierung auf Smart Home Systeme und Photovoltaik-Anlagen. Kundenorientiert und zuverlässig.",
       service_areas: ["Bern", "Thun", "Interlaken"],
       languages: ["de", "it", "fr"]
     }
