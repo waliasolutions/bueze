@@ -89,7 +89,7 @@ serve(async (req) => {
       html_body: emailHtml,
     };
 
-    console.log('Sending email to info@walia-solutions.ch');
+    console.log('Sending email to info@bueeze.ch');
 
     const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
       method: 'POST',
