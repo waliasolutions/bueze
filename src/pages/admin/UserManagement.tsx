@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, UserPlus, Edit, Trash2, Search, Shield } from 'lucide-react';
+import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle } from 'lucide-react';
 
 interface User {
   id: string;
@@ -54,6 +54,9 @@ export default function UserManagement() {
   const [newUserRole, setNewUserRole] = useState('user');
   const [editUserRole, setEditUserRole] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
+  const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -277,6 +280,59 @@ export default function UserManagement() {
     }
   };
 
+  const handleResetPasswordConfirm = async () => {
+    if (!resetPasswordUser) return;
+
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: {
+          userId: resetPasswordUser.id,
+          userEmail: resetPasswordUser.email,
+          userName: resetPasswordUser.full_name || resetPasswordUser.email,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.newPassword) {
+        setGeneratedPassword(data.newPassword);
+      }
+
+      toast({
+        title: 'Passwort zurückgesetzt',
+        description: `Das Passwort für ${resetPasswordUser.email} wurde zurückgesetzt.`,
+      });
+    } catch (error: any) {
+      console.error('Error resetting password:', error);
+      toast({
+        title: 'Fehler',
+        description: error.message || 'Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.',
+        variant: 'destructive',
+      });
+      setShowResetPasswordDialog(false);
+      setResetPasswordUser(null);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCopyPassword = () => {
+    if (generatedPassword) {
+      navigator.clipboard.writeText(generatedPassword);
+      toast({
+        title: 'Kopiert',
+        description: 'Passwort wurde in die Zwischenablage kopiert.',
+      });
+    }
+  };
+
+  const handleCloseResetDialog = () => {
+    setShowResetPasswordDialog(false);
+    setResetPasswordUser(null);
+    setGeneratedPassword('');
+  };
+
   const openEditDialog = (user: User) => {
     setSelectedUser(user);
     setEditUserRole(user.role);
@@ -421,12 +477,24 @@ export default function UserManagement() {
                             variant="ghost"
                             size="sm"
                             onClick={() => openEditDialog(user)}
+                            title="Rolle bearbeiten"
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setResetPasswordUser(user);
+                              setShowResetPasswordDialog(true);
+                            }}
+                            title="Passwort zurücksetzen"
+                          >
+                            <Key className="h-4 w-4 text-orange-600" />
+                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" title="Benutzer löschen">
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
@@ -503,6 +571,70 @@ export default function UserManagement() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Reset Password Dialog */}
+        <AlertDialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
+          <AlertDialogContent className="max-w-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-orange-600" />
+                Passwort zurücksetzen
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {!generatedPassword ? (
+                  <>
+                    Möchten Sie wirklich das Passwort für <strong>{resetPasswordUser?.email}</strong> zurücksetzen?
+                    <br /><br />
+                    Ein neues sicheres Passwort wird generiert und per E-Mail an den Benutzer gesendet.
+                  </>
+                ) : (
+                  <div className="space-y-4 text-left">
+                    <p className="text-foreground">
+                      Das Passwort wurde erfolgreich zurückgesetzt für:
+                      <br />
+                      <strong>{resetPasswordUser?.email}</strong>
+                    </p>
+                    <div className="bg-muted p-4 rounded-lg space-y-2">
+                      <p className="text-sm font-medium">Neues Passwort:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-background px-3 py-2 rounded border font-mono text-sm">
+                          {generatedPassword}
+                        </code>
+                        <Button size="sm" onClick={handleCopyPassword}>
+                          Kopieren
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Falls die E-Mail nicht angekommen ist, können Sie das Passwort kopieren und dem Benutzer manuell mitteilen.
+                    </p>
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              {!generatedPassword ? (
+                <>
+                  <AlertDialogCancel onClick={handleCloseResetDialog}>Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetPasswordConfirm} disabled={actionLoading}>
+                    {actionLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Wird zurückgesetzt...
+                      </>
+                    ) : (
+                      'Passwort zurücksetzen'
+                    )}
+                  </AlertDialogAction>
+                </>
+              ) : (
+                <Button onClick={handleCloseResetDialog} className="w-full">
+                  Schliessen
+                </Button>
+              )}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
       <Footer />
     </div>

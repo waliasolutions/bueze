@@ -288,7 +288,7 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
                   <div className="flex items-center gap-2">
                     <CheckCircle className="h-4 w-4 text-blue-600" />
                     <Badge variant="outline" className="border-blue-600 text-blue-700">
-                      Verifiziertes Profil
+                      Geprüftes Profil
                     </Badge>
                   </div>
                 )}
