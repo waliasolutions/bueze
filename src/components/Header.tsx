@@ -233,7 +233,7 @@ export const Header = () => {
 
         {/* Mobile Menu Backdrop */}
         <div 
-          className={`fixed inset-0 bg-black/50 z-40 lg:hidden transition-opacity duration-300 ${
+          className={`fixed inset-0 bg-black/50 z-[110] lg:hidden transition-opacity duration-300 ${
             isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
           }`}
           onClick={() => setIsMenuOpen(false)}
@@ -241,7 +241,7 @@ export const Header = () => {
 
         {/* Mobile Menu Slide-in Panel */}
         <div 
-          className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-50 lg:hidden 
+          className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-white z-[111] lg:hidden 
             transform transition-transform duration-300 ease-out shadow-2xl
             ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
