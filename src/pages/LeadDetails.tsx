@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Eye, Users } from 'lucide-react';
+import { MapPin, Clock, Coins, User, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Eye, Users, ArrowLeft } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
 // TODO: Re-enable after types regenerate
 // import { trackLeadView, checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
@@ -307,6 +307,17 @@ const LeadDetails = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+          {/* Back to Search Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-4 text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/search')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Zurück zur Suche
+          </Button>
+
           {/* Status Badge and Title */}
           <div className="mb-6">
             <Badge 
@@ -520,6 +531,17 @@ const LeadDetails = () => {
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">
+          {/* Back to Search Button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mb-4 text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/search')}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Zurück zur Suche
+          </Button>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main content */}
             <div className="lg:col-span-2 space-y-6">

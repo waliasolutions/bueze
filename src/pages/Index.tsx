@@ -6,6 +6,7 @@ import { FAQ } from '@/components/FAQ';
 import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { usePageContent } from '@/hooks/usePageContent';
+import { MobileStickyFooter } from '@/components/MobileStickyFooter';
 
 const Index = () => {
   const { content } = usePageContent('homepage');
@@ -60,6 +61,7 @@ const Index = () => {
         <FAQ />
       </main>
       <Footer />
+      <MobileStickyFooter />
     </div>
   );
 };
