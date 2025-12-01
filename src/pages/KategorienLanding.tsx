@@ -94,7 +94,7 @@ const KategorienLanding = () => {
           </h2>
           <div className="prose prose-lg max-w-none text-ink-700 space-y-4 mb-12">
             <p className="leading-relaxed">
-              Ob Renovierung, Reparatur oder Neugestaltung – mit Büeze.ch finden Sie schnell und unkompliziert den passenden Handwerker für Ihr Projekt. Unsere Plattform verbindet Sie mit geprüften und zertifizierten Handwerksbetrieben aus der ganzen Schweiz. Von Gartenarbeiten über Elektroinstallationen bis zu Malerarbeiten und Küchenmontage – alle Handwerk-Kategorien sind bei uns vertreten.
+              Ob Renovierung, Reparatur oder Neugestaltung – mit Büeze.ch finden Sie schnell und unkompliziert den passenden Handwerker für Ihr Projekt. Unsere Plattform verbindet Sie mit geprüften Handwerksbetrieben aus der ganzen Schweiz. Von Gartenarbeiten über Elektroinstallationen bis zu Malerarbeiten und Küchenmontage – alle Handwerk-Kategorien sind bei uns vertreten.
             </p>
             <p className="leading-relaxed">
               Der grosse Vorteil: Sie erstellen einmal eine Anfrage und erhalten mehrere Offerten von qualifizierten Fachbetrieben. So können Sie Preise, Leistungen und Verfügbarkeit direkt vergleichen – völlig kostenlos und unverbindlich. Alle registrierten Handwerker durchlaufen unseren Verifizierungsprozess, sodass Sie sich auf Qualität und Zuverlässigkeit verlassen können.

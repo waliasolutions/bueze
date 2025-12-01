@@ -44,6 +44,12 @@ interface Proposal {
     title: string;
     city: string;
     canton: string;
+    owner_id?: string;
+  };
+  client_contact?: {
+    full_name: string;
+    email: string;
+    phone: string | null;
   };
 }
 interface HandwerkerProfile {
@@ -290,13 +296,32 @@ const HandwerkerDashboard = () => {
           leads (
             title,
             city,
-            canton
+            canton,
+            owner_id
           )
         `).eq('handwerker_id', userId).order('submitted_at', {
         ascending: false
       });
       if (error) throw error;
-      setProposals(data || []);
+      
+      // For accepted proposals, fetch client contact details
+      const proposalsWithContacts = await Promise.all((data || []).map(async (proposal) => {
+        if (proposal.status === 'accepted' && proposal.leads?.owner_id) {
+          const { data: ownerProfile } = await supabase
+            .from('profiles')
+            .select('full_name, email, phone')
+            .eq('id', proposal.leads.owner_id)
+            .single();
+          
+          return {
+            ...proposal,
+            client_contact: ownerProfile
+          };
+        }
+        return proposal;
+      }));
+      
+      setProposals(proposalsWithContacts);
     } catch (error) {
       console.error('Error fetching proposals:', error);
     } finally {
@@ -802,6 +827,36 @@ const HandwerkerDashboard = () => {
                             day: 'numeric'
                           })}
                               </p>
+                              
+                              {/* Show client contact details for accepted proposals */}
+                              {proposal.status === 'accepted' && proposal.client_contact && (
+                                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                                  <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                                    <CheckCircle className="h-4 w-4" />
+                                    Kontaktdaten des Kunden
+                                  </h4>
+                                  <div className="space-y-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <User className="h-4 w-4 text-green-700" />
+                                      <span className="text-green-900">{proposal.client_contact.full_name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Mail className="h-4 w-4 text-green-700" />
+                                      <a href={`mailto:${proposal.client_contact.email}`} className="text-green-900 hover:underline">
+                                        {proposal.client_contact.email}
+                                      </a>
+                                    </div>
+                                    {proposal.client_contact.phone && (
+                                      <div className="flex items-center gap-2">
+                                        <Phone className="h-4 w-4 text-green-700" />
+                                        <a href={`tel:${proposal.client_contact.phone}`} className="text-green-900 hover:underline">
+                                          {proposal.client_contact.phone}
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </CardContent>
                         </Card>)}

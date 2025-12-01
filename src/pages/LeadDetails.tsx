@@ -84,6 +84,7 @@ const LeadDetails = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [hasProposal, setHasProposal] = useState(false);
+  const [proposalStatus, setProposalStatus] = useState<string | null>(null);
   const [analytics, setAnalytics] = useState<LeadAnalytics | null>(null);
   const [updating, setUpdating] = useState(false);
 
@@ -127,7 +128,7 @@ const LeadDetails = () => {
     try {
       const { data: proposal } = await supabase
         .from('lead_proposals')
-        .select('id')
+        .select('id, status')
         .eq('lead_id', lead.id)
         .eq('handwerker_id', user.id)
         .maybeSingle();
@@ -137,10 +138,12 @@ const LeadDetails = () => {
         userId: user.id, 
         leadOwnerId: lead.owner_id,
         proposalFound: !!proposal,
+        proposalStatus: proposal?.status,
         isOwnLead: lead.owner_id === user.id 
       });
       
       setHasProposal(!!proposal);
+      setProposalStatus(proposal?.status || null);
     } catch (error) {
       console.error('Error checking proposal status:', error);
     }
@@ -242,7 +245,9 @@ const LeadDetails = () => {
   };
 
   const isOwnLead = user && lead && lead.owner_id === user.id;
-  const shouldShowContactInfo = user && owner && (hasProposal || isOwnLead);
+  // CRITICAL: Only show contact info if proposal is ACCEPTED or it's the owner's lead
+  const isProposalAccepted = hasProposal && proposalStatus === 'accepted';
+  const shouldShowContactInfo = user && owner && (isProposalAccepted || isOwnLead);
   const shouldShowProposalSection = !isOwnLead;
   const leadStatus = lead ? getLeadStatus(lead.status as any) : null;
 
