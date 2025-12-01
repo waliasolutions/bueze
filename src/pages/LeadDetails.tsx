@@ -173,14 +173,12 @@ const LeadDetails = () => {
 
       setLead(leadData);
 
-      // Fetch owner profile
-      const { data: profileData, error: profileError } = await supabase
+      // Fetch owner profile - gracefully handle if not found
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', leadData.owner_id)
-        .single();
-
-      if (profileError) throw profileError;
+        .maybeSingle();
 
       setOwner(profileData);
     } catch (error) {
