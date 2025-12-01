@@ -130,11 +130,11 @@ const Datenschutz = () => {
 
                 <div className="space-y-4 text-ink-700">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.1 Supabase (Datenbank und Hosting)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.1 Datenbank und Hosting</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li><strong>Zweck:</strong> Speicherung und Verwaltung aller Plattformdaten</li>
-                      <li><strong>Standort:</strong> USA (mit EU-Standardvertragsklauseln)</li>
-                      <li><strong>Datenschutz:</strong> <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:text-brand-600">https://supabase.com/privacy</a></li>
+                      <li><strong>Standort:</strong> Hosting nach EU und CH Standard</li>
+                      <li><strong>Datenschutz:</strong> Unsere Hosting-Infrastruktur entspricht den strengen Anforderungen der DSGVO und des Schweizer Datenschutzgesetzes (nDSG)</li>
                     </ul>
                   </div>
 
@@ -169,11 +169,12 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.5 Microsoft Clarity (Nutzerverhalten-Analyse)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.5 Google Tag Manager (Tag-Verwaltung)</h3>
                     <ul className="list-disc pl-6 space-y-1">
-                      <li><strong>Zweck:</strong> Analyse von Nutzerinteraktionen zur Verbesserung der Benutzererfahrung</li>
-                      <li><strong>Standort:</strong> USA</li>
-                      <li><strong>Datenschutz:</strong> <a href="https://privacy.microsoft.com/de-de/privacystatement" target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:text-brand-600">https://privacy.microsoft.com/privacystatement</a></li>
+                      <li><strong>Zweck:</strong> Verwaltung und Auslieferung von Website-Tags für Analyse und Marketing</li>
+                      <li><strong>Standort:</strong> USA (mit EU-Standardvertragsklauseln)</li>
+                      <li><strong>Datenverarbeitung:</strong> GTM selbst erhebt keine personenbezogenen Daten, ermöglicht aber die Einbindung anderer Dienste</li>
+                      <li><strong>Datenschutz:</strong> <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:text-brand-600">https://policies.google.com/privacy</a></li>
                     </ul>
                   </div>
 
@@ -287,7 +288,7 @@ const Datenschutz = () => {
                         <strong>Analyse-Cookies (mit Einwilligung):</strong>
                         <ul className="list-circle pl-6 mt-1">
                           <li>Google Analytics (_ga, _gid, _gat)</li>
-                          <li>Microsoft Clarity</li>
+                          <li>Google Tag Manager</li>
                           <li><strong>Speicherdauer:</strong> Bis zu 24 Monate</li>
                         </ul>
                       </li>
