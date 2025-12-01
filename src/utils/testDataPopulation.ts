@@ -188,12 +188,23 @@ export async function populateTestData(): Promise<PopulationResult> {
       const ownerId = createdHomeowners[i % createdHomeowners.length];
 
       try {
+        const leadData = {
+          owner_id: ownerId,
+          title: lead.title,
+          description: lead.description,
+          category: lead.category as any,
+          budget_min: lead.budget_min,
+          budget_max: lead.budget_max,
+          urgency: lead.urgency as any,
+          canton: lead.canton as any,
+          city: lead.city,
+          zip: lead.zip,
+          status: lead.status as any,
+        };
+        
         const { data: newLead, error: leadError } = await supabase
           .from('leads')
-          .insert({
-            ...lead,
-            owner_id: ownerId,
-          })
+          .insert(leadData)
           .select()
           .single();
 

@@ -797,24 +797,26 @@ export async function createHandwerkerProfile(userId: string, handwerkerData: Te
 // Helper function to create test leads
 export async function createTestLead(lead: TestLead, ownerId: string): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
+    const leadData = {
+      owner_id: ownerId,
+      title: lead.title,
+      description: lead.description,
+      category: lead.category as any, // Type assertion for enum compatibility
+      budget_min: lead.budget_min,
+      budget_max: lead.budget_max,
+      urgency: lead.urgency as any,
+      canton: lead.canton as any,
+      city: lead.city,
+      zip: lead.zip,
+      status: lead.status as any,
+      quality_score: Math.floor(Math.random() * 40) + 60, // Random score 60-100
+      max_purchases: 4,
+      purchased_count: 0
+    };
+    
     const { data, error } = await supabase
       .from('leads')
-      .insert({
-        owner_id: ownerId,
-        title: lead.title,
-        description: lead.description,
-        category: lead.category,
-        budget_min: lead.budget_min,
-        budget_max: lead.budget_max,
-        urgency: lead.urgency,
-        canton: lead.canton,
-        city: lead.city,
-        zip: lead.zip,
-        status: lead.status,
-        quality_score: Math.floor(Math.random() * 40) + 60, // Random score 60-100
-        max_purchases: 4,
-        purchased_count: 0
-      })
+      .insert(leadData)
       .select();
 
     if (error) {
