@@ -78,10 +78,10 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
       onPaymentMethodAdded(newPaymentMethod);
       
       toast({
-        title: newPaymentMethod.isVerified ? "Zahlungsmethode hinzugefügt" : "Verifizierung erforderlich",
+        title: newPaymentMethod.isVerified ? "Zahlungsmethode hinzugefügt" : "Prüfung erforderlich",
         description: newPaymentMethod.isVerified 
-          ? "Ihre Zahlungsmethode wurde erfolgreich hinzugefügt und verifiziert."
-          : "Ihre Zahlungsmethode wurde hinzugefügt, aber muss noch verifiziert werden.",
+          ? "Ihre Zahlungsmethode wurde erfolgreich hinzugefügt und geprüft."
+          : "Ihre Zahlungsmethode wurde hinzugefügt, aber muss noch geprüft werden.",
         variant: newPaymentMethod.isVerified ? "default" : "destructive"
       });
 

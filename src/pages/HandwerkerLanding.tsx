@@ -85,7 +85,7 @@ const HandwerkerLanding = () => {
 
   const faqItems = [
     {
-      question: 'Wie werde ich als Handwerker verifiziert?',
+      question: 'Wie werde ich als Handwerker geprüft?',
       answer: 'Nach Ihrer Registrierung prüfen wir Ihre Angaben manuell, um sicherzustellen, dass nur vertrauenswürdige und qualifizierte Fachbetriebe Zugang zu den Kundenanfragen erhalten. Diese Überprüfung dient dem Schutz unserer Auftraggeber und stärkt die Qualität auf der Plattform. In der Regel dauert sie 1–2 Werktage. Nach der Freischaltung erhalten Sie eine Bestätigungs-E-Mail und können direkt loslegen.'
     },
     {

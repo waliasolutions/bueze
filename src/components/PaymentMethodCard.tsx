@@ -85,11 +85,11 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                         {method.isVerified ? (
                           <Badge variant="default" className="text-xs bg-green-100 text-green-700">
                             <Check className="h-3 w-3 mr-1" />
-                            Verifiziert
+                            Geprüft
                           </Badge>
                         ) : (
                           <Badge variant="destructive" className="text-xs">
-                            Nicht verifiziert
+                            Nicht geprüft
                           </Badge>
                         )}
                       </div>
