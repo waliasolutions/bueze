@@ -30,6 +30,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import HandwerkerApprovals from "./pages/admin/HandwerkerApprovals";
 import HandwerkerVerification from "./pages/admin/HandwerkerVerification";
 import UserManagement from "./pages/admin/UserManagement";
+import AdminLeadsManagement from "./pages/admin/AdminLeadsManagement";
 import AGB from "./pages/legal/AGB";
 import PricingPage from "./pages/legal/PricingPage";
 import Impressum from "./pages/legal/Impressum";
@@ -126,6 +127,7 @@ const App = () => {
             <Route path="/handwerker" element={<HandwerkerLanding />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/leads" element={<AdminLeadsManagement />} />
             <Route path="/admin/approvals" element={<HandwerkerApprovals />} />
             <Route path="/admin/handwerker-verification" element={<HandwerkerVerification />} />
             <Route path="/admin/users" element={<UserManagement />} />
