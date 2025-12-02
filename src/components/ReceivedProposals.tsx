@@ -188,6 +188,16 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
 
   const handleAccept = async (proposalId: string) => {
     try {
+      // Get the proposal to find the lead
+      const { data: proposal, error: proposalError } = await supabase
+        .from('lead_proposals')
+        .select('lead_id')
+        .eq('id', proposalId)
+        .single();
+
+      if (proposalError) throw proposalError;
+
+      // Update proposal status to accepted
       const { error } = await supabase
         .from('lead_proposals')
         .update({ status: 'accepted', responded_at: new Date().toISOString() })
@@ -195,9 +205,39 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
 
       if (error) throw error;
 
+      // Update lead status to completed and set accepted proposal
+      const { error: leadError } = await supabase
+        .from('leads')
+        .update({ 
+          status: 'completed',
+          accepted_proposal_id: proposalId
+        })
+        .eq('id', proposal.lead_id);
+
+      if (leadError) throw leadError;
+
+      // Reject all other pending proposals for this lead
+      const { error: rejectError } = await supabase
+        .from('lead_proposals')
+        .update({ status: 'rejected', responded_at: new Date().toISOString() })
+        .eq('lead_id', proposal.lead_id)
+        .neq('id', proposalId)
+        .eq('status', 'pending');
+
+      if (rejectError) throw rejectError;
+
+      // Trigger acceptance emails and conversation creation
+      const { error: emailError } = await supabase.functions.invoke('send-acceptance-emails', {
+        body: { proposalId }
+      });
+
+      if (emailError) {
+        console.error('Failed to send acceptance emails:', emailError);
+      }
+
       toast({
-        title: 'Offerte angenommen',
-        description: 'Beide Parteien wurden benachrichtigt',
+        title: 'Offerte angenommen!',
+        description: 'Der Auftrag wurde abgeschlossen. Beide Parteien wurden benachrichtigt.',
       });
 
       fetchProposals();
