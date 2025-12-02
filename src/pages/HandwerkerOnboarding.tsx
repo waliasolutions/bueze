@@ -232,12 +232,20 @@ const HandwerkerOnboarding = () => {
           return;
         }
         
-        // User is logged in but has no profile - pre-fill email from their account
+        // User is logged in but has no profile - pre-fill from profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email, phone')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        const nameParts = (profile?.full_name || '').split(' ');
         setFormData(prev => ({
           ...prev,
-          email: session.user.email || '',
-          firstName: session.user.user_metadata?.first_name || '',
-          lastName: session.user.user_metadata?.last_name || '',
+          email: session.user.email || profile?.email || '',
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          phoneNumber: profile?.phone || '',
         }));
         
         // Set flag that user is already authenticated
