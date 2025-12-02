@@ -377,6 +377,26 @@ const HandwerkerApprovals = () => {
           .eq('id', handwerker.id);
 
         if (!updateError) {
+          // Upsert user role to 'handwerker'
+          if (handwerker.user_id) {
+            await supabase
+              .from('user_roles')
+              .upsert({
+                user_id: handwerker.user_id,
+                role: 'handwerker'
+              }, { onConflict: 'user_id,role' });
+
+            // Create subscription (if not exists)
+            await supabase
+              .from('handwerker_subscriptions')
+              .upsert({
+                user_id: handwerker.user_id,
+                plan_type: 'free',
+                proposals_limit: 5,
+                proposals_used_this_period: 0
+              }, { onConflict: 'user_id' });
+          }
+
           // Send approval email
           await supabase.functions.invoke('send-approval-email', {
             body: { 
@@ -423,6 +443,34 @@ const HandwerkerApprovals = () => {
         .eq('id', handwerker.id);
 
       if (updateError) throw updateError;
+
+      // Upsert user role to 'handwerker'
+      if (handwerker.user_id) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .upsert({
+            user_id: handwerker.user_id,
+            role: 'handwerker'
+          }, { onConflict: 'user_id,role' });
+
+        if (roleError) {
+          console.error('Role upsert error (non-critical):', roleError);
+        }
+
+        // Create subscription (if not exists)
+        const { error: subError } = await supabase
+          .from('handwerker_subscriptions')
+          .upsert({
+            user_id: handwerker.user_id,
+            plan_type: 'free',
+            proposals_limit: 5,
+            proposals_used_this_period: 0
+          }, { onConflict: 'user_id' });
+
+        if (subError) {
+          console.error('Subscription creation error (non-critical):', subError);
+        }
+      }
 
       // Send approval notification email
       const { error: emailError } = await supabase.functions.invoke('send-approval-email', {
