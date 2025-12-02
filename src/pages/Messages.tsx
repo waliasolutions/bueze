@@ -101,7 +101,16 @@ const Messages = () => {
         description: "Die Unterhaltung konnte nicht geladen werden.",
         variant: "destructive",
       });
-      navigate('/dashboard');
+      
+      // Navigate to appropriate dashboard based on user role
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .single();
+      
+      const isHandwerker = roles?.role === 'handwerker';
+      navigate(isHandwerker ? '/handwerker-dashboard' : '/dashboard');
     }
   };
 
@@ -239,7 +248,16 @@ const Messages = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+            <Button variant="ghost" onClick={async () => {
+              const { data: roles } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', user?.id)
+                .single();
+              
+              const isHandwerker = roles?.role === 'handwerker';
+              navigate(isHandwerker ? '/handwerker-dashboard' : '/dashboard');
+            }}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-3">

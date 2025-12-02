@@ -178,7 +178,16 @@ const ConversationsList = () => {
                 Verwalten Sie Ihre Unterhaltungen mit Handwerkern und Auftraggebern
               </p>
             </div>
-            <Button onClick={() => navigate('/dashboard')}>
+            <Button onClick={async () => {
+              const { data: roles } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', user?.id)
+                .single();
+              
+              const isHandwerker = roles?.role === 'handwerker';
+              navigate(isHandwerker ? '/handwerker-dashboard' : '/dashboard');
+            }}>
               Zurück zum Dashboard
             </Button>
           </div>
