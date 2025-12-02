@@ -90,6 +90,15 @@ const ProposalReview = () => {
         .neq('id', proposalId)
         .eq('status', 'pending');
 
+      // Trigger acceptance emails and conversation creation
+      const { error: emailError } = await supabase.functions.invoke('send-acceptance-emails', {
+        body: { proposalId }
+      });
+
+      if (emailError) {
+        console.error('Failed to send acceptance emails:', emailError);
+      }
+
       toast({
         title: 'Offerte angenommen!',
         description: 'Beide Parteien wurden benachrichtigt. Sie erhalten die Kontaktdaten per E-Mail.',
