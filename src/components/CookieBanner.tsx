@@ -56,18 +56,13 @@ export const CookieBanner = () => {
   if (!isVisible) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-[100] backdrop-blur-sm" />
-      
-      {/* Cookie Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-[101] p-4 animate-fade-in">
-        <Card className="max-w-4xl mx-auto bg-white shadow-2xl border-2 border-line-200">
-          <div className="p-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Cookie className="h-6 w-6 text-brand-600 flex-shrink-0" />
-                <h2 className="text-xl font-bold text-ink-900">Cookie-Einstellungen</h2>
+    <div className="fixed bottom-0 left-0 right-0 z-[100] p-3 sm:p-4 animate-fade-in">
+      <Card className="max-w-4xl mx-auto bg-white shadow-lg border border-line-200">
+        <div className="p-4 sm:p-5">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Cookie className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600 flex-shrink-0 hidden sm:block" />
+                <h2 className="text-lg sm:text-xl font-bold text-ink-900">Cookie-Einstellungen</h2>
               </div>
               <button
                 onClick={handleAcceptNecessary}
@@ -79,9 +74,8 @@ export const CookieBanner = () => {
             </div>
 
             <p className="text-ink-700 mb-4 text-sm leading-relaxed">
-              Wir verwenden Cookies, um Ihre Erfahrung auf unserer Website zu verbessern. 
-              Einige Cookies sind für den Betrieb der Website notwendig, während andere uns helfen, 
-              die Nutzung zu analysieren und zu verbessern.
+              Wir verwenden Cookies zur Verbesserung Ihrer Erfahrung.
+              <span className="hidden sm:inline"> Einige Cookies sind für den Betrieb der Website notwendig, während andere uns helfen, die Nutzung zu analysieren und zu verbessern.</span>
             </p>
 
             {showDetails && (
@@ -139,20 +133,13 @@ export const CookieBanner = () => {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center justify-between">
-              <button
-                onClick={() => setShowDetails(!showDetails)}
-                className="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors text-left"
-              >
-                {showDetails ? 'Details ausblenden' : 'Einstellungen anpassen'}
-              </button>
-
-              <div className="flex flex-col sm:flex-row gap-2">
+            <div className="space-y-3">
+              <div className="flex flex-row gap-2 sm:gap-3">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleAcceptNecessary}
-                  className="w-full sm:w-auto"
+                  className="flex-1"
                 >
                   Nur Notwendige
                 </Button>
@@ -161,30 +148,34 @@ export const CookieBanner = () => {
                     variant="outline"
                     size="sm"
                     onClick={handleSaveSettings}
-                    className="w-full sm:w-auto"
+                    className="flex-1"
                   >
-                    Einstellungen speichern
+                    Speichern
                   </Button>
                 )}
                 <Button
-                  size="sm"
+                  size="lg"
                   onClick={handleAcceptAll}
-                  className="w-full sm:w-auto"
+                  className="flex-1 sm:flex-[1.5] shadow-md"
                 >
                   Alle akzeptieren
                 </Button>
               </div>
+              
+              <div className="flex items-center justify-between text-xs">
+                <button
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="text-brand-600 hover:text-brand-700 font-medium transition-colors"
+                >
+                  {showDetails ? 'Details ausblenden' : 'Einstellungen anpassen'}
+                </button>
+                <Link to="/datenschutz" className="text-ink-600 hover:text-brand-700 underline">
+                  Datenschutz
+                </Link>
+              </div>
             </div>
-
-            <p className="text-xs text-ink-600 mt-4">
-              Mehr Informationen finden Sie in unserer{' '}
-              <Link to="/datenschutz" className="text-brand-600 hover:text-brand-700 underline">
-                Datenschutzerklärung
-              </Link>
-            </p>
-          </div>
-        </Card>
-      </div>
-    </>
+        </div>
+      </Card>
+    </div>
   );
 };
