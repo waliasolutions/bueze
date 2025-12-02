@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Euro, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Search, MapPin, Euro, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
@@ -87,6 +87,7 @@ const HandwerkerDashboard = () => {
 
   // Tab State
   const [activeTab, setActiveTab] = useState("leads");
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Profile Tab
   const [profileEditing, setProfileEditing] = useState(false);
@@ -619,7 +620,13 @@ const HandwerkerDashboard = () => {
                     <HandwerkerStatusIndicator userId={user.id} verificationStatus={handwerkerProfile.verification_status} />
                   </div>}
               </div>
-              {user && <ProposalLimitBadge userId={user.id} />}
+              <div className="flex gap-3 items-center">
+                <Button onClick={() => navigate('/conversations')} variant="outline">
+                  <Users className="h-4 w-4 mr-2" />
+                  Nachrichten
+                </Button>
+                {user && <ProposalLimitBadge userId={user.id} />}
+              </div>
             </div>
             <p className="text-muted-foreground">
               Verwalten Sie Ihre Leads, Angebote und Profil

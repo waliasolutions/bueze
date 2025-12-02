@@ -336,10 +336,16 @@ const Dashboard = () => {
                 Willkommen zurück, {profile?.full_name || 'User'}!
               </p>
             </div>
-            <Button onClick={() => navigate('/submit-lead')}>
-              <Plus className="mr-2 h-4 w-4" />
-              Neuen Auftrag erstellen
-            </Button>
+            <div className="flex gap-3">
+              <Button onClick={() => navigate('/conversations')} variant="outline">
+                <Users className="mr-2 h-4 w-4" />
+                Nachrichten
+              </Button>
+              <Button onClick={() => navigate('/submit-lead')}>
+                <Plus className="mr-2 h-4 w-4" />
+                Neuen Auftrag erstellen
+              </Button>
+            </div>
           </div>
 
           {/* Verification Status Card for Handwerkers */}

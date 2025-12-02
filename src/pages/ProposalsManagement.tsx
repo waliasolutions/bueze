@@ -156,6 +156,15 @@ const ProposalsManagement = () => {
 
       if (rejectError) throw rejectError;
 
+      // Trigger acceptance emails and conversation creation
+      const { error: emailError } = await supabase.functions.invoke('send-acceptance-emails', {
+        body: { proposalId }
+      });
+
+      if (emailError) {
+        console.error('Failed to send acceptance emails:', emailError);
+      }
+
       toast({
         title: 'Offerte angenommen',
         description: 'Der Handwerker wurde benachrichtigt und wird Sie kontaktieren.',
