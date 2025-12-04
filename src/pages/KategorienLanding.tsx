@@ -17,7 +17,7 @@ const KategorienLanding = () => {
 
   const seoData = content?.seo || {
     title: "Alle Handwerk-Kategorien | Handwerker Schweiz | Büeze.ch",
-    description: "Übersicht aller Handwerk-Kategorien. Finden Sie qualifizierte Handwerker in der Schweiz für Ihr Projekt. Kostenlos Offerten vergleichen.",
+    description: "Alle Handwerk-Kategorien auf einen Blick. Finden Sie qualifizierte Fachbetriebe in der Schweiz. Kostenlos Offerten vergleichen.",
     canonical: "https://bueeze.ch/kategorien"
   };
 
