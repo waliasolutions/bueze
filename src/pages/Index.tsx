@@ -10,6 +10,7 @@ import { MobileStickyFooter } from '@/components/MobileStickyFooter';
 
 const Index = () => {
   const { content } = usePageContent('homepage');
+  const { content: heroContent, loading: heroLoading } = usePageContent('homepage_hero');
   const schemaMarkup = JSON.stringify({
     "@context": "https://schema.org",
     "@graph": [
@@ -56,7 +57,7 @@ const Index = () => {
       />
       <Header />
       <main className="pt-16">
-        <Hero />
+        <Hero content={heroContent} loading={heroLoading} />
         <HowItWorks />
         <FAQ />
       </main>

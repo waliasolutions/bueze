@@ -3,15 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { ArrowRight, ChevronRight } from 'lucide-react';
 import { majorCategories } from '@/config/majorCategories';
-import { usePageContent } from '@/hooks/usePageContent';
 
 const homeCategories = Object.values(majorCategories)
   .filter(cat => cat.showOnHome)
   .slice(0, 6);
 
-export const Hero = () => {
+interface HeroProps {
+  content?: {
+    fields?: {
+      title?: string;
+      subtitle?: string;
+      ctaText?: string;
+      trustSignals?: string[];
+    };
+  } | null;
+  loading?: boolean;
+}
+
+export const Hero = ({ content, loading = false }: HeroProps) => {
   const navigate = useNavigate();
-  const { content, loading } = usePageContent('homepage_hero');
 
   const handleCategoryClick = (categorySlug: string) => {
     navigate(`/kategorien/${categorySlug}`);
