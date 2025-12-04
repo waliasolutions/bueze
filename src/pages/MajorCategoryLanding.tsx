@@ -83,7 +83,7 @@ const MajorCategoryLanding = () => {
       <DynamicHelmet
         title={seoData.title || `${majorCategory.label} | Büeze.ch`}
         description={seoData.description || majorCategory.description}
-        canonical={seoData.canonical || `https://bueeze.ch/kategorie/${majorCategorySlug}`}
+        canonical={seoData.canonical || `https://bueeze.ch/kategorien/${majorCategorySlug}`}
         robotsMeta={seoData.robots}
         ogImage={seoData.og_image}
         schemaMarkup={schemaMarkup}

@@ -123,7 +123,7 @@ const App = () => {
             <Route path="/search" element={<BrowseLeads />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/kategorien" element={<KategorienLanding />} />
-            <Route path="/kategorie/:majorCategorySlug" element={<MajorCategoryLanding />} />
+            <Route path="/kategorien/:majorCategorySlug" element={<MajorCategoryLanding />} />
           <Route path="/category/:categorySlug" element={<CategoryLanding />} />
             <Route path="/handwerker" element={<HandwerkerLanding />} />
             <Route path="/admin" element={<AdminDashboard />} />

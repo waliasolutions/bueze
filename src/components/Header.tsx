@@ -111,7 +111,7 @@ export const Header = () => {
           <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src={logo} alt="Büeze.ch" className="h-24 w-auto" />
+            <img src={logo} alt="Bueeze-Logo" className="h-24 w-auto" />
           </div>
 
           {/* Desktop Navigation */}

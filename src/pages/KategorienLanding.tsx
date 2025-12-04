@@ -54,7 +54,7 @@ const KategorienLanding = () => {
                 <Card 
                   key={category.id} 
                   className="border-border hover:shadow-lg transition-all duration-300 cursor-pointer group"
-                  onClick={() => navigate(`/kategorie/${category.slug}`)}
+                  onClick={() => navigate(`/kategorien/${category.slug}`)}
                 >
                   <CardHeader>
                     <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${category.color} flex items-center justify-center text-white mb-4 shadow-md group-hover:scale-110 transition-transform duration-300`}>
