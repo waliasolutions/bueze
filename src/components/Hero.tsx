@@ -14,7 +14,7 @@ export const Hero = () => {
   const { content, loading } = usePageContent('homepage_hero');
 
   const handleCategoryClick = (categorySlug: string) => {
-    navigate(`/kategorie/${categorySlug}`);
+    navigate(`/kategorien/${categorySlug}`);
   };
 
   return (

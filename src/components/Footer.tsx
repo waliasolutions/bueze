@@ -38,7 +38,7 @@ export const Footer = () => {
           {/* Company Info - 3 columns on desktop */}
           <div className="lg:col-span-3 space-y-6">
             <div className="flex items-center">
-              <img src={logo} alt="Büeze.ch" className="h-20 w-auto" />
+              <img src={logo} alt="Bueeze-Logo" className="h-20 w-auto" />
             </div>
             
             <p className="text-ink-300 leading-relaxed text-sm">
@@ -78,7 +78,7 @@ export const Footer = () => {
               {categoriesWithSubs.map((category) => (
                 <div key={category.id} className="space-y-3">
                 <Link
-                  to={`/kategorie/${category.slug}`}
+                  to={`/kategorien/${category.slug}`}
                   className="font-semibold text-surface hover:text-brand-400 transition-colors block"
                 >
                   {category.label}
@@ -87,7 +87,7 @@ export const Footer = () => {
                     {category.subcategories.map((sub) => (
                       <li key={sub.value}>
                       <Link 
-                        to={`/kategorie/${category.slug}#${sub.value}`}
+                        to={`/kategorien/${category.slug}#${sub.value}`}
                         className="text-ink-300 hover:text-brand-400 transition-colors text-sm block"
                       >
                         {sub.label}

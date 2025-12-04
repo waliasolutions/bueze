@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
       if (page.content_type === 'category' && page.page_key.startsWith('category_')) {
         const slug = page.page_key.replace('category_', '').replace(/_/g, '-');
         dynamicRoutes.push({
-          loc: `/kategorie/${slug}`,
+          loc: `/kategorien/${slug}`,
           lastmod: page.updated_at,
           priority: '0.8',
           changefreq: 'weekly',
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
 
     majorCategories.forEach((slug) => {
       dynamicRoutes.push({
-        loc: `/kategorie/${slug}`,
+        loc: `/kategorien/${slug}`,
         lastmod: now,
         priority: '0.9',
         changefreq: 'weekly',
