@@ -37,8 +37,8 @@ const HandwerkerLanding = () => {
   });
 
   const seoData = content?.seo || {
-    title: "Handwerker finden sofort | Aufträge für Handwerker | Handwerker Angebote",
-    description: "Handwerker finden sofort – erhalten Sie Aufträge für Handwerker und vergleichen Sie Handwerker Angebote. Kostenlose Registrierung für Handwerksbetriebe.",
+    title: "Vergleichen Sie Handwerkerangebote und finden Sie sofort professionelle Handwerker",
+    description: "Brauchen Sie Handwerker? Vergleichen Sie Handwerkerangebote und finden Sie sofort vertrauenswürdige, professionelle Handwerker auf Bueeze. Ideal für alle, die schnell und unkompliziert einen Handwerker beauftragen möchten.",
     canonical: "https://bueeze.ch/handwerker"
   };
 

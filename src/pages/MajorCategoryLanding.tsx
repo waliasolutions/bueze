@@ -40,15 +40,27 @@ const MajorCategoryLanding = () => {
     switch (majorCategorySlug) {
       case 'bau-renovation':
         return {
-          title: 'Bauarbeiter Schweiz | Bauhandwerker | Hausrenovation Schweiz | Büeze.ch',
-          description: 'Bauarbeiter in der Schweiz finden. Professionelle Bauhandwerker für Hausrenovation in der Schweiz. Kostenlos Offerten vergleichen.',
+          title: 'Hausrenovierung & Bauarbeiten in der Schweiz | Professionelle Handwerker',
+          description: 'Stellen Sie zuverlässige Bauhandwerker in der Schweiz für Renovierungs-, Umbau- und Bauprojekte ein. Entdecken Sie erstklassige Bau- und Renovierungsdienstleistungen auf Bueeze.',
           intro: 'Sie planen eine Hausrenovation in der Schweiz? Finden Sie erfahrene Bauarbeiter und Bauhandwerker in Ihrer Region.'
         };
       case 'elektroinstallationen':
         return {
-          title: 'Elektrik Service Schweiz | Elektroinstallationen | Elektriker Schweiz',
-          description: 'Elektrik Service in der Schweiz. Professionelle Elektroinstallationen von geprüften Elektrikern.',
+          title: 'Elektrodienstleistungen in der Schweiz | Elektroinstallationen und elektrischer Notdienst',
+          description: 'Bueeze bietet professionelle Elektrodienstleistungen in der Schweiz, einschliesslich fachmännischer Elektroinstallationen und schnellem, zuverlässigem Notstromdienst. Vertrauen Sie unseren zertifizierten Elektrikern für sichere und effiziente Lösungen.',
           intro: 'Für sichere Elektroinstallationen braucht es Fachleute. Unser Elektrik Service verbindet Sie mit geprüften Elektrikern.'
+        };
+      case 'heizung-klima':
+        return {
+          title: 'Heizung & Sanitär in der Schweiz | Professionelle Heizungsinstallationen',
+          description: 'Entdecken Sie mit Bueeze kompetente Heizungs- und Sanitärdienstleistungen in der Schweiz. Von effizienten Heizungsanlagen bis hin zu kompletten Klimalösungen bieten wir zuverlässige, moderne Systeme, die auf Ihr Zuhause oder Ihr Unternehmen zugeschnitten sind.',
+          intro: 'Sie suchen Experten für Heizung und Klima? Finden Sie qualifizierte Installateure für Ihr Projekt.'
+        };
+      case 'sanitaer':
+        return {
+          title: 'Sanitärservice in der Schweiz | Fachkundige Sanitärinstallationen',
+          description: 'Bueeze bietet zuverlässige Sanitärdienstleistungen in der Schweiz, einschliesslich hochwertiger Sanitärinstallationen für Privathaushalte und Unternehmen. Vertrauen Sie unserem Expertenteam für schnelle, professionelle Sanitärlösungen.',
+          intro: 'Professionelle Sanitärinstallationen für Ihr Zuhause oder Unternehmen. Finden Sie qualifizierte Sanitärfachleute in Ihrer Region.'
         };
       default:
         return {
