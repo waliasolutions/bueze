@@ -40,7 +40,7 @@ const Index = () => {
   });
 
   const seoData = content?.seo || {
-    title: "Büeze | Handwerker Marktplatz Schweiz",
+    title: "Lokale Handwerker finden | Handwerker Schweiz | Büeze.ch",
     description: "Finden Sie mit Bueeze vertrauenswürdige lokale Handwerker in der ganzen Schweiz. Unser Schweizer Handwerkerportal verbindet Sie mit kompetenten Fachleuten für Reparaturen, Renovierungen und Hausdienstleistungen. Schnell, zuverlässig und einfach zu bedienen.",
     canonical: "https://bueeze.ch/"
   };
