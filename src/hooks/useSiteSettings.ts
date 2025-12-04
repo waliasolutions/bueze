@@ -44,10 +44,34 @@ export const useSiteSettings = () => {
 
   const updateSettings = async (updates: Partial<SiteSettings>) => {
     try {
+      if (!settings?.id) {
+        // If no settings exist yet, try to get the first record
+        const { data: existingData } = await supabase
+          .from('site_seo_settings')
+          .select('id')
+          .limit(1)
+          .single();
+        
+        if (!existingData?.id) {
+          throw new Error('No settings record found');
+        }
+        
+        const { data, error } = await supabase
+          .from('site_seo_settings')
+          .update(updates)
+          .eq('id', existingData.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        setSettings(data);
+        return { success: true };
+      }
+
       const { data, error } = await supabase
         .from('site_seo_settings')
         .update(updates)
-        .eq('id', settings?.id || '')
+        .eq('id', settings.id)
         .select()
         .single();
 
