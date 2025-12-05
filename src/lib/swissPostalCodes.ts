@@ -1,132 +1,68 @@
-import { captureException } from '@/lib/errorTracking';
+import { getCantonFromPostalCode, CANTON_NAMES } from '@/lib/cantonPostalCodes';
 
 export interface PostalCodeEntry {
   postalCode: string;
-  name: string; // City name
+  name: string;
   canton: string;
   district?: string;
   commune?: string;
 }
 
-export interface OpenPLZLocality {
-  postalCode: string;
-  name: string;
-  commune: {
-    key: string;
-    name: string;
-    shortName: string;
-  };
-  district: {
-    key: string;
-    name: string;
-    shortName: string;
-  };
-  canton: {
-    key: string;
-    name: string;
-    shortName: string;
-  };
-}
-
-const OPENPLZ_API_BASE = 'https://openplzapi.org';
-
 /**
- * Search localities by postal code using OpenPLZ API
+ * Search localities by postal code using local canton data
  * @param postalCode - Swiss postal code (PLZ)
  * @returns Array of matching localities
  */
-export const searchByPostalCode = async (
-  postalCode: string
-): Promise<PostalCodeEntry[]> => {
-  try {
-    const response = await fetch(
-      `${OPENPLZ_API_BASE}/ch/Localities?postalCode=${postalCode}`,
-      {
-        headers: {
-          'Accept': 'application/json',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`OpenPLZ API error: ${response.status}`);
-    }
-
-    const data: OpenPLZLocality[] = await response.json();
-
-    return data.map(locality => ({
-      postalCode: locality.postalCode,
-      name: locality.name,
-      canton: locality.canton?.key || locality.canton?.shortName || '',
-      district: locality.district?.name || '',
-      commune: locality.commune?.name || '',
-    }));
-  } catch (error) {
-    captureException(error as Error, { context: 'searchByPostalCode' });
+export const searchByPostalCode = (postalCode: string): PostalCodeEntry[] => {
+  if (!postalCode || postalCode.length < 4) {
     return [];
   }
+
+  const canton = getCantonFromPostalCode(postalCode);
+  if (!canton) {
+    return [];
+  }
+
+  return [{
+    postalCode,
+    name: '', // City name to be entered manually by user
+    canton,
+  }];
 };
 
 /**
- * Search localities by city name using OpenPLZ API
+ * Search localities by city name - not supported with local data
  * @param cityName - City name to search
- * @returns Array of matching localities
+ * @returns Empty array (city search not available)
  */
-export const searchByCityName = async (
-  cityName: string
-): Promise<PostalCodeEntry[]> => {
-  try {
-    const response = await fetch(
-      `${OPENPLZ_API_BASE}/ch/Localities?name=${encodeURIComponent(cityName)}`,
-      {
-        headers: {
-          'Accept': 'application/json',
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`OpenPLZ API error: ${response.status}`);
-    }
-
-    const data: OpenPLZLocality[] = await response.json();
-
-    return data.map(locality => ({
-      postalCode: locality.postalCode,
-      name: locality.name,
-      canton: locality.canton?.key || locality.canton?.shortName || '',
-      district: locality.district?.name || '',
-      commune: locality.commune?.name || '',
-    }));
-  } catch (error) {
-    captureException(error as Error, { context: 'searchByCityName' });
-    return [];
-  }
+export const searchByCityName = (cityName: string): PostalCodeEntry[] => {
+  // City search not supported with local data
+  return [];
 };
 
 /**
  * Lookup postal code and return first match
  */
-export const lookupPostalCode = async (
-  postalCode: string
-): Promise<PostalCodeEntry | null> => {
-  const results = await searchByPostalCode(postalCode);
+export const lookupPostalCode = (postalCode: string): PostalCodeEntry | null => {
+  const results = searchByPostalCode(postalCode);
   return results.length > 0 ? results[0] : null;
 };
 
 /**
- * Validate if PLZ-City-Canton combination exists
+ * Validate if PLZ-Canton combination exists
  */
-export const validateAddress = async (
+export const validateAddress = (
   postalCode: string,
   city: string,
   canton: string
-): Promise<boolean> => {
-  const results = await searchByPostalCode(postalCode);
-  
-  return results.some(
-    result =>
-      result.name.toLowerCase() === city.toLowerCase() &&
-      result.canton === canton
-  );
+): boolean => {
+  const result = lookupPostalCode(postalCode);
+  return result !== null && result.canton === canton;
+};
+
+/**
+ * Get canton name from canton code
+ */
+export const getCantonName = (cantonCode: string): string => {
+  return CANTON_NAMES[cantonCode] || cantonCode;
 };
