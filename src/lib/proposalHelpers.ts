@@ -119,20 +119,20 @@ export async function rejectProposal(proposalId: string): Promise<ProposalAction
 }
 
 /**
- * Accept multiple proposals in batch
+ * Accept multiple proposals in batch - using Promise.all for parallel execution
  */
 export async function acceptProposalsBatch(proposalIds: string[]): Promise<ProposalActionResult> {
-  let successCount = 0;
-  let failCount = 0;
-
-  for (const proposalId of proposalIds) {
-    const result = await acceptProposal(proposalId);
-    if (result.success) {
-      successCount++;
-    } else {
-      failCount++;
-    }
+  if (proposalIds.length === 0) {
+    return { success: false, message: 'Keine Offerten ausgewählt' };
   }
+
+  // Execute all accept operations in parallel
+  const results = await Promise.all(
+    proposalIds.map(proposalId => acceptProposal(proposalId))
+  );
+
+  const successCount = results.filter(r => r.success).length;
+  const failCount = results.filter(r => !r.success).length;
 
   if (failCount === 0) {
     return {
@@ -153,20 +153,20 @@ export async function acceptProposalsBatch(proposalIds: string[]): Promise<Propo
 }
 
 /**
- * Reject multiple proposals in batch
+ * Reject multiple proposals in batch - using Promise.all for parallel execution
  */
 export async function rejectProposalsBatch(proposalIds: string[]): Promise<ProposalActionResult> {
-  let successCount = 0;
-  let failCount = 0;
-
-  for (const proposalId of proposalIds) {
-    const result = await rejectProposal(proposalId);
-    if (result.success) {
-      successCount++;
-    } else {
-      failCount++;
-    }
+  if (proposalIds.length === 0) {
+    return { success: false, message: 'Keine Offerten ausgewählt' };
   }
+
+  // Execute all reject operations in parallel
+  const results = await Promise.all(
+    proposalIds.map(proposalId => rejectProposal(proposalId))
+  );
+
+  const successCount = results.filter(r => r.success).length;
+  const failCount = results.filter(r => !r.success).length;
 
   if (failCount === 0) {
     return {

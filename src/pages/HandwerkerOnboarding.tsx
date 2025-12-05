@@ -30,6 +30,13 @@ import {
   formatCantonDisplay,
   getCantonFromPostalCode 
 } from "@/lib/cantonPostalCodes";
+import { 
+  saveVersionedData, 
+  loadVersionedData, 
+  clearVersionedData,
+  STORAGE_KEYS,
+  STORAGE_VERSIONS 
+} from "@/lib/localStorageVersioning";
 
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
@@ -294,7 +301,7 @@ const HandwerkerOnboarding = () => {
     return hasFilledFields || hasSelectedCategories;
   };
 
-  // Auto-save form data to localStorage
+  // Auto-save form data to localStorage with versioning
   useEffect(() => {
     const saveToLocalStorage = () => {
       // Only save if there's meaningful progress
@@ -307,9 +314,12 @@ const HandwerkerOnboarding = () => {
         formData,
         selectedMajorCategories,
         uploadedFiles,
-        timestamp: Date.now(),
       };
-      localStorage.setItem('handwerker-onboarding-draft', JSON.stringify(dataToSave));
+      saveVersionedData(
+        STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT,
+        dataToSave,
+        STORAGE_VERSIONS.HANDWERKER_ONBOARDING_DRAFT
+      );
       setLastSaved(new Date());
     };
 
@@ -317,60 +327,57 @@ const HandwerkerOnboarding = () => {
     return () => clearTimeout(timeoutId);
   }, [currentStep, formData, selectedMajorCategories]);
 
-  // Load saved form data from localStorage on mount
+  // Load saved form data from localStorage on mount with versioning
   useEffect(() => {
     const loadFromLocalStorage = () => {
-      const savedData = localStorage.getItem('handwerker-onboarding-draft');
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData);
-          const hoursSinceLastSave = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
-          
-          // Only load if saved within last 7 days
-          if (hoursSinceLastSave < 168) {
-            // Calculate progress
-            const savedProgress = Math.min(((parsed.currentStep - 1) / 5) * 100, 100);
-            
-            // Format last save time
-            const lastSaveDate = new Date(parsed.timestamp);
-            const now = new Date();
-            const diffDays = Math.floor((now.getTime() - lastSaveDate.getTime()) / (1000 * 60 * 60 * 24));
-            
-            let lastSaveTimeStr;
-            if (diffDays === 0) {
-              lastSaveTimeStr = `Heute um ${lastSaveDate.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
-            } else if (diffDays === 1) {
-              lastSaveTimeStr = `Gestern um ${lastSaveDate.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
-            } else {
-              lastSaveTimeStr = lastSaveDate.toLocaleDateString('de-CH', { 
-                day: '2-digit', 
-                month: 'long',
-                hour: '2-digit',
-                minute: '2-digit'
-              });
-            }
-            
-            // Set recovery data and show dialog
-            setRecoveryData({
-              progress: savedProgress,
-              lastSaveTime: lastSaveTimeStr,
-              currentStep: parsed.currentStep,
-              totalSteps: 5,
-            });
-            setShowRecoveryDialog(true);
-            
-            // Store the parsed data temporarily (don't load yet)
-            sessionStorage.setItem('pending-recovery-data', JSON.stringify(parsed));
-          } else {
-            // Clear old data
-            localStorage.removeItem('handwerker-onboarding-draft');
-          }
-        } catch (error) {
-          if (import.meta.env.DEV) {
-            console.error('Error loading saved data:', error);
-          }
-          localStorage.removeItem('handwerker-onboarding-draft');
+      const { data, wasRecovered, lastSaved: savedAt } = loadVersionedData<{
+        currentStep: number;
+        formData: typeof formData;
+        selectedMajorCategories: string[];
+        uploadedFiles: typeof uploadedFiles;
+      }>({
+        key: STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT,
+        currentVersion: STORAGE_VERSIONS.HANDWERKER_ONBOARDING_DRAFT,
+        ttlHours: 168, // 7 days
+        migrations: {
+          // Migration from version 1 to 2: Handle any schema changes
+          2: (oldData: unknown) => oldData, // No schema changes yet
+        },
+      });
+
+      if (wasRecovered && data && savedAt) {
+        // Calculate progress
+        const savedProgress = Math.min(((data.currentStep - 1) / 5) * 100, 100);
+        
+        // Format last save time
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - savedAt.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let lastSaveTimeStr;
+        if (diffDays === 0) {
+          lastSaveTimeStr = `Heute um ${savedAt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
+        } else if (diffDays === 1) {
+          lastSaveTimeStr = `Gestern um ${savedAt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
+        } else {
+          lastSaveTimeStr = savedAt.toLocaleDateString('de-CH', { 
+            day: '2-digit', 
+            month: 'long',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
         }
+        
+        // Set recovery data and show dialog
+        setRecoveryData({
+          progress: savedProgress,
+          lastSaveTime: lastSaveTimeStr,
+          currentStep: data.currentStep,
+          totalSteps: 5,
+        });
+        setShowRecoveryDialog(true);
+        
+        // Store the parsed data temporarily (don't load yet)
+        sessionStorage.setItem('pending-recovery-data', JSON.stringify(data));
       }
     };
 
@@ -798,7 +805,7 @@ const HandwerkerOnboarding = () => {
       }
 
       // Clear saved draft
-      localStorage.removeItem('handwerker-onboarding-draft');
+      clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
       sessionStorage.removeItem('handwerker-upload-temp-id');
 
       // If user was already logged in, just navigate without signing out
@@ -2397,12 +2404,12 @@ const HandwerkerOnboarding = () => {
                 </p>
               )}
             </div>
-            {localStorage.getItem('handwerker-onboarding-draft') && (
+            {localStorage.getItem(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT) && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  localStorage.removeItem('handwerker-onboarding-draft');
+                  clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
                   toast({
                     title: "Entwurf gelöscht",
                     description: "Ihre gespeicherten Daten wurden entfernt.",
@@ -2529,7 +2536,7 @@ const HandwerkerOnboarding = () => {
               <Button
                 onClick={() => {
                   // Start fresh - clear everything
-                  localStorage.removeItem('handwerker-onboarding-draft');
+                  clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
                   sessionStorage.removeItem('pending-recovery-data');
                   sessionStorage.removeItem('handwerker-upload-temp-id');
                   

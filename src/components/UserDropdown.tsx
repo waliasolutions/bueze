@@ -24,6 +24,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { clearVersionedData, STORAGE_KEYS } from '@/lib/localStorageVersioning';
 
 interface UserProfile {
   id: string;
@@ -109,8 +110,8 @@ export const UserDropdown = () => {
     // Enhanced logout - clear all session data
     const { error } = await supabase.auth.signOut();
     
-    // Clear handwerker-related localStorage
-    localStorage.removeItem('handwerker-onboarding-draft');
+    // Clear handwerker-related localStorage using versioned utility
+    clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
     
     // Clear sessionStorage
     sessionStorage.clear();
