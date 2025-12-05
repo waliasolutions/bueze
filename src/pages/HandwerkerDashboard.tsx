@@ -20,55 +20,7 @@ import { HandwerkerReviewResponse } from "@/components/HandwerkerReviewResponse"
 import { majorCategories } from "@/config/majorCategories";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
-interface Lead {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  budget_min: number | null;
-  budget_max: number | null;
-  urgency: string;
-  city: string;
-  canton: string;
-  zip: string;
-  created_at: string;
-  proposals_count: number;
-}
-interface Proposal {
-  id: string;
-  lead_id: string;
-  price_min: number;
-  price_max: number;
-  message: string;
-  estimated_duration_days: number | null;
-  status: string;
-  submitted_at: string;
-  leads: {
-    title: string;
-    city: string;
-    canton: string;
-    owner_id?: string;
-  };
-  client_contact?: {
-    full_name: string;
-    email: string;
-    phone: string | null;
-  };
-}
-interface HandwerkerProfile {
-  id: string;
-  first_name: string | null;
-  last_name: string | null;
-  email: string | null;
-  phone_number: string | null;
-  company_name: string | null;
-  bio: string | null;
-  categories: string[];
-  service_areas: string[];
-  hourly_rate_min: number | null;
-  hourly_rate_max: number | null;
-  verification_status: string;
-}
+import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic } from "@/types/entities";
 const HandwerkerDashboard = () => {
   const navigate = useNavigate();
   const {
@@ -76,16 +28,16 @@ const HandwerkerDashboard = () => {
   } = useToast();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfile | null>(null);
+  const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfileBasic | null>(null);
 
   // Browse Leads Tab
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leads, setLeads] = useState<LeadListItem[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
 
   // Proposals Tab
-  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [proposals, setProposals] = useState<ProposalWithClientInfo[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState(false);
 
   // Reviews Tab

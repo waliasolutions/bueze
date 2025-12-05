@@ -302,3 +302,140 @@ export interface HandwerkerRatingStats {
   average_rating?: number | null;
   review_count?: number | null;
 }
+
+// =============================================================================
+// Extended Lead Types for UI Components
+// =============================================================================
+
+// Lead for browse/list views (all fields present from database query)
+export interface LeadListItem {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  budget_min: number | null;
+  budget_max: number | null;
+  urgency: string;
+  canton: string;
+  zip: string;
+  city: string;
+  created_at: string;
+  purchased_count: number | null;
+  max_purchases: number | null;
+  quality_score: number | null;
+  status: string;
+  proposals_count?: number | null;
+  address?: string | null;
+  owner_id?: string;
+}
+
+// Lead with owner contact info (for admin views)
+export interface LeadWithOwnerContact extends LeadListItem {
+  budget_type: string;
+  media_urls: string[] | null;
+  owner_name: string | null;
+  owner_email: string;
+  owner_phone: string | null;
+}
+
+// =============================================================================
+// Extended Proposal Types for UI Components
+// =============================================================================
+
+// Proposal for handwerker's proposal list
+export interface ProposalListItem {
+  id: string;
+  lead_id: string;
+  handwerker_id?: string;
+  price_min: number;
+  price_max: number;
+  estimated_duration_days: number | null;
+  status: string;
+  submitted_at: string;
+  responded_at?: string | null;
+  message: string;
+  view_count?: number | null;
+  client_viewed_at?: string | null;
+  leads: {
+    title: string;
+    category?: string;
+    city?: string;
+    canton?: string;
+    status?: string;
+    owner_id?: string;
+    description?: string;
+  };
+}
+
+// Proposal with handwerker info (for client views)
+export interface ProposalWithHandwerkerInfo extends ProposalListItem {
+  handwerker_profiles?: {
+    business_city?: string | null;
+    company_name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    logo_url?: string | null;
+  } | null;
+}
+
+// Proposal with client contact (for accepted proposals - handwerker view)
+export interface ProposalWithClientInfo extends ProposalListItem {
+  client_contact?: {
+    full_name: string | null;
+    email: string;
+    phone: string | null;
+  } | null;
+}
+
+// Admin proposal view with flattened handwerker data
+export interface AdminProposal {
+  id: string;
+  lead_id: string;
+  handwerker_id: string;
+  price_min: number;
+  price_max: number;
+  estimated_duration_days: number | null;
+  message: string;
+  status: string;
+  submitted_at: string;
+  responded_at: string | null;
+  handwerker_first_name: string | null;
+  handwerker_last_name: string | null;
+  handwerker_company_name: string | null;
+  handwerker_email: string | null;
+  handwerker_phone: string | null;
+  handwerker_city: string | null;
+}
+
+// =============================================================================
+// Extended User Profile Types
+// =============================================================================
+
+// User profile for dropdowns/headers
+export interface UserProfileBasic {
+  id: string;
+  email: string;
+  full_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar_url?: string | null;
+  phone?: string | null;
+  role?: 'homeowner' | 'handwerker' | 'admin' | 'client' | 'user';
+}
+
+// Handwerker profile for dashboard
+export interface HandwerkerProfileBasic {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  phone_number: string | null;
+  company_name: string | null;
+  bio: string | null;
+  categories: string[];
+  service_areas: string[];
+  hourly_rate_min: number | null;
+  hourly_rate_max: number | null;
+  verification_status: string | null;
+  is_verified?: boolean | null;
+}

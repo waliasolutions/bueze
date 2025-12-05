@@ -24,33 +24,14 @@ import { SWISS_CANTONS } from '@/config/cantons';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { EmptyState } from '@/components/ui/empty-state';
-
-interface Lead {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  budget_min: number;
-  budget_max: number;
-  urgency: string;
-  canton: string;
-  zip: string;
-  city: string;
-  created_at: string;
-  purchased_count: number;
-  max_purchases: number;
-  quality_score: number;
-  status: string;
-  proposals_count?: number;
-}
-
+import type { LeadListItem } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor, URGENCY_LEVELS } from '@/config/urgencyLevels';
 
 
 const BrowseLeads = () => {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
+  const [leads, setLeads] = useState<LeadListItem[]>([]);
+  const [filteredLeads, setFilteredLeads] = useState<LeadListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMajorCategory, setSelectedMajorCategory] = useState('all');

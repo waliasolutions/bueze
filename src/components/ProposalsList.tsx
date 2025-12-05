@@ -6,25 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Clock, CheckCircle, XCircle, Eye, MapPin, Coins, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
+import type { ProposalListItem } from '@/types/entities';
 
-interface Proposal {
-  id: string;
-  lead_id: string;
-  price_min: number;
-  price_max: number;
-  estimated_duration_days: number | null;
-  status: string;
-  submitted_at: string;
+// Extended type with responded_at field
+interface ProposalWithResponse extends ProposalListItem {
   responded_at: string | null;
-  message: string;
-  view_count: number;
-  leads: {
-    title: string;
-    category: string;
-    city: string;
-    canton: string;
-    status: string;
-  };
 }
 
 interface ProposalsListProps {
@@ -32,7 +18,7 @@ interface ProposalsListProps {
 }
 
 export const ProposalsList: React.FC<ProposalsListProps> = ({ userId }) => {
-  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [proposals, setProposals] = useState<ProposalWithResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ pending: 0, accepted: 0, rejected: 0, successRate: 0 });
   const { toast } = useToast();

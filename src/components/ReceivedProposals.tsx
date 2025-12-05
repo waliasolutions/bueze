@@ -13,27 +13,16 @@ import { ProposalStatusBadge } from './ProposalStatusBadge';
 import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBatch } from '@/lib/proposalHelpers';
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import type { ProposalWithHandwerkerInfo } from '@/types/entities';
 
-interface Proposal {
-  id: string;
-  lead_id: string;
+// Extended type for ReceivedProposals with specific joined data
+interface ReceivedProposal extends ProposalWithHandwerkerInfo {
   handwerker_id: string;
-  price_min: number;
-  price_max: number;
-  estimated_duration_days: number | null;
-  status: string;
-  submitted_at: string;
-  message: string;
   handwerker_profiles: {
     business_city: string | null;
     profiles: {
       full_name: string;
     };
-  } | null;
-  leads: {
-    title: string;
-    category: string;
-    status: string;
   } | null;
 }
 
@@ -42,8 +31,8 @@ interface ReceivedProposalsProps {
 }
 
 export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) => {
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [filteredProposals, setFilteredProposals] = useState<Proposal[]>([]);
+  const [proposals, setProposals] = useState<ReceivedProposal[]>([]);
+  const [filteredProposals, setFilteredProposals] = useState<ReceivedProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'date' | 'price_low' | 'price_high'>('date');
@@ -120,7 +109,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
         };
       });
 
-      setProposals(proposalsWithProfiles as Proposal[]);
+      setProposals(proposalsWithProfiles as ReceivedProposal[]);
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('Error fetching proposals:', error);

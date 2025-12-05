@@ -22,55 +22,30 @@ import { getLeadStatus } from '@/config/leadStatuses';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
 // import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
-
-interface Lead {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  budget_min: number;
-  budget_max: number;
-  urgency: string;
-  canton: string;
-  zip: string;
-  city: string;
-  created_at: string;
-  purchased_count: number;
-  max_purchases: number;
-  quality_score: number;
-  status: string;
-  proposals_count?: number;
-}
+import type { LeadListItem, UserProfileBasic } from '@/types/entities';
 
 interface Purchase {
   id: string;
   lead_id: string;
   price: number;
   purchased_at: string;
-  lead: Lead;
+  lead: LeadListItem;
 }
 
-interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  role?: string;
-}
-
-interface HandwerkerProfile {
+interface HandwerkerProfileCheck {
   id: string;
   is_verified: boolean;
 }
 
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [myLeads, setMyLeads] = useState<Lead[]>([]);
+  const [profile, setProfile] = useState<UserProfileBasic | null>(null);
+  const [myLeads, setMyLeads] = useState<LeadListItem[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState(true);
   // TODO: Re-enable after types regenerate
   // const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
-  const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfile | null>(null);
+  const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfileCheck | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 

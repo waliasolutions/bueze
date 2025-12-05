@@ -15,8 +15,10 @@ import { de } from 'date-fns/locale';
 import { ProposalStatusBadge } from '@/components/ProposalStatusBadge';
 import { acceptProposal, rejectProposal } from '@/lib/proposalHelpers';
 import { EmptyState } from '@/components/ui/empty-state';
+import type { ProposalStatus } from '@/types/entities';
 
-interface Proposal {
+// Local interface for this component's specific joined data shape
+interface ProposalManagementItem {
   id: string;
   lead_id: string;
   handwerker_id: string;
@@ -24,7 +26,7 @@ interface Proposal {
   price_max: number;
   estimated_duration_days: number | null;
   message: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+  status: ProposalStatus;
   submitted_at: string;
   client_viewed_at: string | null;
   view_count: number;
@@ -44,8 +46,8 @@ interface Proposal {
 }
 
 const ProposalsManagement = () => {
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [filteredProposals, setFilteredProposals] = useState<Proposal[]>([]);
+  const [proposals, setProposals] = useState<ProposalManagementItem[]>([]);
+  const [filteredProposals, setFilteredProposals] = useState<ProposalManagementItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('pending');
   const [user, setUser] = useState<any>(null);

@@ -39,47 +39,7 @@ import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/page-skeleton";
-
-interface LeadWithOwner {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  status: string;
-  city: string;
-  canton: string;
-  zip: string;
-  budget_min: number | null;
-  budget_max: number | null;
-  budget_type: string;
-  urgency: string;
-  proposals_count: number;
-  created_at: string;
-  media_urls: string[] | null;
-  owner_id: string;
-  owner_name: string | null;
-  owner_email: string;
-  owner_phone: string | null;
-}
-
-interface Proposal {
-  id: string;
-  lead_id: string;
-  handwerker_id: string;
-  price_min: number;
-  price_max: number;
-  estimated_duration_days: number | null;
-  message: string;
-  status: string;
-  submitted_at: string;
-  responded_at: string | null;
-  handwerker_first_name: string | null;
-  handwerker_last_name: string | null;
-  handwerker_company_name: string | null;
-  handwerker_email: string | null;
-  handwerker_phone: string | null;
-  handwerker_city: string | null;
-}
+import type { LeadWithOwnerContact, AdminProposal } from "@/types/entities";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-500",
@@ -107,12 +67,12 @@ const statusLabels: Record<string, string> = {
 
 export default function AdminLeadsManagement() {
   const navigate = useNavigate();
-  const [leads, setLeads] = useState<LeadWithOwner[]>([]);
-  const [proposals, setProposals] = useState<Record<string, Proposal[]>>({});
+  const [leads, setLeads] = useState<LeadWithOwnerContact[]>([]);
+  const [proposals, setProposals] = useState<Record<string, AdminProposal[]>>({});
   const [loading, setLoading] = useState(true);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
-  const [selectedLead, setSelectedLead] = useState<LeadWithOwner | null>(null);
-  const [actionLead, setActionLead] = useState<LeadWithOwner | null>(null);
+  const [selectedLead, setSelectedLead] = useState<LeadWithOwnerContact | null>(null);
+  const [actionLead, setActionLead] = useState<LeadWithOwnerContact | null>(null);
   const [showActionDialog, setShowActionDialog] = useState(false);
   const [actionType, setActionType] = useState<'pause' | 'delete' | 'reactivate'>('pause');
   
@@ -259,7 +219,7 @@ export default function AdminLeadsManagement() {
     setExpandedLeads(newExpanded);
   };
 
-  const handleLeadAction = (lead: LeadWithOwner, action: 'pause' | 'delete' | 'reactivate') => {
+  const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate') => {
     setActionLead(lead);
     setActionType(action);
     setShowActionDialog(true);
@@ -343,7 +303,7 @@ export default function AdminLeadsManagement() {
     return true;
   });
 
-  const formatBudget = (lead: LeadWithOwner) => {
+  const formatBudget = (lead: LeadWithOwnerContact) => {
     if (lead.budget_type === "estimate") return "Nach Offerte";
     if (lead.budget_min && lead.budget_max) {
       return `CHF ${lead.budget_min.toLocaleString()} - ${lead.budget_max.toLocaleString()}`;
