@@ -54,6 +54,7 @@ const EditLead = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [coordinates, setCoordinates] = useState<{ lat?: number; lng?: number }>({});
 
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
@@ -143,6 +144,7 @@ const EditLead = () => {
           urgency: data.urgency as any,
           canton: data.canton as any,
           updated_at: new Date().toISOString(),
+          ...(coordinates.lat && coordinates.lng ? { lat: coordinates.lat, lng: coordinates.lng } : {}),
         })
         .eq('id', id);
 
@@ -384,11 +386,14 @@ const EditLead = () => {
                             <PostalCodeInput
                               value={field.value}
                               onValueChange={field.onChange}
-                              onAddressSelect={(address) => {
+                            onAddressSelect={(address) => {
                                 if (address.city) {
                                   form.setValue('city', address.city);
                                 }
                                 form.setValue('canton', address.canton as any);
+                                if (address.latitude && address.longitude) {
+                                  setCoordinates({ lat: address.latitude, lng: address.longitude });
+                                }
                               }}
                               placeholder="8000"
                             />

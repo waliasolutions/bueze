@@ -92,6 +92,7 @@ const SubmitLead = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [coordinates, setCoordinates] = useState<{ lat?: number; lng?: number }>({});
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -406,6 +407,8 @@ const SubmitLead = () => {
             budget_type: 'estimate' as any,
             media_urls: uploadedUrls,
             request_id: requestId,
+            lat: coordinates.lat || null,
+            lng: coordinates.lng || null,
           })
           .select();
       }, {
@@ -842,11 +845,15 @@ const SubmitLead = () => {
                                 value={field.value}
                                 onValueChange={field.onChange}
                                 onAddressSelect={(address) => {
-                                  // Only set city if provided (city is entered manually)
+                                  // Auto-fill city if provided
                                   if (address.city) {
                                     form.setValue('city', address.city);
                                   }
                                   form.setValue('canton', address.canton as any);
+                                  // Store coordinates for map visualization
+                                  if (address.latitude && address.longitude) {
+                                    setCoordinates({ lat: address.latitude, lng: address.longitude });
+                                  }
                                 }}
                               />
                             </FormControl>

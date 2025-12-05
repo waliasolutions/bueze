@@ -13,7 +13,12 @@ import { Loader2 } from 'lucide-react';
 interface PostalCodeInputProps {
   value: string;
   onValueChange: (plz: string) => void;
-  onAddressSelect?: (address: { city: string; canton: string }) => void;
+  onAddressSelect?: (address: { 
+    city: string; 
+    canton: string;
+    latitude?: number;
+    longitude?: number;
+  }) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -64,6 +69,8 @@ export const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
           onAddressSelect?.({
             city: allPlaces[0].city,
             canton: allPlaces[0].canton,
+            latitude: allPlaces[0].latitude,
+            longitude: allPlaces[0].longitude,
           });
         } else if (allPlaces.length > 1) {
           // Multiple places - show selection dropdown
@@ -74,6 +81,8 @@ export const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
           onAddressSelect?.({
             city: allPlaces[0].city,
             canton: allPlaces[0].canton,
+            latitude: allPlaces[0].latitude,
+            longitude: allPlaces[0].longitude,
           });
         } else {
           // Invalid PLZ - no matches found
@@ -99,6 +108,8 @@ export const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
       onAddressSelect?.({
         city: selected.city,
         canton: selected.canton,
+        latitude: selected.latitude,
+        longitude: selected.longitude,
       });
     }
   }, [places, onAddressSelect]);
