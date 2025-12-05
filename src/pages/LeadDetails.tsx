@@ -48,32 +48,8 @@ interface Profile {
   avatar_url?: string;
 }
 
-const categoryLabels: Record<string, string> = {
-  bau_renovation: 'Bau & Renovation',
-  bodenbelaege: 'Bodenbeläge',
-  elektroinstallationen: 'Elektroinstallationen',
-  heizung_klima_solar: 'Heizung, Klima & Solar',
-  sanitaer: 'Sanitär',
-  kueche: 'Küche',
-  innenausbau_schreiner: 'Innenausbau & Schreiner',
-  garten_umgebung: 'Garten & Umgebung',
-  raeumung_entsorgung: 'Räumung & Entsorgung',
-  reinigung_hauswartung: 'Reinigung & Hauswartung',
-};
-
-const urgencyLabels = {
-  today: 'Heute',
-  this_week: 'Diese Woche',
-  this_month: 'Dieser Monat',
-  planning: 'Planung'
-};
-
-const urgencyColors = {
-  today: 'bg-red-100 text-red-800',
-  this_week: 'bg-orange-100 text-orange-800',
-  this_month: 'bg-blue-100 text-blue-800',
-  planning: 'bg-gray-100 text-gray-800'
-};
+import { getCategoryLabel } from '@/config/categoryLabels';
+import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
 
 const LeadDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -464,10 +440,10 @@ const LeadDetails = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Kategorie</h3>
-                  <Badge className={`${urgencyColors[lead.urgency as keyof typeof urgencyColors]} text-base px-3 py-1`}>
-                    {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
+                  <Badge className={`${getUrgencyColor(lead.urgency)} text-base px-3 py-1`}>
+                    {getUrgencyLabel(lead.urgency)}
                   </Badge>
-                  <p className="text-lg mt-2">{categoryLabels[lead.category as keyof typeof categoryLabels]}</p>
+                  <p className="text-lg mt-2">{getCategoryLabel(lead.category)}</p>
                 </div>
               </div>
 
@@ -560,11 +536,11 @@ const LeadDetails = () => {
                           {leadStatus.label}
                         </Badge>
                       )}
-                      <Badge className={urgencyColors[lead.urgency as keyof typeof urgencyColors]}>
-                        {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
+                      <Badge className={getUrgencyColor(lead.urgency)}>
+                        {getUrgencyLabel(lead.urgency)}
                       </Badge>
                       <Badge variant="secondary">
-                        {categoryLabels[lead.category as keyof typeof categoryLabels]}
+                        {getCategoryLabel(lead.category)}
                       </Badge>
                     </div>
                   </div>

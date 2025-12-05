@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { acceptProposal, rejectProposal } from '@/lib/proposalHelpers';
 
 const ProposalReview = () => {
   const { proposalId } = useParams();
@@ -61,102 +62,41 @@ const ProposalReview = () => {
   };
 
   const handleAccept = async () => {
+    if (!proposalId) return;
     setResponding(true);
-    try {
-      const { error: updateError } = await supabase
-        .from('lead_proposals')
-        .update({
-          status: 'accepted',
-          responded_at: new Date().toISOString()
-        })
-        .eq('id', proposalId);
+    
+    const result = await acceptProposal(proposalId);
+    
+    toast({
+      title: result.success ? 'Offerte angenommen!' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive'
+    });
 
-      if (updateError) throw updateError;
-
-      const { error: leadError } = await supabase
-        .from('leads')
-        .update({
-          status: 'completed',
-          accepted_proposal_id: proposalId
-        })
-        .eq('id', proposal.lead_id);
-
-      if (leadError) throw leadError;
-
-      await supabase
-        .from('lead_proposals')
-        .update({ status: 'rejected' })
-        .eq('lead_id', proposal.lead_id)
-        .neq('id', proposalId)
-        .eq('status', 'pending');
-
-      // Trigger acceptance emails and conversation creation
-      const { error: emailError } = await supabase.functions.invoke('send-acceptance-emails', {
-        body: { proposalId }
-      });
-
-      if (emailError) {
-        console.error('Failed to send acceptance emails:', emailError);
-      }
-
-      toast({
-        title: 'Offerte angenommen!',
-        description: 'Beide Parteien wurden benachrichtigt. Sie erhalten die Kontaktdaten per E-Mail.',
-      });
-
+    if (result.success) {
       setTimeout(() => navigate('/dashboard'), 2000);
-
-    } catch (error) {
-      console.error('Error accepting proposal:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Offerte konnte nicht angenommen werden',
-        variant: 'destructive'
-      });
-    } finally {
-      setResponding(false);
     }
+    
+    setResponding(false);
   };
 
   const handleReject = async () => {
+    if (!proposalId) return;
     setResponding(true);
-    try {
-      const { error } = await supabase
-        .from('lead_proposals')
-        .update({
-          status: 'rejected',
-          responded_at: new Date().toISOString()
-        })
-        .eq('id', proposalId);
+    
+    const result = await rejectProposal(proposalId);
+    
+    toast({
+      title: result.success ? 'Offerte abgelehnt' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive'
+    });
 
-      if (error) throw error;
-
-      // Send rejection email to handwerker
-      try {
-        await supabase.functions.invoke('send-proposal-rejection-email', {
-          body: { proposalId }
-        });
-      } catch (emailError) {
-        console.error('Failed to send rejection email:', emailError);
-      }
-
-      toast({
-        title: 'Offerte abgelehnt',
-        description: 'Der Handwerker wurde benachrichtigt.',
-      });
-
+    if (result.success) {
       setTimeout(() => navigate('/dashboard'), 2000);
-
-    } catch (error) {
-      console.error('Error rejecting proposal:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Offerte konnte nicht abgelehnt werden',
-        variant: 'destructive'
-      });
-    } finally {
-      setResponding(false);
     }
+    
+    setResponding(false);
   };
 
   if (loading) {

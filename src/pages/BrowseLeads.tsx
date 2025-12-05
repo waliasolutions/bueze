@@ -43,32 +43,8 @@ interface Lead {
   proposals_count?: number;
 }
 
-const categoryLabels: Record<string, string> = {
-  bau_renovation: 'Bau & Renovation',
-  bodenbelaege: 'Bodenbeläge',
-  elektroinstallationen: 'Elektroinstallationen',
-  heizung_klima_solar: 'Heizung, Klima & Solar',
-  sanitaer: 'Sanitär',
-  kueche: 'Küche',
-  innenausbau_schreiner: 'Innenausbau & Schreiner',
-  garten_umgebung: 'Garten & Umgebung',
-  raeumung_entsorgung: 'Räumung & Entsorgung',
-  reinigung_hauswartung: 'Reinigung & Hauswartung',
-};
-
-const urgencyLabels = {
-  today: 'Heute',
-  this_week: 'Diese Woche',
-  this_month: 'Dieser Monat',
-  planning: 'Planung'
-};
-
-const urgencyColors = {
-  today: 'bg-red-100 text-red-800',
-  this_week: 'bg-orange-100 text-orange-800',
-  this_month: 'bg-blue-100 text-blue-800',
-  planning: 'bg-gray-100 text-gray-800'
-};
+import { getCategoryLabel } from '@/config/categoryLabels';
+import { getUrgencyLabel, getUrgencyColor, URGENCY_LEVELS } from '@/config/urgencyLevels';
 
 
 const BrowseLeads = () => {
@@ -343,8 +319,8 @@ const BrowseLeads = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Alle Zeitrahmen</SelectItem>
-                    {Object.entries(urgencyLabels).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    {Object.entries(URGENCY_LEVELS).map(([key, config]) => (
+                      <SelectItem key={key} value={key}>{config.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -381,7 +357,7 @@ const BrowseLeads = () => {
                 )}
                 {selectedUrgency !== 'all' && (
                   <Badge variant="secondary" className="gap-1">
-                    {urgencyLabels[selectedUrgency as keyof typeof urgencyLabels]}
+                    {getUrgencyLabel(selectedUrgency)}
                     <X 
                       className="h-3 w-3 cursor-pointer" 
                       onClick={() => setSelectedUrgency('all')}
@@ -450,11 +426,11 @@ const BrowseLeads = () => {
                         </div>
                       </div>
                       <div className="flex flex-col gap-1 ml-2">
-                        <Badge className={urgencyColors[lead.urgency as keyof typeof urgencyColors]}>
-                          {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
+                        <Badge className={getUrgencyColor(lead.urgency)}>
+                          {getUrgencyLabel(lead.urgency)}
                         </Badge>
                         <Badge variant="secondary" className="text-xs">
-                          {subcategoryLabels[lead.category]?.label || categoryLabels[lead.category as keyof typeof categoryLabels] || lead.category}
+                          {getCategoryLabel(lead.category)}
                         </Badge>
                       </div>
                     </div>
