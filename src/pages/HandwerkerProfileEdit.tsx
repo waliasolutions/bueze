@@ -1438,12 +1438,14 @@ const HandwerkerProfileEdit = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="personalZip">PLZ</Label>
-                      <Input
-                        id="personalZip"
+                      <PostalCodeInput
                         value={personalZip}
-                        onChange={(e) => setPersonalZip(e.target.value)}
+                        onValueChange={setPersonalZip}
+                        onAddressSelect={(address) => {
+                          setPersonalCity(address.city);
+                          setPersonalCanton(address.canton);
+                        }}
                         placeholder="8000"
-                        maxLength={4}
                       />
                     </div>
                     <div className="space-y-2">
@@ -1497,12 +1499,14 @@ const HandwerkerProfileEdit = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="businessZip">PLZ</Label>
-                      <Input
-                        id="businessZip"
+                      <PostalCodeInput
                         value={businessZip}
-                        onChange={(e) => setBusinessZip(e.target.value)}
+                        onValueChange={setBusinessZip}
+                        onAddressSelect={(address) => {
+                          setBusinessCity(address.city);
+                          setBusinessCanton(address.canton);
+                        }}
                         placeholder="8000"
-                        maxLength={4}
                       />
                     </div>
                     <div className="space-y-2">
