@@ -3,6 +3,9 @@ project_id = "ztthhdlhuhtwaaennfia"
 [functions.check-admin-role]
 verify_jwt = true
 
+[functions.create-checkout-session]
+verify_jwt = true
+
 [functions.create-handwerker-account]
 verify_jwt = false
 
@@ -42,10 +45,16 @@ verify_jwt = false
 [functions.send-proposal-notification]
 verify_jwt = false
 
-[functions.send-rejection-email]
+[functions.send-proposal-rejection-email]
 verify_jwt = false
 
 [functions.send-rating-reminder]
+verify_jwt = false
+
+[functions.send-rejection-email]
+verify_jwt = false
+
+[functions.stripe-webhook]
 verify_jwt = false
 
 [functions.validate-magic-token]

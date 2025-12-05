@@ -46,6 +46,7 @@ import ContentEditor from "./pages/admin/ContentEditor";
 import SEOTools from "./pages/admin/SEOTools";
 import BulkMetaManager from "./pages/admin/BulkMetaManager";
 import GTMConfiguration from "./pages/admin/GTMConfiguration";
+import ReviewsManagement from "./pages/admin/ReviewsManagement";
 import Sitemap from "./pages/Sitemap";
 
 const queryClient = new QueryClient();
@@ -137,6 +138,7 @@ const App = () => {
             <Route path="/admin/seo" element={<SEOTools />} />
             <Route path="/admin/seo/bulk-meta" element={<BulkMetaManager />} />
             <Route path="/admin/seo/gtm" element={<GTMConfiguration />} />
+            <Route path="/admin/reviews" element={<ReviewsManagement />} />
             <Route path="/legal/agb" element={<AGB />} />
             <Route path="/impressum" element={<Impressum />} />
             <Route path="/datenschutz" element={<Datenschutz />} />

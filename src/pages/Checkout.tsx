@@ -1,41 +1,94 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { CreditCard, Smartphone, Check, ArrowLeft } from "lucide-react";
+import { Check, ArrowLeft, Loader2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   SUBSCRIPTION_PLANS, 
   SubscriptionPlanType,
   formatPrice,
-  formatPricePerMonth 
 } from "@/config/subscriptionPlans";
-
-type PaymentMethod = "card" | "twint";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const planParam = searchParams.get("plan") as SubscriptionPlanType || "monthly";
   
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanType>(planParam);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const plan = SUBSCRIPTION_PLANS[selectedPlan];
 
-  const handleCheckout = async () => {
-    setIsProcessing(true);
-    // TODO: Implement Stripe/Twint payment processing
-    setTimeout(() => {
-      setIsProcessing(false);
-      navigate("/profile?tab=subscription&success=true");
-    }, 2000);
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({
+        title: "Anmeldung erforderlich",
+        description: "Bitte melden Sie sich an, um fortzufahren.",
+        variant: "destructive",
+      });
+      navigate("/auth?redirect=/checkout?plan=" + selectedPlan);
+      return;
+    }
+    setIsAuthenticated(true);
   };
+
+  const handleCheckout = async () => {
+    if (plan.price === 0) {
+      // Free plan - just navigate to profile
+      navigate("/profile?tab=subscription");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          planType: selectedPlan,
+          successUrl: `${window.location.origin}/profile?tab=subscription&success=true`,
+          cancelUrl: `${window.location.origin}/checkout?plan=${selectedPlan}`,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error("Keine Checkout-URL erhalten");
+      }
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      toast({
+        title: "Fehler",
+        description: error.message || "Checkout konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
@@ -52,12 +105,12 @@ export default function Checkout() {
           </Button>
           <h1 className="text-4xl font-bold mb-2">Abonnement abschliessen</h1>
           <p className="text-muted-foreground">
-            Wählen Sie Ihren Plan und Ihre Zahlungsmethode
+            Wählen Sie Ihren Plan und fahren Sie mit der Zahlung fort
           </p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Plan Selection & Payment */}
+          {/* Left Column - Plan Selection */}
           <div className="lg:col-span-2 space-y-6">
             {/* Plan Selection */}
             <Card>
@@ -128,121 +181,33 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            {/* Payment Method Selection */}
+            {/* Payment Info */}
             {plan.price > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>2. Zahlungsmethode wählen</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    2. Sichere Zahlung
+                  </CardTitle>
                   <CardDescription>
-                    Wählen Sie, wie Sie bezahlen möchten
+                    Sie werden zu unserem sicheren Zahlungspartner Stripe weitergeleitet
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <RadioGroup
-                    value={paymentMethod}
-                    onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
-                    className="grid sm:grid-cols-2 gap-4"
-                  >
-                    {/* Credit Card */}
-                    <div
-                      className={`relative flex flex-col items-center justify-center rounded-lg border-2 p-6 cursor-pointer transition-all ${
-                        paymentMethod === "card"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                      onClick={() => setPaymentMethod("card")}
-                    >
-                      <RadioGroupItem
-                        value="card"
-                        id="card"
-                        className="absolute top-4 right-4"
-                      />
-                      <CreditCard className="h-12 w-12 mb-3 text-primary" />
-                      <Label
-                        htmlFor="card"
-                        className="text-lg font-semibold cursor-pointer mb-1"
-                      >
-                        Kreditkarte
-                      </Label>
-                      <p className="text-sm text-muted-foreground text-center">
-                        Visa, Mastercard, Amex
-                      </p>
-                    </div>
-
-                    {/* Twint */}
-                    <div
-                      className={`relative flex flex-col items-center justify-center rounded-lg border-2 p-6 cursor-pointer transition-all ${
-                        paymentMethod === "twint"
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                      onClick={() => setPaymentMethod("twint")}
-                    >
-                      <RadioGroupItem
-                        value="twint"
-                        id="twint"
-                        className="absolute top-4 right-4"
-                      />
-                      <Smartphone className="h-12 w-12 mb-3 text-primary" />
-                      <Label
-                        htmlFor="twint"
-                        className="text-lg font-semibold cursor-pointer mb-1"
-                      >
-                        TWINT
-                      </Label>
-                      <p className="text-sm text-muted-foreground text-center">
-                        Schnell & sicher
-                      </p>
-                    </div>
-                  </RadioGroup>
-
-                  {/* Payment Details Form */}
-                  {paymentMethod === "card" && (
-                    <div className="mt-6 space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="cardNumber">Kartennummer</Label>
-                        <Input
-                          id="cardNumber"
-                          placeholder="1234 5678 9012 3456"
-                          maxLength={19}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="expiry">Ablaufdatum</Label>
-                          <Input
-                            id="expiry"
-                            placeholder="MM/YY"
-                            maxLength={5}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="cvc">CVC</Label>
-                          <Input
-                            id="cvc"
-                            placeholder="123"
-                            maxLength={4}
-                            type="password"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Karteninhaber</Label>
-                        <Input
-                          id="name"
-                          placeholder="Max Mustermann"
-                        />
+                  <div className="bg-muted p-4 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Wir akzeptieren alle gängigen Zahlungsmethoden:
+                    </p>
+                    <div className="flex items-center gap-4 mt-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CreditCard className="h-4 w-4" />
+                        Kreditkarte (Visa, Mastercard)
                       </div>
                     </div>
-                  )}
-
-                  {paymentMethod === "twint" && (
-                    <div className="mt-6 p-4 bg-muted rounded-lg">
-                      <p className="text-sm text-center text-muted-foreground">
-                        Sie werden nach dem Klick auf "Jetzt bezahlen" zur TWINT-App weitergeleitet
-                      </p>
-                    </div>
-                  )}
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Ihre Zahlungsdaten werden sicher von Stripe verarbeitet und niemals auf unseren Servern gespeichert.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -330,26 +295,25 @@ export default function Checkout() {
                   onClick={handleCheckout}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? "Wird verarbeitet..." : "Jetzt bezahlen"}
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Wird weitergeleitet...
+                    </>
+                  ) : plan.price === 0 ? (
+                    "Kostenlos starten"
+                  ) : (
+                    "Zur Zahlung"
+                  )}
                 </Button>
-                
-                {plan.price === 0 && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => navigate("/profile")}
-                  >
-                    Kostenlos starten
-                  </Button>
-                )}
 
                 <p className="text-xs text-center text-muted-foreground">
                   Mit dem Abschluss akzeptieren Sie unsere{" "}
-                  <a href="#" className="underline hover:text-primary">
+                  <a href="/legal/agb" className="underline hover:text-primary">
                     AGB
                   </a>{" "}
                   und{" "}
-                  <a href="#" className="underline hover:text-primary">
+                  <a href="/datenschutz" className="underline hover:text-primary">
                     Datenschutzrichtlinien
                   </a>
                 </p>

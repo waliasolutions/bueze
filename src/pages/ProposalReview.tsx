@@ -131,6 +131,15 @@ const ProposalReview = () => {
 
       if (error) throw error;
 
+      // Send rejection email to handwerker
+      try {
+        await supabase.functions.invoke('send-proposal-rejection-email', {
+          body: { proposalId }
+        });
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+      }
+
       toast({
         title: 'Offerte abgelehnt',
         description: 'Der Handwerker wurde benachrichtigt.',
