@@ -25,20 +25,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { clearVersionedData, STORAGE_KEYS } from '@/lib/localStorageVersioning';
-
-interface UserProfile {
-  id: string;
-  email: string;
-  full_name?: string;
-  first_name?: string;
-  last_name?: string;
-  role?: 'homeowner' | 'handwerker' | 'admin';
-  avatar_url?: string;
-}
+import type { UserProfileBasic } from '@/types/entities';
 
 export const UserDropdown = () => {
   const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfileBasic | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isHandwerker, setIsHandwerker] = useState(false);

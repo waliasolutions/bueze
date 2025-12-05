@@ -18,36 +18,7 @@ import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
 import { pauseLead, completeLead, deleteLead, reactivateLead, getLeadAnalytics } from '@/lib/leadHelpers';
 import { getLeadStatus } from '@/config/leadStatuses';
 import type { LeadAnalytics } from '@/lib/leadHelpers';
-
-interface Lead {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  budget_min: number;
-  budget_max: number;
-  urgency: string;
-  canton: string;
-  zip: string;
-  city: string;
-  address?: string;
-  created_at: string;
-  owner_id: string;
-  purchased_count: number;
-  max_purchases: number;
-  quality_score: number;
-  status: string;
-  proposals_count?: number;
-}
-
-interface Profile {
-  id: string;
-  full_name: string;
-  email: string;
-  phone?: string;
-  avatar_url?: string;
-}
-
+import type { LeadListItem, UserProfileBasic } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
 
@@ -55,8 +26,8 @@ const LeadDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [lead, setLead] = useState<Lead | null>(null);
-  const [owner, setOwner] = useState<Profile | null>(null);
+  const [lead, setLead] = useState<LeadListItem | null>(null);
+  const [owner, setOwner] = useState<UserProfileBasic | null>(null);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [hasProposal, setHasProposal] = useState(false);
