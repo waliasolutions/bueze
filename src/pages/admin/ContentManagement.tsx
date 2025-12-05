@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Edit, Search, FileText, Home, Scale } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { InlineEmptyState } from '@/components/ui/empty-state';
 
 interface PageContent {
   id: string;
@@ -132,8 +133,11 @@ const ContentManagement = () => {
                   <TableBody>
                     {filteredContents.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          Keine Inhalte gefunden
+                        <TableCell colSpan={6}>
+                          <InlineEmptyState 
+                            message="Keine Inhalte gefunden"
+                            icon={Search}
+                          />
                         </TableCell>
                       </TableRow>
                     ) : (

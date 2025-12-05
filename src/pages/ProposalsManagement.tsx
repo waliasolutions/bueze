@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ProposalStatusBadge } from '@/components/ProposalStatusBadge';
 import { acceptProposal, rejectProposal } from '@/lib/proposalHelpers';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Proposal {
   id: string;
@@ -207,11 +208,12 @@ const ProposalsManagement = () => {
 
             <TabsContent value={activeTab} className="space-y-4">
               {filteredProposals.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <p className="text-muted-foreground">Keine Offerten gefunden</p>
-                  </CardContent>
-                </Card>
+                <EmptyState 
+                  variant="proposals"
+                  description={activeTab === 'pending' 
+                    ? 'Sie haben keine ausstehenden Offerten.'
+                    : `Keine ${activeTab === 'accepted' ? 'angenommenen' : activeTab === 'rejected' ? 'abgelehnten' : ''} Offerten gefunden.`}
+                />
               ) : (
                 filteredProposals.map((proposal) => (
                   <Card key={proposal.id}>

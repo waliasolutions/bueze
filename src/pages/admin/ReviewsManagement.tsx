@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Star, Eye, EyeOff, Trash2, Search, ArrowLeft, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Review {
   id: string;
@@ -358,9 +359,11 @@ const ReviewsManagement = () => {
             </CardHeader>
             <CardContent>
               {filteredReviews.length === 0 ? (
-                <p className="text-center py-8 text-muted-foreground">
-                  Keine Bewertungen gefunden.
-                </p>
+                <EmptyState 
+                  variant="reviews"
+                  title="Keine Bewertungen gefunden"
+                  description="Es wurden keine Bewertungen gefunden, die Ihren Filterkriterien entsprechen."
+                />
               ) : (
                 <div className="overflow-x-auto">
                   <Table>

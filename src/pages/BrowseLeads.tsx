@@ -23,6 +23,7 @@ import { canViewLead as canViewLeadByStatus } from '@/config/leadStatuses';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Lead {
   id: string;
@@ -390,26 +391,17 @@ const BrowseLeads = () => {
           </div>
 
           {filteredLeads.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-lg font-medium mb-2">
-                  Keine Aufträge gefunden
-                </p>
-                <p className="text-muted-foreground mb-6">
-                  {hasActiveFilters 
-                    ? 'Versuchen Sie andere Filter oder setzen Sie die Suche zurück.'
-                    : 'Zurzeit gibt es keine verfügbaren Aufträge.'
-                  }
-                </p>
-                {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters}>
-                    <X className="h-4 w-4 mr-2" />
-                    Alle Filter zurücksetzen
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+            <EmptyState 
+              variant="search"
+              title="Keine Aufträge gefunden"
+              description={hasActiveFilters 
+                ? 'Versuchen Sie andere Filter oder setzen Sie die Suche zurück.'
+                : 'Zurzeit gibt es keine verfügbaren Aufträge.'}
+              action={hasActiveFilters ? {
+                label: 'Alle Filter zurücksetzen',
+                onClick: clearFilters,
+              } : undefined}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredLeads.map((lead) => (

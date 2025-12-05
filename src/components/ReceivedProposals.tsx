@@ -11,6 +11,8 @@ import { formatTimeAgo } from '@/lib/swissTime';
 import { HandwerkerRating } from './HandwerkerRating';
 import { ProposalStatusBadge } from './ProposalStatusBadge';
 import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBatch } from '@/lib/proposalHelpers';
+import { CardSkeleton } from '@/components/ui/page-skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Proposal {
   id: string;
@@ -213,7 +215,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
     return (
       <div className="space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-40 bg-[hsl(var(--muted))] rounded-lg animate-pulse" />
+          <CardSkeleton key={i} />
         ))}
       </div>
     );
@@ -264,15 +266,12 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
 
       {/* Proposals List */}
       {filteredProposals.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-12">
-            <p className="text-[hsl(var(--muted-foreground))] mb-4">
-              {filterStatus === 'all' 
-                ? 'Sie haben noch keine Offerten erhalten.'
-                : 'Keine Offerten mit diesem Status gefunden.'}
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState 
+          variant="proposals"
+          description={filterStatus === 'all' 
+            ? 'Sie haben noch keine Offerten erhalten.'
+            : 'Keine Offerten mit diesem Status gefunden.'}
+        />
       ) : (
         <div className="space-y-4">
           {filteredProposals.map((proposal) => {

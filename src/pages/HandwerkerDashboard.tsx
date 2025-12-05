@@ -18,6 +18,8 @@ import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
 import { HandwerkerReviewResponse } from "@/components/HandwerkerReviewResponse";
 import { majorCategories } from "@/config/majorCategories";
+import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
+import { CardSkeleton } from "@/components/ui/page-skeleton";
 interface Lead {
   id: string;
   title: string;
@@ -724,14 +726,16 @@ const HandwerkerDashboard = () => {
                     </div>
                   </div>
 
-                  {leadsLoading ? <div className="text-center py-8">
-                      <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
-                    </div> : filteredLeads.length === 0 ? <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Keine passenden Aufträge gefunden. Erweitern Sie Ihre Kategorien oder Einsatzgebiete im Profil.
-                      </AlertDescription>
-                    </Alert> : <div className="space-y-4">
+                  {leadsLoading ? <div className="space-y-4">
+                      {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
+                    </div> : filteredLeads.length === 0 ? <InlineEmptyState
+                      title="Keine passenden Aufträge"
+                      description="Erweitern Sie Ihre Kategorien oder Einsatzgebiete im Profil, um mehr Aufträge zu sehen."
+                      action={{
+                        label: "Profil bearbeiten",
+                        onClick: () => navigate('/handwerker-profile-edit')
+                      }}
+                    /> : <div className="space-y-4">
                       {filteredLeads.map(lead => <Card key={lead.id} className="hover:border-brand-600 transition-colors">
                           <CardHeader>
                             <div className="flex items-start justify-between">
