@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle } from 'lucide-react';
+import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 
 interface User {
   id: string;
@@ -57,6 +57,7 @@ export default function UserManagement() {
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -331,6 +332,7 @@ export default function UserManagement() {
     setShowResetPasswordDialog(false);
     setResetPasswordUser(null);
     setGeneratedPassword('');
+    setShowPassword(false);
   };
 
   const openEditDialog = (user: User) => {
@@ -598,8 +600,16 @@ export default function UserManagement() {
                       <p className="text-sm font-medium">Neues Passwort:</p>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 bg-background px-3 py-2 rounded border font-mono text-sm">
-                          {generatedPassword}
+                          {showPassword ? generatedPassword : '••••••••••••••••'}
                         </code>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setShowPassword(!showPassword)}
+                          title={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
                         <Button size="sm" onClick={handleCopyPassword}>
                           Kopieren
                         </Button>
