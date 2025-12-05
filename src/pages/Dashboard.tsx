@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ReceivedProposals } from '@/components/ReceivedProposals';
+import { RatingPrompt } from '@/components/RatingPrompt';
 import { logWithCorrelation, captureException } from '@/lib/errorTracking';
 import { trackError } from '@/lib/errorCategories';
 import { Button } from '@/components/ui/button';
@@ -347,6 +348,13 @@ const Dashboard = () => {
               </Button>
             </div>
           </div>
+
+          {/* Rating Prompt for completed leads */}
+          {user && (
+            <div className="mb-6">
+              <RatingPrompt userId={user.id} />
+            </div>
+          )}
 
           {/* Verification Status Card for Handwerkers */}
           {isHandwerker && handwerkerProfile && (

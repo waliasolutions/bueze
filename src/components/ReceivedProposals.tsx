@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
+import { HandwerkerRating } from './HandwerkerRating';
 
 interface Proposal {
   id: string;
@@ -161,12 +162,43 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
       const status = action === 'accept' ? 'accepted' : 'rejected';
 
       for (const proposalId of selectedIds) {
+        const proposal = proposals.find(p => p.id === proposalId);
+        if (!proposal) continue;
+
         const { error } = await supabase
           .from('lead_proposals')
           .update({ status, responded_at: new Date().toISOString() })
           .eq('id', proposalId);
 
         if (error) throw error;
+
+        if (action === 'accept') {
+          // Update lead status to completed and set accepted_proposal_id
+          await supabase
+            .from('leads')
+            .update({ 
+              status: 'completed',
+              accepted_proposal_id: proposalId 
+            })
+            .eq('id', proposal.lead_id);
+
+          // Reject other pending proposals for this lead
+          await supabase
+            .from('lead_proposals')
+            .update({ status: 'rejected', responded_at: new Date().toISOString() })
+            .eq('lead_id', proposal.lead_id)
+            .eq('status', 'pending')
+            .neq('id', proposalId);
+
+          // Send acceptance emails and create conversation
+          try {
+            await supabase.functions.invoke('send-acceptance-emails', {
+              body: { proposalId }
+            });
+          } catch (emailError) {
+            console.error('Error sending acceptance emails:', emailError);
+          }
+        }
       }
 
       toast({
@@ -375,7 +407,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                         <Badge variant="outline">{proposal.leads?.category || 'Kategorie'}</Badge>
                       </div>
                       <CardTitle className="text-lg mb-1">{proposal.leads?.title || 'Projekt'}</CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
                         <span className="font-medium">{handwerkerName}</span>
                         {proposal.handwerker_profiles?.business_city && (
                           <span className="flex items-center gap-1">
@@ -383,6 +415,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                             {proposal.handwerker_profiles.business_city}
                           </span>
                         )}
+                        <HandwerkerRating handwerkerId={proposal.handwerker_id} compact />
                       </div>
                     </div>
                   </div>

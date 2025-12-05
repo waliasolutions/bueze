@@ -1310,10 +1310,12 @@ export type Database = {
         Row: {
           comment: string | null
           created_at: string
+          handwerker_response: string | null
           id: string
           is_public: boolean | null
           lead_id: string
           rating: number
+          response_at: string | null
           reviewed_id: string
           reviewer_id: string
           title: string | null
@@ -1321,10 +1323,12 @@ export type Database = {
         Insert: {
           comment?: string | null
           created_at?: string
+          handwerker_response?: string | null
           id?: string
           is_public?: boolean | null
           lead_id: string
           rating: number
+          response_at?: string | null
           reviewed_id: string
           reviewer_id: string
           title?: string | null
@@ -1332,10 +1336,12 @@ export type Database = {
         Update: {
           comment?: string | null
           created_at?: string
+          handwerker_response?: string | null
           id?: string
           is_public?: boolean | null
           lead_id?: string
           rating?: number
+          response_at?: string | null
           reviewed_id?: string
           reviewer_id?: string
           title?: string | null
@@ -1344,7 +1350,7 @@ export type Database = {
           {
             foreignKeyName: "reviews_lead_id_fkey"
             columns: ["lead_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -1605,6 +1611,14 @@ export type Database = {
           verification_status?: string | null
           verified_at?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      handwerker_rating_stats: {
+        Row: {
+          average_rating: number | null
+          review_count: number | null
+          user_id: string | null
         }
         Relationships: []
       }

@@ -200,7 +200,7 @@ const ConversationsList = () => {
                 <p className="text-muted-foreground mb-4">
                   Sie haben noch keine Nachrichten. Kaufen Sie einen Auftrag oder warten Sie auf Anfragen.
                 </p>
-                <Button onClick={() => navigate('/search')}>
+                <Button onClick={() => navigate('/browse-leads')}>
                   Aufträge durchsuchen
                 </Button>
               </CardContent>

@@ -126,6 +126,16 @@ const Messages = () => {
 
       if (error) throw error;
       setMessages(data || []);
+
+      // Mark unread messages as read
+      if (user) {
+        await supabase
+          .from('messages')
+          .update({ read_at: new Date().toISOString() })
+          .eq('conversation_id', conversationId)
+          .eq('recipient_id', user.id)
+          .is('read_at', null);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
