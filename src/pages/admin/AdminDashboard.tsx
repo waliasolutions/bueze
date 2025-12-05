@@ -21,7 +21,8 @@ import {
   AlertCircle,
   RefreshCw,
   Globe,
-  Trash2
+  Trash2,
+  Star
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -551,6 +552,27 @@ const AdminDashboard = () => {
                 >
                   <Globe className="h-4 w-4 mr-2" />
                   SEO verwalten
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-5 w-5" />
+                  Bewertungen
+                </CardTitle>
+                <CardDescription>
+                  Kundenbewertungen moderieren
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button 
+                  className="w-full justify-start"
+                  onClick={() => navigate('/admin/reviews')}
+                >
+                  <Star className="h-4 w-4 mr-2" />
+                  Bewertungen verwalten
                 </Button>
               </CardContent>
             </Card>
