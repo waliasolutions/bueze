@@ -842,7 +842,10 @@ const SubmitLead = () => {
                                 value={field.value}
                                 onValueChange={field.onChange}
                                 onAddressSelect={(address) => {
-                                  form.setValue('city', address.city);
+                                  // Only set city if provided (city is entered manually)
+                                  if (address.city) {
+                                    form.setValue('city', address.city);
+                                  }
                                   form.setValue('canton', address.canton as any);
                                 }}
                               />

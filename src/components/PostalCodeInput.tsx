@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { searchByPostalCode, PostalCodeEntry } from '@/lib/swissPostalCodes';
+import { searchByPostalCode } from '@/lib/swissPostalCodes';
 
 interface PostalCodeInputProps {
   value: string;
@@ -19,25 +19,26 @@ export const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
   disabled = false,
   className,
 }) => {
+  const lastLookedUp = useRef<string>('');
+
   // Handle input change
-  const handleChange = (newValue: string) => {
+  const handleChange = useCallback((newValue: string) => {
     // Only allow digits
     const cleaned = newValue.replace(/\D/g, '').slice(0, 4);
     onValueChange(cleaned);
-  };
 
-  // Auto-lookup when 4 digits are entered
-  useEffect(() => {
-    if (value.length === 4) {
-      const results = searchByPostalCode(value);
+    // Auto-lookup canton when 4 digits entered (only once per PLZ)
+    if (cleaned.length === 4 && cleaned !== lastLookedUp.current) {
+      lastLookedUp.current = cleaned;
+      const results = searchByPostalCode(cleaned);
       if (results.length > 0) {
         onAddressSelect?.({
-          city: results[0].name, // Will be empty - user enters manually
+          city: '', // User enters manually
           canton: results[0].canton,
         });
       }
     }
-  }, [value, onAddressSelect]);
+  }, [onValueChange, onAddressSelect]);
 
   return (
     <Input
