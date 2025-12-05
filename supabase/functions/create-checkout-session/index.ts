@@ -13,26 +13,11 @@ interface CheckoutRequest {
   cancelUrl: string;
 }
 
-// Price configurations in CHF cents
-const PLAN_PRICES = {
-  monthly: {
-    amount: 9000, // CHF 90
-    interval: 'month' as const,
-    intervalCount: 1,
-    name: 'Monatlich',
-  },
-  '6_month': {
-    amount: 51000, // CHF 510
-    interval: 'month' as const,
-    intervalCount: 6,
-    name: '6 Monate',
-  },
-  annual: {
-    amount: 96000, // CHF 960
-    interval: 'year' as const,
-    intervalCount: 1,
-    name: 'Jährlich',
-  },
+// Pre-created Stripe Price IDs
+const STRIPE_PRICES: Record<string, string> = {
+  monthly: 'price_1Saz2REtiKXEl2rXYGQ2Ubzq',
+  '6_month': 'price_1Saz2REtiKXEl2rXkEeehr60',
+  annual: 'price_1Saz2REtiKXEl2rXCGTBLH54',
 };
 
 serve(async (req: Request) => {
@@ -72,11 +57,9 @@ serve(async (req: Request) => {
 
     const { planType, successUrl, cancelUrl }: CheckoutRequest = await req.json();
 
-    if (!planType || !PLAN_PRICES[planType]) {
+    if (!planType || !STRIPE_PRICES[planType]) {
       throw new Error("Invalid plan type");
     }
-
-    const planConfig = PLAN_PRICES[planType];
 
     console.log(`Creating checkout session for user ${user.id}, plan: ${planType}`);
 
@@ -103,25 +86,14 @@ serve(async (req: Request) => {
       console.log(`Created new Stripe customer: ${customerId}`);
     }
 
-    // Create checkout session
+    // Create checkout session with pre-created price
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
       mode: 'subscription',
       line_items: [
         {
-          price_data: {
-            currency: 'chf',
-            product_data: {
-              name: `Büeze.ch ${planConfig.name} Abo`,
-              description: 'Unbegrenzte Offerten für Handwerker',
-            },
-            unit_amount: planConfig.amount,
-            recurring: {
-              interval: planConfig.interval,
-              interval_count: planConfig.intervalCount,
-            },
-          },
+          price: STRIPE_PRICES[planType],
           quantity: 1,
         },
       ],
