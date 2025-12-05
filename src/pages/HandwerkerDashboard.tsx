@@ -12,10 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Euro, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users } from "lucide-react";
+import { Search, MapPin, Euro, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
+import { HandwerkerReviewResponse } from "@/components/HandwerkerReviewResponse";
 import { majorCategories } from "@/config/majorCategories";
 interface Lead {
   id: string;
@@ -84,6 +85,10 @@ const HandwerkerDashboard = () => {
   // Proposals Tab
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState(false);
+
+  // Reviews Tab
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // Tab State
   const [activeTab, setActiveTab] = useState("leads");
@@ -159,7 +164,11 @@ const HandwerkerDashboard = () => {
 
       // Only fetch leads if verified
       if (profile.verification_status === 'approved') {
-        await Promise.all([fetchLeads(profile.categories, profile.service_areas), fetchProposals(currentUser.id)]);
+        await Promise.all([
+          fetchLeads(profile.categories, profile.service_areas), 
+          fetchProposals(currentUser.id),
+          fetchReviews(currentUser.id)
+        ]);
       }
       setLoading(false);
     } catch (error) {
@@ -183,9 +192,13 @@ const HandwerkerDashboard = () => {
         logo_url: data.logo_url || ""
       });
 
-      // Only fetch leads and proposals if approved
+      // Only fetch leads, proposals and reviews if approved
       if (data.verification_status === 'approved') {
-        await Promise.all([fetchLeads(data.categories, data.service_areas), fetchProposals(userId)]);
+        await Promise.all([
+          fetchLeads(data.categories, data.service_areas), 
+          fetchProposals(userId),
+          fetchReviews(userId)
+        ]);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -329,6 +342,35 @@ const HandwerkerDashboard = () => {
       setProposalsLoading(false);
     }
   };
+
+  const fetchReviews = async (userId: string) => {
+    setReviewsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          leads (title),
+          profiles:reviewer_id (first_name, full_name)
+        `)
+        .eq('reviewed_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setReviews(data || []);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleReviewUpdated = () => {
+    if (user?.id) {
+      fetchReviews(user.id);
+    }
+  };
+
   const handleSubmitProposal = async () => {
     if (!selectedLead || !user?.id) return;
 
@@ -634,14 +676,18 @@ const HandwerkerDashboard = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="leads">
                 <Search className="h-4 w-4 mr-2" />
-                Aufträge durchsuchen
+                Aufträge
               </TabsTrigger>
               <TabsTrigger value="proposals">
                 <FileText className="h-4 w-4 mr-2" />
-                Meine Angebote ({proposals.length})
+                Angebote ({proposals.length})
+              </TabsTrigger>
+              <TabsTrigger value="reviews">
+                <Star className="h-4 w-4 mr-2" />
+                Bewertungen ({reviews.length})
               </TabsTrigger>
               <TabsTrigger value="profile">
                 <User className="h-4 w-4 mr-2" />
@@ -870,6 +916,20 @@ const HandwerkerDashboard = () => {
                     </div>}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Reviews Tab */}
+            <TabsContent value="reviews" className="space-y-4">
+              {reviewsLoading ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
+                </div>
+              ) : (
+                <HandwerkerReviewResponse 
+                  reviews={reviews} 
+                  onReviewUpdated={handleReviewUpdated} 
+                />
+              )}
             </TabsContent>
 
             {/* Profile Tab */}
