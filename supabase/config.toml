@@ -45,5 +45,8 @@ verify_jwt = false
 [functions.send-rejection-email]
 verify_jwt = false
 
+[functions.send-rating-reminder]
+verify_jwt = false
+
 [functions.validate-magic-token]
 verify_jwt = false
