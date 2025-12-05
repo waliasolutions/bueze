@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Save } from 'lucide-react';
 import { SWISS_CANTONS, CANTON_CODES } from '@/config/cantons';
+import { PostalCodeInput } from '@/components/PostalCodeInput';
 
 const leadSchema = z.object({
   title: z.string().min(10, 'Titel muss mindestens 10 Zeichen haben'),
@@ -380,7 +381,17 @@ const EditLead = () => {
                         <FormItem>
                           <FormLabel>PLZ</FormLabel>
                           <FormControl>
-                            <Input placeholder="8000" {...field} />
+                            <PostalCodeInput
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              onAddressSelect={(address) => {
+                                if (address.city) {
+                                  form.setValue('city', address.city);
+                                }
+                                form.setValue('canton', address.canton as any);
+                              }}
+                              placeholder="8000"
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

@@ -80,7 +80,7 @@ const ServiceAreaMap: React.FC<ServiceAreaMapProps> = ({ serviceAreas }) => {
               // Use OpenPLZ API to get coordinates (approximate from city name)
               const location = results[0];
               // Simple geocoding approximation - in production, use proper geocoding
-              const marker = createMarker(location.name, area);
+              const marker = createMarker(location.city, area);
               if (marker) {
                 markers.current.push(marker);
                 const lngLat = marker.getLngLat();
@@ -95,7 +95,7 @@ const ServiceAreaMap: React.FC<ServiceAreaMapProps> = ({ serviceAreas }) => {
           const results = await searchByPostalCode(area);
           if (results.length > 0) {
             const location = results[0];
-            const marker = createMarker(location.name, area);
+            const marker = createMarker(location.city, area);
             if (marker) {
               markers.current.push(marker);
               const lngLat = marker.getLngLat();
