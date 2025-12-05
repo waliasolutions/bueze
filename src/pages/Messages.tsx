@@ -57,12 +57,26 @@ const Messages = () => {
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
-    fetchUser();
-    if (conversationId) {
-      fetchConversation();
-      fetchMessages();
-      subscribeToMessages();
-    }
+    let isMounted = true;
+    let cleanupSubscription: (() => void) | undefined;
+    
+    const initializeData = async () => {
+      await fetchUser();
+      if (conversationId && isMounted) {
+        fetchConversation();
+        fetchMessages();
+        cleanupSubscription = subscribeToMessages();
+      }
+    };
+    
+    initializeData();
+    
+    return () => {
+      isMounted = false;
+      if (cleanupSubscription) {
+        cleanupSubscription();
+      }
+    };
   }, [conversationId]);
 
   useEffect(() => {

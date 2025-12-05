@@ -1,3 +1,9 @@
+/**
+ * Canton to Postal Code Mapping
+ * Uses SWISS_CANTONS from src/config/cantons.ts as Single Source of Truth
+ */
+import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
+
 // Map Swiss cantons to their postal code ranges
 export const CANTON_POSTAL_RANGES: Record<string, string[]> = {
   'ZH': ['8000-8999'],
@@ -28,34 +34,19 @@ export const CANTON_POSTAL_RANGES: Record<string, string[]> = {
   'JU': ['2350-2900'],
 };
 
-// Canton full names for display
-export const CANTON_NAMES: Record<string, string> = {
-  'ZH': 'Zürich',
-  'BE': 'Bern',
-  'LU': 'Luzern',
-  'UR': 'Uri',
-  'SZ': 'Schwyz',
-  'OW': 'Obwalden',
-  'NW': 'Nidwalden',
-  'GL': 'Glarus',
-  'ZG': 'Zug',
-  'FR': 'Freiburg',
-  'SO': 'Solothurn',
-  'BS': 'Basel-Stadt',
-  'BL': 'Basel-Landschaft',
-  'SH': 'Schaffhausen',
-  'AR': 'Appenzell Ausserrhoden',
-  'AI': 'Appenzell Innerrhoden',
-  'SG': 'St. Gallen',
-  'GR': 'Graubünden',
-  'AG': 'Aargau',
-  'TG': 'Thurgau',
-  'TI': 'Tessin',
-  'VD': 'Waadt',
-  'VS': 'Wallis',
-  'NE': 'Neuenburg',
-  'GE': 'Genf',
-  'JU': 'Jura',
+/**
+ * Get canton full name from code - uses SSOT from cantons.ts
+ * @deprecated Use getCantonLabel from '@/config/cantons' directly
+ */
+export const CANTON_NAMES: Record<string, string> = Object.fromEntries(
+  SWISS_CANTONS.map(canton => [canton.value, canton.label])
+);
+
+/**
+ * Get canton label - wrapper for SSOT function
+ */
+export const getCantonName = (code: string): string => {
+  return getCantonLabel(code);
 };
 
 /**
@@ -118,7 +109,7 @@ export const getCantonFromPostalCode = (postalCode: string): string | null => {
  */
 export const formatCantonDisplay = (canton: string): string => {
   const ranges = CANTON_POSTAL_RANGES[canton] || [];
-  const name = CANTON_NAMES[canton] || canton;
+  const name = getCantonLabel(canton);
   
   if (ranges.length === 0) return name;
   if (ranges.length === 1) return `${name} (${ranges[0]})`;
