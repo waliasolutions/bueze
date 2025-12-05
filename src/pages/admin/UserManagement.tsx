@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface User {
   id: string;
@@ -525,9 +526,13 @@ export default function UserManagement() {
                 </TableBody>
               </Table>
               {filteredUsers.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  {searchQuery ? 'Keine Benutzer gefunden' : 'Noch keine Benutzer vorhanden'}
-                </div>
+                <EmptyState 
+                  variant="users"
+                  title={searchQuery ? 'Keine Benutzer gefunden' : 'Noch keine Benutzer vorhanden'}
+                  description={searchQuery 
+                    ? 'Versuchen Sie einen anderen Suchbegriff.'
+                    : 'Neue Benutzer werden hier angezeigt, sobald sie sich registrieren.'}
+                />
               )}
             </CardContent>
           </Card>

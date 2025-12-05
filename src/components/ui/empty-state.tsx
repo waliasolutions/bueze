@@ -146,17 +146,43 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 };
 
 /**
- * Inline Empty State - Smaller version for inline use
+ * Inline Empty State - Smaller version for inline use with optional action
  */
 export const InlineEmptyState: React.FC<{
-  message: string;
+  message?: string;
+  title?: string;
+  description?: string;
   icon?: LucideIcon;
   className?: string;
-}> = ({ message, icon: Icon = Inbox, className = '' }) => {
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+}> = ({ message, title, description, icon: Icon = Inbox, className = '', action }) => {
+  // Support both simple message or title/description format
+  const displayMessage = message || description;
+  
+  if (title) {
+    return (
+      <div className={`py-6 text-center ${className}`}>
+        <Icon className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+        <h4 className="font-medium mb-1">{title}</h4>
+        {displayMessage && (
+          <p className="text-sm text-muted-foreground mb-4">{displayMessage}</p>
+        )}
+        {action && (
+          <Button size="sm" variant="outline" onClick={action.onClick}>
+            {action.label}
+          </Button>
+        )}
+      </div>
+    );
+  }
+  
   return (
     <div className={`flex items-center gap-3 py-4 text-muted-foreground ${className}`}>
       <Icon className="h-5 w-5" />
-      <span className="text-sm">{message}</span>
+      <span className="text-sm">{displayMessage}</span>
     </div>
   );
 };

@@ -37,6 +37,8 @@ import { SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel } from "@/config/urgencyLevels";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
+import { TableSkeleton } from "@/components/ui/page-skeleton";
 
 interface LeadWithOwner {
   id: string;
@@ -422,18 +424,15 @@ export default function AdminLeadsManagement() {
         </Card>
 
       {loading ? (
-        <Card className="p-12">
-          <div className="flex justify-center items-center">
-            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-3 text-muted-foreground">Lade Aufträge...</span>
-          </div>
+        <Card className="p-6">
+          <TableSkeleton rows={5} columns={6} />
         </Card>
       ) : filteredLeads.length === 0 ? (
-        <Card className="p-12">
-          <div className="text-center text-muted-foreground">
-            Keine Aufträge gefunden
-          </div>
-        </Card>
+        <EmptyState 
+          variant="leads"
+          title="Keine Aufträge gefunden"
+          description="Es wurden keine Aufträge gefunden, die Ihren Filterkriterien entsprechen."
+        />
       ) : (
         <Card>
           <ScrollArea className="h-[600px]">
