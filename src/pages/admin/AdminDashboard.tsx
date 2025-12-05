@@ -149,7 +149,9 @@ const AdminDashboard = () => {
   const loadDashboardData = async () => {
     try {
       setIsRefreshing(true);
-      console.log('Loading dashboard data...');
+      if (import.meta.env.DEV) {
+        console.log('Loading dashboard data...');
+      }
       
       // Get handwerker stats
       const { data: handwerkerData, error: handwerkerError } = await supabase
@@ -161,13 +163,17 @@ const AdminDashboard = () => {
         throw handwerkerError;
       }
 
-      console.log(`Fetched ${handwerkerData?.length || 0} handwerker profiles`);
+      if (import.meta.env.DEV) {
+        console.log(`Fetched ${handwerkerData?.length || 0} handwerker profiles`);
+      }
 
       const pending = handwerkerData?.filter(h => h.verification_status === 'pending') || [];
       const approved = handwerkerData?.filter(h => h.verification_status === 'approved') || [];
       const rejected = handwerkerData?.filter(h => h.verification_status === 'rejected') || [];
 
-      console.log(`Pending: ${pending.length}, Approved: ${approved.length}, Rejected: ${rejected.length}`);
+      if (import.meta.env.DEV) {
+        console.log(`Pending: ${pending.length}, Approved: ${approved.length}, Rejected: ${rejected.length}`);
+      }
 
       // Get lead stats
       const { data: leadsData, error: leadsError } = await supabase
@@ -201,7 +207,9 @@ const AdminDashboard = () => {
         filteredPending = pending.filter(h => new Date(h.created_at) >= thirtyDaysAgo);
       }
 
-      console.log(`Filtered pending (${dateFilter}): ${filteredPending.length}`);
+      if (import.meta.env.DEV) {
+        console.log(`Filtered pending (${dateFilter}): ${filteredPending.length}`);
+      }
 
       // Get recent pending handwerkers
       setRecentPending(

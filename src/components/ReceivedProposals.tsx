@@ -85,34 +85,44 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
 
       if (error) throw error;
 
-      // Fetch handwerker profiles separately
-      const proposalsWithProfiles = await Promise.all(
-        (data || []).map(async (proposal) => {
-          const { data: hwProfile } = await supabase
-            .from('handwerker_profiles')
-            .select('business_city')
-            .eq('user_id', proposal.handwerker_id)
-            .single();
+      // Batch fetch all unique handwerker IDs
+      const handwerkerIds = [...new Set((data || []).map(p => p.handwerker_id))];
+      
+      // Fetch handwerker profiles in batch
+      const { data: hwProfiles } = await supabase
+        .from('handwerker_profiles')
+        .select('user_id, business_city')
+        .in('user_id', handwerkerIds);
 
-          const { data: userProfile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', proposal.handwerker_id)
-            .single();
+      // Fetch user profiles in batch
+      const { data: userProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', handwerkerIds);
 
-          return {
-            ...proposal,
-            handwerker_profiles: hwProfile && userProfile ? {
-              business_city: hwProfile.business_city,
-              profiles: { full_name: userProfile.full_name }
-            } : null,
-          };
-        })
-      );
+      // Create lookup maps for O(1) access
+      const hwProfileMap = new Map(hwProfiles?.map(p => [p.user_id, p]) || []);
+      const userProfileMap = new Map(userProfiles?.map(p => [p.id, p]) || []);
+
+      // Map profiles to proposals
+      const proposalsWithProfiles = (data || []).map(proposal => {
+        const hwProfile = hwProfileMap.get(proposal.handwerker_id);
+        const userProfile = userProfileMap.get(proposal.handwerker_id);
+
+        return {
+          ...proposal,
+          handwerker_profiles: hwProfile && userProfile ? {
+            business_city: hwProfile.business_city,
+            profiles: { full_name: userProfile.full_name }
+          } : null,
+        };
+      });
 
       setProposals(proposalsWithProfiles as Proposal[]);
     } catch (error) {
-      console.error('Error fetching proposals:', error);
+      if (import.meta.env.DEV) {
+        console.error('Error fetching proposals:', error);
+      }
       toast({
         title: 'Fehler',
         description: 'Offerten konnten nicht geladen werden',

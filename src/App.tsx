@@ -49,7 +49,24 @@ import GTMConfiguration from "./pages/admin/GTMConfiguration";
 import ReviewsManagement from "./pages/admin/ReviewsManagement";
 import Sitemap from "./pages/Sitemap";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Data considered fresh for 2 minutes
+      staleTime: 2 * 60 * 1000,
+      // Cache data kept for 5 minutes after becoming unused
+      gcTime: 5 * 60 * 1000,
+      // Retry failed requests up to 2 times
+      retry: 2,
+      // Don't refetch on window focus for better UX
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      // Retry failed mutations once
+      retry: 1,
+    },
+  },
+});
 
 // CRITICAL: Set scroll restoration to manual IMMEDIATELY (before React renders)
 // This must happen at module load time, not in useEffect

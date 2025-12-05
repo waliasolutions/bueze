@@ -366,7 +366,9 @@ const HandwerkerOnboarding = () => {
             localStorage.removeItem('handwerker-onboarding-draft');
           }
         } catch (error) {
-          console.error('Error loading saved data:', error);
+          if (import.meta.env.DEV) {
+            console.error('Error loading saved data:', error);
+          }
           localStorage.removeItem('handwerker-onboarding-draft');
         }
       }
@@ -488,7 +490,7 @@ const HandwerkerOnboarding = () => {
         .upload(fileName, file);
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        if (import.meta.env.DEV) console.error('Upload error:', uploadError);
         throw new Error(uploadError.message);
       }
 
@@ -507,7 +509,7 @@ const HandwerkerOnboarding = () => {
         description: `${file.name} wurde erfolgreich hochgeladen.`,
       });
     } catch (error) {
-      console.error('Upload error:', error);
+      if (import.meta.env.DEV) console.error('Upload error:', error);
       setUploadProgress(prev => ({ ...prev, [type]: 'error' }));
       toast({
         title: "Upload fehlgeschlagen",
@@ -522,11 +524,13 @@ const HandwerkerOnboarding = () => {
 
     setIsLoading(true);
     
-    console.log('=== HANDWERKER REGISTRATION START ===');
-    console.log('Current timestamp:', new Date().toISOString());
+    if (import.meta.env.DEV) {
+      console.log('=== HANDWERKER REGISTRATION START ===');
+      console.log('Current timestamp:', new Date().toISOString());
+    }
     
     try {
-      console.log('Form data:', { categories: formData.categories, serviceAreas: formData.serviceAreas });
+      if (import.meta.env.DEV) console.log('Form data:', { categories: formData.categories, serviceAreas: formData.serviceAreas });
       
       let userId: string;
       let userEmail: string;
@@ -541,11 +545,11 @@ const HandwerkerOnboarding = () => {
         userId = session.user.id;
         userEmail = session.user.email!;
         
-        console.log('Using existing auth account:', userId);
+        if (import.meta.env.DEV) console.log('Using existing auth account:', userId);
       } else {
         // Create new auth account
         tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + '!';
-        console.log('Generated temporary password');
+        if (import.meta.env.DEV) console.log('Generated temporary password');
 
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: formData.email,
@@ -562,7 +566,7 @@ const HandwerkerOnboarding = () => {
         });
 
         if (authError) {
-          console.error('Auth account creation error:', authError);
+          if (import.meta.env.DEV) console.error('Auth account creation error:', authError);
           
           // Handle user already exists error
           if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
@@ -585,21 +589,21 @@ const HandwerkerOnboarding = () => {
         userId = authData.user.id;
         userEmail = formData.email;
         
-        console.log('Auth account created successfully:', userId);
+        if (import.meta.env.DEV) console.log('Auth account created successfully:', userId);
 
         // Explicitly sign in to ensure session is established for RLS
-        console.log('Signing in to establish session...');
+        if (import.meta.env.DEV) console.log('Signing in to establish session...');
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: tempPassword,
         });
 
         if (signInError) {
-          console.error('SignIn error after signup:', signInError);
+          if (import.meta.env.DEV) console.error('SignIn error after signup:', signInError);
           throw new Error('Anmeldung nach Registrierung fehlgeschlagen');
         }
 
-        console.log('User signed in successfully');
+        if (import.meta.env.DEV) console.log('User signed in successfully');
       }
 
       // Use personal address for business if same address is selected
@@ -692,17 +696,21 @@ const HandwerkerOnboarding = () => {
         logo_url: logoUrl,
       };
 
-      console.log('Insert data prepared:', {
-        user_id: insertData.user_id,
-        email: insertData.email,
-        categories: insertData.categories,
-        service_areas: insertData.service_areas,
-        verification_status: insertData.verification_status
-      });
+      if (import.meta.env.DEV) {
+        console.log('Insert data prepared:', {
+          user_id: insertData.user_id,
+          email: insertData.email,
+          categories: insertData.categories,
+          service_areas: insertData.service_areas,
+          verification_status: insertData.verification_status
+        });
+      }
 
       // Insert handwerker_profile with user_id
-      console.log('Attempting database insert...');
-      console.log('Insert data:', JSON.stringify(insertData, null, 2));
+      if (import.meta.env.DEV) {
+        console.log('Attempting database insert...');
+        console.log('Insert data:', JSON.stringify(insertData, null, 2));
+      }
       
       const insertPromise = supabase
         .from("handwerker_profiles")
@@ -719,19 +727,23 @@ const HandwerkerOnboarding = () => {
         insertPromise,
         timeoutPromise
       ]).catch(err => {
-        console.error('Insert promise failed:', err);
+        if (import.meta.env.DEV) console.error('Insert promise failed:', err);
         return { data: null, error: err };
       }) as any;
 
-      console.log('Insert result - error:', error);
-      console.log('Insert result - data:', profileData);
+      if (import.meta.env.DEV) {
+        console.log('Insert result - error:', error);
+        console.log('Insert result - data:', profileData);
+      }
 
       if (error) {
-        console.error('=== DATABASE INSERT ERROR ===');
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
-        console.error('Error details:', error.details);
-        console.error('Error hint:', error.hint);
+        if (import.meta.env.DEV) {
+          console.error('=== DATABASE INSERT ERROR ===');
+          console.error('Error code:', error.code);
+          console.error('Error message:', error.message);
+          console.error('Error details:', error.details);
+          console.error('Error hint:', error.hint);
+        }
         
         // More user-friendly error messages
         if (error.message.includes('row-level security') || error.message.includes('policy')) {
@@ -740,16 +752,18 @@ const HandwerkerOnboarding = () => {
         throw error;
       }
       if (!profileData) {
-        console.error('=== PROFILE DATA IS NULL ===');
+        if (import.meta.env.DEV) console.error('=== PROFILE DATA IS NULL ===');
         throw new Error('Failed to create profile');
       }
 
-      console.log('=== PROFILE CREATED SUCCESSFULLY ===');
-      console.log('Profile ID:', profileData.id);
+      if (import.meta.env.DEV) {
+        console.log('=== PROFILE CREATED SUCCESSFULLY ===');
+        console.log('Profile ID:', profileData.id);
+      }
 
       // Send welcome email with credentials (only for new users)
       if (tempPassword) {
-        console.log('Sending credentials email...');
+        if (import.meta.env.DEV) console.log('Sending credentials email...');
         try {
           const { error: credentialsError } = await supabase.functions.invoke('send-handwerker-credentials', {
             body: { 
@@ -761,26 +775,26 @@ const HandwerkerOnboarding = () => {
             }
           });
 
-          if (credentialsError) {
+          if (credentialsError && import.meta.env.DEV) {
             console.error('Credentials email error (non-critical):', credentialsError);
           }
         } catch (credErr) {
-          console.error('Credentials email error:', credErr);
+          if (import.meta.env.DEV) console.error('Credentials email error:', credErr);
         }
       }
 
       // Trigger admin notification email
-      console.log('Sending admin notification...');
+      if (import.meta.env.DEV) console.log('Sending admin notification...');
       try {
         const { error: notifyError } = await supabase.functions.invoke('send-admin-registration-notification', {
           body: { profileId: profileData.id }
         });
 
-        if (notifyError) {
+        if (notifyError && import.meta.env.DEV) {
           console.error('Failed to send admin notification:', notifyError);
         }
       } catch (notifyErr) {
-        console.error('Admin notification error:', notifyErr);
+        if (import.meta.env.DEV) console.error('Admin notification error:', notifyErr);
       }
 
       // Clear saved draft
@@ -790,7 +804,7 @@ const HandwerkerOnboarding = () => {
       // If user was already logged in, just navigate without signing out
       if (isAlreadyAuthenticated) {
         // Ensure handwerker role is assigned
-        console.log('Upserting handwerker role for user:', userId);
+        if (import.meta.env.DEV) console.log('Upserting handwerker role for user:', userId);
         const { error: roleError } = await supabase
           .from('user_roles')
           .upsert(
@@ -799,9 +813,9 @@ const HandwerkerOnboarding = () => {
           );
         
         if (roleError) {
-          console.error('Failed to assign handwerker role:', roleError);
+          if (import.meta.env.DEV) console.error('Failed to assign handwerker role:', roleError);
         } else {
-          console.log('Handwerker role assigned successfully');
+          if (import.meta.env.DEV) console.log('Handwerker role assigned successfully');
         }
         
         toast({
@@ -809,7 +823,7 @@ const HandwerkerOnboarding = () => {
           description: "Ihr Handwerker-Profil wurde erfolgreich erstellt.",
           duration: 5000,
         });
-        console.log('=== PROFILE CREATION COMPLETE ===');
+        if (import.meta.env.DEV) console.log('=== PROFILE CREATION COMPLETE ===');
         navigate("/handwerker-dashboard");
       } else {
         // Sign out the newly created user
@@ -821,15 +835,19 @@ const HandwerkerOnboarding = () => {
           duration: 8000,
         });
 
-        console.log('=== REGISTRATION COMPLETE ===');
-        console.log('Navigating to auth page...');
+        if (import.meta.env.DEV) {
+          console.log('=== REGISTRATION COMPLETE ===');
+          console.log('Navigating to auth page...');
+        }
         navigate("/auth?registered=true");
       }
     } catch (error) {
-      console.error('=== REGISTRATION ERROR ===');
-      console.error('Error type:', error?.constructor?.name);
-      console.error('Error message:', error instanceof Error ? error.message : String(error));
-      console.error('Full error object:', error);
+      if (import.meta.env.DEV) {
+        console.error('=== REGISTRATION ERROR ===');
+        console.error('Error type:', error?.constructor?.name);
+        console.error('Error message:', error instanceof Error ? error.message : String(error));
+        console.error('Full error object:', error);
+      }
       
       toast({
         title: "Fehler",
@@ -838,7 +856,7 @@ const HandwerkerOnboarding = () => {
       });
     } finally {
       setIsLoading(false);
-      console.log('=== REGISTRATION PROCESS END ===');
+      if (import.meta.env.DEV) console.log('=== REGISTRATION PROCESS END ===');
     }
   };
 
