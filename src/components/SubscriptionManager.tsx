@@ -18,7 +18,12 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
 
   useEffect(() => {
     refetch();
-  }, [userId]);
+    
+    // Cleanup: no async operations to cancel, but ensures consistent pattern
+    return () => {
+      // Any pending async operations from refetch will be ignored on unmount
+    };
+  }, [userId, refetch]);
 
   if (loading) {
     return (

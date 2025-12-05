@@ -114,7 +114,19 @@ const HandwerkerDashboard = () => {
   });
   const [submittingProposal, setSubmittingProposal] = useState(false);
   useEffect(() => {
-    checkAuth();
+    let isMounted = true;
+    
+    const initAuth = async () => {
+      if (isMounted) {
+        await checkAuth();
+      }
+    };
+    
+    initAuth();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
   const checkAuth = async () => {
     try {
