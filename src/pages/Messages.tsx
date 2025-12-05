@@ -185,7 +185,9 @@ const Messages = () => {
         lead_id: conversation.lead_id, // Required field
       };
 
-      console.log('Sending message:', messageData);
+      if (import.meta.env.DEV) {
+        console.log('Sending message:', messageData);
+      }
 
       const { error } = await supabase
         .from('messages')

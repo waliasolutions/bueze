@@ -109,14 +109,16 @@ const LeadDetails = () => {
         .eq('handwerker_id', user.id)
         .maybeSingle();
 
-      console.log('Proposal check:', { 
-        leadId: lead.id, 
-        userId: user.id, 
-        leadOwnerId: lead.owner_id,
-        proposalFound: !!proposal,
-        proposalStatus: proposal?.status,
-        isOwnLead: lead.owner_id === user.id 
-      });
+      if (import.meta.env.DEV) {
+        console.log('Proposal check:', { 
+          leadId: lead.id, 
+          userId: user.id, 
+          leadOwnerId: lead.owner_id,
+          proposalFound: !!proposal,
+          proposalStatus: proposal?.status,
+          isOwnLead: lead.owner_id === user.id 
+        });
+      }
       
       setHasProposal(!!proposal);
       setProposalStatus(proposal?.status || null);

@@ -275,7 +275,7 @@ const HandwerkerDashboard = () => {
         const shouldShow = categoryMatches && serviceAreaMatches;
         
         // Debug logging for sanitaer leads
-        if (lead.category === 'sanitaer' || lead.category?.includes('sanitaer')) {
+        if (import.meta.env.DEV && (lead.category === 'sanitaer' || lead.category?.includes('sanitaer'))) {
           console.log('🔍 Sanitär Lead Filter:', {
             leadId: lead.id,
             leadCategory: lead.category,
