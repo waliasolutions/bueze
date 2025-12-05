@@ -19,6 +19,8 @@ import { formatTimeAgo, formatNumber, formatCurrency } from '@/lib/swissTime';
 // TODO: Re-enable after types regenerate
 // import { checkSubscriptionAccess } from '@/lib/subscriptionHelpers';
 import { getLeadStatus } from '@/config/leadStatuses';
+import { getCategoryLabel } from '@/config/categoryLabels';
+import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
 // import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
 
 interface Lead {
@@ -59,46 +61,6 @@ interface HandwerkerProfile {
   id: string;
   is_verified: boolean;
 }
-
-const categoryLabels = {
-  elektriker: 'Elektriker',
-  sanitaer: 'Sanitär',
-  heizung: 'Heizungsinstallateur',
-  klimatechnik: 'Klimatechnik',
-  maler: 'Maler',
-  gipser: 'Gipser',
-  bodenleger: 'Bodenleger',
-  plattenleger: 'Plattenleger',
-  schreiner: 'Schreiner',
-  maurer: 'Maurer',
-  zimmermann: 'Zimmermann',
-  dachdecker: 'Dachdecker',
-  fassadenbauer: 'Fassadenbauer',
-  gartenbau: 'Gartenbau',
-  pflasterarbeiten: 'Pflasterarbeiten',
-  zaun_torbau: 'Zaun- und Torbau',
-  fenster_tueren: 'Fenster & Türen',
-  kuechenbau: 'Küchenbau',
-  badumbau: 'Badumbau',
-  umzug: 'Umzug & Transport',
-  reinigung: 'Reinigung',
-  schlosserei: 'Schlosserei',
-  spengler: 'Spengler'
-};
-
-const urgencyLabels = {
-  today: 'Heute',
-  this_week: 'Diese Woche',
-  this_month: 'Dieser Monat',
-  planning: 'Planung'
-};
-
-const urgencyColors = {
-  today: 'bg-red-100 text-red-800',
-  this_week: 'bg-orange-100 text-orange-800',
-  this_month: 'bg-blue-100 text-blue-800',
-  planning: 'bg-gray-100 text-gray-800'
-};
 
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
@@ -469,8 +431,8 @@ const Dashboard = () => {
                                    lead.status === 'paused' ? 'Pausiert' :
                                    lead.status === 'completed' ? 'Erledigt' : 'Entwurf'}
                                 </Badge>
-                                <Badge className={`${urgencyColors[lead.urgency as keyof typeof urgencyColors]}`}>
-                                  {urgencyLabels[lead.urgency as keyof typeof urgencyLabels]}
+                                <Badge className={getUrgencyColor(lead.urgency)}>
+                                  {getUrgencyLabel(lead.urgency)}
                                 </Badge>
                               </div>
                               <CardTitle className="text-xl mb-1">{lead.title}</CardTitle>
@@ -479,7 +441,7 @@ const Dashboard = () => {
                                   <MapPin className="h-3 w-3 mr-1" />
                                   {lead.city}
                                 </span>
-                                <span>{categoryLabels[lead.category as keyof typeof categoryLabels]}</span>
+                                <span>{getCategoryLabel(lead.category)}</span>
                               </div>
                             </div>
                           </div>
@@ -561,7 +523,7 @@ const Dashboard = () => {
                               </div>
                             </div>
                             <Badge variant="secondary">
-                              {categoryLabels[purchase.lead.category as keyof typeof categoryLabels]}
+                              {getCategoryLabel(purchase.lead.category)}
                             </Badge>
                           </div>
                         </CardHeader>

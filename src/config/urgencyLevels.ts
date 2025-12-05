@@ -35,10 +35,27 @@ export const URGENCY_LEVELS: Record<UrgencyLevel, UrgencyConfig> = {
 };
 
 /**
+ * Urgency colors for badges - using Tailwind classes
+ */
+export const URGENCY_COLORS: Record<UrgencyLevel, string> = {
+  today: 'bg-red-100 text-red-800',
+  this_week: 'bg-orange-100 text-orange-800',
+  this_month: 'bg-blue-100 text-blue-800',
+  planning: 'bg-gray-100 text-gray-800',
+};
+
+/**
  * Get urgency level label
  */
 export function getUrgencyLabel(urgency: string): string {
   return URGENCY_LEVELS[urgency as UrgencyLevel]?.label || urgency;
+}
+
+/**
+ * Get urgency color classes
+ */
+export function getUrgencyColor(urgency: string): string {
+  return URGENCY_COLORS[urgency as UrgencyLevel] || 'bg-gray-100 text-gray-800';
 }
 
 /**

@@ -9,6 +9,8 @@ import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter } fr
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
 import { HandwerkerRating } from './HandwerkerRating';
+import { ProposalStatusBadge } from './ProposalStatusBadge';
+import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBatch } from '@/lib/proposalHelpers';
 
 interface Proposal {
   id: string;
@@ -158,176 +160,43 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
   const handleBatchAction = async (action: 'accept' | 'reject') => {
     if (selectedIds.size === 0) return;
 
-    try {
-      const status = action === 'accept' ? 'accepted' : 'rejected';
+    const ids = Array.from(selectedIds);
+    const result = action === 'accept' 
+      ? await acceptProposalsBatch(ids)
+      : await rejectProposalsBatch(ids);
 
-      for (const proposalId of selectedIds) {
-        const proposal = proposals.find(p => p.id === proposalId);
-        if (!proposal) continue;
+    toast({
+      title: result.success ? 'Erfolg' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
 
-        const { error } = await supabase
-          .from('lead_proposals')
-          .update({ status, responded_at: new Date().toISOString() })
-          .eq('id', proposalId);
-
-        if (error) throw error;
-
-        if (action === 'accept') {
-          // Update lead status to completed and set accepted_proposal_id
-          await supabase
-            .from('leads')
-            .update({ 
-              status: 'completed',
-              accepted_proposal_id: proposalId 
-            })
-            .eq('id', proposal.lead_id);
-
-          // Reject other pending proposals for this lead
-          await supabase
-            .from('lead_proposals')
-            .update({ status: 'rejected', responded_at: new Date().toISOString() })
-            .eq('lead_id', proposal.lead_id)
-            .eq('status', 'pending')
-            .neq('id', proposalId);
-
-          // Send acceptance emails and create conversation
-          try {
-            await supabase.functions.invoke('send-acceptance-emails', {
-              body: { proposalId }
-            });
-          } catch (emailError) {
-            console.error('Error sending acceptance emails:', emailError);
-          }
-        }
-      }
-
-      toast({
-        title: 'Erfolg',
-        description: `${selectedIds.size} Offerte(n) ${action === 'accept' ? 'angenommen' : 'abgelehnt'}`,
-      });
-
-      setSelectedIds(new Set());
-      fetchProposals();
-    } catch (error) {
-      console.error('Error updating proposals:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Aktion konnte nicht ausgeführt werden',
-        variant: 'destructive',
-      });
-    }
+    setSelectedIds(new Set());
+    fetchProposals();
   };
 
   const handleAccept = async (proposalId: string) => {
-    try {
-      // Get the proposal to find the lead
-      const { data: proposal, error: proposalError } = await supabase
-        .from('lead_proposals')
-        .select('lead_id')
-        .eq('id', proposalId)
-        .single();
+    const result = await acceptProposal(proposalId);
 
-      if (proposalError) throw proposalError;
+    toast({
+      title: result.success ? 'Offerte angenommen!' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
 
-      // Update proposal status to accepted
-      const { error } = await supabase
-        .from('lead_proposals')
-        .update({ status: 'accepted', responded_at: new Date().toISOString() })
-        .eq('id', proposalId);
-
-      if (error) throw error;
-
-      // Update lead status to completed and set accepted proposal
-      const { error: leadError } = await supabase
-        .from('leads')
-        .update({ 
-          status: 'completed',
-          accepted_proposal_id: proposalId
-        })
-        .eq('id', proposal.lead_id);
-
-      if (leadError) throw leadError;
-
-      // Reject all other pending proposals for this lead
-      const { error: rejectError } = await supabase
-        .from('lead_proposals')
-        .update({ status: 'rejected', responded_at: new Date().toISOString() })
-        .eq('lead_id', proposal.lead_id)
-        .neq('id', proposalId)
-        .eq('status', 'pending');
-
-      if (rejectError) throw rejectError;
-
-      // Trigger acceptance emails and conversation creation
-      const { error: emailError } = await supabase.functions.invoke('send-acceptance-emails', {
-        body: { proposalId }
-      });
-
-      if (emailError) {
-        console.error('Failed to send acceptance emails:', emailError);
-      }
-
-      toast({
-        title: 'Offerte angenommen!',
-        description: 'Der Auftrag wurde abgeschlossen. Beide Parteien wurden benachrichtigt.',
-      });
-
-      fetchProposals();
-    } catch (error) {
-      console.error('Error accepting proposal:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Offerte konnte nicht angenommen werden',
-        variant: 'destructive',
-      });
-    }
+    if (result.success) fetchProposals();
   };
 
   const handleReject = async (proposalId: string) => {
-    try {
-      const { error } = await supabase
-        .from('lead_proposals')
-        .update({ status: 'rejected', responded_at: new Date().toISOString() })
-        .eq('id', proposalId);
+    const result = await rejectProposal(proposalId);
 
-      if (error) throw error;
+    toast({
+      title: result.success ? 'Offerte abgelehnt' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
 
-      // Send rejection email to handwerker
-      try {
-        await supabase.functions.invoke('send-proposal-rejection-email', {
-          body: { proposalId }
-        });
-      } catch (emailError) {
-        console.error('Failed to send rejection email:', emailError);
-      }
-
-      toast({
-        title: 'Offerte abgelehnt',
-        description: 'Der Handwerker wurde benachrichtigt',
-      });
-
-      fetchProposals();
-    } catch (error) {
-      console.error('Error rejecting proposal:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Offerte konnte nicht abgelehnt werden',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="secondary" className="flex items-center gap-1"><Clock className="h-3 w-3" />Ausstehend</Badge>;
-      case 'accepted':
-        return <Badge variant="default" className="flex items-center gap-1 bg-green-600"><CheckCircle className="h-3 w-3" />Angenommen</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive" className="flex items-center gap-1"><XCircle className="h-3 w-3" />Abgelehnt</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
+    if (result.success) fetchProposals();
   };
 
   if (loading) {
@@ -412,7 +281,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                     )}
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        {getStatusBadge(proposal.status)}
+                        <ProposalStatusBadge status={proposal.status} />
                         <Badge variant="outline">{proposal.leads?.category || 'Kategorie'}</Badge>
                       </div>
                       <CardTitle className="text-lg mb-1">{proposal.leads?.title || 'Projekt'}</CardTitle>
