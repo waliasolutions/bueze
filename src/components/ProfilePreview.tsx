@@ -6,6 +6,7 @@ import { MapPin, Globe, Coins, Star, Phone, Mail, Shield, Wrench, Building2, Che
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { majorCategories } from '@/config/majorCategories';
 import { formatCantonDisplay } from '@/lib/cantonPostalCodes';
+import { HandwerkerRating } from './HandwerkerRating';
 
 interface ProfilePreviewProps {
   profile: {
@@ -30,6 +31,7 @@ interface ProfilePreviewProps {
     liability_insurance_provider: string | null;
     insurance_valid_until: string | null;
     verification_status: string | null;
+    user_id?: string | null;
   };
 }
 
@@ -106,15 +108,20 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
         </CardHeader>
 
         <CardContent className="pt-6 space-y-6">
-          {/* Rate Badge */}
-          {hasRates && (
-            <div className="flex items-center gap-2">
-              <Coins className="h-5 w-5 text-brand-500" />
-              <Badge variant="secondary" className="text-base px-4 py-1">
-                {rateDisplay}
-              </Badge>
-            </div>
-          )}
+          {/* Rate Badge and Rating */}
+          <div className="flex flex-wrap items-center gap-4">
+            {hasRates && (
+              <div className="flex items-center gap-2">
+                <Coins className="h-5 w-5 text-brand-500" />
+                <Badge variant="secondary" className="text-base px-4 py-1">
+                  {rateDisplay}
+                </Badge>
+              </div>
+            )}
+            {profile.user_id && (
+              <HandwerkerRating handwerkerId={profile.user_id} compact />
+            )}
+          </div>
 
           {/* Contact Information */}
           {(profile.phone_number || profile.email || profile.business_address) && (
