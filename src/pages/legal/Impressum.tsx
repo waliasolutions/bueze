@@ -60,14 +60,7 @@ const Impressum = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Vertretungsberechtigte Personen</h2>
                 <div className="text-ink-700">
-                  <p><strong>Geschäftsführung:</strong> Walia Solutions GmbH</p>
-                </div>
-              </section>
-
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">Mehrwertsteuer</h2>
-                <div className="text-ink-700">
-                  <p><strong>MWST-Nummer:</strong> CHE-389.446.099 MWST</p>
+                  <p><strong>Geschäftsführung:</strong> MHS Haustechnik GmbH</p>
                 </div>
               </section>
 

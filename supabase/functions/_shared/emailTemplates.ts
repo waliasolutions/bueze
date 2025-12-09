@@ -670,7 +670,7 @@ export const rejectionNotificationTemplate = (data: RejectionData) => {
       <div class="info-box">
         <h3 style="margin-top: 0; color: #0066CC;">Kontakt aufnehmen</h3>
         <p style="margin-bottom: 0;">
-          <strong>E-Mail:</strong> <a href="mailto:info@walia-solutions.ch">info@walia-solutions.ch</a><br>
+          <strong>E-Mail:</strong> <a href="mailto:info@bueeze.ch">info@bueeze.ch</a><br>
           <strong>Website:</strong> <a href="https://bueeze.ch">www.bueeze.ch</a>
         </p>
       </div>
