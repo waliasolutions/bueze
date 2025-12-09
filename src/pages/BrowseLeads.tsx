@@ -4,25 +4,18 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { logWithCorrelation, captureException } from '@/lib/errorTracking';
 import { trackError } from '@/lib/errorCategories';
-import { supabaseQuery, calculatePagination, buildPaginatedResult, type PaginatedResult } from '@/lib/fetchHelpers';
-import { getOrCreateRequestId, clearRequestId } from '@/lib/idempotency';
+import { calculatePagination } from '@/lib/fetchHelpers';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, Search, ShoppingCart, Crown, AlertCircle, Filter, X } from 'lucide-react';
+import { MapPin, Clock, Coins, X } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
-// TODO: Re-enable after types regenerate
-// import { checkSubscriptionAccess, canPurchaseLeadWithPrice } from '@/lib/subscriptionHelpers';
-import { canViewLead as canViewLeadByStatus } from '@/config/leadStatuses';
-// import type { SubscriptionAccessCheck } from '@/lib/subscriptionHelpers';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { majorCategories } from '@/config/majorCategories';
-import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { EmptyState } from '@/components/ui/empty-state';
 import type { LeadListItem } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
@@ -37,8 +30,6 @@ const BrowseLeads = () => {
   const [selectedMajorCategory, setSelectedMajorCategory] = useState('all');
   const [selectedCanton, setSelectedCanton] = useState('all');
   const [selectedUrgency, setSelectedUrgency] = useState('all');
-  // TODO: Re-enable after types regenerate
-  // const [subscriptionAccess, setSubscriptionAccess] = useState<SubscriptionAccessCheck | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const pageSize = 50;

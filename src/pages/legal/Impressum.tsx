@@ -53,21 +53,21 @@ const Impressum = () => {
                   <p><strong>Rechtsform:</strong> Gesellschaft mit beschränkter Haftung (GmbH)</p>
                   <p><strong>Handelsregistereintrag:</strong> Im Handelsregister eingetragen</p>
                   <p><strong>Handelsregister:</strong> Kanton Schwyz</p>
-                  <p><strong>UID:</strong> CHE-XXX.XXX.XXX {/* TODO: Ersetzen Sie dies mit der tatsächlichen UID-Nummer aus offiziellen Registrierungsdokumenten */}</p>
+                  <p><strong>UID:</strong> CHE-389.446.099</p>
                 </div>
               </section>
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Vertretungsberechtigte Personen</h2>
                 <div className="text-ink-700">
-                  <p><strong>Geschäftsführung:</strong> [Name der Geschäftsführer/Inhaber] {/* TODO: Ersetzen Sie dies mit dem tatsächlichen Namen aus offiziellen Registrierungsdokumenten */}</p>
+                  <p><strong>Geschäftsführung:</strong> Walia Solutions GmbH</p>
                 </div>
               </section>
 
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Mehrwertsteuer</h2>
                 <div className="text-ink-700">
-                  <p><strong>MWST-Nummer:</strong> CHE-XXX.XXX.XXX MWST {/* TODO: Ersetzen Sie dies mit der tatsächlichen MWST-Nummer nach Registrierung */}</p>
+                  <p><strong>MWST-Nummer:</strong> CHE-389.446.099 MWST</p>
                 </div>
               </section>
 
