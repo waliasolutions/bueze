@@ -31,7 +31,7 @@ export const categoryContent: Record<string, CategoryContent> = {
       {
         icon: Layers,
         title: 'Parkett & Laminat verlegen',
-        description: 'Ob klassisches Eichenparkett oder pflegeleichtes Laminat – ein professionell verlegter Holzboden wertet jeden Raum auf. Unsere Bodenleger beraten Sie zu Material, Verlegemuster und Pflege, damit Ihr Fussboden lange schön bleibt.',
+        description: 'Ob klassisches Eichenparkett oder pflegeleichtes Laminat – ein professionell verlegter Holzboden wertet jeden Raum auf. Erfahrene Bodenleger beraten Sie zu Material, Verlegemuster und Pflege, damit Ihr Fussboden lange schön bleibt.',
       },
       {
         icon: Grid3x3,
@@ -75,7 +75,7 @@ export const categoryContent: Record<string, CategoryContent> = {
       {
         icon: TreePine,
         title: 'Gartenpflege & Unterhalt',
-        description: 'Regelmässiger Schnitt, Rasenpflege und Unkrautbekämpfung – für einen gepflegten Garten das ganze Jahr. Unsere Fachleute kümmern sich um alles, damit Sie Ihren Garten einfach geniessen können.',
+        description: 'Regelmässiger Schnitt, Rasenpflege und Unkrautbekämpfung – für einen gepflegten Garten das ganze Jahr. Fachleute aus Ihrer Region kümmern sich um alles, damit Sie Ihren Garten einfach geniessen können.',
       },
       {
         icon: Home,
@@ -109,7 +109,7 @@ export const categoryContent: Record<string, CategoryContent> = {
       {
         icon: Zap,
         title: 'Installation & Erweiterung',
-        description: 'Neue Steckdosen, Lichtschalter oder komplette Elektroinstallationen – fachgerecht und nach Norm. Unsere Elektriker planen mit Ihnen die optimale Lösung für Ihr Zuhause.',
+        description: 'Neue Steckdosen, Lichtschalter oder komplette Elektroinstallationen – fachgerecht und nach Norm. Erfahrene Elektriker planen mit Ihnen die optimale Lösung für Ihr Zuhause.',
       },
       {
         icon: Lightbulb,
@@ -119,7 +119,7 @@ export const categoryContent: Record<string, CategoryContent> = {
       {
         icon: Zap,
         title: 'Reparatur & Wartung',
-        description: 'Wenn\'s nicht mehr funktioniert: Schnelle Fehlersuche und zuverlässige Reparaturen. Von der Sicherung bis zum Verteilerkasten – unsere Elektriker lösen Ihr Problem.',
+        description: 'Wenn\'s nicht mehr funktioniert: Schnelle Fehlersuche und zuverlässige Reparaturen. Von der Sicherung bis zum Verteilerkasten – geprüfte Elektriker lösen Ihr Problem.',
       },
     ],
     faq: [
@@ -158,7 +158,7 @@ export const categoryContent: Record<string, CategoryContent> = {
       {
         icon: Palette,
         title: 'Spezialarbeiten',
-        description: 'Spachteln, Tapezieren oder Effektlackierungen – für individuelle Gestaltungswünsche. Unsere Maler setzen auch ausgefallene Ideen professionell um.',
+        description: 'Spachteln, Tapezieren oder Effektlackierungen – für individuelle Gestaltungswünsche. Erfahrene Maler setzen auch ausgefallene Ideen professionell um.',
       },
     ],
     faq: [
@@ -192,7 +192,7 @@ export const categoryContent: Record<string, CategoryContent> = {
       {
         icon: Box,
         title: 'Möbeltransport',
-        description: 'Einzelne Möbelstücke sicher und schnell transportiert – auch für schwere oder sperrige Teile. Unsere Partner haben das richtige Equipment und die Erfahrung.',
+        description: 'Einzelne Möbelstücke sicher und schnell transportiert – auch für schwere oder sperrige Teile. Erfahrene Transportunternehmen haben das richtige Equipment und die Erfahrung.',
       },
       {
         icon: Package,
@@ -226,7 +226,7 @@ export const categoryContent: Record<string, CategoryContent> = {
       {
         icon: ChefHat,
         title: 'Küchenplanung & -montage',
-        description: 'Professionelle Planung und fachgerechte Montage Ihrer neuen Küche. Von der ersten Skizze bis zur Installation aller Geräte – unsere Küchenbauer begleiten Sie durch den gesamten Prozess.',
+        description: 'Professionelle Planung und fachgerechte Montage Ihrer neuen Küche. Von der ersten Skizze bis zur Installation aller Geräte – erfahrene Küchenbauer begleiten Sie durch den gesamten Prozess.',
       },
       {
         icon: Box,

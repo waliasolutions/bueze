@@ -48,19 +48,19 @@ const MajorCategoryLanding = () => {
         return {
           title: 'Elektriker finden in der Schweiz | Büeze.ch',
           description: 'Ob Hausinstallation, Ladestation oder Smart Home – finden Sie den richtigen Elektriker für Ihr Projekt und vergleichen Sie kostenlos Offerten.',
-          intro: 'Für sichere Elektroinstallationen braucht es Fachleute. Unser Elektrik Service verbindet Sie mit geprüften Elektrikern in der Schweiz – für Neubauten, Renovationen oder Notfälle. Alle Arbeiten erfolgen normgerecht und mit garantierter Sicherheit.'
+          intro: 'Für sichere Elektroinstallationen braucht es Fachleute. Auf Büeze.ch finden Sie geprüfte Elektriker in der Schweiz – für Neubauten, Renovationen oder Notfälle. Alle Arbeiten erfolgen normgerecht und mit garantierter Sicherheit.'
         };
       case 'heizung-klima':
         return {
           title: 'Heizung & Klima Installateure finden | Büeze.ch',
           description: 'Sie brauchen eine neue Heizung oder Klimaanlage? Finden Sie Installateure aus Ihrer Region und vergleichen Sie kostenlos mehrere Offerten.',
-          intro: 'Eine zuverlässige Heizung ist das Herzstück jedes Zuhauses. Finden Sie zertifizierte Fachbetriebe für Heizungsinstallationen und Heizung & Sanitär Service in der Schweiz – kompetent, schnell und fair. Von der Wartung bis zum Komplettersatz.'
+          intro: 'Eine zuverlässige Heizung ist das Herzstück jedes Zuhauses. Finden Sie zertifizierte Fachbetriebe für Heizungsinstallationen in der Schweiz – kompetent, schnell und fair. Von der Wartung bis zum Komplettersatz.'
         };
       case 'sanitaer':
         return {
           title: 'Sanitär-Fachbetriebe in der Schweiz | Büeze.ch',
           description: 'Vom neuen Badezimmer bis zur Rohrreparatur – finden Sie Sanitärinstallateure in Ihrer Nähe und holen Sie kostenlos Offerten ein.',
-          intro: 'Vom tropfenden Wasserhahn bis zur kompletten Badsanierung: Unser Sanitär Service verbindet Sie mit erfahrenen Profis für Sanitärinstallationen in der ganzen Schweiz. Auch im Notfall sind wir für Sie da. Vergleichen Sie kostenlos mehrere Offerten.'
+          intro: 'Vom tropfenden Wasserhahn bis zur kompletten Badsanierung: Finden Sie erfahrene Sanitärinstallateure in der ganzen Schweiz. Auch für Notfälle stehen Ihnen geprüfte Fachbetriebe zur Verfügung. Vergleichen Sie kostenlos mehrere Offerten.'
         };
       case 'bodenbelaege':
         return {
