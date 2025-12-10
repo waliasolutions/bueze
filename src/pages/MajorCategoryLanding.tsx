@@ -42,7 +42,7 @@ const MajorCategoryLanding = () => {
         return {
           title: 'Bau & Renovation | Handwerker Schweiz | Büeze.ch',
           description: 'Bauarbeiten und Renovierungen in der Schweiz. Professionelle Handwerker für Umbau, Sanierung und Neubauten. Jetzt Offerten vergleichen.',
-          intro: 'Sie planen eine Hausrenovation in der Schweiz? Finden Sie erfahrene Bauarbeiter und Bauhandwerker in Ihrer Region.'
+          intro: 'Finden Sie erfahrene Bauarbeiter in der Schweiz und qualifizierte Handwerker in Ihrer Region. Bei grösseren Renovierungsprojekten arbeiten oft fünf bis zehn verschiedene Handwerker zusammen.'
         };
       case 'elektroinstallationen':
         return {
