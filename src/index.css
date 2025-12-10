@@ -61,7 +61,7 @@ All colors MUST be HSL.
     --destructive-foreground: 0 0% 98%;
     
     --border: var(--line-200);
-    --input: var(--surface);
+    --input: 215 25% 90%;  /* Light gray for visible switch/input backgrounds */
     --ring: var(--brand-500);
     
     --radius: 1rem;

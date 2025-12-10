@@ -783,18 +783,18 @@ const HandwerkerApprovals = () => {
                                 </span>
                               )}
                             </CardTitle>
-                            <CardDescription className="mt-2 space-y-1">
-                              <div className="flex items-center gap-2">
+                            <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-2">
                                 <Mail className="h-4 w-4" />
                                 {handwerker.email}
-                              </div>
+                              </span>
                               {handwerker.phone_number && (
-                                <div className="flex items-center gap-2">
+                                <span className="flex items-center gap-2">
                                   <Phone className="h-4 w-4" />
                                   {handwerker.phone_number}
-                                </div>
+                                </span>
                               )}
-                            </CardDescription>
+                            </div>
                             
                             {/* Completeness Score */}
                             <div className="mt-4 space-y-2">

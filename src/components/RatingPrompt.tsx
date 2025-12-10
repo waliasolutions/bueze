@@ -7,6 +7,7 @@ import { RatingForm } from './RatingForm';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -163,6 +164,9 @@ export const RatingPrompt: React.FC<RatingPromptProps> = ({ userId }) => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Bewertung abgeben</DialogTitle>
+            <DialogDescription>
+              Teilen Sie Ihre Erfahrung mit diesem Handwerker
+            </DialogDescription>
           </DialogHeader>
           {selectedLead && (
             <RatingForm
