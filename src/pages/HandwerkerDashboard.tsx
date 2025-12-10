@@ -12,7 +12,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { AdminViewSwitcher } from "@/components/AdminViewSwitcher";
 import { Search, MapPin, Euro, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
@@ -647,7 +646,6 @@ const HandwerkerDashboard = () => {
                   </div>}
               </div>
               <div className="flex gap-3 items-center">
-                {isAdmin && <AdminViewSwitcher currentView="handwerker" />}
                 <Button onClick={() => navigate('/conversations')} variant="outline">
                   <Users className="h-4 w-4 mr-2" />
                   Nachrichten

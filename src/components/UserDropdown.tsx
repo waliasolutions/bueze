@@ -15,11 +15,7 @@ import {
   LogOut, 
   LayoutDashboard, 
   MessageSquare, 
-  Plus, 
-  Search,
-  FileText,
-  Heart,
-  ShieldCheck
+  Plus
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -193,11 +189,7 @@ export const UserDropdown = () => {
           <>
             <DropdownMenuItem onClick={() => navigate('/handwerker-dashboard')} className="cursor-pointer">
               <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Handwerker Dashboard</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/search')} className="cursor-pointer">
-              <Search className="mr-2 h-4 w-4" />
-              <span>Leads durchsuchen</span>
+              <span>Dashboard</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/conversations')} className="cursor-pointer">
               <MessageSquare className="mr-2 h-4 w-4" />
@@ -209,10 +201,6 @@ export const UserDropdown = () => {
             <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               <span>Dashboard</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
-              <FileText className="mr-2 h-4 w-4" />
-              <span>Meine Aufträge</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/submit-lead')} className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
@@ -226,20 +214,6 @@ export const UserDropdown = () => {
         )}
         
         <DropdownMenuSeparator className="bg-line-200" />
-
-        {isAdmin && (
-          <>
-            <DropdownMenuItem onClick={() => navigate('/admin/approvals')} className="cursor-pointer">
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              <span>Handwerker-Freigaben</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/admin/handwerker-verification')} className="cursor-pointer">
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              <span>Handwerker-Verifizierung</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-line-200" />
-          </>
-        )}
         
         <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
           <Settings className="mr-2 h-4 w-4" />

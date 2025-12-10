@@ -1,26 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus, Shield, ChevronDown } from 'lucide-react';
+import { Menu, X, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
 import { ClientNotifications } from './ClientNotifications';
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from '@/components/ui/navigation-menu';
+import { AdminViewSwitcher } from './AdminViewSwitcher';
 import logo from '@/assets/bueze-logo.png';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,7 +31,6 @@ export const Header = () => {
   }, [isMenuOpen]);
 
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-  const isSuperAdmin = userRole === 'super_admin';
 
   useEffect(() => {
     const checkUser = async () => {
@@ -154,55 +145,7 @@ export const Header = () => {
                 {isAdmin && (
                   <>
                     <AdminNotifications />
-                    <NavigationMenu>
-                      <NavigationMenuList>
-                        <NavigationMenuItem>
-                          <NavigationMenuTrigger className="gap-2 text-brand-600 hover:text-brand-700 bg-transparent hover:bg-transparent data-[state=open]:bg-transparent">
-                            <Shield className="h-4 w-4" />
-                            Admin
-                          </NavigationMenuTrigger>
-                          <NavigationMenuContent>
-                            <ul className="grid w-[240px] gap-1 p-2 bg-white">
-                              <li>
-                                <NavigationMenuLink asChild>
-                                  <button
-                                    onClick={() => navigate('/admin/dashboard')}
-                                    className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                  >
-                                    <div className="text-sm font-medium leading-none">Dashboard</div>
-                                    <p className="text-xs text-muted-foreground mt-1">Admin-Übersicht</p>
-                                  </button>
-                                </NavigationMenuLink>
-                              </li>
-                              <li>
-                                <NavigationMenuLink asChild>
-                                  <button
-                                    onClick={() => navigate('/admin/approvals')}
-                                    className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                  >
-                                    <div className="text-sm font-medium leading-none">Handwerker</div>
-                                    <p className="text-xs text-muted-foreground mt-1">Freigaben verwalten</p>
-                                  </button>
-                                </NavigationMenuLink>
-                              </li>
-                              {isSuperAdmin && (
-                                <li>
-                                  <NavigationMenuLink asChild>
-                                    <button
-                                      onClick={() => navigate('/admin/users')}
-                                      className="block w-full text-left select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                                    >
-                                      <div className="text-sm font-medium leading-none">Benutzer</div>
-                                      <p className="text-xs text-muted-foreground mt-1">Rollen verwalten</p>
-                                    </button>
-                                  </NavigationMenuLink>
-                                </li>
-                              )}
-                            </ul>
-                          </NavigationMenuContent>
-                        </NavigationMenuItem>
-                      </NavigationMenuList>
-                    </NavigationMenu>
+                    <AdminViewSwitcher />
                   </>
                 )}
                 <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
@@ -296,57 +239,8 @@ export const Header = () => {
               {user ? (
                 <div className="space-y-3">
                   {isAdmin && (
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
-                        className="w-full flex items-center justify-between py-3 px-4 text-brand-600 hover:text-brand-700 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
-                      >
-                        <span className="flex items-center gap-2">
-                          <Shield className="h-4 w-4" />
-                          Admin
-                        </span>
-                        <ChevronDown 
-                          className={`h-4 w-4 transition-transform ${
-                            isAdminMenuOpen ? 'rotate-180' : ''
-                          }`}
-                        />
-                      </button>
-                      {isAdminMenuOpen && (
-                        <div className="pl-4 space-y-1 border-l-2 border-brand-200">
-                          <Button
-                            variant="ghost"
-                            className="justify-start w-full hover:bg-pastel-pink/20"
-                            onClick={() => {
-                              navigate('/admin/dashboard');
-                              setIsMenuOpen(false);
-                            }}
-                          >
-                            Dashboard
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="justify-start w-full hover:bg-pastel-pink/20"
-                            onClick={() => {
-                              navigate('/admin/approvals');
-                              setIsMenuOpen(false);
-                            }}
-                          >
-                            Handwerker
-                          </Button>
-                          {isSuperAdmin && (
-                            <Button
-                              variant="ghost"
-                              className="justify-start w-full hover:bg-pastel-pink/20"
-                              onClick={() => {
-                                navigate('/admin/users');
-                                setIsMenuOpen(false);
-                              }}
-                            >
-                              Benutzer
-                            </Button>
-                          )}
-                        </div>
-                      )}
+                    <div className="px-4 py-2">
+                      <AdminViewSwitcher />
                     </div>
                   )}
                   <UserDropdown />
