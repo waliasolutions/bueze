@@ -6,7 +6,7 @@ const steps = [
   {
     icon: Search,
     title: 'Projekt beschreiben',
-    description: 'Teilen Sie uns mit, wobei Sie Hilfe brauchen.',
+    description: 'Beschreiben Sie, wobei Sie Hilfe brauchen.',
     highlight: 'Kostenlos & unverbindlich.',
     step: '01'
   },
