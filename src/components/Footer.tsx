@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Facebook, Instagram } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram, Users } from 'lucide-react';
 import logo from '@/assets/bueze-logo.png';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
@@ -99,6 +99,17 @@ export const Footer = () => {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Handwerker-Verzeichnis CTA */}
+        <div className="mt-10 text-center">
+          <Link
+            to="/handwerker-verzeichnis"
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 border-2 border-brand-400 text-brand-400 rounded-lg hover:bg-brand-500 hover:text-surface hover:border-brand-500 transition-colors font-medium"
+          >
+            <Users className="h-5 w-5" />
+            Handwerker-Verzeichnis durchsuchen
+          </Link>
         </div>
 
         {/* Bottom Footer */}
