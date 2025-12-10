@@ -1308,43 +1308,64 @@ export type Database = {
       }
       reviews: {
         Row: {
+          cleanliness_rating: number | null
           comment: string | null
+          communication_rating: number | null
           created_at: string
           handwerker_response: string | null
           id: string
           is_public: boolean | null
+          is_verified: boolean | null
           lead_id: string
+          punctuality_rating: number | null
+          quality_rating: number | null
           rating: number
           response_at: string | null
           reviewed_id: string
           reviewer_id: string
           title: string | null
+          value_rating: number | null
+          would_recommend: boolean | null
         }
         Insert: {
+          cleanliness_rating?: number | null
           comment?: string | null
+          communication_rating?: number | null
           created_at?: string
           handwerker_response?: string | null
           id?: string
           is_public?: boolean | null
+          is_verified?: boolean | null
           lead_id: string
+          punctuality_rating?: number | null
+          quality_rating?: number | null
           rating: number
           response_at?: string | null
           reviewed_id: string
           reviewer_id: string
           title?: string | null
+          value_rating?: number | null
+          would_recommend?: boolean | null
         }
         Update: {
+          cleanliness_rating?: number | null
           comment?: string | null
+          communication_rating?: number | null
           created_at?: string
           handwerker_response?: string | null
           id?: string
           is_public?: boolean | null
+          is_verified?: boolean | null
           lead_id?: string
+          punctuality_rating?: number | null
+          quality_rating?: number | null
           rating?: number
           response_at?: string | null
           reviewed_id?: string
           reviewer_id?: string
           title?: string | null
+          value_rating?: number | null
+          would_recommend?: boolean | null
         }
         Relationships: [
           {
