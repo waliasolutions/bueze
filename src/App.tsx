@@ -39,6 +39,7 @@ const ProposalReview = lazy(() => import("./pages/ProposalReview"));
 const ProposalsManagement = lazy(() => import("./pages/ProposalsManagement"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
+const HandwerkerVerzeichnis = lazy(() => import("./pages/HandwerkerVerzeichnis"));
 
 // Admin routes - rarely accessed, loaded separately
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -149,6 +150,7 @@ const App = () => {
                 <Route path="/handwerker-dashboard" element={<HandwerkerDashboard />} />
                 <Route path="/handwerker-profile/edit" element={<HandwerkerProfileEdit />} />
                 <Route path="/handwerker" element={<HandwerkerLanding />} />
+                <Route path="/handwerker-verzeichnis" element={<HandwerkerVerzeichnis />} />
                 
                 {/* Lead management routes */}
                 <Route path="/submit-lead" element={<SubmitLead />} />
