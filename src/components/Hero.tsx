@@ -39,7 +39,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
               {content?.fields?.title || 'Handwerker finden. Projekte realisieren.'}
             </h1>
             <p className={`text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
-              {content?.fields?.subtitle || 'Handwerkermarktplatz in der Schweiz | Lokales Schweizer Handwerkerportal'}
+              {content?.fields?.subtitle || 'Ihr lokaler Handwerker-Marktplatz für die ganze Schweiz'}
             </p>
           </div>
 
