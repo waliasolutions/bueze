@@ -13,6 +13,7 @@ import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import { supabase } from '@/integrations/supabase/client';
 import { Search, MapPin, Filter, CheckCircle, Building2, X } from 'lucide-react';
 import { categoryLabels } from '@/config/categoryLabels';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { majorCategories } from '@/config/majorCategories';
 
@@ -119,7 +120,16 @@ export default function HandwerkerVerzeichnis() {
   };
 
   const getCategoryLabel = (category: string) => {
-    return categoryLabels[category as keyof typeof categoryLabels] || category;
+    // First check major categories
+    if (categoryLabels[category as keyof typeof categoryLabels]) {
+      return categoryLabels[category as keyof typeof categoryLabels];
+    }
+    // Then check subcategories for human-readable label
+    if (subcategoryLabels[category]) {
+      return subcategoryLabels[category].label;
+    }
+    // Fallback: return raw value
+    return category;
   };
 
   const openProfile = (handwerkerId: string | null) => {
