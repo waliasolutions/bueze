@@ -13,8 +13,6 @@ export interface CategoryRatingsValues {
 interface CategoryRatingsProps {
   values: CategoryRatingsValues;
   onChange: (values: CategoryRatingsValues) => void;
-  hoveredRatings: CategoryRatingsValues;
-  onHover: (category: keyof CategoryRatingsValues, rating: number) => void;
 }
 
 const CATEGORIES: { key: keyof CategoryRatingsValues; label: string; description: string }[] = [
@@ -28,8 +26,6 @@ const CATEGORIES: { key: keyof CategoryRatingsValues; label: string; description
 export const CategoryRatings: React.FC<CategoryRatingsProps> = ({
   values,
   onChange,
-  hoveredRatings,
-  onHover,
 }) => {
   const handleRatingChange = (category: keyof CategoryRatingsValues, rating: number) => {
     onChange({ ...values, [category]: rating });
@@ -51,8 +47,6 @@ export const CategoryRatings: React.FC<CategoryRatingsProps> = ({
                 size="sm"
                 interactive
                 onRatingChange={(rating) => handleRatingChange(key, rating)}
-                hoveredRating={hoveredRatings[key]}
-                onHover={(rating) => onHover(key, rating)}
               />
             </div>
           </div>

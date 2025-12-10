@@ -9,20 +9,18 @@ interface StarRatingProps {
   count?: number;
   interactive?: boolean;
   onRatingChange?: (rating: number) => void;
-  hoveredRating?: number;
-  onHover?: (rating: number) => void;
   className?: string;
 }
 
 const sizeClasses = {
   sm: 'h-4 w-4',
   md: 'h-5 w-5',
-  lg: 'h-8 w-8',
+  lg: 'h-7 w-7',
 };
 
 /**
  * Reusable StarRating component - Single Source of Truth for star rendering
- * Use this instead of duplicating renderStars() functions across components
+ * Uses CSS-only hover effects to prevent flickering (no React state on hover)
  */
 export const StarRating: React.FC<StarRatingProps> = ({
   rating,
@@ -31,22 +29,16 @@ export const StarRating: React.FC<StarRatingProps> = ({
   count,
   interactive = false,
   onRatingChange,
-  hoveredRating,
-  onHover,
   className,
 }) => {
-  const displayRating = hoveredRating ?? rating;
   const sizeClass = sizeClasses[size];
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      <div 
-        className="flex gap-0.5"
-        onMouseLeave={interactive ? () => onHover?.(0) : undefined}
-      >
+      <div className={cn('flex gap-0.5', interactive && 'star-rating-interactive')}>
         {[1, 2, 3, 4, 5].map((star) => {
-          const isFilled = star <= displayRating;
-          const isPartiallyFilled = !isFilled && star <= Math.ceil(displayRating) && displayRating % 1 !== 0;
+          const isFilled = star <= rating;
+          const isPartiallyFilled = !isFilled && star <= Math.ceil(rating) && rating % 1 !== 0;
 
           if (interactive) {
             return (
@@ -54,16 +46,16 @@ export const StarRating: React.FC<StarRatingProps> = ({
                 key={star}
                 type="button"
                 onClick={() => onRatingChange?.(star)}
-                onMouseEnter={() => onHover?.(star)}
-                className="p-0.5 focus:outline-none focus:ring-2 focus:ring-primary rounded transition-transform hover:scale-110"
+                className="star-button p-0.5 focus:outline-none focus:ring-2 focus:ring-primary rounded"
+                data-star={star}
               >
                 <Star
                   className={cn(
                     sizeClass,
-                    'transition-colors',
+                    'star-icon transition-transform',
                     isFilled
                       ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-muted-foreground hover:text-yellow-300'
+                      : 'text-muted-foreground'
                   )}
                 />
               </button>

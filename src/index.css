@@ -2,6 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CSS-only star rating hover - prevents React state flickering */
+.star-rating-interactive .star-button {
+  cursor: pointer;
+}
+
+.star-rating-interactive .star-button:hover .star-icon,
+.star-rating-interactive .star-button:hover ~ .star-button .star-icon {
+  transform: scale(1.1);
+}
+
+/* Hover fills all stars up to and including hovered star */
+.star-rating-interactive:hover .star-button .star-icon {
+  fill: hsl(var(--muted-foreground));
+  color: hsl(var(--muted-foreground));
+}
+
+.star-rating-interactive .star-button:hover .star-icon,
+.star-rating-interactive .star-button:has(~ .star-button:hover) .star-icon,
+.star-rating-interactive:has(.star-button:hover) .star-button:hover .star-icon {
+  fill: #facc15;
+  color: #facc15;
+}
+
+/* Fill stars before hovered star using CSS :has() */
+.star-rating-interactive:has(.star-button[data-star="2"]:hover) .star-button[data-star="1"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="3"]:hover) .star-button[data-star="1"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="3"]:hover) .star-button[data-star="2"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="4"]:hover) .star-button[data-star="1"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="4"]:hover) .star-button[data-star="2"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="4"]:hover) .star-button[data-star="3"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="5"]:hover) .star-button[data-star="1"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="5"]:hover) .star-button[data-star="2"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="5"]:hover) .star-button[data-star="3"] .star-icon,
+.star-rating-interactive:has(.star-button[data-star="5"]:hover) .star-button[data-star="4"] .star-icon {
+  fill: #facc15;
+  color: #facc15;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
