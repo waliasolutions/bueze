@@ -42,7 +42,8 @@ serve(async (req) => {
         handwerker_profiles!lead_proposals_handwerker_id_fkey(
           profiles!handwerker_profiles_user_id_fkey(full_name),
           business_city,
-          hourly_rate_min
+          hourly_rate_min,
+          company_name
         )
       `)
       .eq('id', proposalId)
@@ -55,6 +56,7 @@ serve(async (req) => {
     // Get handwerker first name only for privacy
     const fullName = proposal.handwerker_profiles?.profiles?.full_name || 'Ein Handwerker';
     const firstName = fullName.split(' ')[0];
+    const handwerkerName = proposal.handwerker_profiles?.company_name || firstName;
 
     // Generate magic token for client
     const token = crypto.randomUUID().replace(/-/g, '');
@@ -107,6 +109,25 @@ serve(async (req) => {
 
     if (!emailResponse.ok) {
       throw new Error(`Email sending failed: ${JSON.stringify(emailData)}`);
+    }
+
+    // Insert in-app notification for client
+    const clientNotificationResult = await supabase
+      .from('client_notifications')
+      .insert({
+        user_id: proposal.leads?.owner_id,
+        type: 'new_proposal',
+        title: 'Neue Offerte erhalten',
+        message: `${handwerkerName} hat eine Offerte für "${proposal.leads?.title}" eingereicht`,
+        related_id: proposalId,
+        metadata: { lead_id: proposal.leads?.id }
+      });
+
+    if (clientNotificationResult.error) {
+      console.error('Failed to create client notification:', clientNotificationResult.error);
+      // Don't throw - email was sent successfully, notification is secondary
+    } else {
+      console.log('Client in-app notification created successfully');
     }
 
     console.log('Proposal notification sent successfully:', { 
