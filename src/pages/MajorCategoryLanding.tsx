@@ -33,7 +33,7 @@ const MajorCategoryLanding = () => {
     .filter(Boolean);
 
   // Fetch SEO data from database
-  const { content, loading } = usePageContent(`major-${majorCategorySlug}`);
+  const { content } = usePageContent(`major-${majorCategorySlug}`);
   
   // Fallback SEO data if database fetch fails
   const getFallbackSEOData = () => {
