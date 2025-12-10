@@ -40,7 +40,10 @@ export const StarRating: React.FC<StarRatingProps> = ({
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      <div className="flex gap-0.5">
+      <div 
+        className="flex gap-0.5"
+        onMouseLeave={interactive ? () => onHover?.(0) : undefined}
+      >
         {[1, 2, 3, 4, 5].map((star) => {
           const isFilled = star <= displayRating;
           const isPartiallyFilled = !isFilled && star <= Math.ceil(displayRating) && displayRating % 1 !== 0;
@@ -52,7 +55,6 @@ export const StarRating: React.FC<StarRatingProps> = ({
                 type="button"
                 onClick={() => onRatingChange?.(star)}
                 onMouseEnter={() => onHover?.(star)}
-                onMouseLeave={() => onHover?.(0)}
                 className="p-0.5 focus:outline-none focus:ring-2 focus:ring-primary rounded transition-transform hover:scale-110"
               >
                 <Star
