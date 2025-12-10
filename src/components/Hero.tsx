@@ -102,7 +102,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
             {(content?.fields?.trustSignals || [
               'Geprüfte Fachbetriebe schweizweit',
               'Kostenlos & unverbindlich für Auftraggeber',
-              'Geprüfte und zertifizierte Fachbetriebe'
+              'Schweizer Datenschutzstandards'
             ]).map((signal: string, index: number) => (
               <div key={index} className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-brand-500 rounded-full"></div>
