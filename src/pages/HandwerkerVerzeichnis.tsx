@@ -104,9 +104,24 @@ export default function HandwerkerVerzeichnis() {
         }
       }
 
-      // Category filter
+      // Category filter - match if any of handwerker's categories belong to the selected major category
       if (selectedCategory !== 'all') {
-        if (!h.categories?.includes(selectedCategory)) return false;
+        const hasMatchingCategory = h.categories?.some(cat => {
+          // Direct match with major category
+          if (cat === selectedCategory) return true;
+          
+          // Check if subcategory belongs to selected major category via subcategoryLabels
+          const subcatInfo = subcategoryLabels[cat];
+          if (subcatInfo && subcatInfo.majorCategoryId === selectedCategory) return true;
+          
+          // Handle legacy categories - check if it's listed in the major category's subcategories
+          const majorCat = Object.values(majorCategories).find(m => m.id === selectedCategory);
+          if (majorCat?.subcategories.includes(cat)) return true;
+          
+          return false;
+        });
+        
+        if (!hasMatchingCategory) return false;
       }
 
       return true;
