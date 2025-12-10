@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter, LayoutGrid } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
 import { HandwerkerRating } from './HandwerkerRating';
@@ -13,6 +13,7 @@ import { ProposalStatusBadge } from './ProposalStatusBadge';
 import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBatch } from '@/lib/proposalHelpers';
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { ProposalComparisonDialog } from './ProposalComparisonDialog';
 import type { ProposalWithHandwerkerInfo } from '@/types/entities';
 
 // Extended type for ReceivedProposals with specific joined data
@@ -20,10 +21,19 @@ interface ReceivedProposal extends ProposalWithHandwerkerInfo {
   handwerker_id: string;
   handwerker_profiles: {
     business_city: string | null;
+    company_name?: string | null;
+    logo_url?: string | null;
+    verification_status?: string | null;
+    liability_insurance_provider?: string | null;
+    bio?: string | null;
     profiles: {
       full_name: string;
     };
   } | null;
+  rating_stats?: {
+    average_rating: number | null;
+    review_count: number | null;
+  };
 }
 
 interface ReceivedProposalsProps {
@@ -35,6 +45,8 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
   const [filteredProposals, setFilteredProposals] = useState<ReceivedProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [comparisonIds, setComparisonIds] = useState<Set<string>>(new Set());
+  const [comparisonOpen, setComparisonOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'price_low' | 'price_high'>('date');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const { toast } = useToast();
@@ -79,10 +91,10 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
       // Batch fetch all unique handwerker IDs
       const handwerkerIds = [...new Set((data || []).map(p => p.handwerker_id))];
       
-      // Fetch handwerker profiles in batch
+      // Fetch handwerker profiles in batch with additional fields
       const { data: hwProfiles } = await supabase
         .from('handwerker_profiles')
-        .select('user_id, business_city')
+        .select('user_id, business_city, company_name, logo_url, verification_status, liability_insurance_provider, bio')
         .in('user_id', handwerkerIds);
 
       // Fetch user profiles in batch
@@ -91,21 +103,38 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
         .select('id, full_name')
         .in('id', handwerkerIds);
 
+      // Fetch rating stats in batch
+      const { data: ratingStats } = await supabase
+        .from('handwerker_rating_stats')
+        .select('user_id, average_rating, review_count')
+        .in('user_id', handwerkerIds);
+
       // Create lookup maps for O(1) access
       const hwProfileMap = new Map(hwProfiles?.map(p => [p.user_id, p]) || []);
       const userProfileMap = new Map(userProfiles?.map(p => [p.id, p]) || []);
+      const ratingStatsMap = new Map(ratingStats?.map(r => [r.user_id, r]) || []);
 
       // Map profiles to proposals
       const proposalsWithProfiles = (data || []).map(proposal => {
         const hwProfile = hwProfileMap.get(proposal.handwerker_id);
         const userProfile = userProfileMap.get(proposal.handwerker_id);
+        const stats = ratingStatsMap.get(proposal.handwerker_id);
 
         return {
           ...proposal,
           handwerker_profiles: hwProfile && userProfile ? {
             business_city: hwProfile.business_city,
+            company_name: hwProfile.company_name,
+            logo_url: hwProfile.logo_url,
+            verification_status: hwProfile.verification_status,
+            liability_insurance_provider: hwProfile.liability_insurance_provider,
+            bio: hwProfile.bio,
             profiles: { full_name: userProfile.full_name }
           } : null,
+          rating_stats: stats ? {
+            average_rating: stats.average_rating,
+            review_count: stats.review_count
+          } : undefined,
         };
       });
 
@@ -158,6 +187,22 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
     setSelectedIds(newSelected);
   };
 
+  const handleComparisonToggle = (proposalId: string) => {
+    const newComparison = new Set(comparisonIds);
+    if (newComparison.has(proposalId)) {
+      newComparison.delete(proposalId);
+    } else if (newComparison.size < 3) {
+      newComparison.add(proposalId);
+    } else {
+      toast({
+        title: 'Maximum erreicht',
+        description: 'Sie können maximal 3 Offerten vergleichen',
+      });
+      return;
+    }
+    setComparisonIds(newComparison);
+  };
+
   const handleBatchAction = async (action: 'accept' | 'reject') => {
     if (selectedIds.size === 0) return;
 
@@ -185,7 +230,11 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
       variant: result.success ? 'default' : 'destructive',
     });
 
-    if (result.success) fetchProposals();
+    if (result.success) {
+      setComparisonOpen(false);
+      setComparisonIds(new Set());
+      fetchProposals();
+    }
   };
 
   const handleReject = async (proposalId: string) => {
@@ -197,7 +246,32 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
       variant: result.success ? 'default' : 'destructive',
     });
 
-    if (result.success) fetchProposals();
+    if (result.success) {
+      fetchProposals();
+    }
+  };
+
+  const getComparisonProposals = () => {
+    return filteredProposals
+      .filter(p => comparisonIds.has(p.id))
+      .map(p => ({
+        id: p.id,
+        handwerker_id: p.handwerker_id,
+        price_min: p.price_min,
+        price_max: p.price_max,
+        estimated_duration_days: p.estimated_duration_days,
+        message: p.message,
+        status: p.status,
+        handwerkerName: p.handwerker_profiles?.profiles?.full_name || 'Handwerker',
+        handwerkerCity: p.handwerker_profiles?.business_city || null,
+        companyName: p.handwerker_profiles?.company_name || null,
+        logoUrl: p.handwerker_profiles?.logo_url || null,
+        rating: p.rating_stats?.average_rating || undefined,
+        reviewCount: p.rating_stats?.review_count || undefined,
+        isVerified: p.handwerker_profiles?.verification_status === 'approved',
+        hasInsurance: !!p.handwerker_profiles?.liability_insurance_provider,
+        bio: p.handwerker_profiles?.bio || undefined,
+      }));
   };
 
   if (loading) {
@@ -265,9 +339,10 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
         <div className="space-y-4">
           {filteredProposals.map((proposal) => {
             const handwerkerName = proposal.handwerker_profiles?.profiles?.full_name?.split(' ')[0] || 'Handwerker';
+            const isInComparison = comparisonIds.has(proposal.id);
 
             return (
-              <Card key={proposal.id} className="hover:shadow-md transition-shadow">
+              <Card key={proposal.id} className={`hover:shadow-md transition-shadow ${isInComparison ? 'ring-2 ring-primary' : ''}`}>
                 <CardHeader>
                   <div className="flex items-start gap-4">
                     {proposal.status === 'pending' && (
@@ -294,6 +369,17 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                         <HandwerkerRating handwerkerId={proposal.handwerker_id} compact />
                       </div>
                     </div>
+                    {proposal.status === 'pending' && (
+                      <Button
+                        variant={isInComparison ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handleComparisonToggle(proposal.id)}
+                        className="shrink-0"
+                      >
+                        <LayoutGrid className="h-4 w-4 mr-1" />
+                        {isInComparison ? 'Ausgewählt' : 'Vergleichen'}
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
 
@@ -346,6 +432,29 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
           })}
         </div>
       )}
+
+      {/* Floating comparison bar */}
+      {comparisonIds.size >= 2 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 bg-background shadow-lg rounded-full px-6 py-3 border flex items-center gap-4 z-50">
+          <span className="text-sm font-medium">{comparisonIds.size} Offerten ausgewählt</span>
+          <Button onClick={() => setComparisonOpen(true)} size="sm">
+            <LayoutGrid className="h-4 w-4 mr-2" />
+            Vergleichen
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setComparisonIds(new Set())}>
+            Abbrechen
+          </Button>
+        </div>
+      )}
+
+      {/* Comparison Dialog */}
+      <ProposalComparisonDialog
+        open={comparisonOpen}
+        onOpenChange={setComparisonOpen}
+        proposals={getComparisonProposals()}
+        onAccept={handleAccept}
+        onReject={handleReject}
+      />
     </div>
   );
 };
