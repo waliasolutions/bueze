@@ -13,6 +13,7 @@ interface HeroProps {
     fields?: {
       title?: string;
       subtitle?: string;
+      subIntro?: string;
       ctaText?: string;
       trustSignals?: string[];
     };
@@ -40,6 +41,9 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
             </h1>
             <p className={`text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
               {content?.fields?.subtitle || 'Ihr lokaler Handwerker-Marktplatz für die ganze Schweiz'}
+            </p>
+            <p className={`text-base md:text-lg text-ink-600 leading-relaxed max-w-2xl mx-auto mt-4 transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
+              {content?.fields?.subIntro || 'Unser Portal bringt Sie mit erfahrenen Handwerkern aus der ganzen Schweiz zusammen – für Reparaturen, Renovierungen und Projekte jeder Grösse.'}
             </p>
           </div>
 
