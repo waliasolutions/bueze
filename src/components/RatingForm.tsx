@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Star, Send } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { StarRating, getRatingLabel } from '@/components/ui/star-rating';
+import { invalidateReviewQueries } from '@/lib/queryInvalidation';
 
 interface RatingFormProps {
   leadId: string;
@@ -31,6 +34,7 @@ export const RatingForm: React.FC<RatingFormProps> = ({
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +78,9 @@ export const RatingForm: React.FC<RatingFormProps> = ({
         return;
       }
 
+      // Invalidate review queries to refresh cache
+      await invalidateReviewQueries(queryClient, handwerkerId);
+
       toast({
         title: 'Bewertung abgegeben',
         description: 'Vielen Dank für Ihre Bewertung!',
@@ -107,32 +114,16 @@ export const RatingForm: React.FC<RatingFormProps> = ({
           {/* Star Rating */}
           <div>
             <Label className="mb-2 block">Bewertung *</Label>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  onMouseEnter={() => setHoveredRating(star)}
-                  onMouseLeave={() => setHoveredRating(0)}
-                  className="p-1 focus:outline-none focus:ring-2 focus:ring-primary rounded"
-                >
-                  <Star
-                    className={`h-8 w-8 transition-colors ${
-                      star <= displayRating
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-muted-foreground'
-                    }`}
-                  />
-                </button>
-              ))}
-            </div>
+            <StarRating
+              rating={rating}
+              size="lg"
+              interactive
+              onRatingChange={setRating}
+              hoveredRating={hoveredRating}
+              onHover={setHoveredRating}
+            />
             <p className="text-sm text-muted-foreground mt-1">
-              {displayRating === 1 && 'Sehr schlecht'}
-              {displayRating === 2 && 'Schlecht'}
-              {displayRating === 3 && 'Okay'}
-              {displayRating === 4 && 'Gut'}
-              {displayRating === 5 && 'Ausgezeichnet'}
+              {getRatingLabel(displayRating)}
             </p>
           </div>
 

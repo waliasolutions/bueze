@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,33 +9,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Star, MessageSquare, Send, User, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-
-interface Review {
-  id: string;
-  lead_id: string;
-  reviewer_id: string;
-  rating: number;
-  title: string | null;
-  comment: string | null;
-  created_at: string;
-  handwerker_response: string | null;
-  response_at: string | null;
-  leads?: {
-    title: string;
-  };
-  profiles?: {
-    first_name: string | null;
-    full_name: string | null;
-  };
-}
+import { StarRating } from "@/components/ui/star-rating";
+import { invalidateReviewQueries } from "@/lib/queryInvalidation";
+import type { ReviewForHandwerker } from "@/types/entities";
 
 interface HandwerkerReviewResponseProps {
-  reviews: Review[];
+  reviews: ReviewForHandwerker[];
   onReviewUpdated: () => void;
 }
 
 export const HandwerkerReviewResponse = ({ reviews, onReviewUpdated }: HandwerkerReviewResponseProps) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
   const [responseText, setResponseText] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -61,6 +47,10 @@ export const HandwerkerReviewResponse = ({ reviews, onReviewUpdated }: Handwerke
 
       if (error) throw error;
 
+      // Invalidate review queries to refresh cache
+      const review = reviews.find(r => r.id === reviewId);
+      await invalidateReviewQueries(queryClient, review?.reviewed_id);
+
       toast({
         title: "Antwort gespeichert",
         description: "Ihre Antwort wurde erfolgreich veröffentlicht.",
@@ -79,21 +69,6 @@ export const HandwerkerReviewResponse = ({ reviews, onReviewUpdated }: Handwerke
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`h-4 w-4 ${
-              star <= rating ? "fill-yellow-400 text-yellow-400" : "text-muted"
-            }`}
-          />
-        ))}
-      </div>
-    );
   };
 
   if (reviews.length === 0) {
@@ -118,7 +93,7 @@ export const HandwerkerReviewResponse = ({ reviews, onReviewUpdated }: Handwerke
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+            <StarRating rating={averageRating} size="sm" />
             Ihre Bewertungen
           </CardTitle>
           <CardDescription>
@@ -140,7 +115,7 @@ export const HandwerkerReviewResponse = ({ reviews, onReviewUpdated }: Handwerke
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    {renderStars(review.rating)}
+                    <StarRating rating={review.rating} size="sm" />
                     <Badge variant="outline" className="text-xs">
                       {review.rating}/5
                     </Badge>
