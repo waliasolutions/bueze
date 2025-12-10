@@ -12,8 +12,8 @@ const PricingPage = () => {
   const { content } = usePageContent('pricing');
 
   const seoData = content?.seo || {
-    title: "Preise & Abonnements | Handwerker Portal | Büeze.ch",
-    description: "Transparente Preise für Handwerksbetriebe. Wählen Sie das passende Abo und erhalten Sie Zugang zu Aufträgen in Ihrer Region.",
+    title: "Preise für Handwerker | Büeze.ch",
+    description: "Einfache und faire Preise für Handwerksbetriebe. Starten Sie kostenlos mit 5 Offerten pro Monat oder wählen Sie ein Abo für unbegrenzte Projektanfragen.",
     canonical: "https://bueeze.ch/pricing"
   };
   const plans = [

@@ -37,8 +37,8 @@ const HandwerkerLanding = () => {
   });
 
   const seoData = content?.seo || {
-    title: "Handwerker Aufträge finden | Für Handwerker | Büeze.ch",
-    description: "Handwerkerangebote vergleichen und professionelle Handwerker finden. Schnelle Vermittlung, keine Kosten pro Kontakt. Jetzt registrieren.",
+    title: "Als Handwerker neue Aufträge finden | Büeze.ch",
+    description: "Sie möchten als Handwerker mehr Aufträge gewinnen? Registrieren Sie sich kostenlos auf Büeze.ch und erhalten Sie passende Projektanfragen aus Ihrer Region – ohne Kosten pro Kontakt.",
     canonical: "https://bueeze.ch/handwerker"
   };
 
