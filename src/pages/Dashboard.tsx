@@ -4,7 +4,6 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ReceivedProposals } from '@/components/ReceivedProposals';
 import { RatingPrompt } from '@/components/RatingPrompt';
-import { AdminViewSwitcher } from '@/components/AdminViewSwitcher';
 import { logWithCorrelation, captureException } from '@/lib/errorTracking';
 import { trackError } from '@/lib/errorCategories';
 import { Button } from '@/components/ui/button';
@@ -350,7 +349,6 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex gap-3 items-center">
-              {isAdmin && <AdminViewSwitcher currentView="client" />}
               <Button onClick={() => navigate('/conversations')} variant="outline">
                 <Users className="mr-2 h-4 w-4" />
                 Nachrichten

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { AdminViewSwitcher } from '@/components/AdminViewSwitcher';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -336,7 +335,6 @@ const AdminDashboard = () => {
                 </p>
               </div>
               <div className="flex gap-2 items-center">
-                <AdminViewSwitcher currentView="admin" />
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button 
