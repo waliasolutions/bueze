@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
+import { ClientNotifications } from './ClientNotifications';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -100,6 +101,7 @@ export const Header = () => {
   const navItems = [
     { label: 'So funktioniert es', href: '/#how-it-works' },
     { label: 'Kategorien', href: '/kategorien' },
+    { label: 'Handwerker finden', href: '/handwerker-verzeichnis' },
     { label: 'Für Handwerker', href: '/handwerker' },
     { label: 'Preise', href: '/pricing' },
   ];
@@ -147,6 +149,8 @@ export const Header = () => {
           <div className="hidden lg:flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-3">
+                {/* Client notifications for non-admin users */}
+                {!isAdmin && <ClientNotifications />}
                 {isAdmin && (
                   <>
                     <AdminNotifications />
