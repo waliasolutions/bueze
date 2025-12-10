@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter, LayoutGrid } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter, LayoutGrid, Phone, Mail, Globe, MessageSquare, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
 import { HandwerkerRating } from './HandwerkerRating';
@@ -26,6 +26,14 @@ interface ReceivedProposal extends ProposalWithHandwerkerInfo {
     verification_status?: string | null;
     liability_insurance_provider?: string | null;
     bio?: string | null;
+    phone_number?: string | null;
+    email?: string | null;
+    business_address?: string | null;
+    business_zip?: string | null;
+    business_canton?: string | null;
+    website?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
     profiles: {
       full_name: string;
     };
@@ -91,10 +99,10 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
       // Batch fetch all unique handwerker IDs
       const handwerkerIds = [...new Set((data || []).map(p => p.handwerker_id))];
       
-      // Fetch handwerker profiles in batch with additional fields
+      // Fetch handwerker profiles in batch with additional fields including contact details
       const { data: hwProfiles } = await supabase
         .from('handwerker_profiles')
-        .select('user_id, business_city, company_name, logo_url, verification_status, liability_insurance_provider, bio')
+        .select('user_id, business_city, company_name, logo_url, verification_status, liability_insurance_provider, bio, phone_number, email, business_address, business_zip, business_canton, website, first_name, last_name')
         .in('user_id', handwerkerIds);
 
       // Fetch user profiles in batch
@@ -129,6 +137,14 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
             verification_status: hwProfile.verification_status,
             liability_insurance_provider: hwProfile.liability_insurance_provider,
             bio: hwProfile.bio,
+            phone_number: hwProfile.phone_number,
+            email: hwProfile.email,
+            business_address: hwProfile.business_address,
+            business_zip: hwProfile.business_zip,
+            business_canton: hwProfile.business_canton,
+            website: hwProfile.website,
+            first_name: hwProfile.first_name,
+            last_name: hwProfile.last_name,
             profiles: { full_name: userProfile.full_name }
           } : null,
           rating_stats: stats ? {
@@ -423,6 +439,100 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                       <Button onClick={() => handleReject(proposal.id)} variant="outline" className="flex-1">
                         <XCircle className="h-4 w-4 mr-2" />
                         Ablehnen
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Contact Details for Accepted Proposals */}
+                  {proposal.status === 'accepted' && proposal.handwerker_profiles && (
+                    <div className="border-t pt-4 mt-4 space-y-3 bg-green-50 dark:bg-green-950/20 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
+                      <h4 className="font-semibold text-green-700 dark:text-green-400 flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4" />
+                        Kontaktdaten des Handwerkers
+                      </h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        {/* Full Name */}
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                          <span className="font-medium">
+                            {proposal.handwerker_profiles.profiles?.full_name || 
+                              `${proposal.handwerker_profiles.first_name || ''} ${proposal.handwerker_profiles.last_name || ''}`.trim() || 
+                              'Handwerker'}
+                          </span>
+                          {proposal.handwerker_profiles.company_name && (
+                            <span className="text-[hsl(var(--muted-foreground))]">
+                              ({proposal.handwerker_profiles.company_name})
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Phone */}
+                        {proposal.handwerker_profiles.phone_number && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <a 
+                              href={`tel:${proposal.handwerker_profiles.phone_number}`} 
+                              className="text-[hsl(var(--primary))] hover:underline"
+                            >
+                              {proposal.handwerker_profiles.phone_number}
+                            </a>
+                          </div>
+                        )}
+                        
+                        {/* Email */}
+                        {proposal.handwerker_profiles.email && (
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <a 
+                              href={`mailto:${proposal.handwerker_profiles.email}`} 
+                              className="text-[hsl(var(--primary))] hover:underline"
+                            >
+                              {proposal.handwerker_profiles.email}
+                            </a>
+                          </div>
+                        )}
+                        
+                        {/* Address */}
+                        {(proposal.handwerker_profiles.business_address || proposal.handwerker_profiles.business_city) && (
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <span>
+                              {[
+                                proposal.handwerker_profiles.business_address,
+                                proposal.handwerker_profiles.business_zip,
+                                proposal.handwerker_profiles.business_city
+                              ].filter(Boolean).join(', ')}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Website */}
+                        {proposal.handwerker_profiles.website && (
+                          <div className="flex items-center gap-2">
+                            <Globe className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <a 
+                              href={proposal.handwerker_profiles.website.startsWith('http') 
+                                ? proposal.handwerker_profiles.website 
+                                : `https://${proposal.handwerker_profiles.website}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-[hsl(var(--primary))] hover:underline"
+                            >
+                              Website besuchen
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Message Button */}
+                      <Button 
+                        variant="outline" 
+                        className="mt-2"
+                        onClick={() => window.location.href = `/conversations?lead=${proposal.lead_id}`}
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Nachricht senden
                       </Button>
                     </div>
                   )}

@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Clock, Eye, MapPin, Calendar, LayoutGrid } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Eye, MapPin, Calendar, LayoutGrid, Phone, Mail, Globe, MessageSquare, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ProposalStatusBadge } from '@/components/ProposalStatusBadge';
@@ -44,9 +44,15 @@ interface ProposalManagementItem {
     logo_url: string | null;
     city: string;
     business_city?: string | null;
+    business_address?: string | null;
+    business_zip?: string | null;
+    business_canton?: string | null;
     verification_status?: string | null;
     liability_insurance_provider?: string | null;
     bio?: string | null;
+    phone_number?: string | null;
+    email?: string | null;
+    website?: string | null;
   };
   rating_stats?: {
     average_rating: number | null;
@@ -105,7 +111,7 @@ const ProposalsManagement = () => {
         return;
       }
 
-      // Get all proposals for those leads
+      // Get all proposals for those leads with contact details
       const { data: proposalsData, error: proposalsError } = await supabase
         .from('lead_proposals')
         .select(`
@@ -113,7 +119,8 @@ const ProposalsManagement = () => {
           lead:leads(title, category, city, canton),
           handwerker_profile:handwerker_profiles!lead_proposals_handwerker_id_fkey(
             company_name, first_name, last_name, logo_url, business_city, city,
-            verification_status, liability_insurance_provider, bio
+            verification_status, liability_insurance_provider, bio,
+            phone_number, email, business_address, business_zip, business_canton, website
           )
         `)
         .in('lead_id', leadIds)
@@ -392,6 +399,98 @@ const ProposalsManagement = () => {
                             >
                               <XCircle className="h-4 w-4 mr-2" />
                               Ablehnen
+                            </Button>
+                          </div>
+                        )}
+
+                        {/* Contact Details for Accepted Proposals */}
+                        {proposal.status === 'accepted' && proposal.handwerker_profile && (
+                          <div className="border-t pt-4 mt-4 space-y-3 bg-green-50 dark:bg-green-950/20 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
+                            <h4 className="font-semibold text-green-700 dark:text-green-400 flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4" />
+                              Kontaktdaten des Handwerkers
+                            </h4>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                              {/* Full Name */}
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium">
+                                  {`${proposal.handwerker_profile.first_name} ${proposal.handwerker_profile.last_name}`}
+                                </span>
+                                {proposal.handwerker_profile.company_name && (
+                                  <span className="text-muted-foreground">
+                                    ({proposal.handwerker_profile.company_name})
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {/* Phone */}
+                              {proposal.handwerker_profile.phone_number && (
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4 text-muted-foreground" />
+                                  <a 
+                                    href={`tel:${proposal.handwerker_profile.phone_number}`} 
+                                    className="text-primary hover:underline"
+                                  >
+                                    {proposal.handwerker_profile.phone_number}
+                                  </a>
+                                </div>
+                              )}
+                              
+                              {/* Email */}
+                              {proposal.handwerker_profile.email && (
+                                <div className="flex items-center gap-2">
+                                  <Mail className="h-4 w-4 text-muted-foreground" />
+                                  <a 
+                                    href={`mailto:${proposal.handwerker_profile.email}`} 
+                                    className="text-primary hover:underline"
+                                  >
+                                    {proposal.handwerker_profile.email}
+                                  </a>
+                                </div>
+                              )}
+                              
+                              {/* Address */}
+                              {(proposal.handwerker_profile.business_address || proposal.handwerker_profile.business_city) && (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  <span>
+                                    {[
+                                      proposal.handwerker_profile.business_address,
+                                      proposal.handwerker_profile.business_zip,
+                                      proposal.handwerker_profile.business_city || proposal.handwerker_profile.city
+                                    ].filter(Boolean).join(', ')}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* Website */}
+                              {proposal.handwerker_profile.website && (
+                                <div className="flex items-center gap-2">
+                                  <Globe className="h-4 w-4 text-muted-foreground" />
+                                  <a 
+                                    href={proposal.handwerker_profile.website.startsWith('http') 
+                                      ? proposal.handwerker_profile.website 
+                                      : `https://${proposal.handwerker_profile.website}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    Website besuchen
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Message Button */}
+                            <Button 
+                              variant="outline" 
+                              className="mt-2"
+                              onClick={() => navigate(`/conversations?lead=${proposal.lead_id}`)}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Nachricht senden
                             </Button>
                           </div>
                         )}
