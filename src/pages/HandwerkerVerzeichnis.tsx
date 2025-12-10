@@ -11,11 +11,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StarRating } from '@/components/ui/star-rating';
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, MapPin, Filter, CheckCircle, Building2, X } from 'lucide-react';
+import { Search, MapPin, Filter, Building2, X, ArrowUpDown } from 'lucide-react';
 import { categoryLabels } from '@/config/categoryLabels';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { majorCategories } from '@/config/majorCategories';
+import { cn } from '@/lib/utils';
 
 interface HandwerkerListItem {
   id: string;
@@ -30,6 +31,7 @@ interface HandwerkerListItem {
   business_canton: string | null;
   is_verified: boolean | null;
   verification_status: string | null;
+  created_at: string | null;
 }
 
 interface RatingStats {
@@ -45,7 +47,7 @@ export default function HandwerkerVerzeichnis() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCanton, setSelectedCanton] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'rating' | 'newest'>('newest');
   
   // Modal state
   const [selectedHandwerkerId, setSelectedHandwerkerId] = useState<string | null>(null);
@@ -61,7 +63,7 @@ export default function HandwerkerVerzeichnis() {
       const [handwerkersRes, ratingsRes] = await Promise.all([
         supabase
           .from('handwerker_profiles_public')
-          .select('id, user_id, first_name, last_name, company_name, logo_url, categories, service_areas, business_city, business_canton, is_verified, verification_status')
+          .select('id, user_id, first_name, last_name, company_name, logo_url, categories, service_areas, business_city, business_canton, is_verified, verification_status, created_at')
           .eq('verification_status', 'approved'),
         supabase
           .from('handwerker_rating_stats')
@@ -87,7 +89,7 @@ export default function HandwerkerVerzeichnis() {
   };
 
   const filteredHandwerkers = useMemo(() => {
-    return handwerkers.filter(h => {
+    let result = handwerkers.filter(h => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -107,12 +109,31 @@ export default function HandwerkerVerzeichnis() {
         if (!h.categories?.includes(selectedCategory)) return false;
       }
 
-      // Verified filter
-      if (verifiedOnly && !h.is_verified) return false;
-
       return true;
     });
-  }, [handwerkers, searchQuery, selectedCanton, selectedCategory, verifiedOnly]);
+
+    // Sort results
+    result.sort((a, b) => {
+      if (sortBy === 'name') {
+        const nameA = getDisplayName(a).toLowerCase();
+        const nameB = getDisplayName(b).toLowerCase();
+        return nameA.localeCompare(nameB);
+      }
+      
+      if (sortBy === 'rating') {
+        const ratingA = a.user_id ? ratings.get(a.user_id)?.average_rating ?? 0 : 0;
+        const ratingB = b.user_id ? ratings.get(b.user_id)?.average_rating ?? 0 : 0;
+        return ratingB - ratingA; // Descending
+      }
+      
+      // newest
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateB - dateA; // Descending
+    });
+
+    return result;
+  }, [handwerkers, searchQuery, selectedCanton, selectedCategory, sortBy, ratings]);
 
   const getDisplayName = (h: HandwerkerListItem) => {
     if (h.company_name) return h.company_name;
@@ -120,16 +141,29 @@ export default function HandwerkerVerzeichnis() {
   };
 
   const getCategoryLabel = (category: string) => {
-    // First check major categories
+    // First check major categories by exact ID
     if (categoryLabels[category as keyof typeof categoryLabels]) {
       return categoryLabels[category as keyof typeof categoryLabels];
     }
-    // Then check subcategories for human-readable label
+    
+    // Then check subcategories
     if (subcategoryLabels[category]) {
       return subcategoryLabels[category].label;
     }
-    // Fallback: return raw value
-    return category;
+    
+    // Try to match partial major category ID (e.g., heizung_klima -> heizung_klima_solar)
+    const partialMatch = Object.keys(categoryLabels).find(key => key.startsWith(category) || category.startsWith(key));
+    if (partialMatch) {
+      return categoryLabels[partialMatch as keyof typeof categoryLabels];
+    }
+    
+    // Final fallback: format the raw value nicely
+    return category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
+  const isMajorCategory = (category: string): boolean => {
+    return !!categoryLabels[category as keyof typeof categoryLabels] || 
+           Object.keys(categoryLabels).some(k => k.startsWith(category) || category.startsWith(k));
   };
 
   const openProfile = (handwerkerId: string | null) => {
@@ -143,10 +177,9 @@ export default function HandwerkerVerzeichnis() {
     setSearchQuery('');
     setSelectedCanton('all');
     setSelectedCategory('all');
-    setVerifiedOnly(false);
   };
 
-  const hasActiveFilters = searchQuery || selectedCanton !== 'all' || selectedCategory !== 'all' || verifiedOnly;
+  const hasActiveFilters = searchQuery || selectedCanton !== 'all' || selectedCategory !== 'all';
 
   const majorCategoryList = Object.values(majorCategories);
 
@@ -168,7 +201,7 @@ export default function HandwerkerVerzeichnis() {
                 Handwerker-Verzeichnis
               </h1>
               <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-8">
-                Finden Sie den passenden Fachbetrieb für Ihr Projekt. Alle Handwerker wurden geprüft und verifiziert.
+                Finden Sie den passenden Fachbetrieb für Ihr Projekt. Alle Handwerker wurden geprüft.
               </p>
 
               {/* Search & Filters */}
@@ -213,14 +246,17 @@ export default function HandwerkerVerzeichnis() {
                     </SelectContent>
                   </Select>
 
-                  <Button
-                    variant={verifiedOnly ? "default" : "outline"}
-                    onClick={() => setVerifiedOnly(!verifiedOnly)}
-                    className="gap-2"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Nur Geprüfte
-                  </Button>
+                  <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'name' | 'rating' | 'newest')}>
+                    <SelectTrigger className="w-[180px] bg-background">
+                      <ArrowUpDown className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Sortieren" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Neueste zuerst</SelectItem>
+                      <SelectItem value="name">Name (A-Z)</SelectItem>
+                      <SelectItem value="rating">Beste Bewertung</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   {hasActiveFilters && (
                     <Button variant="ghost" onClick={clearFilters} className="gap-2">
@@ -287,11 +323,13 @@ export default function HandwerkerVerzeichnis() {
                         <CardContent className="p-6">
                           <div className="flex items-start gap-4">
                             {handwerker.logo_url ? (
-                              <img
-                                src={handwerker.logo_url}
-                                alt={getDisplayName(handwerker)}
-                                className="h-16 w-16 rounded-full object-cover border border-border"
-                              />
+                              <div className="h-16 w-16 rounded-full border border-border flex items-center justify-center bg-white overflow-hidden">
+                                <img
+                                  src={handwerker.logo_url}
+                                  alt={getDisplayName(handwerker)}
+                                  className="max-h-14 max-w-14 object-contain"
+                                />
+                              </div>
                             ) : (
                               <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
                                 <Building2 className="h-8 w-8 text-primary" />
@@ -299,11 +337,8 @@ export default function HandwerkerVerzeichnis() {
                             )}
                             
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold truncate group-hover:text-primary transition-colors flex items-center gap-2">
+                              <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
                                 {getDisplayName(handwerker)}
-                                {handwerker.is_verified && (
-                                  <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                )}
                               </h3>
                               
                               {(handwerker.business_city || handwerker.business_canton) && (
@@ -329,7 +364,11 @@ export default function HandwerkerVerzeichnis() {
                           {handwerker.categories && handwerker.categories.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-4">
                               {handwerker.categories.slice(0, 3).map((cat) => (
-                                <Badge key={cat} variant="secondary" className="text-xs">
+                                <Badge 
+                                  key={cat} 
+                                  variant={isMajorCategory(cat) ? "default" : "secondary"}
+                                  className={cn("text-xs", isMajorCategory(cat) && "bg-primary/90")}
+                                >
                                   {getCategoryLabel(cat)}
                                 </Badge>
                               ))}
