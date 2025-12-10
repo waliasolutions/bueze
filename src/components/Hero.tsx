@@ -42,7 +42,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
             <p className={`text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
               {content?.fields?.subtitle || 'Ihr lokaler Handwerker-Marktplatz für die ganze Schweiz'}
             </p>
-            <p className={`text-base md:text-lg text-ink-600 leading-relaxed max-w-2xl mx-auto mt-4 transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
+            <p className={`text-sm md:text-base text-ink-500 leading-relaxed max-w-xl mx-auto mt-6 animate-fade-in transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`} style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
               {content?.fields?.subIntro || 'Unser Portal bringt Sie mit erfahrenen Handwerkern aus der ganzen Schweiz zusammen – für Reparaturen, Renovierungen und Projekte jeder Grösse.'}
             </p>
           </div>
