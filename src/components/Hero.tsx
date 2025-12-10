@@ -36,7 +36,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
           {/* Headlines */}
           <div className="space-y-6">
             <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
-              {content?.fields?.title || 'Finden Sie den besten Handwerker.'}
+              {content?.fields?.title || 'Handwerker finden. Projekte realisieren.'}
             </h1>
             <p className={`text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
               {content?.fields?.subtitle || 'Handwerkermarktplatz in der Schweiz | Lokales Schweizer Handwerkerportal'}
