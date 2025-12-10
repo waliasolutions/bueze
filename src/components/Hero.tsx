@@ -54,7 +54,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
                 hover:scale-105 active:scale-95
                 group"
             >
-              <span className="relative z-10">{content?.fields?.ctaText || 'Auftrag erstellen'}</span>
+              <span className="relative z-10">{content?.fields?.ctaText || 'Jetzt starten'}</span>
               <ArrowRight className="relative z-10 ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
