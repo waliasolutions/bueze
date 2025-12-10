@@ -16,8 +16,8 @@ const KategorienLanding = () => {
   const { content } = usePageContent('kategorien-overview');
 
   const seoData = content?.seo || {
-    title: "Alle Handwerk-Kategorien | Handwerker Schweiz | Büeze.ch",
-    description: "Alle Handwerk-Kategorien auf einen Blick. Finden Sie qualifizierte Fachbetriebe in der Schweiz. Kostenlos Offerten vergleichen.",
+    title: "Handwerker-Kategorien | Büeze.ch",
+    description: "Von Elektroinstallationen über Sanitär bis zu Malerarbeiten – entdecken Sie alle Handwerksbereiche auf Büeze.ch und finden Sie den passenden Fachbetrieb für Ihr Projekt.",
     canonical: "https://bueeze.ch/kategorien"
   };
 
