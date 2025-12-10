@@ -36,13 +36,13 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
           
           {/* Headlines */}
           <div className="space-y-6">
-            <h1 className={`text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
               {content?.fields?.title || 'Handwerker finden. Projekte realisieren.'}
             </h1>
-            <p className={`text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`}>
+            <p className="text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto">
               {content?.fields?.subtitle || 'Ihr lokaler Handwerker-Marktplatz für die ganze Schweiz'}
             </p>
-            <p className={`text-sm md:text-base text-ink-500 leading-relaxed max-w-xl mx-auto mt-6 animate-fade-in transition-opacity duration-200 ${loading ? 'opacity-90' : 'opacity-100'}`} style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+            <p className="text-sm md:text-base text-ink-500 leading-relaxed max-w-xl mx-auto mt-6">
               {content?.fields?.subIntro || 'Unser Portal bringt Sie mit erfahrenen Handwerkern aus der ganzen Schweiz zusammen – für Reparaturen, Renovierungen und Projekte jeder Grösse.'}
             </p>
           </div>
