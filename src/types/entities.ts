@@ -364,6 +364,7 @@ export interface LeadListItem {
   proposals_count?: number | null;
   address?: string | null;
   owner_id?: string;
+  accepted_proposal_id?: string | null;
 }
 
 // Lead with owner contact info (for admin views)

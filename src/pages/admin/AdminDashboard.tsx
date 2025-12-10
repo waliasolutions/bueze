@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { AdminViewSwitcher } from '@/components/AdminViewSwitcher';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,7 +23,8 @@ import {
   RefreshCw,
   Globe,
   Trash2,
-  Star
+  Star,
+  Shield
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -322,6 +324,10 @@ const AdminDashboard = () => {
           <div className="mb-8">
             <div className="flex items-center justify-between">
               <div>
+                <Badge variant="outline" className="mb-2 bg-red-50 text-red-700 border-red-200">
+                  <Shield className="h-3 w-3 mr-1" />
+                  Admin-Bereich
+                </Badge>
                 <h1 className="text-3xl font-bold text-ink-900 mb-2">
                   Admin Dashboard
                 </h1>
@@ -329,7 +335,8 @@ const AdminDashboard = () => {
                   Übersicht und Verwaltung der Plattform
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <AdminViewSwitcher currentView="admin" />
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button 

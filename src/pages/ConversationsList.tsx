@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageCircle, User, Clock } from 'lucide-react';
+import { MessageCircle, User, Clock, ExternalLink } from 'lucide-react';
 import { formatTime as formatTimeSwiss, formatTimeAgo } from '@/lib/swissTime';
 
 interface ConversationListItem {
@@ -72,14 +72,27 @@ const ConversationsList = () => {
         .from('conversations')
         .select(`
           *,
-          lead:leads(title, status),
-          homeowner:profiles!homeowner_id(full_name, avatar_url),
-          handwerker:profiles!handwerker_id(full_name, avatar_url)
+          lead:leads(title, status)
         `)
         .or(`homeowner_id.eq.${user.id},handwerker_id.eq.${user.id}`)
         .order('last_message_at', { ascending: false, nullsFirst: false });
 
       if (conversationsError) throw conversationsError;
+
+      // Collect all unique user IDs to fetch profiles
+      const userIds = new Set<string>();
+      (conversationsData || []).forEach(conv => {
+        userIds.add(conv.homeowner_id);
+        userIds.add(conv.handwerker_id);
+      });
+
+      // Batch fetch all profiles
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', Array.from(userIds));
+
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
 
       // For each conversation, get the latest message and unread count
       const conversationsWithMessages = await Promise.all(
@@ -103,6 +116,8 @@ const ConversationsList = () => {
 
           return {
             ...conversation,
+            homeowner: profilesMap.get(conversation.homeowner_id) || { full_name: 'Kunde', avatar_url: null },
+            handwerker: profilesMap.get(conversation.handwerker_id) || { full_name: 'Handwerker', avatar_url: null },
             latest_message: latestMessage,
             unread_count: unreadCount || 0,
           };
@@ -275,6 +290,21 @@ const ConversationsList = () => {
                           >
                             {conversation.lead.status === 'active' ? 'Aktiv' : 'Abgeschlossen'}
                           </Badge>
+                          {/* View Profile Button */}
+                          {user?.id === conversation.homeowner_id && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/handwerker/${conversation.handwerker_id}`);
+                              }}
+                              className="text-xs"
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              Profil
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>

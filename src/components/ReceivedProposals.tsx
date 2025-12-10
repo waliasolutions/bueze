@@ -445,23 +445,30 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
 
                   {/* Contact Details for Accepted Proposals */}
                   {proposal.status === 'accepted' && proposal.handwerker_profiles && (
-                    <div className="border-t pt-4 mt-4 space-y-3 bg-green-50 dark:bg-green-950/20 -mx-6 -mb-6 px-6 pb-6 rounded-b-lg">
-                      <h4 className="font-semibold text-green-700 dark:text-green-400 flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4" />
-                        Kontaktdaten des Handwerkers
-                      </h4>
+                    <div className="border-t pt-4 mt-2 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-sm text-muted-foreground">Kontaktdaten</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.location.href = `/handwerker/${proposal.handwerker_id}`}
+                        >
+                          <User className="h-4 w-4 mr-1" />
+                          Profil ansehen
+                        </Button>
+                      </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                         {/* Full Name */}
                         <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                          <User className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">
                             {proposal.handwerker_profiles.profiles?.full_name || 
                               `${proposal.handwerker_profiles.first_name || ''} ${proposal.handwerker_profiles.last_name || ''}`.trim() || 
                               'Handwerker'}
                           </span>
                           {proposal.handwerker_profiles.company_name && (
-                            <span className="text-[hsl(var(--muted-foreground))]">
+                            <span className="text-muted-foreground">
                               ({proposal.handwerker_profiles.company_name})
                             </span>
                           )}
@@ -470,10 +477,10 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                         {/* Phone */}
                         {proposal.handwerker_profiles.phone_number && (
                           <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <Phone className="h-4 w-4 text-muted-foreground" />
                             <a 
                               href={`tel:${proposal.handwerker_profiles.phone_number}`} 
-                              className="text-[hsl(var(--primary))] hover:underline"
+                              className="text-primary hover:underline"
                             >
                               {proposal.handwerker_profiles.phone_number}
                             </a>
@@ -483,10 +490,10 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                         {/* Email */}
                         {proposal.handwerker_profiles.email && (
                           <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <Mail className="h-4 w-4 text-muted-foreground" />
                             <a 
                               href={`mailto:${proposal.handwerker_profiles.email}`} 
-                              className="text-[hsl(var(--primary))] hover:underline"
+                              className="text-primary hover:underline"
                             >
                               {proposal.handwerker_profiles.email}
                             </a>
@@ -496,7 +503,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                         {/* Address */}
                         {(proposal.handwerker_profiles.business_address || proposal.handwerker_profiles.business_city) && (
                           <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
                             <span>
                               {[
                                 proposal.handwerker_profiles.business_address,
@@ -510,16 +517,16 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                         {/* Website */}
                         {proposal.handwerker_profiles.website && (
                           <div className="flex items-center gap-2">
-                            <Globe className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                            <Globe className="h-4 w-4 text-muted-foreground" />
                             <a 
                               href={proposal.handwerker_profiles.website.startsWith('http') 
                                 ? proposal.handwerker_profiles.website 
                                 : `https://${proposal.handwerker_profiles.website}`} 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-[hsl(var(--primary))] hover:underline"
+                              className="text-primary hover:underline"
                             >
-                              Website besuchen
+                              Website
                             </a>
                           </div>
                         )}
@@ -528,7 +535,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                       {/* Message Button */}
                       <Button 
                         variant="outline" 
-                        className="mt-2"
+                        size="sm"
                         onClick={() => window.location.href = `/conversations?lead=${proposal.lead_id}`}
                       >
                         <MessageSquare className="h-4 w-4 mr-2" />
