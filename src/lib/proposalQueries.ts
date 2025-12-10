@@ -139,74 +139,14 @@ export const fetchClientProposals = async (
   return proposalsWithHandwerker;
 };
 
-/**
- * Accept a proposal and update related records
- */
-export const acceptProposal = async (
-  proposalId: string,
-  leadId: string
-): Promise<void> => {
-  // Update proposal status
-  const { error: proposalError } = await supabase
-    .from('lead_proposals')
-    .update({ 
-      status: 'accepted',
-      responded_at: new Date().toISOString()
-    })
-    .eq('id', proposalId);
-
-  if (proposalError) throw proposalError;
-
-  // Update lead status and set accepted proposal
-  const { error: leadError } = await supabase
-    .from('leads')
-    .update({ 
-      status: 'completed',
-      accepted_proposal_id: proposalId,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', leadId);
-
-  if (leadError) throw leadError;
-
-  // Reject other pending proposals for this lead
-  const { error: rejectError } = await supabase
-    .from('lead_proposals')
-    .update({ 
-      status: 'rejected',
-      responded_at: new Date().toISOString()
-    })
-    .eq('lead_id', leadId)
-    .eq('status', 'pending')
-    .neq('id', proposalId);
-
-  if (rejectError) throw rejectError;
-
-  // Trigger acceptance emails
-  await supabase.functions.invoke('send-acceptance-emails', {
-    body: { proposalId },
-  });
-};
-
-/**
- * Reject a proposal
- */
-export const rejectProposal = async (proposalId: string): Promise<void> => {
-  const { error } = await supabase
-    .from('lead_proposals')
-    .update({ 
-      status: 'rejected',
-      responded_at: new Date().toISOString()
-    })
-    .eq('id', proposalId);
-
-  if (error) throw error;
-
-  // Send rejection email
-  await supabase.functions.invoke('send-proposal-rejection-email', {
-    body: { proposalId },
-  });
-};
+// =============================================================================
+// REMOVED: Duplicate proposal action functions
+// Use functions from src/lib/proposalHelpers.ts instead:
+// - acceptProposal(proposalId)
+// - rejectProposal(proposalId)
+// - acceptProposalsBatch(proposalIds)
+// - rejectProposalsBatch(proposalIds)
+// =============================================================================
 
 /**
  * Withdraw a proposal (handwerker action)
@@ -235,7 +175,9 @@ export const canSubmitProposal = async (handwerkerId: string): Promise<boolean> 
   return data || false;
 };
 
+// =============================================================================
 // Extended types for joined queries
+// =============================================================================
 export interface ProposalWithHandwerker {
   id: string;
   lead_id: string;

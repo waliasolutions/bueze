@@ -1,32 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Star, MessageSquare } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { formatDateRelative } from '@/lib/swissTime';
-
-interface Review {
-  id: string;
-  rating: number;
-  title: string | null;
-  comment: string | null;
-  created_at: string;
-  handwerker_response: string | null;
-  response_at: string | null;
-  reviewer: {
-    full_name: string | null;
-  } | null;
-  lead: {
-    title: string;
-    category: string;
-  } | null;
-}
-
-interface RatingStats {
-  average_rating: number;
-  review_count: number;
-}
+import { StarRating } from '@/components/ui/star-rating';
+import type { ReviewWithDetails, HandwerkerRatingStats } from '@/types/entities';
 
 interface HandwerkerRatingProps {
   handwerkerId: string;
@@ -39,8 +18,8 @@ export const HandwerkerRating: React.FC<HandwerkerRatingProps> = ({
   showReviews = false,
   compact = false,
 }) => {
-  const [stats, setStats] = useState<RatingStats | null>(null);
-  const [reviews, setReviews] = useState<Review[]>([]);
+  const [stats, setStats] = useState<HandwerkerRatingStats | null>(null);
+  const [reviews, setReviews] = useState<ReviewWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -76,6 +55,10 @@ export const HandwerkerRating: React.FC<HandwerkerRatingProps> = ({
             created_at,
             handwerker_response,
             response_at,
+            lead_id,
+            reviewer_id,
+            reviewed_id,
+            is_public,
             reviewer:profiles!reviewer_id(full_name),
             lead:leads!lead_id(title, category)
           `)
@@ -83,33 +66,13 @@ export const HandwerkerRating: React.FC<HandwerkerRatingProps> = ({
           .eq('is_public', true)
           .order('created_at', { ascending: false });
 
-        setReviews((reviewsData as any) || []);
+        setReviews((reviewsData as ReviewWithDetails[]) || []);
       }
     } catch (error) {
       console.error('Error fetching rating data:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const renderStars = (rating: number, size: 'sm' | 'md' = 'md') => {
-    const sizeClass = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
-    return (
-      <div className="flex gap-0.5">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`${sizeClass} ${
-              star <= rating
-                ? 'fill-yellow-400 text-yellow-400'
-                : star <= Math.ceil(rating) && rating % 1 !== 0
-                ? 'fill-yellow-400/50 text-yellow-400'
-                : 'text-muted-foreground'
-            }`}
-          />
-        ))}
-      </div>
-    );
   };
 
   if (loading) {
@@ -127,7 +90,7 @@ export const HandwerkerRating: React.FC<HandwerkerRatingProps> = ({
   if (compact) {
     return (
       <div className="flex items-center gap-2">
-        {renderStars(stats.average_rating, 'sm')}
+        <StarRating rating={stats.average_rating ?? 0} size="sm" />
         <span className="text-sm font-medium">{stats.average_rating}</span>
         <span className="text-sm text-muted-foreground">
           ({stats.review_count})
@@ -141,7 +104,7 @@ export const HandwerkerRating: React.FC<HandwerkerRatingProps> = ({
     <div className="space-y-4">
       {/* Rating Summary */}
       <div className="flex items-center gap-4">
-        {renderStars(stats.average_rating)}
+        <StarRating rating={stats.average_rating ?? 0} />
         <div>
           <span className="text-2xl font-bold">{stats.average_rating}</span>
           <span className="text-muted-foreground ml-2">
@@ -162,7 +125,7 @@ export const HandwerkerRating: React.FC<HandwerkerRatingProps> = ({
                 <CardContent className="pt-4">
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      {renderStars(review.rating, 'sm')}
+                      <StarRating rating={review.rating} size="sm" />
                       {review.title && (
                         <h4 className="font-medium mt-1">{review.title}</h4>
                       )}

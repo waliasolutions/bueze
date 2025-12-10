@@ -208,7 +208,8 @@ export interface UserProfile {
 }
 
 // =============================================================================
-// Review Entity
+// Review Entity - Single Source of Truth
+// All components should import Review types from here
 // =============================================================================
 export interface Review {
   id: string;
@@ -224,14 +225,50 @@ export interface Review {
   created_at: string;
 }
 
-// Review with joined data
+// Review with joined lead and profile data (for HandwerkerRating component)
 export interface ReviewWithDetails extends Review {
   leads?: {
     title: string;
+    category?: string;
   };
   profiles?: {
     first_name?: string | null;
     full_name?: string | null;
+  };
+  // Alternate join syntax used by some components
+  reviewer?: {
+    full_name?: string | null;
+  } | null;
+  lead?: {
+    title: string;
+    category?: string;
+  } | null;
+}
+
+// Review for admin management (full details)
+export interface ReviewForAdmin extends Review {
+  reviewer?: { 
+    full_name: string; 
+    email: string; 
+  };
+  handwerker?: { 
+    first_name: string; 
+    last_name: string; 
+    company_name: string | null; 
+  };
+  lead?: { 
+    title: string; 
+  };
+}
+
+// Review for handwerker response component
+export interface ReviewForHandwerker extends Review {
+  leads?: {
+    title: string;
+  };
+  profiles?: {
+    first_name: string | null;
+    full_name: string | null;
   };
 }
 

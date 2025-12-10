@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -15,31 +16,18 @@ import { Loader2, Star, Eye, EyeOff, Trash2, Search, ArrowLeft, MessageSquare } 
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { EmptyState } from '@/components/ui/empty-state';
-
-interface Review {
-  id: string;
-  rating: number;
-  title: string | null;
-  comment: string | null;
-  handwerker_response: string | null;
-  response_at: string | null;
-  is_public: boolean;
-  created_at: string;
-  reviewer_id: string;
-  reviewed_id: string;
-  lead_id: string;
-  reviewer?: { full_name: string; email: string };
-  handwerker?: { first_name: string; last_name: string; company_name: string | null };
-  lead?: { title: string };
-}
+import { StarRating } from '@/components/ui/star-rating';
+import { invalidateReviewQueries } from '@/lib/queryInvalidation';
+import type { ReviewForAdmin } from '@/types/entities';
 
 const ReviewsManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [filteredReviews, setFilteredReviews] = useState<Review[]>([]);
+  const [reviews, setReviews] = useState<ReviewForAdmin[]>([]);
+  const [filteredReviews, setFilteredReviews] = useState<ReviewForAdmin[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRating, setFilterRating] = useState<string>('all');
   const [filterVisibility, setFilterVisibility] = useState<string>('all');
@@ -179,9 +167,14 @@ const ReviewsManagement = () => {
 
       if (error) throw error;
 
+      const review = reviews.find(r => r.id === reviewId);
+      
       setReviews(prev =>
         prev.map(r => r.id === reviewId ? { ...r, is_public: !currentVisibility } : r)
       );
+
+      // Invalidate review queries to refresh cache
+      await invalidateReviewQueries(queryClient, review?.reviewed_id);
 
       toast({
         title: 'Erfolg',
@@ -199,6 +192,8 @@ const ReviewsManagement = () => {
 
   const deleteReview = async (reviewId: string) => {
     try {
+      const review = reviews.find(r => r.id === reviewId);
+      
       const { error } = await supabase
         .from('reviews')
         .delete()
@@ -207,6 +202,9 @@ const ReviewsManagement = () => {
       if (error) throw error;
 
       setReviews(prev => prev.filter(r => r.id !== reviewId));
+
+      // Invalidate review queries to refresh cache
+      await invalidateReviewQueries(queryClient, review?.reviewed_id);
 
       toast({
         title: 'Erfolg',
@@ -222,20 +220,6 @@ const ReviewsManagement = () => {
     }
   };
 
-  const renderStars = (rating: number) => {
-    return (
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map(star => (
-          <Star
-            key={star}
-            className={`h-4 w-4 ${star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  // Stats
   const totalReviews = reviews.length;
   const averageRating = reviews.length > 0 
     ? (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1) 
@@ -386,7 +370,7 @@ const ReviewsManagement = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex flex-col gap-1">
-                              {renderStars(review.rating)}
+                              <StarRating rating={review.rating} size="sm" />
                               {review.title && (
                                 <span className="text-sm font-medium">{review.title}</span>
                               )}
