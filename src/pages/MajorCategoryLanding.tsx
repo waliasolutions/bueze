@@ -41,61 +41,61 @@ const MajorCategoryLanding = () => {
       case 'bau-renovation':
         return {
           title: 'Bau & Renovation – Handwerker finden | Büeze.ch',
-          description: 'Bauarbeiten und Renovierungen in der Schweiz. Professionelle Handwerker für Umbau, Sanierung und Neubauten. Jetzt Offerten vergleichen.',
+          description: 'Finden Sie erfahrene Bauarbeiter für Renovierung, Umbau oder Neubau. Kostenlos Offerten vergleichen.',
           intro: 'Sie planen eine Hausrenovation oder einen Neubau? Finden Sie erfahrene Bauarbeiter und qualifizierte Handwerker in Ihrer Region. Von der Planung bis zur Umsetzung begleiten Sie Fachleute durch Ihr Bauprojekt. Vergleichen Sie kostenlos mehrere Offerten.'
         };
       case 'elektroinstallationen':
         return {
           title: 'Elektriker finden in der Schweiz | Büeze.ch',
-          description: 'Elektroinstallationen von geprüften Elektrikern. Hausinstallationen, Smart Home, E-Mobilität und mehr. Kostenlos Offerten einholen.',
+          description: 'Geprüfte Elektriker für Hausinstallationen, Smart Home und E-Mobilität. Kostenlos Offerten einholen.',
           intro: 'Für sichere Elektroinstallationen braucht es Fachleute. Unser Elektrik Service verbindet Sie mit geprüften Elektrikern in der Schweiz – für Neubauten, Renovationen oder Notfälle. Alle Arbeiten erfolgen normgerecht und mit garantierter Sicherheit.'
         };
       case 'heizung-klima':
         return {
           title: 'Heizung & Klima Installateure finden | Büeze.ch',
-          description: 'Heizung, Klima und Lüftung von Fachbetrieben. Wärmepumpen, Klimaanlagen, Solar – passende Offerten erhalten.',
+          description: 'Fachbetriebe für Heizung, Wärmepumpen und Klimaanlagen. Jetzt passende Offerten erhalten.',
           intro: 'Eine zuverlässige Heizung ist das Herzstück jedes Zuhauses. Finden Sie zertifizierte Fachbetriebe für Heizungsinstallationen und Heizung & Sanitär Service in der Schweiz – kompetent, schnell und fair. Von der Wartung bis zum Komplettersatz.'
         };
       case 'sanitaer':
         return {
           title: 'Sanitär-Fachbetriebe in der Schweiz | Büeze.ch',
-          description: 'Sanitärinstallationen von qualifizierten Fachbetrieben. Bad, Küche, Leitungen – vergleichen Sie Offerten.',
+          description: 'Sanitärinstallateure für Bad, Küche und Leitungen. Vergleichen Sie kostenlos Offerten.',
           intro: 'Vom tropfenden Wasserhahn bis zur kompletten Badsanierung: Unser Sanitär Service verbindet Sie mit erfahrenen Profis für Sanitärinstallationen in der ganzen Schweiz. Auch im Notfall sind wir für Sie da. Vergleichen Sie kostenlos mehrere Offerten.'
         };
       case 'bodenbelaege':
         return {
           title: 'Bodenleger finden in der Schweiz | Büeze.ch',
-          description: 'Bodenbeläge vom Profi verlegen lassen. Parkett, Laminat, Fliesen und mehr. Jetzt Offerten vergleichen.',
+          description: 'Bodenleger für Parkett, Laminat, Fliesen und mehr. Jetzt Offerten vergleichen.',
           intro: 'Der richtige Bodenbelag macht den Unterschied. Finden Sie professionelle Bodenleger in der Schweiz für Parkett, Laminat, Vinyl und mehr. Vergleichen Sie kostenlos Offerten von erfahrenen Fachbetrieben.'
         };
       case 'innenausbau-schreiner':
         return {
           title: 'Schreiner & Innenausbau in der Schweiz | Büeze.ch',
-          description: 'Innenausbau und Schreinerarbeiten in der Schweiz. Möbelbau, Türen, Fenster – kostenlos Offerten einholen.',
+          description: 'Schreiner für Möbelbau, Türen und Fenster. Kostenlos Offerten einholen.',
           intro: 'Qualität im Detail – das zeichnet gute Schreinerarbeiten aus. Ob Möbelbau, Fenster oder Türen: Finden Sie erfahrene Schreiner für Innenausbau in der Schweiz. Vergleichen Sie kostenlos Offerten von Fachbetrieben.'
         };
       case 'kueche':
         return {
           title: 'Küchenbauer finden in der Schweiz | Büeze.ch',
-          description: 'Küchenbau und Küchenrenovation in der Schweiz. Planung, Montage und Geräte-Installation. Jetzt Offerten vergleichen.',
+          description: 'Küchenbauer für Planung, Montage und Renovation. Jetzt Offerten vergleichen.',
           intro: 'Eine neue Küche ist eine langfristige Investition in Lebensqualität. Finden Sie erfahrene Küchenbauer in der Schweiz für Planung, Montage und Renovation. Von der ersten Idee bis zur fertigen Traumküche – vergleichen Sie kostenlos Offerten von Fachbetrieben.'
         };
       case 'garten-aussenbereich':
         return {
           title: 'Gartenbau & Aussenbereich | Büeze.ch',
-          description: 'Garten und Aussenbereich gestalten. Gartenbau, Pflasterarbeiten, Zäune – passende Handwerker finden.',
+          description: 'Gartenbauer für Landschaftsbau, Pflasterarbeiten und Zäune. Passende Handwerker finden.',
           intro: 'Ein gepflegter Garten ist Lebensqualität. Finden Sie professionelle Gartenbauer in der Schweiz für Landschaftsbau, Gartengestaltung und mehr. Vergleichen Sie kostenlos Offerten von erfahrenen Fachbetrieben.'
         };
       case 'raeumung-entsorgung':
         return {
           title: 'Räumung & Entsorgung in der Schweiz | Büeze.ch',
-          description: 'Räumung und Entsorgung professionell erledigen. Haushaltsauflösung, Entrümpelung – Offerten vergleichen.',
+          description: 'Räumungsdienste für Haushaltsauflösung und Entrümpelung. Offerten vergleichen.',
           intro: 'Professionelle Räumung und fachgerechte Entsorgung. Finden Sie zuverlässige Entrümpelungsdienste in der Schweiz für Wohnungen, Häuser und Betriebe. Vergleichen Sie kostenlos Offerten.'
         };
       case 'sonstige-handwerkerleistungen':
         return {
           title: 'Weitere Handwerkerleistungen | Büeze.ch',
-          description: 'Weitere Handwerkerleistungen in der Schweiz. Individuelle Anfragen für spezielle Projekte.',
+          description: 'Handwerker für individuelle Projekte und spezielle Anfragen finden.',
           intro: 'Ihr Projekt passt in keine Standardkategorie? Finden Sie Handwerker in der Schweiz für vielfältige Leistungen. Vergleichen Sie kostenlos Offerten von erfahrenen Fachbetrieben.'
         };
       default:

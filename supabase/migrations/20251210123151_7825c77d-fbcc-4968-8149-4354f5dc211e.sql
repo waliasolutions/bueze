@@ -1,0 +1,11 @@
+-- Update all major category meta descriptions to natural format
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Finden Sie erfahrene Bauarbeiter für Renovierung, Umbau oder Neubau. Kostenlos Offerten vergleichen."') WHERE page_key = 'major-bau-renovation';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Geprüfte Elektriker für Hausinstallationen, Smart Home und E-Mobilität. Kostenlos Offerten einholen."') WHERE page_key = 'major-elektroinstallationen';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Fachbetriebe für Heizung, Wärmepumpen und Klimaanlagen. Jetzt passende Offerten erhalten."') WHERE page_key = 'major-heizung-klima';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Sanitärinstallateure für Bad, Küche und Leitungen. Vergleichen Sie kostenlos Offerten."') WHERE page_key = 'major-sanitaer';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Bodenleger für Parkett, Laminat, Fliesen und mehr. Jetzt Offerten vergleichen."') WHERE page_key = 'major-bodenbelaege';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Schreiner für Möbelbau, Türen und Fenster. Kostenlos Offerten einholen."') WHERE page_key = 'major-innenausbau-schreiner';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Küchenbauer für Planung, Montage und Renovation. Jetzt Offerten vergleichen."') WHERE page_key = 'major-kueche';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Gartenbauer für Landschaftsbau, Pflasterarbeiten und Zäune. Passende Handwerker finden."') WHERE page_key = 'major-garten-aussenbereich';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Räumungsdienste für Haushaltsauflösung und Entrümpelung. Offerten vergleichen."') WHERE page_key = 'major-raeumung-entsorgung';
+UPDATE page_content SET seo = jsonb_set(seo, '{description}', '"Handwerker für individuelle Projekte und spezielle Anfragen finden."') WHERE page_key = 'major-sonstige-handwerkerleistungen';
