@@ -12,15 +12,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Euro, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase } from "lucide-react";
+import { Search, MapPin, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
 import { HandwerkerReviewResponse } from "@/components/HandwerkerReviewResponse";
 import { majorCategories } from "@/config/majorCategories";
+import { categoryLabels } from "@/config/categoryLabels";
+import { subcategoryLabels } from "@/config/subcategoryLabels";
+import { getCantonLabel } from "@/config/cantons";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic } from "@/types/entities";
+
+// Helper function to get human-readable category label
+const getCategoryLabel = (category: string): string => {
+  if (categoryLabels[category]) return categoryLabels[category];
+  if (subcategoryLabels[category]) return subcategoryLabels[category].label;
+  return category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+};
 const HandwerkerDashboard = () => {
   const navigate = useNavigate();
   const {
@@ -719,7 +729,7 @@ const HandwerkerDashboard = () => {
                               </div>
                               <div className="flex flex-col gap-2 items-end">
                                 {getUrgencyBadge(lead.urgency)}
-                                <Badge variant="outline">{lead.category}</Badge>
+                                <Badge variant="outline">{getCategoryLabel(lead.category)}</Badge>
                               </div>
                             </div>
                           </CardHeader>
@@ -729,10 +739,9 @@ const HandwerkerDashboard = () => {
                             </p>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-4 text-sm">
-                                {lead.budget_min && lead.budget_max && <div className="flex items-center gap-1">
-                                    <Euro className="h-4 w-4 text-muted-foreground" />
-                                    <span>{lead.budget_min} - {lead.budget_max} CHF</span>
-                                  </div>}
+                                {lead.budget_min && lead.budget_max && (
+                                  <span>{lead.budget_min} - {lead.budget_max} CHF</span>
+                                )}
                                 <div className="flex items-center gap-1 text-muted-foreground">
                                   <FileText className="h-4 w-4" />
                                   <span>{lead.proposals_count} Angebote</span>
@@ -846,14 +855,13 @@ const HandwerkerDashboard = () => {
                           <CardContent>
                             <div className="space-y-3">
                               <div className="flex items-center gap-4 text-sm">
-                                <div className="flex items-center gap-1">
-                                  <Euro className="h-4 w-4 text-muted-foreground" />
-                                  <span>{proposal.price_min} - {proposal.price_max} CHF</span>
-                                </div>
-                                {proposal.estimated_duration_days && <div className="flex items-center gap-1">
+                                <span>{proposal.price_min} - {proposal.price_max} CHF</span>
+                                {proposal.estimated_duration_days && (
+                                  <div className="flex items-center gap-1">
                                     <Clock className="h-4 w-4 text-muted-foreground" />
                                     <span>{proposal.estimated_duration_days} Tage</span>
-                                  </div>}
+                                  </div>
+                                )}
                               </div>
                               <p className="text-sm text-muted-foreground line-clamp-2">
                                 {proposal.message}
@@ -1037,14 +1045,20 @@ const HandwerkerDashboard = () => {
                   <div className="space-y-2">
                     <Label>Kategorien</Label>
                     <div className="flex flex-wrap gap-2">
-                      {handwerkerProfile.categories.map(cat => <Badge key={cat} variant="secondary">{cat}</Badge>)}
+                      {handwerkerProfile.categories.map(cat => (
+                        <Badge key={cat} variant="secondary">{getCategoryLabel(cat)}</Badge>
+                      ))}
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <Label>Einsatzgebiete</Label>
                     <div className="flex flex-wrap gap-2">
-                      {handwerkerProfile.service_areas.map(area => <Badge key={area} variant="outline">{area}</Badge>)}
+                      {handwerkerProfile.service_areas.map(area => (
+                        <Badge key={area} variant="outline">
+                          {area.length === 2 ? getCantonLabel(area) : area}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
 
