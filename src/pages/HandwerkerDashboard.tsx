@@ -21,6 +21,7 @@ import { majorCategories } from "@/config/majorCategories";
 import { categoryLabels } from "@/config/categoryLabels";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
 import { getCantonLabel } from "@/config/cantons";
+import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic } from "@/types/entities";
@@ -544,16 +545,9 @@ const HandwerkerDashboard = () => {
     }
   };
   const getUrgencyBadge = (urgency: string) => {
-    switch (urgency) {
-      case 'urgent':
-        return <Badge variant="destructive">Dringend</Badge>;
-      case 'soon':
-        return <Badge variant="default" className="bg-orange-600">Bald</Badge>;
-      case 'planning':
-        return <Badge variant="secondary">In Planung</Badge>;
-      default:
-        return <Badge variant="outline">{urgency}</Badge>;
-    }
+    const label = getUrgencyLabel(urgency);
+    const colorClasses = getUrgencyColor(urgency);
+    return <Badge className={colorClasses}>{label}</Badge>;
   };
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
