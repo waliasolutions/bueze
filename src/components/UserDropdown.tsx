@@ -198,10 +198,6 @@ export const UserDropdown = () => {
           </>
         ) : (
           <>
-            <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/submit-lead')} className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
               <span>Auftrag erstellen</span>
