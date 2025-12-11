@@ -29,6 +29,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 
 interface DashboardStats {
   pendingCount: number;
@@ -48,6 +49,14 @@ interface PendingHandwerker {
   categories: string[];
   phone_number: string | null;
   business_address: string | null;
+  bio: string | null;
+  service_areas: string[];
+  hourly_rate_min: number | null;
+  hourly_rate_max: number | null;
+  logo_url: string | null;
+  uid_number: string | null;
+  iban: string | null;
+  portfolio_urls: string[];
 }
 
 const isRecentRegistration = (createdAt: string) => {
@@ -55,19 +64,6 @@ const isRecentRegistration = (createdAt: string) => {
     (new Date().getTime() - new Date(createdAt).getTime()) / (1000 * 60 * 60 * 24)
   );
   return daysSinceCreation <= 7;
-};
-
-const calculateCompleteness = (handwerker: PendingHandwerker) => {
-  const fields = [
-    handwerker.first_name,
-    handwerker.last_name,
-    handwerker.email,
-    handwerker.phone_number,
-    handwerker.company_name,
-    handwerker.business_address,
-  ];
-  const filledFields = fields.filter(f => f && f.trim()).length;
-  return Math.round((filledFields / fields.length) * 100);
 };
 
 const looksLikeTestData = (handwerker: PendingHandwerker) => {
@@ -157,7 +153,7 @@ const AdminDashboard = () => {
       // Get handwerker stats
       const { data: handwerkerData, error: handwerkerError } = await supabase
         .from('handwerker_profiles')
-        .select('id, verification_status, first_name, last_name, email, company_name, created_at, categories, phone_number, business_address');
+        .select('id, verification_status, first_name, last_name, email, company_name, created_at, categories, phone_number, business_address, bio, service_areas, hourly_rate_min, hourly_rate_max, logo_url, uid_number, iban, portfolio_urls');
 
       if (handwerkerError) {
         console.error('Error fetching handwerker:', handwerkerError);
@@ -227,6 +223,14 @@ const AdminDashboard = () => {
             categories: h.categories || [],
             phone_number: h.phone_number,
             business_address: h.business_address,
+            bio: h.bio,
+            service_areas: h.service_areas || [],
+            hourly_rate_min: h.hourly_rate_min,
+            hourly_rate_max: h.hourly_rate_max,
+            logo_url: h.logo_url,
+            uid_number: h.uid_number,
+            iban: h.iban,
+            portfolio_urls: h.portfolio_urls || [],
           }))
       );
       
@@ -638,7 +642,7 @@ const AdminDashboard = () => {
                 <div className="space-y-4">
                   {recentPending.map((handwerker) => {
                     const isRecent = isRecentRegistration(handwerker.created_at);
-                    const completeness = calculateCompleteness(handwerker);
+                    const completeness = calculateProfileCompleteness(handwerker);
                     const isSuspicious = looksLikeTestData(handwerker);
                     
                     return (
@@ -676,10 +680,10 @@ const AdminDashboard = () => {
                             <div className="flex items-center gap-1">
                               <div className={cn(
                                 "h-2 w-2 rounded-full",
-                                completeness >= 80 ? "bg-green-500" :
-                                completeness >= 50 ? "bg-yellow-500" : "bg-red-500"
+                                completeness.percentage >= 80 ? "bg-green-500" :
+                                completeness.percentage >= 50 ? "bg-yellow-500" : "bg-red-500"
                               )} />
-                              <span>Vollständigkeit: {completeness}%</span>
+                              <span>Vollständigkeit: {completeness.percentage}%</span>
                             </div>
                           </div>
                           {handwerker.categories.length > 0 && (
