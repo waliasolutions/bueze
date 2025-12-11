@@ -687,3 +687,168 @@ export const rejectionNotificationTemplate = (data: RejectionData) => {
     </div>
   `);
 };
+
+// New Message Notification Template
+interface NewMessageData {
+  recipientName: string;
+  senderName: string;
+  projectTitle: string;
+  messagePreview: string;
+  conversationLink: string;
+}
+
+export const newMessageNotificationTemplate = (data: NewMessageData) => {
+  const truncatedMessage = data.messagePreview.length > 150 
+    ? data.messagePreview.substring(0, 150) + '...' 
+    : data.messagePreview;
+
+  return emailWrapper(`
+    <div class="content">
+      <h2>💬 Neue Nachricht erhalten</h2>
+      <p>Hallo ${data.recipientName},</p>
+      <p>Sie haben eine neue Nachricht von <strong>${data.senderName}</strong> zum Projekt <strong>"${data.projectTitle}"</strong> erhalten.</p>
+      
+      <div class="info-box">
+        <p style="font-style: italic; color: #555; margin: 0;">"${truncatedMessage}"</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.conversationLink}" class="button">Nachricht beantworten</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Antworten Sie zeitnah, um eine gute Kommunikation sicherzustellen.
+      </p>
+    </div>
+  `);
+};
+
+// Rating Received Template (for Handwerker)
+interface RatingReceivedData {
+  handwerkerName: string;
+  clientFirstName: string;
+  projectTitle: string;
+  rating: number;
+  comment?: string;
+  profileLink: string;
+}
+
+export const ratingReceivedHandwerkerTemplate = (data: RatingReceivedData) => {
+  const stars = '⭐'.repeat(data.rating);
+  
+  return emailWrapper(`
+    <div class="content">
+      <h2>⭐ Neue Bewertung erhalten</h2>
+      <p>Hallo ${data.handwerkerName},</p>
+      <p>Sie haben eine neue Bewertung für das Projekt <strong>"${data.projectTitle}"</strong> erhalten!</p>
+      
+      <div class="info-box">
+        <p><strong>Bewertung:</strong> ${stars} (${data.rating}/5)</p>
+        <p><strong>Von:</strong> ${data.clientFirstName}</p>
+        ${data.comment ? `<p style="font-style: italic; color: #555; margin-top: 15px;">"${data.comment}"</p>` : ''}
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.profileLink}" class="button">Bewertung ansehen & antworten</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        <strong>Tipp:</strong> Antworten Sie auf Bewertungen, um Wertschätzung zu zeigen und 
+        Vertrauen bei zukünftigen Kunden aufzubauen.
+      </p>
+    </div>
+  `);
+};
+
+// Rating Response Template (for Client)
+interface RatingResponseData {
+  clientName: string;
+  handwerkerName: string;
+  projectTitle: string;
+  responseText: string;
+  reviewLink: string;
+}
+
+export const ratingResponseClientTemplate = (data: RatingResponseData) => {
+  const truncatedResponse = data.responseText.length > 200 
+    ? data.responseText.substring(0, 200) + '...' 
+    : data.responseText;
+
+  return emailWrapper(`
+    <div class="content">
+      <h2>💬 Antwort auf Ihre Bewertung</h2>
+      <p>Hallo ${data.clientName},</p>
+      <p><strong>${data.handwerkerName}</strong> hat auf Ihre Bewertung zum Projekt <strong>"${data.projectTitle}"</strong> geantwortet.</p>
+      
+      <div class="info-box">
+        <p style="font-style: italic; color: #555; margin: 0;">"${truncatedResponse}"</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.reviewLink}" class="button">Antwort ansehen</a>
+      </p>
+    </div>
+  `);
+};
+
+// Rating Reminder Template (moved from inline in proposal-deadline-reminder)
+interface RatingReminderData {
+  clientName: string;
+  handwerkerName: string;
+  projectTitle: string;
+  ratingLink: string;
+}
+
+export const ratingReminderTemplate = (data: RatingReminderData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>⭐ Wie war Ihre Erfahrung?</h2>
+      <p>Hallo ${data.clientName},</p>
+      <p>Ihr Projekt <strong>"${data.projectTitle}"</strong> mit <strong>${data.handwerkerName}</strong> wurde vor einer Woche abgeschlossen.</p>
+      
+      <div class="info-box">
+        <p><strong>Ihre Bewertung hilft anderen Kunden</strong>, den richtigen Handwerker zu finden, 
+        und belohnt gute Arbeit.</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.ratingLink}" class="button">Jetzt bewerten</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Die Bewertung dauert nur 1 Minute. Vielen Dank für Ihre Unterstützung!
+      </p>
+    </div>
+  `);
+};
+
+// Proposal Rejection Template (for Handwerker)
+interface ProposalRejectionData {
+  handwerkerName: string;
+  projectTitle: string;
+  clientFirstName: string;
+}
+
+export const proposalRejectionTemplate = (data: ProposalRejectionData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>Offerte nicht ausgewählt</h2>
+      <p>Hallo ${data.handwerkerName},</p>
+      <p>Leider wurde Ihre Offerte für das Projekt <strong>"${data.projectTitle}"</strong> von ${data.clientFirstName} nicht ausgewählt.</p>
+      
+      <div class="info-box">
+        <p>Der Kunde hat sich für einen anderen Handwerker entschieden. 
+        Das bedeutet nicht, dass Ihre Offerte schlecht war – manchmal passen andere Angebote besser zu den spezifischen Anforderungen.</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="https://bueeze.ch/handwerker-dashboard" class="button">Neue Anfragen ansehen</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        <strong>Tipp:</strong> Bleiben Sie aktiv und reichen Sie weiterhin Offerten ein. 
+        Jede Anfrage ist eine neue Chance!
+      </p>
+    </div>
+  `);
+};
