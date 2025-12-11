@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { getCantonLabel } from '@/config/cantons';
 
 interface PendingHandwerker {
   id: string;
@@ -847,7 +848,7 @@ const HandwerkerApprovals = () => {
                                   <p className="text-sm">
                                     {handwerker.personal_address && <>{handwerker.personal_address}<br /></>}
                                     {handwerker.personal_zip} {handwerker.personal_city}
-                                    {handwerker.personal_canton && `, ${handwerker.personal_canton}`}
+                                    {handwerker.personal_canton && `, ${getCantonLabel(handwerker.personal_canton)}`}
                                   </p>
                                 </div>
                               )}
@@ -895,7 +896,7 @@ const HandwerkerApprovals = () => {
                                   <p className="text-sm">
                                     {handwerker.business_address && <>{handwerker.business_address}<br /></>}
                                     {handwerker.business_zip} {handwerker.business_city}
-                                    {handwerker.business_canton && `, ${handwerker.business_canton}`}
+                                    {handwerker.business_canton && `, ${getCantonLabel(handwerker.business_canton)}`}
                                   </p>
                                   {handwerker.personal_address === handwerker.business_address && 
                                    handwerker.personal_city === handwerker.business_city && (

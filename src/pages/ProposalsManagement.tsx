@@ -13,6 +13,8 @@ import { CheckCircle, XCircle, Clock, Eye, MapPin, Calendar, LayoutGrid, Phone, 
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ProposalStatusBadge } from '@/components/ProposalStatusBadge';
+import { getCantonLabel } from '@/config/cantons';
+import { getCategoryLabel } from '@/config/categoryLabels';
 import { acceptProposal, rejectProposal } from '@/lib/proposalHelpers';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProposalComparisonDialog } from '@/components/ProposalComparisonDialog';
@@ -303,9 +305,9 @@ const ProposalsManagement = () => {
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <MapPin className="h-3 w-3" />
-                                {proposal.lead.city}, {proposal.lead.canton}
+                                {proposal.lead.city}, {getCantonLabel(proposal.lead.canton)}
                               </span>
-                              <Badge variant="outline">{proposal.lead.category}</Badge>
+                              <Badge variant="outline">{getCategoryLabel(proposal.lead.category)}</Badge>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">

@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Clock, Coins, Calendar, AlertCircle } from 'lucide-react';
 import { getUrgencyLabel } from '@/config/urgencyLevels';
+import { getCantonLabel } from '@/config/cantons';
+import { getCategoryLabel } from '@/config/categoryLabels';
 
 const OpportunityView = () => {
   const { leadId } = useParams();
@@ -168,9 +170,9 @@ const OpportunityView = () => {
                 <CardDescription className="flex items-center gap-4 text-base">
                   <span className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    {lead.city}, {lead.canton}
+                    {lead.city}, {getCantonLabel(lead.canton)}
                   </span>
-                  <Badge>{lead.category}</Badge>
+                  <Badge>{getCategoryLabel(lead.category)}</Badge>
                 </CardDescription>
               </div>
             </div>

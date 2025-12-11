@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Clock, CheckCircle, XCircle, Eye, MapPin, Coins, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
+import { getCantonLabel } from '@/config/cantons';
+import { getCategoryLabel } from '@/config/categoryLabels';
 import type { ProposalListItem } from '@/types/entities';
 
 // Extended type with responded_at field
@@ -192,9 +194,9 @@ export const ProposalsList: React.FC<ProposalsListProps> = ({ userId }) => {
                       <div className="flex items-center gap-4 text-sm text-[hsl(var(--muted-foreground))]">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
-                          {proposal.leads.city}, {proposal.leads.canton}
+                          {proposal.leads.city}, {getCantonLabel(proposal.leads.canton)}
                         </span>
-                        <span>{proposal.leads.category}</span>
+                        <span>{getCategoryLabel(proposal.leads.category)}</span>
                       </div>
                     </div>
                   </div>

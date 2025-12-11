@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CheckCircle, XCircle, Users, FileText, Search, MessageSquare, ShieldAlert, LogIn } from "lucide-react";
 import { Session, User } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
+import { getCategoryLabel } from "@/config/categoryLabels";
 
 interface TestResult {
   name: string;
@@ -472,7 +473,7 @@ export default function TestDashboard() {
                       <div className="space-y-1">
                         {testLeads.slice(0, 5).map((lead, index) => (
                           <div key={index} className="text-sm">
-                            <Badge variant="outline" className="mr-2">{lead.category}</Badge>
+                            <Badge variant="outline" className="mr-2">{getCategoryLabel(lead.category)}</Badge>
                             {lead.title}
                           </div>
                         ))}

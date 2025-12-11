@@ -33,37 +33,17 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2 } from "lucide-react";
 import { majorCategories } from "@/config/majorCategories";
-import { SWISS_CANTONS } from "@/config/cantons";
+import { SWISS_CANTONS, getCantonLabel } from "@/config/cantons";
 import { getUrgencyLabel } from "@/config/urgencyLevels";
+import { getCategoryLabel } from "@/config/categoryLabels";
+import { LEAD_STATUSES } from "@/config/leadStatuses";
+import { ProposalStatusBadge } from "@/components/ProposalStatusBadge";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadWithOwnerContact, AdminProposal } from "@/types/entities";
 
-const statusColors: Record<string, string> = {
-  active: "bg-green-500",
-  paused: "bg-orange-500",
-  completed: "bg-blue-500",
-  deleted: "bg-gray-500",
-  draft: "bg-gray-400",
-  pending: "bg-yellow-500",
-  accepted: "bg-green-500",
-  rejected: "bg-red-500",
-  withdrawn: "bg-gray-500",
-};
-
-const statusLabels: Record<string, string> = {
-  active: "Aktiv",
-  paused: "Pausiert",
-  completed: "Abgeschlossen",
-  deleted: "Gelöscht",
-  draft: "Entwurf",
-  pending: "Ausstehend",
-  accepted: "Angenommen",
-  rejected: "Abgelehnt",
-  withdrawn: "Zurückgezogen",
-};
 
 export default function AdminLeadsManagement() {
   const navigate = useNavigate();
@@ -449,17 +429,17 @@ export default function AdminLeadsManagement() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {Object.values(majorCategories).find((c) => c.id === lead.category)?.label || lead.category}
+                          {getCategoryLabel(lead.category)}
                         </TableCell>
                         <TableCell>
-                          <Badge className={statusColors[lead.status]}>
-                            {statusLabels[lead.status] || lead.status}
+                          <Badge className={LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.color || 'bg-gray-500'}>
+                            {LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.label || lead.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm">
                             <MapPin className="h-3 w-3" />
-                            {lead.city}, {lead.canton}
+                            {lead.city}, {getCantonLabel(lead.canton)}
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">{formatBudget(lead)}</TableCell>
@@ -552,9 +532,7 @@ export default function AdminLeadsManagement() {
                                         </div>
                                         <div>
                                           <div className="text-sm text-muted-foreground">Status</div>
-                                          <Badge className={statusColors[proposal.status]}>
-                                            {statusLabels[proposal.status]}
-                                          </Badge>
+                                          <ProposalStatusBadge status={proposal.status} />
                                           <div className="text-sm text-muted-foreground mt-2">
                                             Eingereicht: {format(new Date(proposal.submitted_at), "dd.MM.yyyy HH:mm", { locale: de })}
                                           </div>
@@ -630,8 +608,8 @@ export default function AdminLeadsManagement() {
                   <div>
                     <h4 className="font-semibold mb-2">Details</h4>
                     <div className="text-sm space-y-1">
-                      <div>Kategorie: {Object.values(majorCategories).find((c) => c.id === selectedLead.category)?.label}</div>
-                      <div>Ort: {selectedLead.city}, {selectedLead.canton} {selectedLead.zip}</div>
+                      <div>Kategorie: {getCategoryLabel(selectedLead.category)}</div>
+                      <div>Ort: {selectedLead.city}, {getCantonLabel(selectedLead.canton)} {selectedLead.zip}</div>
                       <div>Budget: {formatBudget(selectedLead)}</div>
                       <div>Dringlichkeit: {getUrgencyLabel(selectedLead.urgency)}</div>
                     </div>
