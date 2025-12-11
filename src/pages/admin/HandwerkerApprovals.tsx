@@ -434,49 +434,43 @@ const HandwerkerApprovals = () => {
 
       if (updateError) throw updateError;
 
-      // Upsert user role to 'handwerker'
+      // Parallelize: user role + subscription creation (non-blocking)
       if (handwerker.user_id) {
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .upsert({
-            user_id: handwerker.user_id,
-            role: 'handwerker'
-          }, { onConflict: 'user_id,role' });
-
-        if (roleError) {
-          console.error('Role upsert error (non-critical):', roleError);
-        }
-
-        // Create subscription (if not exists)
-        const { error: subError } = await supabase
-          .from('handwerker_subscriptions')
-          .upsert({
-            user_id: handwerker.user_id,
-            plan_type: 'free',
-            proposals_limit: 5,
-            proposals_used_this_period: 0
-          }, { onConflict: 'user_id' });
-
-        if (subError) {
-          console.error('Subscription creation error (non-critical):', subError);
-        }
+        // Run role upsert and subscription creation in parallel
+        Promise.all([
+          supabase
+            .from('user_roles')
+            .upsert({
+              user_id: handwerker.user_id,
+              role: 'handwerker'
+            }, { onConflict: 'user_id,role' }),
+          supabase
+            .from('handwerker_subscriptions')
+            .upsert({
+              user_id: handwerker.user_id,
+              plan_type: 'free',
+              proposals_limit: 5,
+              proposals_used_this_period: 0
+            }, { onConflict: 'user_id' })
+        ]).then(([roleResult, subResult]) => {
+          if (roleResult.error) console.error('Role upsert error (non-critical):', roleResult.error);
+          if (subResult.error) console.error('Subscription creation error (non-critical):', subResult.error);
+        }).catch(err => console.error('Parallel ops error:', err));
       }
 
-      // Send approval notification email
-      const { error: emailError } = await supabase.functions.invoke('send-approval-email', {
+      // Non-blocking: Send approval notification email (fire-and-forget)
+      supabase.functions.invoke('send-approval-email', {
         body: { 
           userId: handwerker.user_id,
           userName: `${handwerker.first_name} ${handwerker.last_name}`,
           userEmail: handwerker.email
         }
-      });
+      }).catch(err => console.error('Approval email error (non-critical):', err));
 
-      if (emailError) {
-        console.error('Approval email error (non-critical):', emailError);
-      }
-
-      // Log approval action
-      await logApprovalAction(handwerker.id, 'approved');
+      // Non-blocking: Log approval action
+      logApprovalAction(handwerker.id, 'approved').catch(err => 
+        console.error('Log action error (non-critical):', err)
+      );
 
       toast({
         title: 'Handwerker freigeschaltet',
@@ -510,11 +504,12 @@ const HandwerkerApprovals = () => {
 
       if (updateError) throw updateError;
 
-      // Log rejection action
-      await logApprovalAction(handwerker.id, 'rejected', reason || undefined);
+      // Non-blocking: Log rejection action and send email in parallel
+      logApprovalAction(handwerker.id, 'rejected', reason || undefined)
+        .catch(err => console.error('Log action error (non-critical):', err));
 
-      // Send rejection email
-      const { error: emailError } = await supabase.functions.invoke('send-rejection-email', {
+      // Non-blocking: Send rejection email (fire-and-forget)
+      supabase.functions.invoke('send-rejection-email', {
         body: { 
           email: handwerker.email,
           firstName: handwerker.first_name,
@@ -522,11 +517,7 @@ const HandwerkerApprovals = () => {
           companyName: handwerker.company_name,
           reason: reason || undefined
         }
-      });
-
-      if (emailError) {
-        console.error('Email sending error:', emailError);
-      }
+      }).catch(err => console.error('Email sending error:', err));
 
       toast({
         title: 'Handwerker abgelehnt',

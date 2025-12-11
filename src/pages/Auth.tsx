@@ -32,28 +32,34 @@ export default function Auth() {
   });
 
   const handlePostLoginRedirect = async (user: any) => {
-    // Check for admin/super_admin role FIRST
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // Parallel fetch: role + handwerker profile (faster than sequential)
+    const [roleResult, profileResult] = await Promise.all([
+      supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('handwerker_profiles')
+        .select('id, verification_status')
+        .eq('user_id', user.id)
+        .maybeSingle()
+    ]);
     
+    const roleData = roleResult.data;
+    const existingProfile = profileResult.data;
+    
+    // Check for admin/super_admin role FIRST
     if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
       navigate('/admin/dashboard');
       return;
     }
     
-    // Check role from user metadata for handwerker
+    // Check if user is a handwerker (by role or metadata)
     const userRole = user.user_metadata?.role;
+    const isHandwerker = roleData?.role === 'handwerker' || userRole === 'handwerker';
     
-    if (userRole === 'handwerker') {
-      const { data: existingProfile } = await supabase
-        .from('handwerker_profiles')
-        .select('id, verification_status')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
+    if (isHandwerker) {
       if (existingProfile) {
         navigate('/handwerker-dashboard');
       } else {

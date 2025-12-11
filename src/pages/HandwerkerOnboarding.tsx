@@ -768,41 +768,29 @@ const HandwerkerOnboarding = () => {
         console.log('Profile ID:', profileData.id);
       }
 
-      // Send welcome email with credentials (only for new users)
+      // Non-blocking: Send emails in parallel (fire-and-forget for faster UX)
       if (tempPassword) {
-        if (import.meta.env.DEV) console.log('Sending credentials email...');
-        try {
-          const { error: credentialsError } = await supabase.functions.invoke('send-handwerker-credentials', {
-            body: { 
-              email: userEmail,
-              password: tempPassword,
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              companyName: formData.companyName
-            }
-          });
-
-          if (credentialsError && import.meta.env.DEV) {
-            console.error('Credentials email error (non-critical):', credentialsError);
+        if (import.meta.env.DEV) console.log('Sending credentials email (non-blocking)...');
+        supabase.functions.invoke('send-handwerker-credentials', {
+          body: { 
+            email: userEmail,
+            password: tempPassword,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            companyName: formData.companyName
           }
-        } catch (credErr) {
-          if (import.meta.env.DEV) console.error('Credentials email error:', credErr);
-        }
-      }
-
-      // Trigger admin notification email
-      if (import.meta.env.DEV) console.log('Sending admin notification...');
-      try {
-        const { error: notifyError } = await supabase.functions.invoke('send-admin-registration-notification', {
-          body: { profileId: profileData.id }
+        }).catch(credErr => {
+          if (import.meta.env.DEV) console.error('Credentials email error (non-critical):', credErr);
         });
-
-        if (notifyError && import.meta.env.DEV) {
-          console.error('Failed to send admin notification:', notifyError);
-        }
-      } catch (notifyErr) {
-        if (import.meta.env.DEV) console.error('Admin notification error:', notifyErr);
       }
+
+      // Non-blocking: Trigger admin notification email (fire-and-forget)
+      if (import.meta.env.DEV) console.log('Sending admin notification (non-blocking)...');
+      supabase.functions.invoke('send-admin-registration-notification', {
+        body: { profileId: profileData.id }
+      }).catch(notifyErr => {
+        if (import.meta.env.DEV) console.error('Admin notification error (non-critical):', notifyErr);
+      });
 
       // Clear saved draft
       clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
@@ -810,20 +798,21 @@ const HandwerkerOnboarding = () => {
 
       // If user was already logged in, just navigate without signing out
       if (isAlreadyAuthenticated) {
-        // Ensure handwerker role is assigned
-        if (import.meta.env.DEV) console.log('Upserting handwerker role for user:', userId);
-        const { error: roleError } = await supabase
+        // Non-blocking: Ensure handwerker role is assigned (fire-and-forget)
+        if (import.meta.env.DEV) console.log('Upserting handwerker role for user (non-blocking):', userId);
+        supabase
           .from('user_roles')
           .upsert(
             { user_id: userId, role: 'handwerker' },
             { onConflict: 'user_id,role' }
-          );
-        
-        if (roleError) {
-          if (import.meta.env.DEV) console.error('Failed to assign handwerker role:', roleError);
-        } else {
-          if (import.meta.env.DEV) console.log('Handwerker role assigned successfully');
-        }
+          )
+          .then(({ error: roleError }) => {
+            if (roleError) {
+              if (import.meta.env.DEV) console.error('Failed to assign handwerker role:', roleError);
+            } else {
+              if (import.meta.env.DEV) console.log('Handwerker role assigned successfully');
+            }
+          });
         
         toast({
           title: "Profil erstellt!",
