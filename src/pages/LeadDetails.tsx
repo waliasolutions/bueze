@@ -18,6 +18,7 @@ import type { LeadAnalytics } from '@/lib/leadHelpers';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
+import { getCantonLabel } from '@/config/cantons';
 
 const LeadDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -268,7 +269,7 @@ const LeadDetails = () => {
             <div className="flex items-center text-muted-foreground text-sm space-x-4">
               <div className="flex items-center">
                 <MapPin className="h-4 w-4 mr-1" />
-                {lead.city}, {lead.canton}
+                {lead.city}, {getCantonLabel(lead.canton)}
               </div>
               <div className="flex items-center">
                 <Clock className="h-4 w-4 mr-1" />
@@ -424,7 +425,7 @@ const LeadDetails = () => {
                 </h3>
                 <p className="text-muted-foreground">
                   {lead.address && `${lead.address}, `}
-                  {lead.zip} {lead.city}, {lead.canton}
+                  {lead.zip} {lead.city}, {getCantonLabel(lead.canton)}
                 </p>
               </div>
             </CardContent>
@@ -492,8 +493,8 @@ const LeadDetails = () => {
                             <MapPin className="h-4 w-4" />
                              <span>
                                {isOwnLead || hasProposal ? 
-                                 `${lead.address ? lead.address + ', ' : ''}${lead.zip} ${lead.city}, ${lead.canton}` : 
-                                 `${lead.zip} ${lead.city}, ${lead.canton}`
+                                 `${lead.address ? lead.address + ', ' : ''}${lead.zip} ${lead.city}, ${getCantonLabel(lead.canton)}` : 
+                                 `${lead.zip} ${lead.city}, ${getCantonLabel(lead.canton)}`
                                }
                              </span>
                             <Clock className="h-4 w-4 ml-4" />
