@@ -364,6 +364,69 @@ export const deadlineReminderTemplate = (data: DeadlineReminderData) => {
   `);
 };
 
+// Admin Notification for New Lead (Auftrag)
+export interface NewLeadAdminNotificationData {
+  clientName: string;
+  clientEmail: string;
+  category: string;
+  city: string;
+  canton: string;
+  description: string;
+  budgetMin?: number;
+  budgetMax?: number;
+  urgency: string;
+  leadId: string;
+  submittedAt: string;
+}
+
+export const newLeadAdminNotificationTemplate = (data: NewLeadAdminNotificationData) => {
+  const budgetText = data.budgetMin && data.budgetMax 
+    ? `CHF ${data.budgetMin.toLocaleString()} - ${data.budgetMax.toLocaleString()}`
+    : 'Budget nicht angegeben';
+  
+  const truncatedDesc = data.description.length > 300 
+    ? data.description.substring(0, 300) + '...' 
+    : data.description;
+
+  const urgencyLabels: Record<string, string> = {
+    'today': 'Heute',
+    'this_week': 'Diese Woche',
+    'this_month': 'Diesen Monat',
+    'planning': 'Planungsphase'
+  };
+
+  return emailWrapper(`
+    <div class="content">
+      <h2>📋 Neuer Auftrag eingegangen</h2>
+      <p>Ein neuer Auftrag wurde auf der Plattform eingereicht:</p>
+      
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #0066CC;">Auftragsdetails</h3>
+        <p><strong>Kategorie:</strong> ${data.category}</p>
+        <p><strong>Standort:</strong> ${data.city}, ${data.canton}</p>
+        <p><strong>Budget:</strong> ${budgetText}</p>
+        <p><strong>Dringlichkeit:</strong> ${urgencyLabels[data.urgency] || data.urgency}</p>
+        <p><strong>Eingereicht am:</strong> ${data.submittedAt}</p>
+      </div>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #0066CC;">Kundendaten</h3>
+        <p><strong>Name:</strong> ${data.clientName}</p>
+        <p><strong>E-Mail:</strong> ${data.clientEmail}</p>
+      </div>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #0066CC;">Projektbeschreibung</h3>
+        <p>${truncatedDesc}</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="https://bueeze.ch/admin/leads" class="button">Im Admin-Dashboard ansehen</a>
+      </p>
+    </div>
+  `);
+};
+
 // Admin Registration Notification Email Template
 export interface AdminRegistrationData {
   firstName: string;

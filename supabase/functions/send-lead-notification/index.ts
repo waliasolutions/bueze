@@ -1,10 +1,24 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-import { newLeadNotificationTemplate } from '../_shared/emailTemplates.ts';
+import { newLeadNotificationTemplate, newLeadAdminNotificationTemplate } from '../_shared/emailTemplates.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Category labels for human-readable display
+const categoryLabels: Record<string, string> = {
+  'bau_renovation': 'Bau & Renovation',
+  'elektroinstallationen': 'Elektroinstallationen',
+  'heizung_klima': 'Heizung & Klima',
+  'sanitaer': 'Sanitär',
+  'bodenbelaege': 'Bodenbeläge',
+  'innenausbau_schreiner': 'Innenausbau & Schreiner',
+  'kueche': 'Küche',
+  'garten_umgebung': 'Garten & Aussenbereich',
+  'reinigung_hauswartung': 'Reinigung & Hauswartung',
+  'raeumung_entsorgung': 'Räumung & Entsorgung',
 };
 
 serve(async (req) => {
@@ -28,7 +42,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch lead details
+    // Fetch lead details with owner profile
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .select('*, profiles!leads_owner_id_fkey(full_name, email)')
@@ -38,6 +52,58 @@ serve(async (req) => {
     if (leadError || !lead) {
       throw new Error(`Lead not found: ${leadError?.message}`);
     }
+
+    const categoryLabel = categoryLabels[lead.category] || lead.category;
+
+    // ==========================================
+    // STEP 1: Send Admin Notification Email
+    // ==========================================
+    console.log('Sending admin notification email for new lead...');
+    
+    const adminEmailHtml = newLeadAdminNotificationTemplate({
+      clientName: lead.profiles?.full_name || 'Unbekannt',
+      clientEmail: lead.profiles?.email || 'Unbekannt',
+      category: categoryLabel,
+      city: lead.city || 'Nicht angegeben',
+      canton: lead.canton || '',
+      description: lead.description,
+      budgetMin: lead.budget_min,
+      budgetMax: lead.budget_max,
+      urgency: lead.urgency || 'planning',
+      leadId: lead.id,
+      submittedAt: new Date(lead.created_at).toLocaleDateString('de-CH', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+    });
+
+    const adminEmailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Smtp2go-Api-Key': smtp2goApiKey,
+      },
+      body: JSON.stringify({
+        sender: 'noreply@bueeze.ch',
+        to: ['info@bueeze.ch'],
+        subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city}`,
+        html_body: adminEmailHtml,
+      }),
+    });
+
+    const adminEmailData = await adminEmailResponse.json();
+    if (!adminEmailResponse.ok) {
+      console.error('Admin notification email failed:', adminEmailData);
+    } else {
+      console.log('Admin notification email sent successfully to info@bueeze.ch');
+    }
+
+    // ==========================================
+    // STEP 2: Send Handwerker Notifications
+    // ==========================================
 
     // Fetch matching handwerkers
     const { data: handwerkers, error: handwerkersError } = await supabase
@@ -112,7 +178,7 @@ serve(async (req) => {
 
         // Send email
         const emailHtml = newLeadNotificationTemplate({
-          category: lead.category,
+          category: categoryLabel,
           city: lead.city || 'Nicht angegeben',
           description: lead.description,
           budgetMin: lead.budget_min,
@@ -131,7 +197,7 @@ serve(async (req) => {
           body: JSON.stringify({
             sender: 'noreply@bueeze.ch',
             to: [hw.profiles?.email],
-            subject: `Neue Anfrage in ${lead.category} - ${lead.city}`,
+            subject: `Neue Anfrage in ${categoryLabel} - ${lead.city}`,
             html_body: emailHtml,
           }),
         });
@@ -156,7 +222,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Notifications sent to ${successCount} handwerkers`,
+        message: `Admin notified, ${successCount} handwerkers notified`,
         successCount,
         errorCount,
       }),
