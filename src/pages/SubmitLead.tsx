@@ -24,6 +24,8 @@ import { cn } from '@/lib/utils';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { Badge } from '@/components/ui/badge';
+import { runAllSpamChecks, recordAttempt } from '@/lib/spamProtection';
+
 
 const leadSchema = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
@@ -41,6 +43,8 @@ const leadSchema = z.object({
   contactFirstName: z.string().optional().or(z.literal('')),
   contactLastName: z.string().optional().or(z.literal('')),
   contactPassword: z.string().optional().or(z.literal('')),
+  // Honeypot field - must remain empty (bots fill hidden fields)
+  website: z.string().max(0, 'Spam erkannt').optional().default(''),
 }).refine((data) => {
   // Budget validation: max should be greater than min
   return data.budget_max >= data.budget_min;
@@ -93,6 +97,8 @@ const SubmitLead = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat?: number; lng?: number }>({});
+  // Track form load time for spam protection
+  const [formLoadTime] = useState(() => Date.now());
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -116,6 +122,7 @@ const SubmitLead = () => {
       contactFirstName: '',
       contactLastName: '',
       contactPassword: '',
+      website: '', // Honeypot field
     },
   });
 
@@ -278,6 +285,29 @@ const SubmitLead = () => {
   };
 
   const onSubmit = async (data: LeadFormData) => {
+    // Run spam protection checks before processing
+    const spamCheck = runAllSpamChecks({
+      honeypotValue: data.website || '',
+      formLoadTime,
+      rateLimitKey: 'lead_submit',
+      title: data.title,
+      description: data.description,
+      minSubmitTimeSeconds: 5,
+      maxAttemptsPerMinute: 3,
+    });
+    
+    if (!spamCheck.isPassed) {
+      toast({
+        title: "Formular konnte nicht gesendet werden",
+        description: spamCheck.reason || "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Record this submission attempt for rate limiting
+    recordAttempt('lead_submit');
+    
     setIsSubmitting(true);
     
     // Add timeout warning after 15 seconds
@@ -542,6 +572,26 @@ const SubmitLead = () => {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Honeypot field - hidden from humans, bots will fill */}
+              <div className="absolute left-[-9999px] opacity-0 pointer-events-none" aria-hidden="true">
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          tabIndex={-1} 
+                          autoComplete="off"
+                          placeholder="Leave empty"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
               {step === 1 && (
                 <Card>
                   <CardHeader>
