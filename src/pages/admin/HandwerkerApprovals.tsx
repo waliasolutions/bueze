@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getCantonLabel } from '@/config/cantons';
+import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 
 interface PendingHandwerker {
   id: string;
@@ -54,6 +55,9 @@ interface PendingHandwerker {
   logo_url: string | null;
   bio: string | null;
   verification_status: string;
+  hourly_rate_min: number | null;
+  hourly_rate_max: number | null;
+  portfolio_urls: string[] | null;
 }
 
 interface ApprovalHistoryEntry {
@@ -175,7 +179,10 @@ const HandwerkerApprovals = () => {
           tax_id,
           logo_url,
           bio,
-          verification_status
+          verification_status,
+          hourly_rate_min,
+          hourly_rate_max,
+          portfolio_urls
         `)
         .eq('verification_status', 'pending')
         .order('created_at', { ascending: false });
@@ -193,40 +200,22 @@ const HandwerkerApprovals = () => {
     }
   };
 
-  const calculateCompleteness = (handwerker: PendingHandwerker) => {
-    let score = 0;
-    let total = 0;
-    
-    const requiredFields = [
-      handwerker.first_name,
-      handwerker.last_name,
-      handwerker.email,
-      handwerker.phone_number,
-      handwerker.company_name,
-      handwerker.categories?.length > 0,
-      handwerker.service_areas?.length > 0,
-      handwerker.business_city || handwerker.business_canton
-    ];
-    
-    const optionalFields = [
-      handwerker.uid_number,
-      handwerker.mwst_number,
-      handwerker.iban,
-      handwerker.liability_insurance_provider,
-      handwerker.trade_license_number,
-      handwerker.verification_documents?.length > 0,
-      handwerker.logo_url
-    ];
-    
-    total = requiredFields.length + optionalFields.length;
-    score = requiredFields.filter(Boolean).length * 2 + optionalFields.filter(Boolean).length;
-    
-    return {
-      score,
-      total: total * 2,
-      percentage: Math.round((score / (total * 2)) * 100),
-      isComplete: requiredFields.every(Boolean)
-    };
+  const getCompleteness = (handwerker: PendingHandwerker) => {
+    return calculateProfileCompleteness({
+      first_name: handwerker.first_name,
+      last_name: handwerker.last_name,
+      email: handwerker.email,
+      phone_number: handwerker.phone_number,
+      company_name: handwerker.company_name,
+      bio: handwerker.bio,
+      hourly_rate_min: handwerker.hourly_rate_min,
+      hourly_rate_max: handwerker.hourly_rate_max,
+      service_areas: handwerker.service_areas,
+      portfolio_urls: handwerker.portfolio_urls,
+      logo_url: handwerker.logo_url,
+      uid_number: handwerker.uid_number,
+      iban: handwerker.iban,
+    });
   };
 
   const downloadDocument = async (documentUrl: string, fileName: string) => {
@@ -294,7 +283,7 @@ const HandwerkerApprovals = () => {
     // Completeness filter
     if (completenessFilter !== 'all') {
       filtered = filtered.filter(h => {
-        const completeness = calculateCompleteness(h);
+        const completeness = getCompleteness(h);
         if (completenessFilter === 'complete') return completeness.percentage >= 80;
         if (completenessFilter === 'partial') return completeness.percentage >= 50 && completeness.percentage < 80;
         if (completenessFilter === 'incomplete') return completeness.percentage < 50;
@@ -345,7 +334,7 @@ const HandwerkerApprovals = () => {
 
     const completeHandwerkers = selectedHandwerkers
       .map(id => pendingHandwerkers.find(h => h.id === id))
-      .filter(h => h && calculateCompleteness(h).isComplete);
+      .filter(h => h && getCompleteness(h).isComplete);
 
     if (completeHandwerkers.length === 0) {
       toast({
@@ -760,7 +749,7 @@ const HandwerkerApprovals = () => {
           ) : (
             <div className="space-y-4">
               {filteredHandwerkers.map((handwerker) => {
-                const completeness = calculateCompleteness(handwerker);
+                const completeness = getCompleteness(handwerker);
                 const isSelected = selectedHandwerkers.includes(handwerker.id);
                 
                 return (
