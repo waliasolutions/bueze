@@ -42,13 +42,22 @@ verify_jwt = false
 [functions.send-lead-notification]
 verify_jwt = false
 
+[functions.send-message-notification]
+verify_jwt = false
+
 [functions.send-proposal-notification]
 verify_jwt = false
 
 [functions.send-proposal-rejection-email]
 verify_jwt = false
 
+[functions.send-rating-notification]
+verify_jwt = false
+
 [functions.send-rating-reminder]
+verify_jwt = false
+
+[functions.send-rating-response-notification]
 verify_jwt = false
 
 [functions.send-rejection-email]
