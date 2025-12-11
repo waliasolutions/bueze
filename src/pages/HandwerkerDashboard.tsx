@@ -15,6 +15,7 @@ import { Footer } from "@/components/Footer";
 import { Search, MapPin, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
+import { ProposalStatusBadge } from "@/components/ProposalStatusBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
 import { HandwerkerReviewResponse } from "@/components/HandwerkerReviewResponse";
 import { majorCategories } from "@/config/majorCategories";
@@ -530,20 +531,6 @@ const HandwerkerDashboard = () => {
       setLogoUploading(false);
     }
   };
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" />Ausstehend</Badge>;
-      case 'accepted':
-        return <Badge variant="default" className="bg-green-600"><CheckCircle className="h-3 w-3 mr-1" />Angenommen</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Abgelehnt</Badge>;
-      case 'withdrawn':
-        return <Badge variant="outline">Zurückgezogen</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
   const getUrgencyBadge = (urgency: string) => {
     const label = getUrgencyLabel(urgency);
     const colorClasses = getUrgencyColor(urgency);
@@ -717,7 +704,7 @@ const HandwerkerDashboard = () => {
                                 <div className="flex items-center gap-2 mt-2">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
                                   <span className="text-sm text-muted-foreground">
-                                    {lead.city}, {lead.canton} ({lead.zip})
+                                    {lead.city}, {getCantonLabel(lead.canton)} ({lead.zip})
                                   </span>
                                 </div>
                               </div>
@@ -839,11 +826,11 @@ const HandwerkerDashboard = () => {
                                 <div className="flex items-center gap-2 mt-2">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
                                   <span className="text-sm text-muted-foreground">
-                                    {proposal.leads.city}, {proposal.leads.canton}
+                                    {proposal.leads.city}, {getCantonLabel(proposal.leads.canton)}
                                   </span>
                                 </div>
                               </div>
-                              {getStatusBadge(proposal.status)}
+                              <ProposalStatusBadge status={proposal.status} />
                             </div>
                           </CardHeader>
                           <CardContent>
