@@ -226,56 +226,56 @@ const AdminDashboard = () => {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <Card className="border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow min-h-[44px]" onClick={() => navigate('/admin/handwerkers')}>
-          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
-            <CardDescription className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-              <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
+        <Card className="border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/handwerkers')}>
+          <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+            <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
+              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
               <span className="truncate">Ausstehend</span>
             </CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl font-bold text-amber-600">{stats.pendingCount}</CardTitle>
+            <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-amber-600">{stats.pendingCount}</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Handwerker-Freigaben</p>
+          <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Handwerker-Freigaben</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-green-500 cursor-pointer hover:shadow-md transition-shadow min-h-[44px]" onClick={() => navigate('/admin/handwerkers')}>
-          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
-            <CardDescription className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-              <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+        <Card className="border-l-4 border-l-green-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/handwerkers')}>
+          <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+            <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
+              <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
               <span className="truncate">Aktive Handwerker</span>
             </CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl font-bold text-green-600">{stats.approvedCount}</CardTitle>
+            <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-green-600">{stats.approvedCount}</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Freigeschaltet</p>
+          <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Freigeschaltet</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow min-h-[44px]" onClick={() => navigate('/admin/leads')}>
-          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
-            <CardDescription className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-              <Briefcase className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+        <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/leads')}>
+          <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+            <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
+              <Briefcase className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
               <span className="truncate">Aktive Aufträge</span>
             </CardDescription>
-            <CardTitle className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.activeLeads}</CardTitle>
+            <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-blue-600">{stats.activeLeads}</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Von {stats.totalLeads} gesamt</p>
+          <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Von {stats.totalLeads} gesamt</p>
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-purple-500 cursor-pointer hover:shadow-md transition-shadow min-h-[44px]" onClick={() => navigate('/admin/payments')}>
-          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-6">
-            <CardDescription className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-              <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+        <Card className="border-l-4 border-l-purple-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/payments')}>
+          <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+            <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
+              <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
               <span className="truncate">Umsatz</span>
             </CardDescription>
-            <CardTitle className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600 truncate">CHF {stats.totalRevenue.toLocaleString()}</CardTitle>
+            <CardTitle className="text-base sm:text-xl md:text-2xl font-bold text-purple-600 truncate">CHF {stats.totalRevenue.toLocaleString()}</CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-6 pt-0">
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">Gesamtumsatz</p>
+          <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Gesamtumsatz</p>
           </CardContent>
         </Card>
       </div>
