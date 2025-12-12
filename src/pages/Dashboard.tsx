@@ -32,9 +32,11 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Wait for role to load before fetching data to prevent incorrect redirects
+    if (roleLoading) return;
     logWithCorrelation('Dashboard: Page loaded');
     fetchUserData();
-  }, []);
+  }, [roleLoading, isAdmin]);
 
   const fetchUserData = async () => {
     try {
@@ -223,7 +225,7 @@ const Dashboard = () => {
     return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
   };
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
