@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,7 @@ import { getCategoryLabel } from '@/config/categoryLabels';
 import { acceptProposal, rejectProposal } from '@/lib/proposalHelpers';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProposalComparisonDialog } from '@/components/ProposalComparisonDialog';
+import { invalidateProposalQueries } from '@/lib/queryInvalidation';
 import type { ProposalStatus } from '@/types/entities';
 
 // Local interface for this component's specific joined data shape
@@ -72,6 +74,7 @@ const ProposalsManagement = () => {
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     checkAuthAndFetch();
@@ -193,6 +196,7 @@ const ProposalsManagement = () => {
     if (result.success) {
       setComparisonOpen(false);
       setComparisonIds(new Set());
+      await invalidateProposalQueries(queryClient, proposalId, undefined, user?.id);
       if (user) await fetchProposals(user.id);
     }
   };
@@ -207,6 +211,7 @@ const ProposalsManagement = () => {
     });
 
     if (result.success && user) {
+      await invalidateProposalQueries(queryClient, proposalId, undefined, user.id);
       await fetchProposals(user.id);
     }
   };

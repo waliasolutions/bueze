@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBa
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProposalComparisonDialog } from './ProposalComparisonDialog';
+import { invalidateProposalQueries } from '@/lib/queryInvalidation';
 import type { ProposalWithHandwerkerInfo } from '@/types/entities';
 
 // Extended type for ReceivedProposals with specific joined data
@@ -58,6 +60,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
   const [sortBy, setSortBy] = useState<'date' | 'price_low' | 'price_high'>('date');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     fetchProposals();
@@ -234,6 +237,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
     });
 
     setSelectedIds(new Set());
+    await invalidateProposalQueries(queryClient, undefined, undefined, userId);
     fetchProposals();
   };
 
@@ -249,6 +253,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
     if (result.success) {
       setComparisonOpen(false);
       setComparisonIds(new Set());
+      await invalidateProposalQueries(queryClient, proposalId, undefined, userId);
       fetchProposals();
     }
   };
@@ -263,6 +268,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
     });
 
     if (result.success) {
+      await invalidateProposalQueries(queryClient, proposalId, undefined, userId);
       fetchProposals();
     }
   };
