@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, MapPin, Eye, Users, FileText, Trash2, Archive, RotateCcw } from 'lucide-react';
-import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
+import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
@@ -221,9 +221,7 @@ const Dashboard = () => {
     }
   };
 
-  const formatBudget = (min: number, max: number) => {
-    return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
-  };
+  // formatBudget imported from swissTime.ts (SSOT)
 
   if (loading || roleLoading) {
     return (

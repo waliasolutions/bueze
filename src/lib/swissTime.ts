@@ -153,3 +153,22 @@ export function formatCurrency(amount: number): string {
 export function formatNumber(value: number): string {
   return new Intl.NumberFormat('de-CH').format(value);
 }
+
+/**
+ * Format budget range in Swiss format
+ * SSOT: This is the single source of truth for budget formatting
+ */
+export function formatBudget(
+  min: number | null | undefined, 
+  max: number | null | undefined,
+  budgetType?: 'fixed' | 'hourly' | 'estimate'
+): string {
+  if (budgetType === 'estimate') return 'Nach Offerte';
+  if ((min === null || min === undefined) && (max === null || max === undefined)) return 'Nach Offerte';
+  if (min !== null && min !== undefined && max !== null && max !== undefined) {
+    return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
+  }
+  if (min !== null && min !== undefined) return `ab CHF ${formatNumber(min)}`;
+  if (max !== null && max !== undefined) return `bis CHF ${formatNumber(max)}`;
+  return 'Nach Offerte';
+}

@@ -11,7 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Clock, Coins, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Users, ArrowLeft } from 'lucide-react';
-import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
+import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { pauseLead, completeLead, deleteLead, reactivateLead, getLeadAnalytics } from '@/lib/leadHelpers';
 import { getLeadStatus } from '@/config/leadStatuses';
 import type { LeadAnalytics } from '@/lib/leadHelpers';
@@ -187,9 +187,7 @@ const LeadDetails = () => {
     setUpdating(false);
   };
 
-  const formatBudget = (min: number, max: number) => {
-    return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
-  };
+  // formatBudget imported from swissTime.ts (SSOT)
 
   const isOwnLead = user && lead && lead.owner_id === user.id;
   // CRITICAL: Only show contact info if proposal is ACCEPTED or it's the owner's lead
