@@ -19,6 +19,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 
+interface AdminSidebarProps {
+  onNavigate?: () => void;
+}
+
 interface NavItem {
   label: string;
   href?: string;
@@ -69,7 +73,7 @@ const navSections: NavSection[] = [
   },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,6 +91,11 @@ export function AdminSidebar() {
     navigate('/');
   };
 
+  const handleNavigation = (href: string) => {
+    navigate(href);
+    onNavigate?.();
+  };
+
   // Account section added at the bottom
   const accountSection: NavSection = {
     title: 'Konto',
@@ -98,35 +107,41 @@ export function AdminSidebar() {
 
   const allSections = [...navSections, accountSection];
 
+  // Check if we're in mobile sheet (onNavigate prop is present)
+  const isMobileSheet = !!onNavigate;
+
   return (
     <aside
       className={cn(
-        'sticky top-16 h-[calc(100vh-4rem)] border-r bg-card transition-all duration-300 flex-shrink-0',
-        collapsed ? 'w-16' : 'w-56'
+        'h-full border-r bg-card transition-all duration-300 flex-shrink-0',
+        isMobileSheet ? 'w-full' : 'sticky top-16 h-[calc(100vh-4rem)]',
+        !isMobileSheet && (collapsed ? 'w-16' : 'w-56')
       )}
     >
       <div className="flex flex-col h-full">
-        {/* Collapse Toggle */}
-        <div className="flex justify-end p-2 border-b">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed(!collapsed)}
-            className="h-8 w-8"
-          >
-            {collapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+        {/* Collapse Toggle - only on desktop */}
+        {!isMobileSheet && (
+          <div className="flex justify-end p-2 border-b">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCollapsed(!collapsed)}
+              className="h-8 w-8"
+            >
+              {collapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-2 space-y-4">
           {allSections.map((section, sectionIndex) => (
             <div key={section.title} className={sectionIndex === allSections.length - 1 ? 'mt-auto pt-4 border-t' : ''}>
-              {!collapsed && (
+              {(!collapsed || isMobileSheet) && (
                 <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   {section.title}
                 </p>
@@ -141,17 +156,20 @@ export function AdminSidebar() {
                     return (
                       <li key={item.label}>
                         <button
-                          onClick={item.onClick}
+                          onClick={() => {
+                            item.onClick!();
+                            onNavigate?.();
+                          }}
                           className={cn(
-                            'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full text-left',
+                            'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors w-full text-left min-h-[44px]',
                             item.destructive 
                               ? 'text-destructive hover:bg-destructive/10' 
                               : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                           )}
-                          title={collapsed ? item.label : undefined}
+                          title={collapsed && !isMobileSheet ? item.label : undefined}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
-                          {!collapsed && <span>{item.label}</span>}
+                          {(!collapsed || isMobileSheet) && <span>{item.label}</span>}
                         </button>
                       </li>
                     );
@@ -160,19 +178,19 @@ export function AdminSidebar() {
                   // Handle navigation items
                   return (
                     <li key={item.href}>
-                      <NavLink
-                        to={item.href!}
+                      <button
+                        onClick={() => handleNavigation(item.href!)}
                         className={cn(
-                          'flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                          'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors w-full text-left min-h-[44px]',
                           active
                             ? 'bg-primary text-primary-foreground'
                             : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                         )}
-                        title={collapsed ? item.label : undefined}
+                        title={collapsed && !isMobileSheet ? item.label : undefined}
                       >
                         <Icon className="h-4 w-4 shrink-0" />
-                        {!collapsed && <span>{item.label}</span>}
-                      </NavLink>
+                        {(!collapsed || isMobileSheet) && <span>{item.label}</span>}
+                      </button>
                     </li>
                   );
                 })}

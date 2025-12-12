@@ -229,22 +229,24 @@ const ConversationsList = () => {
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-3xl font-bold">Nachrichten</h1>
-              <p className="text-muted-foreground">
-                Verwalten Sie Ihre Unterhaltungen mit Handwerkern und Auftraggebern
+              <h1 className="text-2xl sm:text-3xl font-bold">Nachrichten</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">
+                Ihre Unterhaltungen mit Handwerkern und Auftraggebern
               </p>
             </div>
-            <Button onClick={() => {
-              // Use cached role from user state instead of additional query
-              // Navigate to handwerker dashboard if user has handwerker conversations
-              const hasHandwerkerConversations = conversations.some(
-                c => c.handwerker_id === user?.id
-              );
-              navigate(hasHandwerkerConversations ? '/handwerker-dashboard' : '/dashboard');
-            }}>
-              Zurück zum Dashboard
+            <Button 
+              size="sm"
+              className="self-start sm:self-auto"
+              onClick={() => {
+                const hasHandwerkerConversations = conversations.some(
+                  c => c.handwerker_id === user?.id
+                );
+                navigate(hasHandwerkerConversations ? '/handwerker-dashboard' : '/dashboard');
+              }}
+            >
+              Zurück
             </Button>
           </div>
 
@@ -277,77 +279,61 @@ const ConversationsList = () => {
                     }`}
                     onClick={() => navigate(`/messages/${conversation.id}`)}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+                        <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
                           <AvatarImage src={otherUser.avatar_url} />
                           <AvatarFallback>
-                            <User className="h-6 w-6" />
+                            <User className="h-5 w-5 sm:h-6 sm:w-6" />
                           </AvatarFallback>
                         </Avatar>
 
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <h3 className={`font-semibold truncate ${
+                          <div className="flex items-start sm:items-center justify-between gap-2 mb-1">
+                            <h3 className={`font-semibold truncate text-sm sm:text-base ${
                               hasUnread ? 'text-primary' : ''
                             }`}>
                               {otherUser.full_name || 'Benutzer'}
                             </h3>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                               {hasUnread && (
-                                <Badge variant="default" className="text-xs">
+                                <Badge variant="default" className="text-xs h-5 min-w-[20px] flex items-center justify-center">
                                   {conversation.unread_count}
                                 </Badge>
                               )}
-                              {conversation.latest_message && (
-                                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {formatConversationTime(conversation.latest_message.created_at)}
-                                </span>
-                              )}
+                              <Badge 
+                                variant={conversation.lead.status === 'active' ? 'default' : 'secondary'}
+                                className="text-xs hidden sm:inline-flex"
+                              >
+                                {conversation.lead.status === 'active' ? 'Aktiv' : 'Abgeschlossen'}
+                              </Badge>
                             </div>
                           </div>
 
-                          <p className="text-sm text-muted-foreground mb-2 truncate">
-                            Auftrag: {conversation.lead.title}
+                          <p className="text-xs sm:text-sm text-muted-foreground mb-1.5 truncate">
+                            {conversation.lead.title}
                           </p>
 
-                          {conversation.latest_message ? (
-                            <p className={`text-sm truncate ${
-                              hasUnread ? 'font-medium' : 'text-muted-foreground'
-                            }`}>
-                              {conversation.latest_message.sender_id === user?.id ? 'Sie: ' : ''}
-                              {truncateMessage(conversation.latest_message.content)}
-                            </p>
-                          ) : (
-                            <p className="text-sm text-muted-foreground italic">
-                              Noch keine Nachrichten
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="flex flex-col items-end gap-2">
-                          <Badge 
-                            variant={conversation.lead.status === 'active' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {conversation.lead.status === 'active' ? 'Aktiv' : 'Abgeschlossen'}
-                          </Badge>
-                          {/* View Profile Button */}
-                          {user?.id === conversation.homeowner_id && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/handwerker/${conversation.handwerker_id}`);
-                              }}
-                              className="text-xs"
-                            >
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              Profil
-                            </Button>
-                          )}
+                          <div className="flex items-center justify-between gap-2">
+                            {conversation.latest_message ? (
+                              <p className={`text-xs sm:text-sm truncate flex-1 ${
+                                hasUnread ? 'font-medium' : 'text-muted-foreground'
+                              }`}>
+                                {conversation.latest_message.sender_id === user?.id ? 'Sie: ' : ''}
+                                {truncateMessage(conversation.latest_message.content, 40)}
+                              </p>
+                            ) : (
+                              <p className="text-xs sm:text-sm text-muted-foreground italic">
+                                Noch keine Nachrichten
+                              </p>
+                            )}
+                            {conversation.latest_message && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                                <Clock className="h-3 w-3" />
+                                {formatConversationTime(conversation.latest_message.created_at)}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </CardContent>

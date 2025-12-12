@@ -847,8 +847,8 @@ const HandwerkerDashboard = () => {
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-7xl mx-auto">
           {/* Page Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
               <div>
                 {isAdmin && (
                   <Badge variant="outline" className="mb-2 bg-green-50 text-green-700 border-green-200">
@@ -856,48 +856,53 @@ const HandwerkerDashboard = () => {
                     Handwerker-Ansicht
                   </Badge>
                 )}
-                <h1 className="text-3xl font-bold text-foreground">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                   Willkommen, {handwerkerProfile.first_name || 'Handwerker'}!
                 </h1>
                 {user && <div className="flex items-center gap-3 mt-2">
                     <HandwerkerStatusIndicator userId={user.id} verificationStatus={handwerkerProfile.verification_status} />
                   </div>}
               </div>
-              <div className="flex gap-3 items-center">
-                <Button onClick={() => navigate('/conversations')} variant="outline">
+              <div className="flex gap-2 sm:gap-3 items-center">
+                {/* Mobile: icon only */}
+                <Button onClick={() => navigate('/conversations')} variant="outline" size="icon" className="sm:hidden h-10 w-10">
+                  <Users className="h-4 w-4" />
+                </Button>
+                <Button onClick={() => navigate('/conversations')} variant="outline" className="hidden sm:inline-flex">
                   <Users className="h-4 w-4 mr-2" />
                   Nachrichten
                 </Button>
                 {user && <ProposalLimitBadge userId={user.id} />}
               </div>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm sm:text-base">
               Verwalten Sie Ihre Leads, Angebote und Profil
             </p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="leads">
-                <Search className="h-4 w-4 mr-2" />
-                Aufträge
+            <TabsList className="w-full flex flex-wrap sm:grid sm:grid-cols-4 h-auto p-1 gap-1">
+              <TabsTrigger value="leads" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px]">
+                <Search className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Aufträge</span>
               </TabsTrigger>
-              <TabsTrigger value="proposals" className="relative">
-                <FileText className="h-4 w-4 mr-2" />
-                Angebote
+              <TabsTrigger value="proposals" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px] relative">
+                <FileText className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Angebote</span>
                 {pendingProposalsCount > 0 && (
-                  <Badge className="ml-2 bg-orange-500 hover:bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5">
+                  <Badge className="ml-1 sm:ml-2 bg-orange-500 hover:bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5">
                     {pendingProposalsCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="reviews">
-                <Star className="h-4 w-4 mr-2" />
-                Bewertungen ({reviews.length})
+              <TabsTrigger value="reviews" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px]">
+                <Star className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Bewertungen</span>
+                <span className="ml-1">({reviews.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="profile">
-                <User className="h-4 w-4 mr-2" />
-                Profil
+              <TabsTrigger value="profile" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px]">
+                <User className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Profil</span>
               </TabsTrigger>
             </TabsList>
 
