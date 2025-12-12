@@ -520,6 +520,84 @@ export type Database = {
           },
         ]
       }
+      handwerker_documents: {
+        Row: {
+          created_at: string
+          document_name: string
+          document_number: string | null
+          document_type: string
+          document_url: string
+          expiry_date: string | null
+          handwerker_profile_id: string
+          id: string
+          issued_date: string | null
+          issuing_authority: string | null
+          reminder_14_sent: boolean | null
+          reminder_30_sent: boolean | null
+          reminder_7_sent: boolean | null
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_name: string
+          document_number?: string | null
+          document_type: string
+          document_url: string
+          expiry_date?: string | null
+          handwerker_profile_id: string
+          id?: string
+          issued_date?: string | null
+          issuing_authority?: string | null
+          reminder_14_sent?: boolean | null
+          reminder_30_sent?: boolean | null
+          reminder_7_sent?: boolean | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_name?: string
+          document_number?: string | null
+          document_type?: string
+          document_url?: string
+          expiry_date?: string | null
+          handwerker_profile_id?: string
+          id?: string
+          issued_date?: string | null
+          issuing_authority?: string | null
+          reminder_14_sent?: boolean | null
+          reminder_30_sent?: boolean | null
+          reminder_7_sent?: boolean | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handwerker_documents_handwerker_profile_id_fkey"
+            columns: ["handwerker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "handwerker_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handwerker_documents_handwerker_profile_id_fkey"
+            columns: ["handwerker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "handwerker_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handwerker_notifications: {
         Row: {
           created_at: string | null
@@ -1662,6 +1740,49 @@ export type Database = {
       }
     }
     Views: {
+      expiring_documents: {
+        Row: {
+          company_name: string | null
+          created_at: string | null
+          document_name: string | null
+          document_number: string | null
+          document_type: string | null
+          document_url: string | null
+          email: string | null
+          expiry_date: string | null
+          expiry_status: string | null
+          first_name: string | null
+          handwerker_profile_id: string | null
+          id: string | null
+          issued_date: string | null
+          issuing_authority: string | null
+          last_name: string | null
+          reminder_14_sent: boolean | null
+          reminder_30_sent: boolean | null
+          reminder_7_sent: boolean | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handwerker_documents_handwerker_profile_id_fkey"
+            columns: ["handwerker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "handwerker_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handwerker_documents_handwerker_profile_id_fkey"
+            columns: ["handwerker_profile_id"]
+            isOneToOne: false
+            referencedRelation: "handwerker_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handwerker_profiles_public: {
         Row: {
           bio: string | null
