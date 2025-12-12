@@ -1792,6 +1792,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      handwerker_has_proposal_on_lead: {
+        Args: { lead_uuid: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

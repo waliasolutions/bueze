@@ -550,12 +550,32 @@ const HandwerkerOnboarding = () => {
         
         if (import.meta.env.DEV) console.log('Using existing auth account:', userId);
       } else {
+        // Normalize email before checking and signup
+        const normalizedEmail = formData.email.toLowerCase().trim();
+        
+        // Check if email already exists in profiles table before attempting signup
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', normalizedEmail)
+          .maybeSingle();
+        
+        if (existingProfile) {
+          toast({
+            title: 'E-Mail bereits registriert',
+            description: 'Ein Konto mit dieser E-Mail existiert bereits. Bitte melden Sie sich an.',
+            variant: 'destructive',
+          });
+          setTimeout(() => navigate('/auth'), 2000);
+          return;
+        }
+        
         // Create new auth account
         tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + '!';
         if (import.meta.env.DEV) console.log('Generated temporary password');
 
         const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: formData.email,
+          email: normalizedEmail,
           password: tempPassword,
           options: {
             data: {
