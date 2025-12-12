@@ -214,7 +214,7 @@ export function NotificationDropdown<T extends BaseNotification>({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-80 p-0 z-[120]" align="end">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold">Benachrichtigungen</h3>
           {unreadCount > 0 && (
