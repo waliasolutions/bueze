@@ -27,7 +27,7 @@ import { ProposalFileUpload } from "@/components/ProposalFileUpload";
 import { uploadProposalAttachment } from "@/lib/fileUpload";
 import { majorCategories } from "@/config/majorCategories";
 import { getCategoryLabel } from "@/config/categoryLabels";
-import { getCantonLabel } from "@/config/cantons";
+import { getCantonLabel, SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
@@ -53,6 +53,8 @@ const HandwerkerDashboard = () => {
   // Enhanced filtering
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAllRegions, setShowAllRegions] = useState(false);
+  const [selectedCanton, setSelectedCanton] = useState<string>('all');
+  const [proposalStatusFilter, setProposalStatusFilter] = useState<string>('all');
 
   // Proposals Tab
   const [proposals, setProposals] = useState<ProposalWithClientInfo[]>([]);
@@ -747,7 +749,7 @@ const HandwerkerDashboard = () => {
     checkServiceAreaMatch(lead, handwerkerProfile?.service_areas || [])
   ).length;
   const additionalLeadsCount = allLeads.length - matchedLeadsCount;
-  const isFiltersActive = showAllCategories || showAllRegions;
+  const isFiltersActive = showAllCategories || showAllRegions || selectedCanton !== 'all';
   
   // Check if a lead is outside the handwerker's profile settings
   const isLeadOutsideProfile = (lead: LeadListItem) => {
@@ -759,9 +761,20 @@ const HandwerkerDashboard = () => {
   const resetFilters = () => {
     setShowAllCategories(false);
     setShowAllRegions(false);
+    setSelectedCanton('all');
   };
   
-  const filteredLeads = leads.filter(lead => lead.title.toLowerCase().includes(searchTerm.toLowerCase()) || lead.description.toLowerCase().includes(searchTerm.toLowerCase()) || lead.city.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Apply canton filter and search term
+  const filteredLeads = leads.filter(lead => {
+    // Canton filter (when browsing all regions and specific canton selected)
+    if (showAllRegions && selectedCanton !== 'all' && lead.canton !== selectedCanton) {
+      return false;
+    }
+    // Search term filter
+    return lead.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           lead.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           lead.city.toLowerCase().includes(searchTerm.toLowerCase());
+  });
   return <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
@@ -871,7 +884,10 @@ const HandwerkerDashboard = () => {
                     {/* Region Filter */}
                     <Select 
                       value={showAllRegions ? 'all' : 'my'} 
-                      onValueChange={(val) => setShowAllRegions(val === 'all')}
+                      onValueChange={(val) => {
+                        setShowAllRegions(val === 'all');
+                        if (val !== 'all') setSelectedCanton('all');
+                      }}
                     >
                       <SelectTrigger className="w-[180px] bg-background">
                         <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -882,6 +898,26 @@ const HandwerkerDashboard = () => {
                         <SelectItem value="all">Ganze Schweiz</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    {/* Specific Canton Filter - only when browsing all regions */}
+                    {showAllRegions && (
+                      <Select 
+                        value={selectedCanton} 
+                        onValueChange={setSelectedCanton}
+                      >
+                        <SelectTrigger className="w-[160px] bg-background">
+                          <SelectValue placeholder="Alle Kantone" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                          <SelectItem value="all">Alle Kantone</SelectItem>
+                          {SWISS_CANTONS.map(canton => (
+                            <SelectItem key={canton.value} value={canton.value}>
+                              {canton.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
 
                     {/* Search Input */}
                     <div className="relative flex-1 min-w-[200px]">
@@ -908,8 +944,16 @@ const HandwerkerDashboard = () => {
                     <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground bg-brand-50 dark:bg-brand-950/30 p-2 px-3 rounded-md">
                       <Globe className="h-4 w-4 text-brand-600" />
                       <span>
-                        Sie sehen {showAllCategories && showAllRegions ? "alle" : showAllCategories ? "alle Kategorien" : "die ganze Schweiz"}.
-                        Aufträge ausserhalb Ihres Profils sind markiert.
+                        Sie sehen {
+                          selectedCanton !== 'all' 
+                            ? `Aufträge in ${getCantonLabel(selectedCanton)}`
+                            : showAllCategories && showAllRegions 
+                              ? "alle Aufträge" 
+                              : showAllCategories 
+                                ? "alle Kategorien" 
+                                : "die ganze Schweiz"
+                        }.
+                        {(showAllCategories || showAllRegions) && " Aufträge ausserhalb Ihres Profils sind markiert."}
                       </span>
                     </div>
                   )}
@@ -1115,12 +1159,52 @@ const HandwerkerDashboard = () => {
             <TabsContent value="proposals" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Meine Angebote</CardTitle>
-                  <CardDescription>
-                    Übersicht über alle Ihre eingereichten Angebote
-                  </CardDescription>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <CardTitle>Meine Angebote</CardTitle>
+                      <CardDescription>
+                        Übersicht über alle Ihre eingereichten Angebote
+                      </CardDescription>
+                    </div>
+                    {/* Proposal Stats */}
+                    {proposals.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary" className="gap-1">
+                          <Clock className="h-3 w-3" />
+                          {proposals.filter(p => p.status === 'pending').length} ausstehend
+                        </Badge>
+                        <Badge variant="default" className="gap-1 bg-green-600">
+                          <CheckCircle className="h-3 w-3" />
+                          {proposals.filter(p => p.status === 'accepted').length} angenommen
+                        </Badge>
+                        <Badge variant="destructive" className="gap-1">
+                          <XCircle className="h-3 w-3" />
+                          {proposals.filter(p => p.status === 'rejected').length} abgelehnt
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
+                  {/* Status Filter */}
+                  {proposals.length > 0 && (
+                    <div className="flex gap-2 mb-4">
+                      <Select value={proposalStatusFilter} onValueChange={setProposalStatusFilter}>
+                        <SelectTrigger className="w-[180px]">
+                          <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <SelectValue placeholder="Alle Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Alle Angebote</SelectItem>
+                          <SelectItem value="pending">Ausstehend</SelectItem>
+                          <SelectItem value="accepted">Angenommen</SelectItem>
+                          <SelectItem value="rejected">Abgelehnt</SelectItem>
+                          <SelectItem value="withdrawn">Zurückgezogen</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
                   {proposalsLoading ? <div className="text-center py-8">
                       <Loader2 className="h-8 w-8 animate-spin text-brand-600 mx-auto" />
                     </div> : proposals.length === 0 ? <Alert>
@@ -1128,8 +1212,34 @@ const HandwerkerDashboard = () => {
                       <AlertDescription>
                         Sie haben noch keine Angebote eingereicht. Durchsuchen Sie verfügbare Aufträge, um Angebote zu senden.
                       </AlertDescription>
-                    </Alert> : <div className="space-y-4">
-                      {proposals.map(proposal => <Card key={proposal.id}>
+                    </Alert> : (() => {
+                      const filteredProposals = proposalStatusFilter === 'all' 
+                        ? proposals 
+                        : proposals.filter(p => p.status === proposalStatusFilter);
+                      
+                      // Sort: accepted first, then pending, then rejected/withdrawn
+                      const sortedProposals = [...filteredProposals].sort((a, b) => {
+                        const order = { accepted: 0, pending: 1, rejected: 2, withdrawn: 3 };
+                        return (order[a.status as keyof typeof order] || 4) - (order[b.status as keyof typeof order] || 4);
+                      });
+                      
+                      if (sortedProposals.length === 0) {
+                        return (
+                          <Alert>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              Keine Angebote mit diesem Status gefunden.
+                            </AlertDescription>
+                          </Alert>
+                        );
+                      }
+                      
+                      return <div className="space-y-4">
+                      {sortedProposals.map(proposal => <Card key={proposal.id} className={
+                        proposal.status === 'accepted' ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' :
+                        proposal.status === 'rejected' ? 'border-muted bg-muted/30' :
+                        ''
+                      }>
                           <CardHeader>
                             <div className="flex items-start justify-between">
                               <div>
@@ -1276,7 +1386,8 @@ const HandwerkerDashboard = () => {
                             </div>
                           </CardContent>
                         </Card>)}
-                    </div>}
+                    </div>;
+                    })()}
                 </CardContent>
               </Card>
             </TabsContent>
