@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 
@@ -31,33 +32,23 @@ export default function Auth() {
     fullName: ''
   });
 
-  const handlePostLoginRedirect = async (user: any) => {
-    // Parallel fetch: role + handwerker profile (faster than sequential)
-    const [roleResult, profileResult] = await Promise.all([
-      supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle(),
-      supabase
-        .from('handwerker_profiles')
-        .select('id, verification_status')
-        .eq('user_id', user.id)
-        .maybeSingle()
-    ]);
-    
-    const roleData = roleResult.data;
-    const existingProfile = profileResult.data;
-    
+  const handlePostLoginRedirect = async (user: any, roleData: { role: string } | null, isHandwerkerRole: boolean) => {
     // Check for admin/super_admin role FIRST
     if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
       navigate('/admin/dashboard');
       return;
     }
     
+    // Fetch handwerker profile
+    const { data: existingProfile } = await supabase
+      .from('handwerker_profiles')
+      .select('id, verification_status')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    
     // Check if user is a handwerker (by role or metadata)
     const userRole = user.user_metadata?.role;
-    const isHandwerker = roleData?.role === 'handwerker' || userRole === 'handwerker';
+    const isHandwerker = isHandwerkerRole || userRole === 'handwerker';
     
     if (isHandwerker) {
       if (existingProfile) {
@@ -71,11 +62,20 @@ export default function Auth() {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        // Defer database calls to avoid deadlock
+        // Fetch role from database
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        const isHandwerkerRole = roleData?.role === 'handwerker';
+        
+        // Defer to avoid deadlock
         setTimeout(() => {
-          handlePostLoginRedirect(session.user);
+          handlePostLoginRedirect(session.user, roleData, isHandwerkerRole);
         }, 0);
       }
     });

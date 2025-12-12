@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, AlertTriangle, Search, Filter, History, Trash2, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -78,8 +79,8 @@ interface ApprovalHistoryEntry {
 const HandwerkerApprovals = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [pendingHandwerkers, setPendingHandwerkers] = useState<PendingHandwerker[]>([]);
   const [filteredHandwerkers, setFilteredHandwerkers] = useState<PendingHandwerker[]>([]);
   const [approving, setApproving] = useState<string | null>(null);
@@ -93,53 +94,25 @@ const HandwerkerApprovals = () => {
   const [editFormData, setEditFormData] = useState<Partial<PendingHandwerker>>({});
 
   useEffect(() => {
-    checkAdminAccess();
-    fetchApprovalHistory();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [searchTerm, completenessFilter, documentsFilter, pendingHandwerkers]);
-
-  const checkAdminAccess = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: 'Nicht angemeldet',
-          description: 'Bitte melden Sie sich an.',
-          variant: 'destructive',
-        });
-        navigate('/auth');
-        return;
-      }
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .in('role', ['admin', 'super_admin']);
-
-      if (!roleData || roleData.length === 0) {
+    if (!roleLoading) {
+      if (!isAdmin) {
         toast({
           title: 'Zugriff verweigert',
           description: 'Sie haben keine Berechtigung für diese Seite.',
           variant: 'destructive',
         });
         navigate('/dashboard');
-        return;
+      } else {
+        fetchPendingHandwerkers();
+        fetchApprovalHistory();
+        setIsLoading(false);
       }
-
-      setIsAdmin(true);
-      await fetchPendingHandwerkers();
-    } catch (error) {
-      console.error('Error checking admin access:', error);
-      navigate('/dashboard');
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [roleLoading, isAdmin]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [searchTerm, completenessFilter, documentsFilter, pendingHandwerkers]);
 
   const fetchPendingHandwerkers = async () => {
     try {
