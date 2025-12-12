@@ -14,8 +14,10 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useProposalFormValidation } from "@/hooks/useProposalFormValidation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { withdrawProposal } from "@/lib/proposalQueries";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
 import { ProposalStatusBadge } from "@/components/ProposalStatusBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
@@ -80,8 +82,21 @@ const HandwerkerDashboard = () => {
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   
+  // Edit/Withdraw Proposal State
+  const [editingProposal, setEditingProposal] = useState<ProposalWithClientInfo | null>(null);
+  const [editForm, setEditForm] = useState({
+    price_min: "",
+    price_max: "",
+    message: "",
+    estimated_duration_days: ""
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+  
   // Form validation hook
   const { errors, touched, handleBlur, validateAll, resetValidation } = useProposalFormValidation(proposalForm);
+  
+  // Calculate pending proposals count
+  const pendingProposalsCount = proposals.filter(p => p.status === 'pending').length;
   useEffect(() => {
     let isMounted = true;
     
@@ -468,6 +483,75 @@ const HandwerkerDashboard = () => {
       setSubmittingProposal(false);
     }
   };
+
+  // Handle withdraw proposal
+  const handleWithdrawProposal = async (proposalId: string) => {
+    try {
+      await withdrawProposal(proposalId);
+      toast({
+        title: "Angebot zurückgezogen",
+        description: "Ihr Angebot wurde erfolgreich zurückgezogen."
+      });
+      // Refresh proposals and leads (lead becomes available again)
+      await Promise.all([
+        fetchProposals(user!.id),
+        fetchLeads(user!.id, handwerkerProfile?.categories || [], handwerkerProfile?.service_areas || [])
+      ]);
+    } catch (error) {
+      toast({
+        title: "Fehler",
+        description: "Angebot konnte nicht zurückgezogen werden.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Handle edit proposal
+  const handleOpenEditDialog = (proposal: ProposalWithClientInfo) => {
+    setEditForm({
+      price_min: proposal.price_min.toString(),
+      price_max: proposal.price_max.toString(),
+      message: proposal.message,
+      estimated_duration_days: proposal.estimated_duration_days?.toString() || ""
+    });
+    setEditingProposal(proposal);
+  };
+
+  const handleSaveEditProposal = async () => {
+    if (!editingProposal) return;
+    
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from('lead_proposals')
+        .update({
+          price_min: parseInt(editForm.price_min),
+          price_max: parseInt(editForm.price_max),
+          message: editForm.message,
+          estimated_duration_days: editForm.estimated_duration_days ? parseInt(editForm.estimated_duration_days) : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingProposal.id);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Angebot aktualisiert",
+        description: "Ihre Änderungen wurden gespeichert."
+      });
+      await fetchProposals(user!.id);
+      setEditingProposal(null);
+    } catch (error) {
+      toast({
+        title: "Fehler",
+        description: "Änderungen konnten nicht gespeichert werden.",
+        variant: "destructive"
+      });
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const handleUpdateProfile = async () => {
     if (!handwerkerProfile?.id) return;
     setProfileEditing(true);
@@ -691,9 +775,14 @@ const HandwerkerDashboard = () => {
                 <Search className="h-4 w-4 mr-2" />
                 Aufträge
               </TabsTrigger>
-              <TabsTrigger value="proposals">
+              <TabsTrigger value="proposals" className="relative">
                 <FileText className="h-4 w-4 mr-2" />
-                Angebote ({proposals.length})
+                Angebote
+                {pendingProposalsCount > 0 && (
+                  <Badge className="ml-2 bg-orange-500 hover:bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5">
+                    {pendingProposalsCount}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="reviews">
                 <Star className="h-4 w-4 mr-2" />
@@ -994,6 +1083,43 @@ const HandwerkerDashboard = () => {
                                 )}
                               </div>
                               
+                              {/* Action buttons for pending proposals */}
+                              {proposal.status === 'pending' && (
+                                <div className="flex gap-2 pt-3 border-t">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleOpenEditDialog(proposal)}
+                                  >
+                                    <Pencil className="h-4 w-4 mr-1" />
+                                    Bearbeiten
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                                        <X className="h-4 w-4 mr-1" />
+                                        Zurückziehen
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Angebot zurückziehen?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Möchten Sie dieses Angebot wirklich zurückziehen? 
+                                          Der Auftrag wird wieder in Ihrer Auftragsliste erscheinen.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleWithdrawProposal(proposal.id)}>
+                                          Ja, zurückziehen
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              )}
+                              
                               {/* Show client contact details for accepted proposals */}
                               {proposal.status === 'accepted' && proposal.client_contact && (
                                 <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -1197,6 +1323,79 @@ const HandwerkerDashboard = () => {
         </div>
       </main>
       <Footer />
+      
+      {/* Edit Proposal Dialog */}
+      <Dialog open={!!editingProposal} onOpenChange={(open) => !open && setEditingProposal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Angebot bearbeiten</DialogTitle>
+            <DialogDescription>
+              {editingProposal?.leads.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-price-min">Preis min. (CHF)</Label>
+                <Input
+                  id="edit-price-min"
+                  type="number"
+                  value={editForm.price_min}
+                  onChange={(e) => setEditForm({ ...editForm, price_min: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-price-max">Preis max. (CHF)</Label>
+                <Input
+                  id="edit-price-max"
+                  type="number"
+                  value={editForm.price_max}
+                  onChange={(e) => setEditForm({ ...editForm, price_max: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-duration">Geschätzte Dauer (Tage, optional)</Label>
+              <Input
+                id="edit-duration"
+                type="number"
+                value={editForm.estimated_duration_days}
+                onChange={(e) => setEditForm({ ...editForm, estimated_duration_days: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-message">Nachricht</Label>
+              <Textarea
+                id="edit-message"
+                value={editForm.message}
+                onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
+                rows={4}
+              />
+              <p className={`text-xs ${editForm.message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                {editForm.message.length}/50 Zeichen (min. 50)
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingProposal(null)}>
+              Abbrechen
+            </Button>
+            <Button 
+              onClick={handleSaveEditProposal} 
+              disabled={savingEdit || editForm.message.length < 50 || !editForm.price_min || !editForm.price_max}
+            >
+              {savingEdit ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Speichern...
+                </>
+              ) : (
+                "Änderungen speichern"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 };
 export default HandwerkerDashboard;
