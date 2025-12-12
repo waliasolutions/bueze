@@ -454,7 +454,7 @@ const Profile = () => {
                         )}
                       />
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <FormField
                           control={profileForm.control}
                           name="zip"
@@ -557,7 +557,7 @@ const Profile = () => {
                           )}
                         />
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <FormField
                             control={handwerkerForm.control}
                             name="hourly_rate_min"
@@ -601,7 +601,7 @@ const Profile = () => {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Fachbereiche</FormLabel>
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {categories.map((category) => (
                                   <div key={category.value} className="flex items-center space-x-2">
                                     <input

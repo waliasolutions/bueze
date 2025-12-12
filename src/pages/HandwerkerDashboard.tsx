@@ -937,13 +937,13 @@ const HandwerkerDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   {/* Enhanced Filter Bar */}
-                  <div className="flex flex-wrap gap-3 mb-4 p-3 bg-muted/50 rounded-lg">
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-4 p-3 bg-muted/50 rounded-lg">
                     {/* Category Filter */}
                     <Select 
                       value={showAllCategories ? 'all' : 'my'} 
                       onValueChange={(val) => setShowAllCategories(val === 'all')}
                     >
-                      <SelectTrigger className="w-[180px] bg-background">
+                      <SelectTrigger className="w-full sm:w-[180px] bg-background">
                         <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
                         <SelectValue />
                       </SelectTrigger>
@@ -961,7 +961,7 @@ const HandwerkerDashboard = () => {
                         if (val !== 'all') setSelectedCanton('all');
                       }}
                     >
-                      <SelectTrigger className="w-[180px] bg-background">
+                      <SelectTrigger className="w-full sm:w-[180px] bg-background">
                         <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
                         <SelectValue />
                       </SelectTrigger>
@@ -977,7 +977,7 @@ const HandwerkerDashboard = () => {
                         value={selectedCanton} 
                         onValueChange={setSelectedCanton}
                       >
-                        <SelectTrigger className="w-[160px] bg-background">
+                        <SelectTrigger className="w-full sm:w-[160px] bg-background">
                           <SelectValue placeholder="Alle Kantone" />
                         </SelectTrigger>
                         <SelectContent className="max-h-[300px]">
@@ -992,7 +992,7 @@ const HandwerkerDashboard = () => {
                     )}
 
                     {/* Search Input */}
-                    <div className="relative flex-1 min-w-[200px]">
+                    <div className="relative w-full sm:flex-1 sm:min-w-[200px]">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
                         placeholder="Suchen..." 
@@ -1061,17 +1061,17 @@ const HandwerkerDashboard = () => {
                               </Badge>
                             )}
                           <CardHeader>
-                            <div className="flex items-start justify-between">
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                               <div className="flex-1">
                                 <CardTitle className="text-lg">{lead.title}</CardTitle>
                                 <div className="flex items-center gap-2 mt-2">
-                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                   <span className="text-sm text-muted-foreground">
                                     {lead.city}, {getCantonLabel(lead.canton)} ({lead.zip})
                                   </span>
                                 </div>
                               </div>
-                              <div className={`flex flex-col gap-2 items-end ${outsideProfile ? 'mt-6' : ''}`}>
+                              <div className={`flex flex-wrap sm:flex-col gap-2 sm:items-end ${outsideProfile ? 'sm:mt-6' : ''}`}>
                                 {getUrgencyBadge(lead.urgency)}
                                 <Badge variant="outline">{getCategoryLabel(lead.category)}</Badge>
                               </div>
@@ -1106,7 +1106,7 @@ const HandwerkerDashboard = () => {
                                     </DialogDescription>
                                   </DialogHeader>
                                   <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                       <div className="space-y-2">
                                         <Label htmlFor="price_min">Preis von (CHF) *</Label>
                                         <Input 
