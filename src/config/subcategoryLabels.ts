@@ -110,7 +110,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Möbelbau',
     slug: 'moebelbau',
     shortDescription: 'Massanfertigung, Restauration',
-    majorCategoryId: 'innenausbau',
+    majorCategoryId: 'innenausbau_schreiner',
     keywords: ['Möbel', 'Massanfertigung', 'Restauration', 'Schreiner']
   },
   innenausbau_holz_metall: {
@@ -118,7 +118,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Innenausbau (Holz/Metall)',
     slug: 'innenausbau-holz-metall',
     shortDescription: 'Holz- und Metallarbeiten',
-    majorCategoryId: 'innenausbau',
+    majorCategoryId: 'innenausbau_schreiner',
     keywords: ['Holzarbeiten', 'Metallarbeiten', 'Innenausbau']
   },
 
@@ -406,7 +406,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Fussbodenheizung',
     slug: 'fussbodenheizung',
     shortDescription: 'Fussbodenheizung installieren',
-    majorCategoryId: 'heizung_klima_solar',
+    majorCategoryId: 'heizung_klima',
     keywords: ['Fussbodenheizung', 'Bodenheizung']
   },
   boiler: {
@@ -414,7 +414,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Boiler',
     slug: 'boiler',
     shortDescription: 'Warmwasserboiler',
-    majorCategoryId: 'heizung_klima_solar',
+    majorCategoryId: 'heizung_klima',
     keywords: ['Boiler', 'Warmwasser', 'Wassererwärmer']
   },
   klimaanlage_lueftung: {
@@ -422,7 +422,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Klimaanlage & Lüftungssysteme',
     slug: 'klimaanlage-lueftung',
     shortDescription: 'Klima, Lüftung',
-    majorCategoryId: 'heizung_klima_solar',
+    majorCategoryId: 'heizung_klima',
     keywords: ['Klima', 'Lüftung', 'Klimaanlage']
   },
   waermepumpen: {
@@ -430,7 +430,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Wärmepumpen',
     slug: 'waermepumpen',
     shortDescription: 'Wärmepumpen',
-    majorCategoryId: 'heizung_klima_solar',
+    majorCategoryId: 'heizung_klima',
     keywords: ['Wärmepumpe', 'Heizung']
   },
   cheminee_kamin_ofen: {
@@ -438,7 +438,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Cheminée, Kamin und Ofen',
     slug: 'cheminee-kamin-ofen',
     shortDescription: 'Cheminée, Kamin, Ofen',
-    majorCategoryId: 'heizung_klima_solar',
+    majorCategoryId: 'heizung_klima',
     keywords: ['Cheminée', 'Kamin', 'Ofen', 'Cheminee']
   },
   solarthermie: {
@@ -446,7 +446,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Solarthermie (Warmwasser)',
     slug: 'solarthermie',
     shortDescription: 'Solarthermie für Warmwasser',
-    majorCategoryId: 'heizung_klima_solar',
+    majorCategoryId: 'heizung_klima',
     keywords: ['Solarthermie', 'Solarkollektor', 'Warmwasser', 'Sonnenenergie']
   },
   photovoltaik: {
@@ -454,7 +454,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Solar, Photovoltaik & Batteriespeicher',
     slug: 'photovoltaik',
     shortDescription: 'PV-Anlagen, Stromspeicher',
-    majorCategoryId: 'heizung_klima_solar',
+    majorCategoryId: 'heizung_klima',
     keywords: ['Photovoltaik', 'PV', 'Solar', 'Batteriespeicher', 'Solaranlage', 'Stromspeicher']
   },
   heizung_sonstige: {
@@ -462,7 +462,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Sonstige Heizungsarbeiten',
     slug: 'heizung-sonstige',
     shortDescription: 'Weitere Heizungsarbeiten',
-    majorCategoryId: 'heizung_klima_solar',
+    majorCategoryId: 'heizung_klima',
     keywords: ['Heizung', 'Heizungsinstallation']
   },
 

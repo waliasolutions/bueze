@@ -71,6 +71,7 @@ export const subcategoryLabels: Record<string, string> = {
   "photovoltaik": "Solar, Photovoltaik & Batteriespeicher",
   "solarthermie": "Solarthermie (Warmwasser)",
   "heizung_sonstige": "Sonstige Heizungsarbeiten",
+  "heizung_sonstige": "Sonstige Heizungsarbeiten",
   
   // Sanitär
   "plumber_installation": "Sanitärinstallationen",

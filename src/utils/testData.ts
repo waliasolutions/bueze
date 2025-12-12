@@ -27,7 +27,7 @@ export interface TestUser {
 export interface TestLead {
   title: string;
   description: string;
-  category: 'bau_renovation' | 'bodenbelaege' | 'elektroinstallationen' | 'heizung_klima_solar' | 'sanitaer' | 'kueche' | 'innenausbau_schreiner' | 'garten_umgebung' | 'raeumung_entsorgung' | 'reinigung_hauswartung';
+  category: 'bau_renovation' | 'bodenbelaege' | 'elektroinstallationen' | 'heizung_klima' | 'sanitaer' | 'kueche' | 'innenausbau_schreiner' | 'garten_umgebung' | 'raeumung_entsorgung' | 'reinigung_hauswartung';
   budget_min: number;
   budget_max: number;
   urgency: 'today' | 'this_week' | 'this_month' | 'planning';
@@ -550,7 +550,7 @@ export const testLeads: TestLead[] = [
   {
     title: "Heizung modernisieren",
     description: "Alte Ölheizung durch moderne Wärmepumpe ersetzen. Einfamilienhaus 180m², bestehende Radiatoren sollen wenn möglich weiter verwendet werden. Fördergelder bereits beantragt.",
-    category: "heizung_klima_solar",
+    category: "heizung_klima",
     budget_min: 20000,
     budget_max: 35000,
     urgency: "this_week",
