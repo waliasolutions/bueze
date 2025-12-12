@@ -28,71 +28,93 @@ export const RatingPrompt: React.FC<RatingPromptProps> = ({ userId }) => {
   const [unratedLeads, setUnratedLeads] = useState<UnratedLead[]>([]);
   const [selectedLead, setSelectedLead] = useState<UnratedLead | null>(null);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetchUnratedLeads();
-  }, [userId]);
+    let isMounted = true;
 
-  const fetchUnratedLeads = async () => {
-    try {
-      // Get completed leads owned by user that have an accepted proposal
-      const { data: completedLeads, error: leadsError } = await supabase
-        .from('leads')
-        .select(`
-          id,
-          title,
-          updated_at,
-          accepted_proposal_id,
-          lead_proposals!leads_accepted_proposal_id_fkey(
-            handwerker_id
-          )
-        `)
-        .eq('owner_id', userId)
-        .eq('status', 'completed')
-        .not('accepted_proposal_id', 'is', null);
+    const fetchData = async () => {
+      try {
+        // Get completed leads owned by user that have an accepted proposal
+        const { data: completedLeads, error: leadsError } = await supabase
+          .from('leads')
+          .select(`
+            id,
+            title,
+            updated_at,
+            accepted_proposal_id,
+            lead_proposals!leads_accepted_proposal_id_fkey(
+              handwerker_id
+            )
+          `)
+          .eq('owner_id', userId)
+          .eq('status', 'completed')
+          .not('accepted_proposal_id', 'is', null);
 
-      if (leadsError) throw leadsError;
-      if (!completedLeads || completedLeads.length === 0) return;
+        if (leadsError) throw leadsError;
+        if (!completedLeads || completedLeads.length === 0 || !isMounted) return;
 
-      // Get existing reviews for these leads
-      const leadIds = completedLeads.map(l => l.id);
-      const { data: existingReviews } = await supabase
-        .from('reviews')
-        .select('lead_id')
-        .in('lead_id', leadIds)
-        .eq('reviewer_id', userId);
+        // Get existing reviews for these leads
+        const leadIds = completedLeads.map(l => l.id);
+        const { data: existingReviews } = await supabase
+          .from('reviews')
+          .select('lead_id')
+          .in('lead_id', leadIds)
+          .eq('reviewer_id', userId);
 
-      const reviewedLeadIds = new Set(existingReviews?.map(r => r.lead_id) || []);
+        const reviewedLeadIds = new Set(existingReviews?.map(r => r.lead_id) || []);
 
-      // Filter to unrated leads and fetch handwerker names
-      const unratedLeadsData = await Promise.all(
-        completedLeads
-          .filter(lead => !reviewedLeadIds.has(lead.id))
-          .map(async (lead) => {
-            const handwerkerId = (lead.lead_proposals as any)?.handwerker_id;
+        // Filter to unrated leads
+        const unratedLeadsFiltered = completedLeads.filter(lead => !reviewedLeadIds.has(lead.id));
+        
+        if (unratedLeadsFiltered.length === 0 || !isMounted) return;
+
+        // Batch fetch handwerker profiles to avoid N+1 queries
+        const handwerkerIds = unratedLeadsFiltered
+          .map(lead => {
+            const proposal = lead.lead_proposals as { handwerker_id: string } | null;
+            return proposal?.handwerker_id;
+          })
+          .filter((id): id is string => !!id);
+
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', handwerkerIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+
+        const unratedLeadsData: UnratedLead[] = unratedLeadsFiltered
+          .map(lead => {
+            const proposal = lead.lead_proposals as { handwerker_id: string } | null;
+            const handwerkerId = proposal?.handwerker_id;
             if (!handwerkerId) return null;
-
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('id', handwerkerId)
-              .single();
 
             return {
               id: lead.id,
               title: lead.title,
               handwerker_id: handwerkerId,
-              handwerker_name: profile?.full_name || 'Handwerker',
+              handwerker_name: profileMap.get(handwerkerId) || 'Handwerker',
               completed_at: lead.updated_at,
             };
           })
-      );
+          .filter((lead): lead is UnratedLead => lead !== null);
 
-      setUnratedLeads(unratedLeadsData.filter(Boolean) as UnratedLead[]);
-    } catch (error) {
-      console.error('Error fetching unrated leads:', error);
-    }
-  };
+        if (isMounted) {
+          setUnratedLeads(unratedLeadsData);
+        }
+      } catch (error) {
+        console.error('Error fetching unrated leads:', error);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [userId, refreshKey]);
+
 
   const handleDismiss = (leadId: string) => {
     setDismissed(prev => new Set([...prev, leadId]));
@@ -100,7 +122,7 @@ export const RatingPrompt: React.FC<RatingPromptProps> = ({ userId }) => {
 
   const handleRatingSuccess = () => {
     setSelectedLead(null);
-    fetchUnratedLeads();
+    setRefreshKey(prev => prev + 1); // Trigger refetch
   };
 
   const visibleLeads = unratedLeads.filter(lead => !dismissed.has(lead.id));

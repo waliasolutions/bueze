@@ -60,25 +60,35 @@ export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchPayments = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('payment_history')
+          .select('*')
+          .eq('user_id', userId)
+          .order('payment_date', { ascending: false });
+
+        if (error) throw error;
+        if (isMounted) {
+          setPayments(data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching payment history:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchPayments();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
-
-  const fetchPayments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('payment_history')
-        .select('*')
-        .eq('user_id', userId)
-        .order('payment_date', { ascending: false });
-
-      if (error) throw error;
-      setPayments(data || []);
-    } catch (error) {
-      console.error('Error fetching payment history:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
