@@ -130,13 +130,6 @@ const HandwerkerOnboarding = () => {
       
       updateFormDataServiceAreas(newSelection, manualPostalCodes);
       
-      toast({
-        title: isSelected ? "Kanton entfernt" : "Kanton hinzugefügt",
-        description: isSelected 
-          ? `${canton} wurde entfernt`
-          : `${canton} wurde hinzugefügt - deckt ${calculatePostalCodeCount([canton])} PLZ ab`,
-      });
-      
       return newSelection;
     });
   };
@@ -146,11 +139,6 @@ const HandwerkerOnboarding = () => {
     setSelectedCantons(prev => {
       const newSelection = prev.filter(c => c !== canton);
       updateFormDataServiceAreas(newSelection, manualPostalCodes);
-      
-      toast({
-        title: "Kanton entfernt",
-        description: `${canton} wurde entfernt`,
-      });
       
       return newSelection;
     });
@@ -188,12 +176,6 @@ const HandwerkerOnboarding = () => {
     setManualPostalCodes(prev => {
       const newCodes = [...prev, postalCode];
       updateFormDataServiceAreas(selectedCantons, newCodes);
-      
-      toast({
-        title: "PLZ hinzugefügt",
-        description: `PLZ ${postalCode} wurde hinzugefügt`,
-      });
-      
       return newCodes;
     });
     
@@ -205,12 +187,6 @@ const HandwerkerOnboarding = () => {
     setManualPostalCodes(prev => {
       const newCodes = prev.filter(code => code !== postalCode);
       updateFormDataServiceAreas(selectedCantons, newCodes);
-      
-      toast({
-        title: "PLZ entfernt",
-        description: `PLZ ${postalCode} wurde entfernt`,
-      });
-      
       return newCodes;
     });
   };
@@ -1552,17 +1528,7 @@ const HandwerkerOnboarding = () => {
                 />
               </div>
 
-              {sessionStorage.getItem('handwerker-upload-temp-id') && 
-               !uploadedFiles.insuranceDocument && 
-               !uploadedFiles.tradeLicense && (
-                <Alert className="border-amber-300 bg-amber-50">
-                  <AlertCircle className="h-5 w-5 text-amber-600" />
-                  <AlertDescription className="text-base ml-2">
-                    Es sieht so aus, als hätten Sie zuvor Dokumente hochgeladen, die nicht gespeichert wurden. 
-                    Bitte laden Sie Ihre Dokumente erneut hoch.
-                  </AlertDescription>
-                </Alert>
-              )}
+              {/* Removed misleading document upload warning - sessionStorage temp ID exists for unrelated reasons */}
 
               <div className="space-y-3">
                 <Label htmlFor="insuranceValidUntil" className="text-base font-medium">
@@ -2588,6 +2554,7 @@ const HandwerkerOnboarding = () => {
                     setCurrentStep(parsed.currentStep || 1);
                     setFormData(parsed.formData || formData);
                     setSelectedMajorCategories(parsed.selectedMajorCategories || []);
+                    setErrors({}); // Clear any stale validation errors
                     sessionStorage.removeItem('pending-recovery-data');
                   }
                   setShowRecoveryDialog(false);
