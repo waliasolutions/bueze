@@ -75,11 +75,13 @@ const Profile = () => {
   const [serviceAreaInput, setServiceAreaInput] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isHandwerker: isHandwerkerRole } = useUserRole();
+  const { isHandwerker: isHandwerkerRole, isAdmin } = useUserRole();
 
   // Role-aware back navigation
   const handleBackNavigation = () => {
-    if (isHandwerkerRole) {
+    if (isAdmin) {
+      navigate('/admin');
+    } else if (isHandwerkerRole) {
       navigate('/handwerker-dashboard');
     } else {
       navigate('/dashboard');
