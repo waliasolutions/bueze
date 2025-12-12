@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -239,28 +238,9 @@ const ReviewsManagement = () => {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-7xl">
-          {/* Header */}
-          <div className="mb-8">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/admin')}
-              className="mb-4"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Zurück zum Dashboard
-            </Button>
-            <h1 className="text-3xl font-bold mb-2">Bewertungen verwalten</h1>
-            <p className="text-muted-foreground">
-              Übersicht und Moderation aller Plattform-Bewertungen
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+    <AdminLayout title="Bewertungen verwalten" description="Übersicht und Moderation aller Plattform-Bewertungen">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
             <Card>
               <CardContent className="pt-6">
                 <div className="text-2xl font-bold">{totalReviews}</div>
@@ -451,10 +431,7 @@ const ReviewsManagement = () => {
               )}
             </CardContent>
           </Card>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </AdminLayout>
   );
 };
 

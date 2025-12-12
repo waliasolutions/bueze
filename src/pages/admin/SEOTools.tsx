@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, FileText, Globe, Loader2 } from 'lucide-react';
+import { FileText, Globe, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 
 export default function SEOTools() {
   const navigate = useNavigate();
@@ -106,20 +107,9 @@ export default function SEOTools() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center gap-4 mb-8">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/dashboard')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">SEO Tools</h1>
-            <p className="text-muted-foreground">Manage your site's SEO settings</p>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-3 mb-6">
+    <AdminLayout title="SEO Tools" description="Manage your site's SEO settings">
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
           <Card className="cursor-pointer hover:border-brand-500 transition-colors" onClick={() => navigate('/admin/seo/bulk-meta')}>
             <CardHeader>
               <CardTitle className="text-lg">Bulk Meta Management</CardTitle>
@@ -219,7 +209,6 @@ export default function SEOTools() {
             </CardContent>
           </Card>
         </div>
-      </div>
-    </div>
+    </AdminLayout>
   );
 }

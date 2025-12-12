@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Shield, Code } from 'lucide-react';
+import { Save, Shield, Code } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 
 export default function GTMConfiguration() {
   const navigate = useNavigate();
@@ -42,25 +42,16 @@ export default function GTMConfiguration() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
+      <AdminLayout title="GTM Configuration" description="Configure Google Tag Manager container ID">
         <p className="text-muted-foreground">Loading configuration...</p>
-      </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/admin/seo')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">GTM Configuration</h1>
-          <p className="text-muted-foreground">Configure Google Tag Manager container ID</p>
-        </div>
-      </div>
-
-      <Alert className="border-brand-500 bg-pastel-blue-50">
+    <AdminLayout title="GTM Configuration" description="Configure Google Tag Manager container ID">
+      <div className="space-y-6">
+        <Alert className="border-brand-500 bg-pastel-blue-50">
         <Shield className="h-4 w-4" />
         <AlertTitle>Security-First Approach</AlertTitle>
         <AlertDescription>
@@ -95,15 +86,16 @@ export default function GTMConfiguration() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-4">
-        <Button variant="outline" onClick={() => navigate('/admin/seo')}>
-          Cancel
-        </Button>
-        <Button onClick={handleSave} disabled={saving}>
-          <Save className="h-4 w-4 mr-2" />
-          {saving ? 'Saving...' : 'Save Configuration'}
-        </Button>
+        <div className="flex justify-end gap-4">
+          <Button variant="outline" onClick={() => navigate('/admin/seo')}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            <Save className="h-4 w-4 mr-2" />
+            {saving ? 'Saving...' : 'Save Configuration'}
+          </Button>
+        </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

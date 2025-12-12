@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Header } from '@/components/Header';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -85,20 +85,8 @@ const ContentManagement = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Content Management</h1>
-              <p className="text-muted-foreground mt-2">
-                Verwalten Sie alle Inhalte Ihrer Website
-              </p>
-            </div>
-          </div>
-
-          <Card>
+    <AdminLayout title="Content Management" description="Verwalten Sie alle Inhalte Ihrer Website">
+      <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Alle Seiten</CardTitle>
@@ -185,9 +173,7 @@ const ContentManagement = () => {
               )}
             </CardContent>
           </Card>
-        </div>
-      </main>
-    </div>
+    </AdminLayout>
   );
 };
 

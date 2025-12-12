@@ -18,10 +18,10 @@ import { useAllPageContent } from '@/hooks/usePageContent';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Search, Save, AlertCircle, CheckCircle, Download, Upload, Globe } from 'lucide-react';
+import { Search, Save, AlertCircle, Download, Upload, Globe, ExternalLink } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ExternalLink } from 'lucide-react';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 
 interface PageMeta {
   id: string;
@@ -138,9 +138,9 @@ export default function BulkMetaManager() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-8">
+      <AdminLayout title="Bulk Meta Management" description="Manage SEO meta tags for all pages and site-wide defaults">
         <p className="text-muted-foreground">Loading pages...</p>
-      </div>
+      </AdminLayout>
     );
   }
 
@@ -150,16 +150,8 @@ export default function BulkMetaManager() {
   );
 
   return (
-    <div className="container mx-auto py-8 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/admin/seo')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Bulk Meta Management</h1>
-          <p className="text-muted-foreground">Manage SEO meta tags for all pages and site-wide defaults</p>
-        </div>
-      </div>
+    <AdminLayout title="Bulk Meta Management" description="Manage SEO meta tags for all pages and site-wide defaults">
+      <div className="space-y-6">
 
       {/* Default Meta Tags Section */}
       <Card>
@@ -403,6 +395,7 @@ export default function BulkMetaManager() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

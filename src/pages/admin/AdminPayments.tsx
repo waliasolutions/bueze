@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -226,46 +225,22 @@ const AdminPayments = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-24 pb-16">
-        <div className="container mx-auto px-4 max-w-7xl">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={() => navigate('/admin')}>
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Zurück
-                </Button>
-                <div>
-                  <Badge variant="outline" className="mb-2 bg-red-50 text-red-700 border-red-200">
-                    <Shield className="h-3 w-3 mr-1" />
-                    Admin-Bereich
-                  </Badge>
-                  <h1 className="text-3xl font-bold text-foreground">
-                    Zahlungen & Umsatz
-                  </h1>
-                  <p className="text-muted-foreground">
-                    Übersicht aller Zahlungen und Abonnements
-                  </p>
-                </div>
-              </div>
-              <Button onClick={loadData} disabled={isRefreshing} variant="outline">
-                {isRefreshing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Aktualisiere...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Aktualisieren
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+    <AdminLayout title="Zahlungen & Umsatz" description="Übersicht aller Zahlungen und Abonnements">
+      <div className="flex justify-end mb-6">
+        <Button onClick={loadData} disabled={isRefreshing} variant="outline">
+          {isRefreshing ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Aktualisiere...
+            </>
+          ) : (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Aktualisieren
+            </>
+          )}
+        </Button>
+      </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -446,10 +421,7 @@ const AdminPayments = () => {
               </CardContent>
             </Card>
           </div>
-        </div>
-      </main>
-      <Footer />
-    </div>
+    </AdminLayout>
   );
 };
 
