@@ -262,8 +262,9 @@ export const Header = () => {
               {userId ? (
                 // Simplified menu for admins on admin pages - full nav is in AdminSidebar
                 isAdmin && isOnAdminPage ? (
-                  <div className="px-4 py-3 text-sm text-muted-foreground">
-                    <p>Admin-Navigation im Seitenmenü verfügbar</p>
+                  <div className="px-4 py-3 flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">Admin-Navigation im Seitenmenü verfügbar</p>
+                    <AdminNotifications />
                   </div>
                 ) : (
                 <div className="space-y-1">
