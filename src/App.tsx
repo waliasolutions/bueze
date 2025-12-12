@@ -43,8 +43,9 @@ const HandwerkerVerzeichnis = lazy(() => import("./pages/HandwerkerVerzeichnis")
 
 // Admin routes - rarely accessed, loaded separately
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const HandwerkerManagement = lazy(() => import("./pages/admin/HandwerkerManagement"));
+const ClientManagement = lazy(() => import("./pages/admin/ClientManagement"));
 const HandwerkerApprovals = lazy(() => import("./pages/admin/HandwerkerApprovals"));
-const HandwerkerVerification = lazy(() => import("./pages/admin/HandwerkerVerification"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 const AdminLeadsManagement = lazy(() => import("./pages/admin/AdminLeadsManagement"));
 const ContentManagement = lazy(() => import("./pages/admin/ContentManagement"));
@@ -183,15 +184,16 @@ const App = () => {
                 {/* Admin routes */}
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/handwerkers" element={<HandwerkerManagement />} />
+                <Route path="/admin/clients" element={<ClientManagement />} />
                 <Route path="/admin/leads" element={<AdminLeadsManagement />} />
                 <Route path="/admin/approvals" element={<HandwerkerApprovals />} />
-                <Route path="/admin/handwerker-verification" element={<HandwerkerVerification />} />
                 <Route path="/admin/users" element={<UserManagement />} />
                 <Route path="/admin/content" element={<ContentManagement />} />
                 <Route path="/admin/content/edit/:pageKey" element={<ContentEditor />} />
                 <Route path="/admin/seo" element={<SEOTools />} />
                 <Route path="/admin/seo/bulk-meta" element={<BulkMetaManager />} />
-                <Route path="/admin/seo/gtm" element={<GTMConfiguration />} />
+                <Route path="/admin/gtm" element={<GTMConfiguration />} />
                 <Route path="/admin/reviews" element={<ReviewsManagement />} />
                 <Route path="/admin/payments" element={<AdminPayments />} />
                 
