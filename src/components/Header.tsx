@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X, Plus } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
 import { ClientNotifications } from './ClientNotifications';
 import { HandwerkerNotifications } from './HandwerkerNotifications';
 import { AdminViewSwitcher } from './AdminViewSwitcher';
+import { useUserRole } from '@/hooks/useUserRole';
 import logo from '@/assets/bueze-logo.png';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { role, isAdmin, isHandwerker, userId } = useUserRole();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -31,46 +30,12 @@ export const Header = () => {
     };
   }, [isMenuOpen]);
 
-  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
-  const isHandwerker = userRole === 'handwerker';
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      
-      if (user) {
-        // Check user role
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        setUserRole(roleData?.role || null);
-      } else {
-        setUserRole(null);
-      }
-    };
-    
-    checkUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only synchronous state updates here
-      setUser(session?.user ?? null);
-      
-      // Defer database calls to avoid deadlock
-      if (session?.user) {
-        setTimeout(() => {
-          checkUser();
-        }, 0);
-      } else {
-        setUserRole(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  // Determine current view for AdminViewSwitcher based on route
+  const getCurrentView = (): 'admin' | 'client' | 'handwerker' => {
+    if (location.pathname.startsWith('/admin')) return 'admin';
+    if (location.pathname.startsWith('/handwerker-dashboard')) return 'handwerker';
+    return 'client';
+  };
 
   const handleNavClick = (href: string, e: React.MouseEvent) => {
     if (href.startsWith('/#')) {
@@ -139,13 +104,13 @@ export const Header = () => {
           </nav>
 
           <div className="hidden lg:flex items-center gap-4">
-              {user ? (
+              {userId ? (
               <div className="flex items-center gap-3">
                 {/* Role-specific notifications */}
                 {isAdmin && (
                   <>
                     <AdminNotifications />
-                    <AdminViewSwitcher />
+                    <AdminViewSwitcher currentView={getCurrentView()} />
                   </>
                 )}
                 {isHandwerker && !isAdmin && <HandwerkerNotifications />}
@@ -238,11 +203,17 @@ export const Header = () => {
               );
             })}
             <div className="flex flex-col gap-3 pt-4 border-t border-line-200 mt-4">
-              {user ? (
+              {userId ? (
                 <div className="space-y-3">
+                  {/* Mobile notifications */}
+                  <div className="px-4 py-2 flex items-center gap-2">
+                    {isAdmin && <AdminNotifications />}
+                    {isHandwerker && !isAdmin && <HandwerkerNotifications />}
+                    {!isAdmin && !isHandwerker && <ClientNotifications />}
+                  </div>
                   {isAdmin && (
                     <div className="px-4 py-2">
-                      <AdminViewSwitcher />
+                      <AdminViewSwitcher currentView={getCurrentView()} />
                     </div>
                   )}
                   <UserDropdown />
