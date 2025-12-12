@@ -1,6 +1,6 @@
 import { 
   Construction, Layers, Zap, Flame, Droplet, 
-  ChefHat, Hammer, Trash2, LucideIcon, TreePine, Paintbrush, Truck, Box
+  ChefHat, Hammer, Trash2, LucideIcon, TreePine, Sparkles
 } from 'lucide-react';
 
 interface FAQItem {
@@ -125,7 +125,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     subcategories: [
       'waermepumpen', 'fussbodenheizung', 'boiler', 
       'klimaanlage_lueftung', 'cheminee_kamin_ofen', 
-      'photovoltaik', 'solarthermie', 'heizung_sonstige'
+      'photovoltaik', 'solarheizung', 'heizung_sonstige'
     ],
     color: 'from-orange-500 to-red-600',
     showOnHome: true,
@@ -257,6 +257,55 @@ export const majorCategories: Record<string, MajorCategory> = {
       'Umweltfreundliche Verwertung',
       'Optional: Reinigung nach Räumung',
       'Faire Preise durch Wettbewerb',
+      'Mehrere Offerten kostenlos vergleichen'
+    ]
+  },
+  garten_umgebung: {
+    id: 'garten_umgebung',
+    slug: 'garten-aussenbereich',
+    label: 'Garten & Aussenbereich',
+    icon: TreePine,
+    description: 'Gartenbau, Landschaftsgestaltung und Aussenarbeiten',
+    subcategories: [
+      'gartenbau', 'pflasterarbeiten', 'zaun_torbau', 
+      'aussenarbeiten_sonstige'
+    ],
+    color: 'from-green-600 to-emerald-700',
+    showOnHome: false,
+    faq: [
+      { question: 'Wie lange dauert eine Gartengestaltung?', answer: 'Das hängt vom Umfang ab. Eine einfache Bepflanzung ist in wenigen Tagen erledigt, eine komplette Gartenumgestaltung kann mehrere Wochen dauern.' },
+      { question: 'Wann ist die beste Zeit für Gartenarbeiten?', answer: 'Frühling und Herbst sind ideal für Pflanzarbeiten. Pflasterarbeiten und Zäune können ganzjährig durchgeführt werden, ausser bei Frost.' },
+      { question: 'Was kostet eine Gartengestaltung?', answer: 'Die Kosten variieren je nach Grösse und Aufwand. Mit Büeze.ch vergleichen Sie mehrere Offerten und finden den passenden Gartenbauer.' }
+    ],
+    benefits: [
+      'Professionelle Gartengestaltung',
+      'Fachgerechte Pflanzarbeiten',
+      'Pflasterungen und Wege',
+      'Zäune und Sichtschutz',
+      'Mehrere Offerten kostenlos vergleichen'
+    ]
+  },
+  reinigung_hauswartung: {
+    id: 'reinigung_hauswartung',
+    slug: 'reinigung-hauswartung',
+    label: 'Reinigung & Hauswartung',
+    icon: Sparkles,
+    description: 'Reinigungsdienste und Hauswartung',
+    subcategories: [
+      'reinigung', 'reinigung_hauswartung'
+    ],
+    color: 'from-cyan-500 to-blue-600',
+    showOnHome: false,
+    faq: [
+      { question: 'Welche Reinigungsarten werden angeboten?', answer: 'Von Unterhaltsreinigung über Grundreinigung bis zur Baureinigung. Auch Fensterreinigung und Teppichreinigung gehören zum Angebot.' },
+      { question: 'Wie oft sollte eine professionelle Reinigung erfolgen?', answer: 'Das hängt von der Nutzung ab. Büros werden oft wöchentlich gereinigt, Privathaushalte nach Bedarf.' },
+      { question: 'Was kostet eine professionelle Reinigung?', answer: 'Die Kosten richten sich nach Fläche und Aufwand. Mit Büeze.ch erhalten Sie transparente Offerten zum Vergleich.' }
+    ],
+    benefits: [
+      'Professionelle Reinigungsteams',
+      'Flexible Einsatzzeiten',
+      'Umweltfreundliche Reinigungsmittel',
+      'Regelmässige oder einmalige Reinigung',
       'Mehrere Offerten kostenlos vergleichen'
     ]
   }
