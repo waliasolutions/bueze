@@ -312,8 +312,19 @@ const HandwerkerDashboard = () => {
 
       if (error) throw error;
       
+      // Add defensive fallback for missing lead data (e.g., RLS restrictions on completed leads)
+      const proposalsWithFallback = (data || []).map(proposal => ({
+        ...proposal,
+        leads: proposal.leads || { 
+          title: 'Auftrag nicht mehr verfügbar', 
+          city: '-', 
+          canton: '-',
+          owner_id: null 
+        }
+      }));
+      
       // Batch fetch client contacts for accepted proposals (fix N+1 query)
-      const acceptedProposals = (data || []).filter(p => p.status === 'accepted' && p.leads?.owner_id);
+      const acceptedProposals = proposalsWithFallback.filter(p => p.status === 'accepted' && p.leads?.owner_id);
       const ownerIds = [...new Set(acceptedProposals.map(p => p.leads.owner_id))];
       
       let ownerProfilesMap = new Map();
@@ -327,7 +338,7 @@ const HandwerkerDashboard = () => {
       }
       
       // Map contacts to proposals
-      const proposalsWithContacts = (data || []).map(proposal => {
+      const proposalsWithContacts = proposalsWithFallback.map(proposal => {
         if (proposal.status === 'accepted' && proposal.leads?.owner_id) {
           return {
             ...proposal,
@@ -348,18 +359,38 @@ const HandwerkerDashboard = () => {
   const fetchReviews = async (userId: string) => {
     setReviewsLoading(true);
     try {
-      const { data, error } = await supabase
+      // First fetch reviews with lead data
+      const { data: reviewsData, error } = await supabase
         .from('reviews')
         .select(`
           *,
-          leads (title),
-          profiles:reviewer_id (first_name, full_name)
+          leads (title)
         `)
         .eq('reviewed_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReviews(data || []);
+      
+      // Batch fetch reviewer profiles separately to avoid join issues
+      const reviewerIds = [...new Set((reviewsData || []).map(r => r.reviewer_id))];
+      let reviewerProfilesMap = new Map();
+      
+      if (reviewerIds.length > 0) {
+        const { data: reviewerProfiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, full_name')
+          .in('id', reviewerIds);
+        
+        reviewerProfilesMap = new Map(reviewerProfiles?.map(p => [p.id, p]) || []);
+      }
+      
+      // Map reviewer profiles to reviews
+      const reviewsWithProfiles = (reviewsData || []).map(review => ({
+        ...review,
+        profiles: reviewerProfilesMap.get(review.reviewer_id) || { first_name: 'Anonym', full_name: 'Anonym' }
+      }));
+      
+      setReviews(reviewsWithProfiles);
     } catch (error) {
       console.error('Error fetching reviews:', error);
     } finally {
