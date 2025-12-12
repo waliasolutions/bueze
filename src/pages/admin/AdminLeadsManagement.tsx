@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/Header";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -274,14 +274,8 @@ export default function AdminLeadsManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Lead-Verwaltung</h1>
-          <p className="text-muted-foreground mt-1">Alle Aufträge und Offerten im Überblick</p>
-        </div>
+    <AdminLayout title="Lead-Verwaltung" description="Alle Aufträge und Offerten im Überblick">
+      <div className="flex justify-end mb-6">
         <Button onClick={fetchLeads} disabled={loading} className="shrink-0">
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Aktualisieren
@@ -626,7 +620,6 @@ export default function AdminLeadsManagement() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }

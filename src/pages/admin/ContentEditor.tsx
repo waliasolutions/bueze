@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Header } from '@/components/Header';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -117,54 +117,42 @@ const ContentEditor = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8 pt-24">
-          <div className="text-center py-12">Laden...</div>
-        </main>
-      </div>
+      <AdminLayout title="Content bearbeiten" description="Laden...">
+        <div className="text-center py-12">Laden...</div>
+      </AdminLayout>
     );
   }
 
   if (!content) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8 pt-24">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">Inhalt nicht gefunden</p>
-            <Button onClick={() => navigate('/admin/content')}>Zurück zur Übersicht</Button>
-          </div>
-        </main>
-      </div>
+      <AdminLayout title="Content bearbeiten" description="Inhalt nicht gefunden">
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">Inhalt nicht gefunden</p>
+          <Button onClick={() => navigate('/admin/content')}>Zurück zur Übersicht</Button>
+        </div>
+      </AdminLayout>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/content')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Zurück
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-foreground">{content.fields?.title || content.page_key}</h1>
-              <p className="text-muted-foreground mt-1">
-                {content.content_type === 'category' && 'Kategorie-Seite'}
-                {content.content_type === 'homepage' && 'Startseite'}
-                {content.content_type === 'legal' && 'Rechtliche Seite'}
-              </p>
-            </div>
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="w-4 h-4 mr-2" />
-              {saving ? 'Speichern...' : 'Speichern'}
-            </Button>
-          </div>
+  const contentTypeLabel = content.content_type === 'category' ? 'Kategorie-Seite' :
+                           content.content_type === 'homepage' ? 'Startseite' :
+                           content.content_type === 'legal' ? 'Rechtliche Seite' : '';
 
-          <Tabs defaultValue="content" className="space-y-4">
+  return (
+    <AdminLayout title={content.fields?.title || content.page_key} description={contentTypeLabel}>
+      <div className="max-w-5xl">
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/admin/content')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Zurück
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            <Save className="w-4 h-4 mr-2" />
+            {saving ? 'Speichern...' : 'Speichern'}
+          </Button>
+        </div>
+
+        <Tabs defaultValue="content" className="space-y-4">
             <TabsList>
               <TabsTrigger value="content">Inhalt</TabsTrigger>
               <TabsTrigger value="seo">SEO</TabsTrigger>
@@ -333,9 +321,8 @@ const ContentEditor = () => {
               </Card>
             </TabsContent>
           </Tabs>
-        </div>
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 };
 

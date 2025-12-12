@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -344,35 +343,19 @@ export default function UserManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="container mx-auto px-4 py-8 pt-24">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-          </div>
-        </main>
-        <Footer />
-      </div>
+      <AdminLayout title="Benutzerverwaltung" description="Verwalten Sie Benutzer und deren Rollen im System">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8 pt-24">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                <Shield className="h-8 w-8 text-brand-600" />
-                Benutzerverwaltung
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                Verwalten Sie Benutzer und deren Rollen im System
-              </p>
-            </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
+    <AdminLayout title="Benutzerverwaltung" description="Verwalten Sie Benutzer und deren Rollen im System">
+      <div className="flex items-center justify-end mb-8">
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
                 <Button className="gap-2">
                   <UserPlus className="h-4 w-4" />
                   Benutzer hinzufügen
@@ -536,7 +519,6 @@ export default function UserManagement() {
               )}
             </CardContent>
           </Card>
-        </div>
 
         {/* Edit User Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -640,18 +622,16 @@ export default function UserManagement() {
                     ) : (
                       'Passwort zurücksetzen'
                     )}
-                  </AlertDialogAction>
-                </>
-              ) : (
-                <Button onClick={handleCloseResetDialog} className="w-full">
-                  Schliessen
-                </Button>
-              )}
+                </AlertDialogAction>
+              </>
+            ) : (
+              <Button onClick={handleCloseResetDialog} className="w-full">
+                Schliessen
+              </Button>
+            )}
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </main>
-      <Footer />
-    </div>
+    </AdminLayout>
   );
 }
