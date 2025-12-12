@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, X, Save, ArrowLeft, CheckCircle, Circle, Clock, User, Building2, Wallet, Shield, Eye, Edit, FileText, Briefcase, MapPin } from 'lucide-react';
+import { Loader2, Upload, X, Save, ArrowLeft, CheckCircle, Circle, Clock, User, Building2, Wallet, Shield, Eye, Edit, FileText, Briefcase, MapPin, AlertTriangle } from 'lucide-react';
 import { PostalCodeInput } from '@/components/PostalCodeInput';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -30,6 +30,7 @@ import {
   formatCantonDisplay,
   getCantonFromPostalCode 
 } from '@/lib/cantonPostalCodes';
+import { DocumentManagementSection } from '@/components/DocumentManagementSection';
 
 interface HandwerkerProfile {
   id: string;
@@ -129,6 +130,11 @@ const HandwerkerProfileEdit = () => {
   
   // Logo
   const [logoUrl, setLogoUrl] = useState('');
+  
+  // Document upload dialog
+  const [documentUploadOpen, setDocumentUploadOpen] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAccessAndLoadProfile();
@@ -169,6 +175,7 @@ const HandwerkerProfileEdit = () => {
       }
 
       setProfile(profileData);
+      setUserId(user.id);
       // Profile & Bio
       setBio(profileData.bio || '');
       setHourlyRateMin(profileData.hourly_rate_min?.toString() || '');
@@ -1692,95 +1699,13 @@ const HandwerkerProfileEdit = () => {
                 </CardContent>
               </Card>
 
-              {/* Document Upload Section */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Versicherungsdokumente & Nachweise</CardTitle>
-                  <CardDescription>
-                    Laden Sie Ihre Haftpflichtversicherung und Handelsregisterauszug hoch (PDF oder Bild, max. 10MB)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <Button
-                        variant="outline"
-                        onClick={() => document.getElementById('documentInput')?.click()}
-                        disabled={uploading}
-                        className="w-full sm:w-auto"
-                      >
-                        {uploading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Lädt hoch...
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-4 w-4 mr-2" />
-                            Dokumente hochladen
-                          </>
-                        )}
-                      </Button>
-                      <input
-                        id="documentInput"
-                        type="file"
-                        accept="application/pdf,image/jpeg,image/jpg,image/png"
-                        multiple
-                        className="hidden"
-                        onChange={handleDocumentUpload}
-                      />
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Unterstützte Formate: PDF, JPG, PNG (max. 10MB pro Datei)
-                      </p>
-                    </div>
-
-                    {verificationDocuments.length > 0 && (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-                        {verificationDocuments.map((url, index) => {
-                          const isPdf = url.toLowerCase().includes('.pdf');
-                          const fileName = url.split('/').pop()?.split('?')[0] || 'Dokument';
-                          
-                          return (
-                            <div key={index} className="relative border rounded-lg p-4 hover:border-primary transition-colors">
-                              <div className="flex flex-col items-center space-y-2">
-                                {isPdf ? (
-                                  <FileText className="h-16 w-16 text-muted-foreground" />
-                                ) : (
-                                  <img 
-                                    src={url} 
-                                    alt={`Dokument ${index + 1}`}
-                                    className="w-full h-32 object-cover rounded"
-                                  />
-                                )}
-                                <p className="text-xs text-center text-muted-foreground truncate w-full" title={fileName}>
-                                  {fileName}
-                                </p>
-                                <a 
-                                  href={url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:underline"
-                                >
-                                  Ansehen
-                                </a>
-                              </div>
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-2 right-2 h-6 w-6"
-                                onClick={() => handleRemoveDocument(url)}
-                                disabled={uploading}
-                              >
-                                <X className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Document Expiry Management System */}
+              {profile && userId && (
+                <DocumentManagementSection 
+                  profileId={profile.id} 
+                  userId={userId} 
+                />
+              )}
 
               {/* Portfolio Images */}
               <Card>
