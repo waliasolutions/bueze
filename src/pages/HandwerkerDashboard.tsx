@@ -14,7 +14,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useProposalFormValidation } from "@/hooks/useProposalFormValidation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X } from "lucide-react";
+import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X, Filter, Globe, RotateCcw } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { withdrawProposal } from "@/lib/proposalQueries";
@@ -44,9 +45,14 @@ const HandwerkerDashboard = () => {
 
   // Browse Leads Tab
   const [leads, setLeads] = useState<LeadListItem[]>([]);
+  const [allLeads, setAllLeads] = useState<LeadListItem[]>([]); // All available leads for stats
   const [leadsLoading, setLeadsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedLead, setSelectedLead] = useState<LeadListItem | null>(null);
+  
+  // Enhanced filtering
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllRegions, setShowAllRegions] = useState(false);
 
   // Proposals Tab
   const [proposals, setProposals] = useState<ProposalWithClientInfo[]>([]);
@@ -210,8 +216,40 @@ const HandwerkerDashboard = () => {
       navigate('/auth');
     }
   };
+  // Helper function to check if lead matches handwerker's categories
+  const checkCategoryMatch = (lead: LeadListItem, categories: string[]) => {
+    if (categories.length === 0) return true;
+    if (categories.includes(lead.category)) return true;
+    
+    // Check if lead's category is a major category and handwerker has a subcategory from it
+    const leadMajorCat = Object.values(majorCategories).find(mc => mc.id === lead.category);
+    if (leadMajorCat && categories.some(hwCat => leadMajorCat.subcategories.includes(hwCat))) {
+      return true;
+    }
+    
+    // Check if handwerker's category is a major category and lead has a subcategory from it
+    const handwerkerMajorCats = categories
+      .map(cat => Object.values(majorCategories).find(mc => mc.id === cat))
+      .filter(Boolean);
+    return handwerkerMajorCats.some(mc => mc?.subcategories.includes(lead.category));
+  };
+
+  // Helper function to check if lead matches handwerker's service areas
+  const checkServiceAreaMatch = (lead: LeadListItem, serviceAreas: string[]) => {
+    if (serviceAreas.length === 0) return true;
+    const cantons = serviceAreas.filter(area => area.length === 2);
+    const postalCodes = serviceAreas.filter(area => area.length >= 4);
+    return cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
+  };
+
   // Removed duplicate fetchHandwerkerProfile - use checkAuth instead
-  const fetchLeads = async (userId: string, categories: string[], serviceAreas: string[]) => {
+  const fetchLeads = async (
+    userId: string, 
+    categories: string[], 
+    serviceAreas: string[],
+    browseAllCategories: boolean = false,
+    browseAllRegions: boolean = false
+  ) => {
     setLeadsLoading(true);
     try {
       // Fetch active leads and existing proposals in parallel
@@ -225,60 +263,16 @@ const HandwerkerDashboard = () => {
       // Create set of lead IDs where handwerker already has proposals
       const proposedLeadIds = new Set(proposalsResult.data?.map(p => p.lead_id) || []);
 
-      // Combined filter: category, service area, AND not already proposed
-      let filteredLeads = leadsResult.data || [];
+      // Filter out already-proposed leads
+      const availableLeads = (leadsResult.data || []).filter(lead => !proposedLeadIds.has(lead.id));
       
-      // Extract cantons (2 chars) and postal codes (4+ chars) once
-      const cantons = serviceAreas.filter(area => area.length === 2);
-      const postalCodes = serviceAreas.filter(area => area.length >= 4);
+      // Store all available leads for stats
+      setAllLeads(availableLeads);
       
-      // Apply combined filter with explicit AND logic
-      filteredLeads = filteredLeads.filter(lead => {
-        // CONDITION 0: Not already proposed
-        if (proposedLeadIds.has(lead.id)) {
-          return false;
-        }
-        
-        // CONDITION 1: Category Match (required if handwerker has categories)
-        let categoryMatches = false;
-        
-        if (categories.length === 0) {
-          // No category filter - show all categories
-          categoryMatches = true;
-        } else {
-          // Check if handwerker's categories include the lead's category directly
-          if (categories.includes(lead.category)) {
-            categoryMatches = true;
-          } else {
-            // Check if lead's category is a major category and handwerker has a subcategory from it
-            const leadMajorCat = Object.values(majorCategories).find(mc => mc.id === lead.category);
-            if (leadMajorCat) {
-              categoryMatches = categories.some(hwCat => leadMajorCat.subcategories.includes(hwCat));
-            }
-            
-            // Check if handwerker's category is a major category and lead has a subcategory from it
-            if (!categoryMatches) {
-              const handwerkerMajorCats = categories
-                .map(cat => Object.values(majorCategories).find(mc => mc.id === cat))
-                .filter(Boolean);
-              categoryMatches = handwerkerMajorCats.some(mc => mc?.subcategories.includes(lead.category));
-            }
-          }
-        }
-        
-        // CONDITION 2: Service Area Match (required if handwerker has service areas)
-        let serviceAreaMatches = false;
-        
-        if (serviceAreas.length === 0) {
-          // No service area filter - show all areas
-          serviceAreaMatches = true;
-        } else {
-          // Match if lead's canton is in handwerker's cantons
-          // OR if lead's zip is in handwerker's postal codes
-          serviceAreaMatches = cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
-        }
-        
-        // BOTH conditions must be true
+      // Apply filters based on browse settings
+      const filteredLeads = availableLeads.filter(lead => {
+        const categoryMatches = browseAllCategories || checkCategoryMatch(lead, categories);
+        const serviceAreaMatches = browseAllRegions || checkServiceAreaMatch(lead, serviceAreas);
         return categoryMatches && serviceAreaMatches;
       });
       
@@ -289,6 +283,19 @@ const HandwerkerDashboard = () => {
       setLeadsLoading(false);
     }
   };
+  
+  // Re-fetch leads when filter settings change
+  useEffect(() => {
+    if (user?.id && handwerkerProfile?.verification_status === 'approved') {
+      fetchLeads(
+        user.id, 
+        handwerkerProfile.categories || [], 
+        handwerkerProfile.service_areas || [],
+        showAllCategories,
+        showAllRegions
+      );
+    }
+  }, [showAllCategories, showAllRegions]);
   const fetchProposals = async (userId: string) => {
     setProposalsLoading(true);
     try {
@@ -734,6 +741,26 @@ const HandwerkerDashboard = () => {
         <Footer />
       </div>;
   }
+  // Calculate stats for the filter banner
+  const matchedLeadsCount = allLeads.filter(lead => 
+    checkCategoryMatch(lead, handwerkerProfile?.categories || []) && 
+    checkServiceAreaMatch(lead, handwerkerProfile?.service_areas || [])
+  ).length;
+  const additionalLeadsCount = allLeads.length - matchedLeadsCount;
+  const isFiltersActive = showAllCategories || showAllRegions;
+  
+  // Check if a lead is outside the handwerker's profile settings
+  const isLeadOutsideProfile = (lead: LeadListItem) => {
+    const categoryMatches = checkCategoryMatch(lead, handwerkerProfile?.categories || []);
+    const serviceAreaMatches = checkServiceAreaMatch(lead, handwerkerProfile?.service_areas || []);
+    return !categoryMatches || !serviceAreaMatches;
+  };
+  
+  const resetFilters = () => {
+    setShowAllCategories(false);
+    setShowAllRegions(false);
+  };
+  
   const filteredLeads = leads.filter(lead => lead.title.toLowerCase().includes(searchTerm.toLowerCase()) || lead.description.toLowerCase().includes(searchTerm.toLowerCase()) || lead.city.toLowerCase().includes(searchTerm.toLowerCase()));
   return <div className="min-h-screen bg-background">
       <Header />
@@ -798,30 +825,125 @@ const HandwerkerDashboard = () => {
             <TabsContent value="leads" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Verfügbare Aufträge</CardTitle>
-                  <CardDescription>
-                    Durchsuchen Sie Aufträge, die zu Ihnen passen
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Aufträge durchsuchen..." className="pl-9" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle>Verfügbare Aufträge</CardTitle>
+                      <CardDescription>
+                        {isFiltersActive 
+                          ? "Alle verfügbaren Aufträge in der Schweiz" 
+                          : "Aufträge passend zu Ihrem Profil"}
+                      </CardDescription>
+                    </div>
+                    {/* Stats Badge */}
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-sm">
+                        {matchedLeadsCount} passend
+                      </Badge>
+                      {additionalLeadsCount > 0 && !isFiltersActive && (
+                        <button 
+                          onClick={() => { setShowAllCategories(true); setShowAllRegions(true); }}
+                          className="text-sm text-brand-600 hover:underline"
+                        >
+                          +{additionalLeadsCount} weitere
+                        </button>
+                      )}
                     </div>
                   </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Enhanced Filter Bar */}
+                  <div className="flex flex-wrap gap-3 mb-4 p-3 bg-muted/50 rounded-lg">
+                    {/* Category Filter */}
+                    <Select 
+                      value={showAllCategories ? 'all' : 'my'} 
+                      onValueChange={(val) => setShowAllCategories(val === 'all')}
+                    >
+                      <SelectTrigger className="w-[180px] bg-background">
+                        <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="my">Meine Kategorien</SelectItem>
+                        <SelectItem value="all">Alle Kategorien</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Region Filter */}
+                    <Select 
+                      value={showAllRegions ? 'all' : 'my'} 
+                      onValueChange={(val) => setShowAllRegions(val === 'all')}
+                    >
+                      <SelectTrigger className="w-[180px] bg-background">
+                        <MapPin className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="my">Meine Gebiete</SelectItem>
+                        <SelectItem value="all">Ganze Schweiz</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Search Input */}
+                    <div className="relative flex-1 min-w-[200px]">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input 
+                        placeholder="Suchen..." 
+                        className="pl-9 bg-background" 
+                        value={searchTerm} 
+                        onChange={e => setSearchTerm(e.target.value)} 
+                      />
+                    </div>
+
+                    {/* Reset Button */}
+                    {isFiltersActive && (
+                      <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground">
+                        <RotateCcw className="h-4 w-4 mr-1" />
+                        Zurücksetzen
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Active Filters Info */}
+                  {isFiltersActive && (
+                    <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground bg-brand-50 dark:bg-brand-950/30 p-2 px-3 rounded-md">
+                      <Globe className="h-4 w-4 text-brand-600" />
+                      <span>
+                        Sie sehen {showAllCategories && showAllRegions ? "alle" : showAllCategories ? "alle Kategorien" : "die ganze Schweiz"}.
+                        Aufträge ausserhalb Ihres Profils sind markiert.
+                      </span>
+                    </div>
+                  )}
 
                   {leadsLoading ? <div className="space-y-4">
                       {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
                     </div> : filteredLeads.length === 0 ? <InlineEmptyState
-                      title="Keine passenden Aufträge"
-                      description="Erweitern Sie Ihre Kategorien oder Einsatzgebiete im Profil, um mehr Aufträge zu sehen."
-                      action={{
-                        label: "Profil bearbeiten",
-                        onClick: () => navigate('/handwerker-profile-edit')
-                      }}
+                      title={isFiltersActive ? "Keine Aufträge gefunden" : "Keine passenden Aufträge in Ihrem Gebiet"}
+                      description={isFiltersActive 
+                        ? "Es gibt derzeit keine aktiven Aufträge." 
+                        : `Es gibt ${additionalLeadsCount} Aufträge in anderen Kategorien oder Regionen.`}
+                      action={!isFiltersActive && additionalLeadsCount > 0 ? {
+                        label: "Alle Aufträge anzeigen",
+                        onClick: () => { setShowAllCategories(true); setShowAllRegions(true); }
+                      } : undefined}
                     /> : <div className="space-y-4">
-                      {filteredLeads.map(lead => <Card key={lead.id} className="hover:border-brand-600 transition-colors">
+                      {filteredLeads.map(lead => {
+                        const outsideProfile = isFiltersActive && isLeadOutsideProfile(lead);
+                        return (
+                          <Card 
+                            key={lead.id} 
+                            className={`hover:border-brand-600 transition-colors relative ${
+                              outsideProfile ? 'border-dashed border-muted-foreground/40 bg-muted/20' : ''
+                            }`}
+                          >
+                            {outsideProfile && (
+                              <Badge 
+                                variant="outline" 
+                                className="absolute top-3 right-3 text-xs bg-background text-muted-foreground"
+                              >
+                                <Globe className="h-3 w-3 mr-1" />
+                                Ausserhalb Ihres Profils
+                              </Badge>
+                            )}
                           <CardHeader>
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
@@ -833,7 +955,7 @@ const HandwerkerDashboard = () => {
                                   </span>
                                 </div>
                               </div>
-                              <div className="flex flex-col gap-2 items-end">
+                              <div className={`flex flex-col gap-2 items-end ${outsideProfile ? 'mt-6' : ''}`}>
                                 {getUrgencyBadge(lead.urgency)}
                                 <Badge variant="outline">{getCategoryLabel(lead.category)}</Badge>
                               </div>
@@ -981,7 +1103,9 @@ const HandwerkerDashboard = () => {
                               </Dialog>
                             </div>
                           </CardContent>
-                        </Card>)}
+                        </Card>
+                        );
+                      })}
                     </div>}
                 </CardContent>
               </Card>
