@@ -17,7 +17,7 @@ import { SWISS_CANTONS } from "@/config/cantons";
 import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User } from "lucide-react";
+import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User, Info } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
@@ -111,6 +111,17 @@ const HandwerkerOnboarding = () => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Helper to mark a field as touched
+  const markTouched = (field: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  // Helper to check if an error should be shown (only if field is touched)
+  const shouldShowError = (field: string) => {
+    return touched[field] && errors[field];
+  };
 
   const totalSteps = 5;
 
@@ -416,6 +427,15 @@ const HandwerkerOnboarding = () => {
   };
 
   const handleNext = () => {
+    // Mark all fields in current step as touched before validation
+    if (currentStep === 1) {
+      setTouched(prev => ({ ...prev, companyName: true, companyLegalForm: true, uidNumber: true, mwstNumber: true }));
+    } else if (currentStep === 2) {
+      setTouched(prev => ({ ...prev, firstName: true, lastName: true, email: true, phoneNumber: true, personalAddress: true, personalZip: true, personalCity: true, personalCanton: true }));
+    } else if (currentStep === 3) {
+      setTouched(prev => ({ ...prev, iban: true, bankName: true, businessAddress: true, businessZip: true, businessCity: true, businessCanton: true }));
+    }
+    
     if (validateStep(currentStep)) {
       setCurrentStep((prev) => Math.min(prev + 1, 6));
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -906,10 +926,11 @@ const HandwerkerOnboarding = () => {
                   id="companyName"
                   value={formData.companyName}
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                  onBlur={() => markTouched('companyName')}
                   placeholder="z.B. Muster AG"
                   className="h-12 text-base"
                 />
-                {errors.companyName && (
+                {shouldShowError('companyName') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.companyName}
@@ -937,7 +958,7 @@ const HandwerkerOnboarding = () => {
                     <SelectItem value="stiftung">Stiftung</SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.companyLegalForm && (
+                {shouldShowError('companyLegalForm') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.companyLegalForm}
@@ -957,11 +978,12 @@ const HandwerkerOnboarding = () => {
                   onBlur={(e) => {
                     const formatted = formatUID(e.target.value);
                     setFormData({ ...formData, uidNumber: formatted });
+                    markTouched('uidNumber');
                   }}
                   placeholder="CHE-123.456.789"
                   className="h-12 text-base font-mono"
                 />
-                {errors.uidNumber && (
+                {shouldShowError('uidNumber') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.uidNumber}
@@ -982,11 +1004,12 @@ const HandwerkerOnboarding = () => {
                   onBlur={(e) => {
                     const formatted = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
                     setFormData({ ...formData, mwstNumber: formatted });
+                    markTouched('mwstNumber');
                   }}
                   placeholder="CHE-123.456.789 MWST"
                   className="h-12 text-base font-mono"
                 />
-                {errors.mwstNumber && (
+                {shouldShowError('mwstNumber') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.mwstNumber}
@@ -1097,10 +1120,11 @@ const HandwerkerOnboarding = () => {
                     id="firstName"
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    onBlur={() => markTouched('firstName')}
                     placeholder="Max"
                     className="h-12 text-base"
                   />
-                  {errors.firstName && (
+                  {shouldShowError('firstName') && (
                     <p className="text-sm text-destructive flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {errors.firstName}
@@ -1114,10 +1138,11 @@ const HandwerkerOnboarding = () => {
                     id="lastName"
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    onBlur={() => markTouched('lastName')}
                     placeholder="Muster"
                     className="h-12 text-base"
                   />
-                  {errors.lastName && (
+                  {shouldShowError('lastName') && (
                     <p className="text-sm text-destructive flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {errors.lastName}
@@ -1133,6 +1158,7 @@ const HandwerkerOnboarding = () => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
+                  onBlur={() => markTouched('email')}
                   placeholder="max.muster@beispiel.ch"
                   className="h-12 text-base"
                   disabled={isAlreadyAuthenticated}
@@ -1142,7 +1168,7 @@ const HandwerkerOnboarding = () => {
                     E-Mail kann nicht geändert werden (Sie sind bereits angemeldet)
                   </p>
                 )}
-                {errors.email && (
+                {shouldShowError('email') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.email}
@@ -1157,10 +1183,11 @@ const HandwerkerOnboarding = () => {
                   type="tel"
                   value={formData.phoneNumber}
                   onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                  onBlur={() => markTouched('phoneNumber')}
                   placeholder="+41 79 123 45 67"
                   className="h-12 text-base"
                 />
-                {errors.phoneNumber && (
+                {shouldShowError('phoneNumber') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.phoneNumber}
@@ -1177,10 +1204,11 @@ const HandwerkerOnboarding = () => {
                   id="personalAddress"
                   value={formData.personalAddress}
                   onChange={(e) => setFormData({ ...formData, personalAddress: e.target.value })}
+                  onBlur={() => markTouched('personalAddress')}
                   placeholder="Musterstrasse 123"
                   className="h-12 text-base"
                 />
-                {errors.personalAddress && (
+                {shouldShowError('personalAddress') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.personalAddress}
@@ -1210,10 +1238,11 @@ const HandwerkerOnboarding = () => {
                       personalCity: address.city,
                       personalCanton: address.canton 
                     })}
+                    onBlur={() => markTouched('personalZip')}
                     placeholder="8000"
                     className="h-12 text-base"
                   />
-                  {errors.personalZip && (
+                  {shouldShowError('personalZip') && (
                     <p className="text-sm text-destructive flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {errors.personalZip}
@@ -1229,10 +1258,11 @@ const HandwerkerOnboarding = () => {
                     id="personalCity"
                     value={formData.personalCity}
                     onChange={(e) => setFormData({ ...formData, personalCity: e.target.value })}
+                    onBlur={() => markTouched('personalCity')}
                     placeholder="Zürich"
                     className="h-12 text-base"
                   />
-                  {errors.personalCity && (
+                  {shouldShowError('personalCity') && (
                     <p className="text-sm text-destructive flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {errors.personalCity}
@@ -1260,7 +1290,7 @@ const HandwerkerOnboarding = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.personalCanton && (
+                {shouldShowError('personalCanton') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.personalCanton}
@@ -1332,10 +1362,11 @@ const HandwerkerOnboarding = () => {
                     id="businessAddress"
                     value={formData.businessAddress}
                     onChange={(e) => setFormData({ ...formData, businessAddress: e.target.value })}
+                    onBlur={() => markTouched('businessAddress')}
                     placeholder="Strasse & Hausnummer"
                     className="h-12 text-base"
                   />
-                  {errors.businessAddress && (
+                  {shouldShowError('businessAddress') && (
                     <p className="text-sm text-destructive flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {errors.businessAddress}
@@ -1354,10 +1385,11 @@ const HandwerkerOnboarding = () => {
                         businessCity: address.city,
                         businessCanton: address.canton 
                       })}
+                      onBlur={() => markTouched('businessZip')}
                       placeholder="8000"
                       className="h-12 text-base"
                     />
-                    {errors.businessZip && (
+                    {shouldShowError('businessZip') && (
                       <p className="text-sm text-destructive flex items-center gap-2">
                         <AlertCircle className="h-4 w-4" />
                         {errors.businessZip}
@@ -1371,10 +1403,11 @@ const HandwerkerOnboarding = () => {
                       id="businessCity"
                       value={formData.businessCity}
                       onChange={(e) => setFormData({ ...formData, businessCity: e.target.value })}
+                      onBlur={() => markTouched('businessCity')}
                       placeholder="Zürich"
                       className="h-12 text-base"
                     />
-                    {errors.businessCity && (
+                    {shouldShowError('businessCity') && (
                       <p className="text-sm text-destructive flex items-center gap-2">
                         <AlertCircle className="h-4 w-4" />
                         {errors.businessCity}
@@ -1400,7 +1433,7 @@ const HandwerkerOnboarding = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.businessCanton && (
+                  {shouldShowError('businessCanton') && (
                     <p className="text-sm text-destructive flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {errors.businessCanton}
@@ -1434,12 +1467,13 @@ const HandwerkerOnboarding = () => {
                     onBlur={(e) => {
                       const formatted = formatIBAN(e.target.value);
                       setFormData({ ...formData, iban: formatted });
+                      markTouched('iban');
                     }}
                     placeholder="CH76 0000 0000 0000 0000 0"
                     maxLength={26}
                     className="h-12 text-base font-mono"
                   />
-                  {errors.iban && (
+                  {shouldShowError('iban') && (
                     <p className="text-sm text-destructive flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {errors.iban}
@@ -1453,10 +1487,11 @@ const HandwerkerOnboarding = () => {
                     id="bankName"
                     value={formData.bankName}
                     onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
+                    onBlur={() => markTouched('bankName')}
                     placeholder="z.B. UBS, Credit Suisse, PostFinance"
                     className="h-12 text-base"
                   />
-                  {errors.bankName && (
+                  {shouldShowError('bankName') && (
                     <p className="text-sm text-destructive flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
                       {errors.bankName}
@@ -1505,7 +1540,7 @@ const HandwerkerOnboarding = () => {
                   placeholder="z.B. Zürich Versicherung, AXA, Mobiliar"
                   className="h-12 text-base"
                 />
-                {errors.liabilityInsuranceProvider && (
+                {shouldShowError('liabilityInsuranceProvider') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.liabilityInsuranceProvider}
@@ -1542,7 +1577,7 @@ const HandwerkerOnboarding = () => {
                   onChange={(e) => setFormData({ ...formData, insuranceValidUntil: e.target.value })}
                   className="h-12 text-base"
                 />
-                {errors.insuranceValidUntil && (
+                {shouldShowError('insuranceValidUntil') && (
                   <p className="text-sm text-destructive flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     {errors.insuranceValidUntil}
@@ -1665,7 +1700,7 @@ const HandwerkerOnboarding = () => {
               </div>
             </div>
 
-            {errors.categories && (
+            {shouldShowError('categories') && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{errors.categories}</AlertDescription>
@@ -1673,7 +1708,7 @@ const HandwerkerOnboarding = () => {
             )}
 
             <Alert className="bg-blue-50 border-blue-200">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <Info className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
                 Sie können diese Angaben auch später in Ihrem Profil ergänzen.
               </AlertDescription>
@@ -1817,7 +1852,7 @@ const HandwerkerOnboarding = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {errors.serviceAreas && (
+                {shouldShowError('serviceAreas') && (
                   <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{errors.serviceAreas}</AlertDescription>
@@ -2533,6 +2568,7 @@ const HandwerkerOnboarding = () => {
                   setTempPostalCode('');
                   setUploadedFiles({});
                   setErrors({});
+                  setTouched({});
                   
                   setShowRecoveryDialog(false);
                   toast({
@@ -2555,6 +2591,7 @@ const HandwerkerOnboarding = () => {
                     setFormData(parsed.formData || formData);
                     setSelectedMajorCategories(parsed.selectedMajorCategories || []);
                     setErrors({}); // Clear any stale validation errors
+                    setTouched({}); // Clear touched state for fresh start
                     sessionStorage.removeItem('pending-recovery-data');
                   }
                   setShowRecoveryDialog(false);
