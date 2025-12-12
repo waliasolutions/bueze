@@ -168,6 +168,41 @@ serve(async (req: Request) => {
         const invoice = event.data.object as Stripe.Invoice;
         console.log(`Invoice paid: ${invoice.id}`);
 
+        // Get customer metadata for user_id
+        const customer = await stripe.customers.retrieve(invoice.customer as string);
+        const customerId = typeof customer !== 'string' && !customer.deleted ? customer.id : null;
+        
+        // Find user by stripe_customer_id
+        const { data: subscriptionData } = await supabase
+          .from('handwerker_subscriptions')
+          .select('user_id, plan_type')
+          .eq('stripe_customer_id', customerId)
+          .single();
+
+        if (subscriptionData) {
+          // Insert payment history record
+          const { error: paymentError } = await supabase
+            .from('payment_history')
+            .insert({
+              user_id: subscriptionData.user_id,
+              stripe_invoice_id: invoice.id,
+              stripe_payment_intent_id: invoice.payment_intent as string,
+              amount: invoice.amount_paid,
+              currency: invoice.currency,
+              plan_type: subscriptionData.plan_type,
+              status: 'paid',
+              payment_date: new Date(invoice.status_transitions?.paid_at ? invoice.status_transitions.paid_at * 1000 : Date.now()).toISOString(),
+              invoice_pdf_url: invoice.invoice_pdf,
+              description: `Abonnement: ${subscriptionData.plan_type}`,
+            });
+
+          if (paymentError) {
+            console.error("Error inserting payment history:", paymentError);
+          } else {
+            console.log(`Payment history recorded for user ${subscriptionData.user_id}`);
+          }
+        }
+
         if (invoice.subscription) {
           // Reset proposal count on successful payment (new billing period)
           const { error } = await supabase
@@ -179,6 +214,39 @@ serve(async (req: Request) => {
 
           if (error) {
             console.error("Error resetting proposal count:", error);
+          }
+        }
+        break;
+      }
+
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
+        console.log(`Invoice payment failed: ${invoice.id}`);
+
+        // Find user by stripe_customer_id
+        const { data: subscriptionData } = await supabase
+          .from('handwerker_subscriptions')
+          .select('user_id, plan_type')
+          .eq('stripe_customer_id', invoice.customer as string)
+          .single();
+
+        if (subscriptionData) {
+          // Record failed payment attempt
+          const { error: paymentError } = await supabase
+            .from('payment_history')
+            .insert({
+              user_id: subscriptionData.user_id,
+              stripe_invoice_id: invoice.id,
+              amount: invoice.amount_due,
+              currency: invoice.currency,
+              plan_type: subscriptionData.plan_type,
+              status: 'failed',
+              payment_date: new Date().toISOString(),
+              description: `Fehlgeschlagene Zahlung: ${subscriptionData.plan_type}`,
+            });
+
+          if (paymentError) {
+            console.error("Error inserting failed payment history:", paymentError);
           }
         }
         break;
