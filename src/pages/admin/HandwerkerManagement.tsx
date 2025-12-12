@@ -27,7 +27,10 @@ import {
   MapPin,
   Filter,
   RefreshCw,
+  Download,
+  CheckCheck,
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 
@@ -74,6 +77,8 @@ export default function HandwerkerManagement() {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedHandwerkerId, setSelectedHandwerkerId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
@@ -262,6 +267,113 @@ export default function HandwerkerManagement() {
     }
   };
 
+  // Bulk approve selected handwerkers
+  const bulkApprove = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkActionLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const pendingHandwerkers = handwerkers.filter(
+        (h) => selectedIds.has(h.id) && h.verification_status === 'pending'
+      );
+
+      for (const handwerker of pendingHandwerkers) {
+        await supabase
+          .from('handwerker_profiles')
+          .update({
+            verification_status: 'approved',
+            is_verified: true,
+            verified_at: new Date().toISOString(),
+            verified_by: user?.id,
+          })
+          .eq('id', handwerker.id);
+
+        if (handwerker.user_id) {
+          await Promise.all([
+            supabase.from('user_roles').upsert({
+              user_id: handwerker.user_id,
+              role: 'handwerker',
+            }, { onConflict: 'user_id,role' }),
+            supabase.from('handwerker_subscriptions').upsert({
+              user_id: handwerker.user_id,
+              plan_type: 'free',
+              proposals_limit: 5,
+              proposals_used_this_period: 0,
+            }, { onConflict: 'user_id' }),
+          ]);
+
+          supabase.functions.invoke('send-approval-email', {
+            body: {
+              userId: handwerker.user_id,
+              userName: `${handwerker.first_name} ${handwerker.last_name}`,
+              userEmail: handwerker.email,
+            },
+          }).catch((err) => console.error('Email error:', err));
+        }
+      }
+
+      toast({ title: `${pendingHandwerkers.length} Handwerker freigeschaltet` });
+      setSelectedIds(new Set());
+      fetchHandwerkers();
+    } catch (error) {
+      console.error('Bulk approve error:', error);
+      toast({ title: 'Fehler bei Massenfreischaltung', variant: 'destructive' });
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  // Export to CSV
+  const exportToCSV = () => {
+    const data = filteredHandwerkers.map((h) => ({
+      'Vorname': h.first_name || '',
+      'Nachname': h.last_name || '',
+      'Firma': h.company_name || '',
+      'E-Mail': h.email || '',
+      'Telefon': h.phone_number || '',
+      'Stadt': h.business_city || '',
+      'Kanton': h.business_canton || '',
+      'Kategorien': h.categories.map(getCategoryLabel).join(', '),
+      'Status': h.verification_status,
+      'Erstellt am': new Date(h.created_at).toLocaleDateString('de-CH'),
+    }));
+
+    const headers = Object.keys(data[0] || {});
+    const csvRows = [
+      headers.join(';'),
+      ...data.map((row) =>
+        headers.map((h) => `"${(row as any)[h] || ''}"`).join(';')
+      ),
+    ];
+    const csvContent = csvRows.join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `handwerker_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+
+    toast({ title: `${data.length} Handwerker exportiert` });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredHandwerkers.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredHandwerkers.map((h) => h.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -366,7 +478,40 @@ export default function HandwerkerManagement() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Aktualisieren
             </Button>
+            <Button variant="outline" onClick={exportToCSV}>
+              <Download className="h-4 w-4 mr-2" />
+              CSV Export
+            </Button>
           </div>
+          
+          {/* Bulk Actions */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t">
+              <span className="text-sm text-muted-foreground">
+                {selectedIds.size} ausgewählt
+              </span>
+              <Button
+                size="sm"
+                onClick={bulkApprove}
+                disabled={bulkActionLoading}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {bulkActionLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCheck className="h-4 w-4 mr-2" />
+                )}
+                Alle freischalten
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedIds(new Set())}
+              >
+                Auswahl aufheben
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -384,6 +529,12 @@ export default function HandwerkerManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={selectedIds.size === filteredHandwerkers.length && filteredHandwerkers.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Handwerker</TableHead>
                   <TableHead>Kontakt</TableHead>
                   <TableHead>Kategorien</TableHead>
@@ -397,7 +548,7 @@ export default function HandwerkerManagement() {
               <TableBody>
                 {filteredHandwerkers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       Keine Handwerker gefunden
                     </TableCell>
                   </TableRow>
@@ -406,6 +557,12 @@ export default function HandwerkerManagement() {
                     const completeness = getCompleteness(h);
                     return (
                       <TableRow key={h.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(h.id)}
+                            onCheckedChange={() => toggleSelect(h.id)}
+                          />
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             {h.logo_url ? (
