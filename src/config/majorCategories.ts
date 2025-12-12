@@ -116,8 +116,8 @@ export const majorCategories: Record<string, MajorCategory> = {
       'Garantie auf alle Arbeiten'
     ]
   },
-  heizung_klima_solar: {
-    id: 'heizung_klima_solar',
+  heizung_klima: {
+    id: 'heizung_klima',
     slug: 'heizung-klima',
     label: 'Heizung, Klima & Solar',
     icon: Flame,
@@ -199,8 +199,8 @@ export const majorCategories: Record<string, MajorCategory> = {
       'Mehrere Offerten kostenlos vergleichen'
     ]
   },
-  innenausbau: {
-    id: 'innenausbau',
+  innenausbau_schreiner: {
+    id: 'innenausbau_schreiner',
     slug: 'innenausbau-schreiner',
     label: 'Innenausbau & Schreiner',
     icon: Hammer,

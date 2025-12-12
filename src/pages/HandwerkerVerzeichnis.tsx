@@ -166,7 +166,7 @@ export default function HandwerkerVerzeichnis() {
       return subcategoryLabels[category].label;
     }
     
-    // Try to match partial major category ID (e.g., heizung_klima -> heizung_klima_solar)
+    // Try to match partial major category ID (e.g., innenausbau -> innenausbau_schreiner)
     const partialMatch = Object.keys(categoryLabels).find(key => key.startsWith(category) || category.startsWith(key));
     if (partialMatch) {
       return categoryLabels[partialMatch as keyof typeof categoryLabels];
