@@ -51,7 +51,24 @@ const ConversationsList = () => {
   const leadIdParam = searchParams.get('lead');
 
   useEffect(() => {
-    fetchUser();
+    let isMounted = true;
+    
+    const init = async () => {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!isMounted) return;
+      
+      if (!currentUser) {
+        navigate('/auth');
+        return;
+      }
+      setUser(currentUser);
+    };
+    
+    init();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -66,22 +83,10 @@ const ConversationsList = () => {
       const targetConversation = conversations.find(c => c.lead_id === leadIdParam);
       if (targetConversation) {
         navigate(`/messages/${targetConversation.id}`, { replace: true });
-      } else {
-        toast({
-          title: "Keine Unterhaltung gefunden",
-          description: "Es wurde keine Unterhaltung für diesen Auftrag gefunden.",
-        });
       }
+      // Silent fail - don't show toast for missing conversation on direct navigation
     }
   }, [leadIdParam, conversations, loading]);
-
-  const fetchUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    if (!user) {
-      navigate('/auth');
-    }
-  };
 
   const fetchConversations = async () => {
     if (!user) return;
@@ -170,11 +175,7 @@ const ConversationsList = () => {
       setConversations(conversationsWithMessages as any);
     } catch (error) {
       console.error('Error fetching conversations:', error);
-      toast({
-        title: "Fehler",
-        description: "Die Unterhaltungen konnten nicht geladen werden.",
-        variant: "destructive",
-      });
+      // Silent fail on initial load
     } finally {
       setLoading(false);
     }
