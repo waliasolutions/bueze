@@ -33,10 +33,30 @@ const Dashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Wait for role to load before fetching data to prevent incorrect redirects
     if (roleLoading) return;
-    logWithCorrelation('Dashboard: Page loaded');
-    fetchUserData();
+    
+    const init = async () => {
+      // Check auth first before any data fetching
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!isMounted) return;
+      
+      if (!currentUser) {
+        navigate('/auth');
+        return;
+      }
+      
+      logWithCorrelation('Dashboard: Page loaded');
+      fetchUserData();
+    };
+    
+    init();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [roleLoading, isAdmin]);
 
   const fetchUserData = async () => {
@@ -126,11 +146,8 @@ const Dashboard = () => {
         category: categorized.category 
       });
       logWithCorrelation('Dashboard: Error fetching user data', categorized);
-      toast({
-        title: "Fehler",
-        description: "Beim Laden der Daten ist ein Fehler aufgetreten.",
-        variant: "destructive",
-      });
+      // Silent fail on initial load - user sees empty state instead of error toast
+      console.error('Dashboard data fetch failed:', error);
     } finally {
       setLoading(false);
     }

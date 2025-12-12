@@ -113,7 +113,26 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    fetchUserData();
+    let isMounted = true;
+    
+    const init = async () => {
+      // Check auth first before any data fetching
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!isMounted) return;
+      
+      if (!currentUser) {
+        navigate('/auth');
+        return;
+      }
+      
+      fetchUserData();
+    };
+    
+    init();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const fetchUserData = async () => {
@@ -206,11 +225,7 @@ const Profile = () => {
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
-      toast({
-        title: "Fehler",
-        description: "Beim Laden der Profildaten ist ein Fehler aufgetreten.",
-        variant: "destructive",
-      });
+      // Silent fail on initial load - user sees empty profile form
     } finally {
       setLoading(false);
     }
