@@ -55,17 +55,36 @@ const Messages = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     let cleanupSubscription: (() => void) | undefined;
     
     const initializeData = async () => {
-      await fetchUser();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (!authUser) {
+        navigate('/auth');
+        return;
+      }
+      
+      if (isMounted) {
+        setUser(authUser);
+      }
+      
       if (conversationId && isMounted) {
-        fetchConversation();
-        fetchMessages();
-        cleanupSubscription = subscribeToMessages();
+        // Fetch conversation and messages in parallel
+        await Promise.all([
+          fetchConversation(authUser),
+          fetchMessages(authUser)
+        ]);
+        
+        if (isMounted) {
+          setLoading(false);
+          setInitialized(true);
+          cleanupSubscription = subscribeToMessages();
+        }
       }
     };
     
@@ -83,15 +102,7 @@ const Messages = () => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    if (!user) {
-      navigate('/auth');
-    }
-  };
-
-  const fetchConversation = async () => {
+  const fetchConversation = async (authUser: any) => {
     if (!conversationId) return;
 
     try {
@@ -136,7 +147,7 @@ const Messages = () => {
     }
   };
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (authUser: any) => {
     if (!conversationId) return;
 
     try {
@@ -149,19 +160,18 @@ const Messages = () => {
       if (error) throw error;
       setMessages(data || []);
 
-      // Mark unread messages as read
-      if (user) {
-        await supabase
+      // Mark unread messages as read (fire and forget)
+      if (authUser) {
+        supabase
           .from('messages')
           .update({ read_at: new Date().toISOString() })
           .eq('conversation_id', conversationId)
-          .eq('recipient_id', user.id)
-          .is('read_at', null);
+          .eq('recipient_id', authUser.id)
+          .is('read_at', null)
+          .then(() => {});
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
