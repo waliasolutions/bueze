@@ -41,6 +41,7 @@ import { LEAD_STATUSES } from "@/config/leadStatuses";
 import { ProposalStatusBadge } from "@/components/ProposalStatusBadge";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+import { formatBudget } from "@/lib/swissTime";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { TableSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadWithOwnerContact, AdminProposal } from "@/types/entities";
@@ -265,12 +266,9 @@ export default function AdminLeadsManagement() {
     return true;
   });
 
-  const formatBudget = (lead: LeadWithOwnerContact) => {
-    if (lead.budget_type === "estimate") return "Nach Offerte";
-    if (lead.budget_min && lead.budget_max) {
-      return `CHF ${lead.budget_min.toLocaleString()} - ${lead.budget_max.toLocaleString()}`;
-    }
-    return "Keine Angabe";
+  // Use centralized formatBudget from swissTime.ts (SSOT)
+  const formatLeadBudget = (lead: LeadWithOwnerContact) => {
+    return formatBudget(lead.budget_min, lead.budget_max, lead.budget_type as any);
   };
 
   return (
@@ -419,7 +417,7 @@ export default function AdminLeadsManagement() {
                             {lead.city}, {getCantonLabel(lead.canton)}
                           </div>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-sm">{formatBudget(lead)}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm">{formatLeadBudget(lead)}</TableCell>
                         <TableCell className="hidden lg:table-cell text-sm">{getUrgencyLabel(lead.urgency)}</TableCell>
                         <TableCell className="hidden sm:table-cell">
                           <Badge variant="outline">{lead.proposals_count || 0}</Badge>
@@ -588,7 +586,7 @@ export default function AdminLeadsManagement() {
                     <div className="text-sm space-y-1">
                       <div>Kategorie: {getCategoryLabel(selectedLead.category)}</div>
                       <div>Ort: {selectedLead.city}, {getCantonLabel(selectedLead.canton)} {selectedLead.zip}</div>
-                      <div>Budget: {formatBudget(selectedLead)}</div>
+                      <div>Budget: {formatLeadBudget(selectedLead)}</div>
                       <div>Dringlichkeit: {getUrgencyLabel(selectedLead.urgency)}</div>
                     </div>
                   </div>

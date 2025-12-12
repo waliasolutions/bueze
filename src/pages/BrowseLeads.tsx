@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Clock, Coins, X } from 'lucide-react';
-import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
+import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { majorCategories } from '@/config/majorCategories';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -183,9 +183,7 @@ const BrowseLeads = () => {
     navigate(`/opportunity/${leadId}`);
   };
 
-  const formatBudget = (min: number, max: number) => {
-    return `CHF ${formatNumber(min)} - ${formatNumber(max)}`;
-  };
+  // formatBudget imported from swissTime.ts (SSOT)
 
   if (loading) {
     return (
