@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useProposalFormValidation } from "@/hooks/useProposalFormValidation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X, Filter, Globe, RotateCcw } from "lucide-react";
+import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User as UserIcon, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X, Filter, Globe, RotateCcw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -31,7 +32,7 @@ import { getCantonLabel, SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
-import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic } from "@/types/entities";
+import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic, ReviewForHandwerker } from "@/types/entities";
 
 const HandwerkerDashboard = () => {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ const HandwerkerDashboard = () => {
     toast
   } = useToast();
   const { isAdmin, loading: roleLoading } = useUserRole();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfileBasic | null>(null);
 
@@ -55,14 +56,14 @@ const HandwerkerDashboard = () => {
   const [showAllRegions, setShowAllRegions] = useState(false);
   const [selectedCanton, setSelectedCanton] = useState<string>('all');
   const [proposalStatusFilter, setProposalStatusFilter] = useState<string>('all');
-  const [viewingProposalLead, setViewingProposalLead] = useState<any>(null);
+  const [viewingProposalLead, setViewingProposalLead] = useState<LeadListItem | null>(null);
 
   // Proposals Tab
   const [proposals, setProposals] = useState<ProposalWithClientInfo[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState(false);
 
   // Reviews Tab
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<ReviewForHandwerker[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
   // Tab State
@@ -773,7 +774,7 @@ const HandwerkerDashboard = () => {
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+                <UserIcon className="h-5 w-5" />
                 Willkommen bei Büeze.ch!
               </CardTitle>
               <CardDescription>
@@ -797,7 +798,7 @@ const HandwerkerDashboard = () => {
 
               <div className="flex gap-3">
                 <Button onClick={() => navigate('/handwerker-profile/edit')} className="flex-1">
-                  <User className="h-4 w-4 mr-2" />
+                  <UserIcon className="h-4 w-4 mr-2" />
                   Profil vervollständigen
                 </Button>
                 <Button onClick={() => navigate('/')} variant="outline" className="flex-1">
@@ -901,7 +902,7 @@ const HandwerkerDashboard = () => {
                 <span className="ml-1">({reviews.length})</span>
               </TabsTrigger>
               <TabsTrigger value="profile" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px]">
-                <User className="h-4 w-4 sm:mr-2" />
+                <UserIcon className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Profil</span>
               </TabsTrigger>
             </TabsList>
@@ -1463,7 +1464,7 @@ const HandwerkerDashboard = () => {
                                   </h4>
                                   <div className="space-y-2 text-sm">
                                     <div className="flex items-center gap-2">
-                                      <User className="h-4 w-4 text-green-700" />
+                                      <UserIcon className="h-4 w-4 text-green-700" />
                                       <span className="text-green-900">{proposal.client_contact.full_name}</span>
                                     </div>
                                     <div className="flex items-center gap-2">

@@ -352,6 +352,7 @@ export interface LeadListItem {
   category: string;
   budget_min: number | null;
   budget_max: number | null;
+  budget_type?: string;
   urgency: string;
   canton: string;
   zip: string;
@@ -365,6 +366,8 @@ export interface LeadListItem {
   address?: string | null;
   owner_id?: string;
   accepted_proposal_id?: string | null;
+  media_urls?: string[] | null;
+  proposal_deadline?: string | null;
 }
 
 // Lead with owner contact info (for admin views)
