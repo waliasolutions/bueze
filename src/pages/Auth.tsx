@@ -32,7 +32,7 @@ export default function Auth() {
     fullName: ''
   });
 
-  const handlePostLoginRedirect = async (user: any, roleData: { role: string } | null, isHandwerkerRole: boolean) => {
+  const handlePostLoginRedirect = async (user: { id: string; user_metadata?: Record<string, unknown> }, roleData: { role: string } | null, isHandwerkerRole: boolean) => {
     // Check for admin/super_admin role FIRST
     if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
       navigate('/admin/dashboard');

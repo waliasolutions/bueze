@@ -75,14 +75,10 @@ export default function TestDashboard() {
 
   const checkAdminRole = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .in('role', ['admin', 'super_admin'])
-        .single();
-
-      setIsAdmin(!!data && !error);
+      // Import dynamically to avoid circular deps
+      const { checkUserIsAdmin } = await import('@/lib/roleHelpers');
+      const isAdminUser = await checkUserIsAdmin(userId);
+      setIsAdmin(isAdminUser);
     } catch (error) {
       console.error('Error checking admin role:', error);
       setIsAdmin(false);
