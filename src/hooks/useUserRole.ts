@@ -10,9 +10,11 @@ interface UseUserRoleResult {
   role: UserRole;
   allRoles: UserRole[];
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   isHandwerker: boolean;
   isClient: boolean;
   hasAdminRole: boolean;
+  hasSuperAdminRole: boolean;
   hasHandwerkerRole: boolean;
   loading: boolean;
   userId: string | null;
@@ -111,15 +113,18 @@ export function useUserRole(): UseUserRoleResult {
   
   // Check for specific role types
   const hasAdminRole = allRoles.includes('admin') || allRoles.includes('super_admin');
+  const hasSuperAdminRole = allRoles.includes('super_admin');
   const hasHandwerkerRole = allRoles.includes('handwerker');
 
   return {
     role: primaryRole,
     allRoles,
     isAdmin: hasAdminRole,
+    isSuperAdmin: hasSuperAdminRole,
     isHandwerker: hasHandwerkerRole,
     isClient: primaryRole === 'client' || primaryRole === 'user',
     hasAdminRole,
+    hasSuperAdminRole,
     hasHandwerkerRole,
     loading,
     userId,

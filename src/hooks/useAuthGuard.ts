@@ -1,11 +1,14 @@
 /**
  * Auth Guard Hook - Single Source of Truth for Protected Routes
  * Use this hook to protect pages that require authentication and specific roles
+ * 
+ * Note: This hook uses useUserRole internally for cached role checking
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRole } from '@/hooks/useUserRole';
 import type { User } from '@supabase/supabase-js';
 import type { AppRole } from '@/types/entities';
 
@@ -41,10 +44,12 @@ export const useAuthGuard = (options: AuthGuardOptions = {}): AuthGuardResult =>
   const opts = { ...DEFAULT_OPTIONS, ...options };
   
   const [user, setUser] = useState<User | null>(null);
-  const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use the centralized useUserRole hook for cached role checking
+  const { role: userRole, loading: roleLoading, userId } = useUserRole();
 
   const checkAuth = useCallback(async () => {
     try {
@@ -58,7 +63,6 @@ export const useAuthGuard = (options: AuthGuardOptions = {}): AuthGuardResult =>
       
       if (!currentUser) {
         setUser(null);
-        setRole(null);
         setIsAuthorized(false);
         navigate(opts.redirectTo!);
         return;
@@ -73,23 +77,14 @@ export const useAuthGuard = (options: AuthGuardOptions = {}): AuthGuardResult =>
         return;
       }
 
-      // Fetch user role
-      const { data: roleData, error: roleError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', currentUser.id)
-        .maybeSingle();
-
-      if (roleError && roleError.code !== 'PGRST116') {
-        console.error('Error fetching role:', roleError);
+      // Wait for role loading to complete
+      if (roleLoading) {
+        return;
       }
-
-      const userRole = (roleData?.role as AppRole) || 'user';
-      setRole(userRole);
 
       // Check if user has required role
       if (opts.requiredRoles && opts.requiredRoles.length > 0) {
-        const hasRequiredRole = opts.requiredRoles.includes(userRole);
+        const hasRequiredRole = userRole ? opts.requiredRoles.includes(userRole as AppRole) : false;
         
         if (!hasRequiredRole) {
           setIsAuthorized(false);
@@ -107,13 +102,13 @@ export const useAuthGuard = (options: AuthGuardOptions = {}): AuthGuardResult =>
     } finally {
       setLoading(false);
     }
-  }, [navigate, opts.redirectTo, opts.unauthorizedRedirect, opts.requiredRoles, opts.allowAnyAuthenticated]);
+  }, [navigate, opts.redirectTo, opts.unauthorizedRedirect, opts.requiredRoles, opts.allowAnyAuthenticated, userRole, roleLoading]);
 
   useEffect(() => {
     let isMounted = true;
 
     const initAuth = async () => {
-      if (isMounted) {
+      if (isMounted && !roleLoading) {
         await checkAuth();
       }
     };
@@ -125,7 +120,6 @@ export const useAuthGuard = (options: AuthGuardOptions = {}): AuthGuardResult =>
       async (event, session) => {
         if (isMounted && (event === 'SIGNED_OUT' || !session)) {
           setUser(null);
-          setRole(null);
           setIsAuthorized(false);
           navigate(opts.redirectTo!);
         }
@@ -136,12 +130,12 @@ export const useAuthGuard = (options: AuthGuardOptions = {}): AuthGuardResult =>
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [checkAuth, navigate, opts.redirectTo]);
+  }, [checkAuth, navigate, opts.redirectTo, roleLoading]);
 
   return {
     user,
-    role,
-    loading,
+    role: userRole as AppRole | null,
+    loading: loading || roleLoading,
     isAuthorized,
     error,
     refetch: checkAuth,

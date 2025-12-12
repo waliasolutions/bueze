@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Loader2, Star, Eye, EyeOff, Trash2, Search, ArrowLeft, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -23,8 +24,8 @@ const ReviewsManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [reviews, setReviews] = useState<ReviewForAdmin[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<ReviewForAdmin[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,46 +33,24 @@ const ReviewsManagement = () => {
   const [filterVisibility, setFilterVisibility] = useState<string>('all');
 
   useEffect(() => {
-    checkAdminAndLoad();
-  }, []);
+    if (!roleLoading && !isAdmin) {
+      toast({
+        title: 'Zugriff verweigert',
+        description: 'Sie haben keine Berechtigung für diese Seite.',
+        variant: 'destructive',
+      });
+      navigate('/dashboard');
+      return;
+    }
+    
+    if (!roleLoading && isAdmin) {
+      loadReviews();
+    }
+  }, [roleLoading, isAdmin]);
 
   useEffect(() => {
     applyFilters();
   }, [reviews, searchTerm, filterRating, filterVisibility]);
-
-  const checkAdminAndLoad = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .in('role', ['admin', 'super_admin']);
-
-      if (!roleData || roleData.length === 0) {
-        toast({
-          title: 'Zugriff verweigert',
-          description: 'Sie haben keine Berechtigung für diese Seite.',
-          variant: 'destructive',
-        });
-        navigate('/dashboard');
-        return;
-      }
-
-      setIsAdmin(true);
-      await loadReviews();
-    } catch (error) {
-      console.error('Error checking admin access:', error);
-      navigate('/dashboard');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const loadReviews = async () => {
     try {
