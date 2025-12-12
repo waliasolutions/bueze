@@ -19,6 +19,7 @@ interface PostalCodeInputProps {
     latitude?: number;
     longitude?: number;
   }) => void;
+  onBlur?: () => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -28,6 +29,7 @@ export const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
   value,
   onValueChange,
   onAddressSelect,
+  onBlur,
   placeholder = 'z.B. 8000',
   disabled = false,
   className,
@@ -127,6 +129,7 @@ export const PostalCodeInput: React.FC<PostalCodeInputProps> = ({
         <Input
           value={value}
           onChange={(e) => handleChange(e.target.value)}
+          onBlur={onBlur}
           placeholder={placeholder}
           disabled={disabled}
           maxLength={4}
