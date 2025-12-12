@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { getUserRoles, checkUserHasRole } from '@/lib/roleHelpers';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 
@@ -64,14 +64,11 @@ export default function Auth() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        // Fetch role from database
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        
-        const isHandwerkerRole = roleData?.role === 'handwerker';
+        // Use SSOT roleHelpers to get user roles
+        const allRoles = await getUserRoles(session.user.id);
+        const primaryRole = allRoles[0] || null;
+        const roleData = primaryRole ? { role: primaryRole } : null;
+        const isHandwerkerRole = allRoles.includes('handwerker');
         
         // Defer to avoid deadlock
         setTimeout(() => {

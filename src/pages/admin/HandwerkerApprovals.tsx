@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { checkUserIsAdmin, upsertUserRole } from '@/lib/roleHelpers';
 import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, AlertTriangle, Search, Filter, History, Trash2, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -340,26 +341,13 @@ const HandwerkerApprovals = () => {
           .eq('id', handwerker.id);
 
         if (!updateError) {
-          // Only upsert handwerker role if user is not an admin
+          // Only upsert handwerker role if user is not an admin (use SSOT roleHelpers)
           if (handwerker.user_id) {
-            // Check if user is admin before adding handwerker role
-            const { data: existingRoles } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', handwerker.user_id);
-            
-            const isAdmin = existingRoles?.some(r => 
-              r.role === 'admin' || r.role === 'super_admin'
-            );
+            const isAdminUser = await checkUserIsAdmin(handwerker.user_id);
             
             // Only add handwerker role for non-admins
-            if (!isAdmin) {
-              await supabase
-                .from('user_roles')
-                .upsert({
-                  user_id: handwerker.user_id,
-                  role: 'handwerker'
-                }, { onConflict: 'user_id,role' });
+            if (!isAdminUser) {
+              await upsertUserRole(handwerker.user_id, 'handwerker');
             }
 
             // Create subscription (if not exists)
@@ -424,17 +412,10 @@ const HandwerkerApprovals = () => {
       if (handwerker.user_id) {
         const userId = handwerker.user_id;
         
-        // Check if user is admin before adding handwerker role, then run operations
+        // Use SSOT roleHelpers for role checking and assignment
         (async () => {
           try {
-            const { data: existingRoles } = await supabase
-              .from('user_roles')
-              .select('role')
-              .eq('user_id', userId);
-            
-            const isAdmin = existingRoles?.some(r => 
-              r.role === 'admin' || r.role === 'super_admin'
-            );
+            const isAdminUser = await checkUserIsAdmin(userId);
             
             // Always create subscription
             const subResult = await supabase
@@ -449,15 +430,9 @@ const HandwerkerApprovals = () => {
             if (subResult.error) console.error('Subscription error (non-critical):', subResult.error);
             
             // Only add handwerker role for non-admins
-            if (!isAdmin) {
-              const roleResult = await supabase
-                .from('user_roles')
-                .upsert({
-                  user_id: userId,
-                  role: 'handwerker'
-                }, { onConflict: 'user_id,role' });
-              
-              if (roleResult.error) console.error('Role upsert error (non-critical):', roleResult.error);
+            if (!isAdminUser) {
+              const roleResult = await upsertUserRole(userId, 'handwerker');
+              if (!roleResult.success) console.error('Role upsert error (non-critical):', roleResult.error);
             }
           } catch (err) {
             console.error('Parallel ops error:', err);
