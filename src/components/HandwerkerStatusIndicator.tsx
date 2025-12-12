@@ -51,23 +51,26 @@ export const HandwerkerStatusIndicator: React.FC<HandwerkerStatusIndicatorProps>
       if (subError) throw subError;
       setSubscription(subData);
 
-      // Fetch profile to check completeness
+      // Fetch profile to check completeness - use user_id, not id
       const { data: profileData, error: profileError } = await supabase
         .from('handwerker_profiles')
         .select('*')
-        .eq('id', userId)
-        .single();
+        .eq('user_id', userId)
+        .maybeSingle();
 
-      if (profileError) throw profileError;
+      // Handle missing profile gracefully
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw profileError;
+      }
       
-      // Check if profile has essential information
+      // Check if profile exists and has essential information
       const isComplete = !!(
-        profileData.first_name &&
-        profileData.last_name &&
-        profileData.email &&
-        profileData.phone_number &&
-        profileData.bio &&
-        profileData.service_areas?.length > 0
+        profileData?.first_name &&
+        profileData?.last_name &&
+        profileData?.email &&
+        profileData?.phone_number &&
+        profileData?.bio &&
+        profileData?.service_areas?.length > 0
       );
       
       setProfileComplete(isComplete);
