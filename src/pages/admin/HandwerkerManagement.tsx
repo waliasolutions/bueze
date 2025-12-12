@@ -29,8 +29,20 @@ import {
   RefreshCw,
   Download,
   CheckCheck,
+  Trash2,
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 
@@ -79,6 +91,7 @@ export default function HandwerkerManagement() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
@@ -346,6 +359,58 @@ export default function HandwerkerManagement() {
       toast({ title: 'Fehler bei Massenfreischaltung', variant: 'destructive' });
     } finally {
       setBulkActionLoading(false);
+    }
+  };
+
+  const deleteHandwerker = async (handwerker: Handwerker) => {
+    if (!handwerker.user_id) {
+      // For guest registrations without user_id, just delete the profile
+      setDeleteLoading(handwerker.id);
+      try {
+        const { error } = await supabase
+          .from('handwerker_profiles')
+          .delete()
+          .eq('id', handwerker.id);
+
+        if (error) throw error;
+        toast({ title: 'Handwerker-Profil gelöscht' });
+        fetchHandwerkers();
+      } catch (error) {
+        console.error('Error deleting profile:', error);
+        toast({ title: 'Fehler beim Löschen', variant: 'destructive' });
+      } finally {
+        setDeleteLoading(null);
+      }
+      return;
+    }
+
+    setDeleteLoading(handwerker.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: handwerker.user_id },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ 
+        title: 'Handwerker vollständig gelöscht',
+        description: `Alle Daten wurden entfernt.`,
+      });
+      fetchHandwerkers();
+    } catch (error: any) {
+      console.error('Error deleting handwerker:', error);
+      toast({ 
+        title: 'Fehler beim Löschen', 
+        description: error.message || 'Unbekannter Fehler',
+        variant: 'destructive' 
+      });
+    } finally {
+      setDeleteLoading(null);
     }
   };
 
@@ -693,6 +758,50 @@ export default function HandwerkerManagement() {
                                 </Button>
                               </>
                             )}
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="Endgültig löschen"
+                                  disabled={deleteLoading === h.id}
+                                >
+                                  {deleteLoading === h.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Handwerker endgültig löschen?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    <strong>{h.first_name} {h.last_name}</strong> ({h.email}) wird unwiderruflich gelöscht.
+                                    <br /><br />
+                                    Folgende Daten werden entfernt:
+                                    <ul className="list-disc list-inside mt-2 text-sm">
+                                      <li>Profil und Konto</li>
+                                      <li>Alle Offerten und Nachrichten</li>
+                                      <li>Bewertungen und Abonnement</li>
+                                      <li>Zahlungshistorie</li>
+                                    </ul>
+                                    <br />
+                                    <strong className="text-destructive">Diese Aktion kann nicht rückgängig gemacht werden!</strong>
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteHandwerker(h)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Endgültig löschen
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>

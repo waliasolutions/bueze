@@ -20,7 +20,19 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  Trash2,
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -56,6 +68,7 @@ export default function ClientManagement() {
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [clientLeads, setClientLeads] = useState<Map<string, Lead[]>>(new Map());
   const [loadingLeads, setLoadingLeads] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
@@ -174,6 +187,37 @@ export default function ClientManagement() {
       });
     } finally {
       setLoadingLeads(null);
+    }
+  };
+
+  const deleteClient = async (client: Client) => {
+    setDeleteLoading(client.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: client.id },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ 
+        title: 'Kunde vollständig gelöscht',
+        description: `Alle Daten wurden entfernt.`,
+      });
+      fetchClients();
+    } catch (error: any) {
+      console.error('Error deleting client:', error);
+      toast({ 
+        title: 'Fehler beim Löschen', 
+        description: error.message || 'Unbekannter Fehler',
+        variant: 'destructive' 
+      });
+    } finally {
+      setDeleteLoading(null);
     }
   };
 
@@ -371,14 +415,60 @@ export default function ClientManagement() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate(`/admin/leads?owner=${client.id}`)}
-                          title="Alle Aufträge anzeigen"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => navigate(`/admin/leads?owner=${client.id}`)}
+                            title="Alle Aufträge anzeigen"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                title="Endgültig löschen"
+                                disabled={deleteLoading === client.id}
+                              >
+                                {deleteLoading === client.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Kunde endgültig löschen?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  <strong>{client.full_name || client.email}</strong> wird unwiderruflich gelöscht.
+                                  <br /><br />
+                                  Folgende Daten werden entfernt:
+                                  <ul className="list-disc list-inside mt-2 text-sm">
+                                    <li>Profil und Konto</li>
+                                    <li>Alle {client.leads_count} Aufträge</li>
+                                    <li>Alle Nachrichten und Konversationen</li>
+                                    <li>Bewertungen</li>
+                                  </ul>
+                                  <br />
+                                  <strong className="text-destructive">Diese Aktion kann nicht rückgängig gemacht werden!</strong>
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteClient(client)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Endgültig löschen
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                     {/* Expanded Leads Row */}
