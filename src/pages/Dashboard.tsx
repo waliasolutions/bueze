@@ -329,24 +329,31 @@ const Dashboard = () => {
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
             <div>
               {isAdmin && (
                 <Badge variant="outline" className="mb-2 bg-blue-50 text-blue-700 border-blue-200">
                   Kunden-Ansicht
                 </Badge>
               )}
-              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Willkommen zurück, {profile?.full_name || 'User'}!
               </p>
             </div>
-            <div className="flex gap-3 items-center">
-              <Button onClick={() => navigate('/conversations')} variant="outline">
+            <div className="flex gap-2 sm:gap-3 items-center">
+              {/* Mobile: icon only, Desktop: full text */}
+              <Button onClick={() => navigate('/conversations')} variant="outline" size="icon" className="sm:hidden h-10 w-10">
+                <Users className="h-4 w-4" />
+              </Button>
+              <Button onClick={() => navigate('/conversations')} variant="outline" className="hidden sm:inline-flex">
                 <Users className="mr-2 h-4 w-4" />
                 Nachrichten
               </Button>
-              <Button onClick={() => navigate('/submit-lead')}>
+              <Button onClick={() => navigate('/submit-lead')} size="icon" className="sm:hidden h-10 w-10">
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Button onClick={() => navigate('/submit-lead')} className="hidden sm:inline-flex">
                 <Plus className="mr-2 h-4 w-4" />
                 Neuen Auftrag erstellen
               </Button>
@@ -361,17 +368,23 @@ const Dashboard = () => {
           )}
 
           <Tabs defaultValue="leads" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="leads">
-                Meine Aufträge ({myLeads.filter(l => l.status === 'active').length})
+            <TabsList className="w-full flex flex-wrap sm:inline-flex h-auto p-1 gap-1">
+              <TabsTrigger value="leads" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
+                <span className="hidden sm:inline">Meine Aufträge</span>
+                <span className="sm:hidden">Aufträge</span>
+                <span className="ml-1">({myLeads.filter(l => l.status === 'active').length})</span>
               </TabsTrigger>
-              <TabsTrigger value="proposals">
-                Erhaltene Offerten ({myLeads.reduce((sum, lead) => sum + (lead.proposals_count || 0), 0)})
+              <TabsTrigger value="proposals" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
+                <span className="hidden sm:inline">Erhaltene Offerten</span>
+                <span className="sm:hidden">Offerten</span>
+                <span className="ml-1">({myLeads.reduce((sum, lead) => sum + (lead.proposals_count || 0), 0)})</span>
               </TabsTrigger>
-              <TabsTrigger value="archive">
+              <TabsTrigger value="archive" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
                 Archiv ({archivedLeads.length})
               </TabsTrigger>
-              <TabsTrigger value="profile">Profil</TabsTrigger>
+              <TabsTrigger value="profile" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
+                Profil
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="leads" className="space-y-6">

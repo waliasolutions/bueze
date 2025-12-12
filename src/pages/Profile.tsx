@@ -380,32 +380,37 @@ const Profile = () => {
           </div>
 
           <Tabs defaultValue="personal" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="personal">
-                <User className="h-4 w-4 mr-2" />
-                Persönliche Daten
+            <TabsList className="w-full flex flex-wrap sm:inline-flex h-auto p-1 gap-1 overflow-x-auto">
+              <TabsTrigger value="personal" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
+                <User className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Persönliche Daten</span>
+                <span className="sm:hidden">Daten</span>
               </TabsTrigger>
               {isHandwerker && (
-                <TabsTrigger value="handwerker">
-                  <SettingsIcon className="h-4 w-4 mr-2" />
-                  Handwerker-Profil
+                <TabsTrigger value="handwerker" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
+                  <SettingsIcon className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Handwerker-Profil</span>
+                  <span className="sm:hidden">Profil</span>
                 </TabsTrigger>
               )}
               {isHandwerker && (
-                <TabsTrigger value="subscription">
-                  <Crown className="h-4 w-4 mr-2" />
-                  Abonnement
+                <TabsTrigger value="subscription" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
+                  <Crown className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Abonnement</span>
+                  <span className="sm:hidden">Abo</span>
                 </TabsTrigger>
               )}
               {isHandwerker && (
-                <TabsTrigger value="payments">
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Rechnungen
+                <TabsTrigger value="payments" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
+                  <Receipt className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Rechnungen</span>
+                  <span className="sm:hidden">Rechnung</span>
                 </TabsTrigger>
               )}
-              <TabsTrigger value="settings">
-                <SettingsIcon className="h-4 w-4 mr-2" />
-                Einstellungen
+              <TabsTrigger value="settings" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
+                <SettingsIcon className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Einstellungen</span>
+                <span className="sm:hidden">Settings</span>
               </TabsTrigger>
             </TabsList>
 
