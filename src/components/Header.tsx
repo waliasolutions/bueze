@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus } from 'lucide-react';
+import { Menu, X, Plus, LogOut } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
@@ -8,6 +8,14 @@ import { ClientNotifications } from './ClientNotifications';
 import { HandwerkerNotifications } from './HandwerkerNotifications';
 import { AdminViewSwitcher } from './AdminViewSwitcher';
 import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import logo from '@/assets/bueze-logo.png';
 
 export const Header = () => {
@@ -115,11 +123,43 @@ export const Header = () => {
                 )}
                 {isHandwerker && !isAdmin && <HandwerkerNotifications />}
                 {!isAdmin && !isHandwerker && <ClientNotifications />}
-                <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Auftrag erstellen
-                </Button>
-                <UserDropdown />
+                
+                {/* Hide "Auftrag erstellen" for admins */}
+                {!isAdmin && (
+                  <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Auftrag erstellen
+                  </Button>
+                )}
+                
+                {/* Minimal logout-only dropdown for admins, full UserDropdown for others */}
+                {isAdmin ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="rounded-full">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                            A
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48 bg-popover">
+                      <DropdownMenuItem
+                        onClick={async () => {
+                          await supabase.auth.signOut();
+                          navigate('/');
+                        }}
+                        className="cursor-pointer text-destructive focus:text-destructive"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Abmelden
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <UserDropdown />
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-3">
@@ -216,7 +256,23 @@ export const Header = () => {
                       <AdminViewSwitcher currentView={getCurrentView()} />
                     </div>
                   )}
-                  <UserDropdown />
+                  {/* Minimal logout for admins, full UserDropdown for others */}
+                  {isAdmin ? (
+                    <Button 
+                      variant="ghost" 
+                      className="justify-start gap-2 w-full text-destructive hover:text-destructive" 
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        navigate('/');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Abmelden
+                    </Button>
+                  ) : (
+                    <UserDropdown />
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
