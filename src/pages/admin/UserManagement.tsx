@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -60,10 +61,23 @@ export default function UserManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isSuperAdmin, loading: roleLoading } = useUserRole();
 
   useEffect(() => {
-    checkAccessAndLoadData();
-  }, []);
+    if (!roleLoading && !isSuperAdmin) {
+      toast({
+        title: 'Zugriff verweigert',
+        description: 'Nur Super Administratoren können auf diese Seite zugreifen.',
+        variant: 'destructive',
+      });
+      navigate('/dashboard');
+      return;
+    }
+    
+    if (!roleLoading && isSuperAdmin) {
+      loadUsers();
+    }
+  }, [roleLoading, isSuperAdmin]);
 
   useEffect(() => {
     // Filter users based on search query
@@ -82,46 +96,8 @@ export default function UserManagement() {
     }
   }, [searchQuery, users]);
 
-  const checkAccessAndLoadData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      // Check if user is super_admin
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .in('role', ['super_admin']);
-
-      if (!roleData || roleData.length === 0) {
-        toast({
-          title: 'Zugriff verweigert',
-          description: 'Nur Super Administratoren können auf diese Seite zugreifen.',
-          variant: 'destructive',
-        });
-        navigate('/dashboard');
-        return;
-      }
-
-      await loadUsers();
-    } catch (error) {
-      console.error('Error checking access:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Ein Fehler ist beim Laden aufgetreten.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadUsers = async () => {
+    setLoading(true);
     try {
       // Fetch all profiles with their roles
       const { data: profilesData, error: profilesError } = await supabase
@@ -148,14 +124,15 @@ export default function UserManagement() {
       }));
 
       setUsers(usersWithRoles);
-      setFilteredUsers(usersWithRoles);
     } catch (error) {
       console.error('Error loading users:', error);
       toast({
         title: 'Fehler',
-        description: 'Fehler beim Laden der Benutzerdaten.',
+        description: 'Benutzer konnten nicht geladen werden.',
         variant: 'destructive',
       });
+    } finally {
+      setLoading(false);
     }
   };
 

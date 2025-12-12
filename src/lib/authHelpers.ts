@@ -5,6 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
  * BÜEZE ROLE SYSTEM DOCUMENTATION
  * ============================================
  * 
+ * IMPORTANT: For React components, use the useUserRole hook instead
+ * of these helper functions. The hook provides cached role checking
+ * and prevents duplicate database queries.
+ * 
+ * These helper functions are intended for:
+ * - Server-side / Edge function contexts
+ * - Non-React utility functions
+ * - One-off checks outside of component lifecycle
+ * 
+ * For component role checks, import: 
+ *   import { useUserRole } from '@/hooks/useUserRole';
+ * 
  * This software uses THREE primary roles:
  * 
  * 1. admin / super_admin
