@@ -95,19 +95,36 @@ const Messages = () => {
     if (!conversationId) return;
 
     try {
-      const { data, error } = await supabase
+      // Step 1: Fetch conversation with lead (valid FK exists)
+      const { data: convData, error: convError } = await supabase
         .from('conversations')
         .select(`
           *,
-          lead:leads(title, description),
-          homeowner:profiles!homeowner_id(full_name, avatar_url),
-          handwerker:profiles!handwerker_id(full_name, avatar_url)
+          lead:leads(title, description)
         `)
         .eq('id', conversationId)
         .single();
 
-      if (error) throw error;
-      setConversation(data as any);
+      if (convError) throw convError;
+
+      // Step 2: Fetch both user profiles separately
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', [convData.homeowner_id, convData.handwerker_id]);
+
+      if (profilesError) throw profilesError;
+
+      // Step 3: Build the combined conversation object
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      
+      const conversationWithProfiles: Conversation = {
+        ...convData,
+        homeowner: profilesMap.get(convData.homeowner_id) || { full_name: 'Kunde', avatar_url: undefined },
+        handwerker: profilesMap.get(convData.handwerker_id) || { full_name: 'Handwerker', avatar_url: undefined },
+      };
+
+      setConversation(conversationWithProfiles);
     } catch (error) {
       console.error('Error fetching conversation:', error);
       toast({
@@ -115,10 +132,7 @@ const Messages = () => {
         description: "Die Unterhaltung konnte nicht geladen werden.",
         variant: "destructive",
       });
-      
-      // Navigate to appropriate dashboard based on conversation role
-      const isHandwerkerInConversation = user?.id && conversation?.handwerker_id === user.id;
-      navigate(isHandwerkerInConversation ? '/handwerker-dashboard' : '/dashboard');
+      navigate('/conversations');
     }
   };
 
