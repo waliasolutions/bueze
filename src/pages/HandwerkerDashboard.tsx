@@ -203,11 +203,7 @@ const HandwerkerDashboard = () => {
       } = await supabase.from('handwerker_profiles').select('*').eq('user_id', currentUser.id).maybeSingle();
       if (error) {
         console.error('Error fetching profile:', error);
-        toast({
-          title: 'Fehler',
-          description: 'Profil konnte nicht geladen werden.',
-          variant: 'destructive'
-        });
+        // Silent fail on initial load - avoid disruptive toast on page load
         setLoading(false);
         return;
       }

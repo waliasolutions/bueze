@@ -96,12 +96,8 @@ export default function Auth() {
           description: error.message,
           variant: 'destructive',
         });
-      } else {
-        toast({
-          title: 'Willkommen zurück!',
-          description: 'Sie wurden erfolgreich angemeldet.',
-        });
       }
+      // Success handled by onAuthStateChange - no toast needed
     } catch (error) {
       toast({
         title: 'Fehler',
