@@ -55,6 +55,7 @@ const HandwerkerDashboard = () => {
   const [showAllRegions, setShowAllRegions] = useState(false);
   const [selectedCanton, setSelectedCanton] = useState<string>('all');
   const [proposalStatusFilter, setProposalStatusFilter] = useState<string>('all');
+  const [viewingProposalLead, setViewingProposalLead] = useState<any>(null);
 
   // Proposals Tab
   const [proposals, setProposals] = useState<ProposalWithClientInfo[]>([]);
@@ -1348,42 +1349,70 @@ const HandwerkerDashboard = () => {
                                 )}
                               </div>
                               
-                              {/* Action buttons for pending proposals */}
-                              {proposal.status === 'pending' && (
-                                <div className="flex gap-2 pt-3 border-t">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => handleOpenEditDialog(proposal)}
-                                  >
-                                    <Pencil className="h-4 w-4 mr-1" />
-                                    Bearbeiten
-                                  </Button>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                                        <X className="h-4 w-4 mr-1" />
-                                        Zurückziehen
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Angebot zurückziehen?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Möchten Sie dieses Angebot wirklich zurückziehen? 
-                                          Der Auftrag wird wieder in Ihrer Auftragsliste erscheinen.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleWithdrawProposal(proposal.id)}>
-                                          Ja, zurückziehen
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </div>
-                              )}
+                              {/* View Lead Details Button - always visible */}
+                              <div className="flex flex-wrap gap-2 pt-3 border-t">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={async () => {
+                                    // Fetch full lead details
+                                    const { data: leadData } = await supabase
+                                      .from('leads')
+                                      .select('*')
+                                      .eq('id', proposal.lead_id)
+                                      .single();
+                                    if (leadData) {
+                                      setViewingProposalLead(leadData);
+                                    } else {
+                                      toast({
+                                        title: "Fehler",
+                                        description: "Auftragsdetails konnten nicht geladen werden.",
+                                        variant: "destructive"
+                                      });
+                                    }
+                                  }}
+                                >
+                                  <FileText className="h-4 w-4 mr-1" />
+                                  Auftragsdetails
+                                </Button>
+                                
+                                {/* Additional action buttons for pending proposals */}
+                                {proposal.status === 'pending' && (
+                                  <>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleOpenEditDialog(proposal)}
+                                    >
+                                      <Pencil className="h-4 w-4 mr-1" />
+                                      Bearbeiten
+                                    </Button>
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                                          <X className="h-4 w-4 mr-1" />
+                                          Zurückziehen
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Angebot zurückziehen?</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Möchten Sie dieses Angebot wirklich zurückziehen? 
+                                            Der Auftrag wird wieder in Ihrer Auftragsliste erscheinen.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleWithdrawProposal(proposal.id)}>
+                                            Ja, zurückziehen
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </>
+                                )}
+                              </div>
                               
                               {/* Show client contact details for accepted proposals */}
                               {proposal.status === 'accepted' && proposal.client_contact && (
@@ -1422,6 +1451,114 @@ const HandwerkerDashboard = () => {
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Lead Details Dialog for Proposals */}
+            <Dialog open={!!viewingProposalLead} onOpenChange={(open) => !open && setViewingProposalLead(null)}>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{viewingProposalLead?.title}</DialogTitle>
+                  <DialogDescription>
+                    Vollständige Auftragsdetails
+                  </DialogDescription>
+                </DialogHeader>
+                {viewingProposalLead && (
+                  <div className="space-y-4">
+                    {/* Location & Category */}
+                    <div className="flex flex-wrap gap-3">
+                      <Badge variant="secondary" className="gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {viewingProposalLead.city}, {getCantonLabel(viewingProposalLead.canton)}
+                      </Badge>
+                      <Badge variant="outline">
+                        {getCategoryLabel(viewingProposalLead.category)}
+                      </Badge>
+                      <Badge className={getUrgencyColor(viewingProposalLead.urgency)}>
+                        {getUrgencyLabel(viewingProposalLead.urgency)}
+                      </Badge>
+                    </div>
+                    
+                    {/* Budget */}
+                    {(viewingProposalLead.budget_min || viewingProposalLead.budget_max) && (
+                      <div className="p-3 bg-muted rounded-lg">
+                        <span className="text-sm font-medium">Budget: </span>
+                        <span className="text-sm">
+                          {viewingProposalLead.budget_min && viewingProposalLead.budget_max 
+                            ? `${viewingProposalLead.budget_min} - ${viewingProposalLead.budget_max} CHF`
+                            : viewingProposalLead.budget_max 
+                              ? `bis ${viewingProposalLead.budget_max} CHF`
+                              : `ab ${viewingProposalLead.budget_min} CHF`
+                          }
+                          {viewingProposalLead.budget_type === 'hourly' && ' / Stunde'}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Description */}
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Beschreibung</h4>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {viewingProposalLead.description}
+                      </p>
+                    </div>
+                    
+                    {/* Address if available */}
+                    {viewingProposalLead.address && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Adresse</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {viewingProposalLead.address}, {viewingProposalLead.zip} {viewingProposalLead.city}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Media/Images */}
+                    {viewingProposalLead.media_urls && viewingProposalLead.media_urls.length > 0 && (
+                      <div className="space-y-2">
+                        <h4 className="font-medium">Bilder ({viewingProposalLead.media_urls.length})</h4>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          {viewingProposalLead.media_urls.map((url: string, idx: number) => (
+                            <a 
+                              key={idx} 
+                              href={url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="aspect-square rounded-lg overflow-hidden border hover:border-primary transition-colors"
+                            >
+                              <img src={url} alt={`Bild ${idx + 1}`} className="h-full w-full object-cover" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Metadata */}
+                    <div className="pt-3 border-t text-xs text-muted-foreground space-y-1">
+                      <p>
+                        Erstellt: {new Date(viewingProposalLead.created_at).toLocaleDateString('de-CH', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
+                      {viewingProposalLead.proposal_deadline && (
+                        <p>
+                          Angebotsfrist: {new Date(viewingProposalLead.proposal_deadline).toLocaleDateString('de-CH', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setViewingProposalLead(null)}>
+                    Schliessen
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Reviews Tab */}
             <TabsContent value="reviews" className="space-y-4">
