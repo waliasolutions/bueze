@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { checkUserIsAdmin, upsertUserRole } from '@/lib/roleHelpers';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getCantonLabel } from '@/config/cantons';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
@@ -213,17 +214,9 @@ export default function HandwerkerManagement() {
 
       if (error) throw error;
 
-      // Create subscription and conditionally update role (not for admins)
+      // Create subscription and conditionally update role (use SSOT roleHelpers)
       if (handwerker.user_id) {
-        // Check if user is admin before adding handwerker role
-        const { data: existingRoles } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', handwerker.user_id);
-        
-        const isAdmin = existingRoles?.some(r => 
-          r.role === 'admin' || r.role === 'super_admin'
-        );
+        const isAdminUser = await checkUserIsAdmin(handwerker.user_id);
         
         // Always create subscription
         await supabase.from('handwerker_subscriptions').upsert({
@@ -234,11 +227,8 @@ export default function HandwerkerManagement() {
         }, { onConflict: 'user_id' });
         
         // Only add handwerker role for non-admins
-        if (!isAdmin) {
-          await supabase.from('user_roles').upsert({
-            user_id: handwerker.user_id,
-            role: 'handwerker',
-          }, { onConflict: 'user_id,role' });
+        if (!isAdminUser) {
+          await upsertUserRole(handwerker.user_id, 'handwerker');
         }
 
         // Send approval email
@@ -315,15 +305,8 @@ export default function HandwerkerManagement() {
           .eq('id', handwerker.id);
 
         if (handwerker.user_id) {
-          // Check if user is admin before adding handwerker role
-          const { data: existingRoles } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', handwerker.user_id);
-          
-          const isAdmin = existingRoles?.some(r => 
-            r.role === 'admin' || r.role === 'super_admin'
-          );
+          // Use SSOT roleHelpers for role checking
+          const isAdminUser = await checkUserIsAdmin(handwerker.user_id);
           
           // Always create subscription
           await supabase.from('handwerker_subscriptions').upsert({
@@ -334,11 +317,8 @@ export default function HandwerkerManagement() {
           }, { onConflict: 'user_id' });
           
           // Only add handwerker role for non-admins
-          if (!isAdmin) {
-            await supabase.from('user_roles').upsert({
-              user_id: handwerker.user_id,
-              role: 'handwerker',
-            }, { onConflict: 'user_id,role' });
+          if (!isAdminUser) {
+            await upsertUserRole(handwerker.user_id, 'handwerker');
           }
 
           supabase.functions.invoke('send-approval-email', {
