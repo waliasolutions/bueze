@@ -340,14 +340,27 @@ const HandwerkerApprovals = () => {
           .eq('id', handwerker.id);
 
         if (!updateError) {
-          // Upsert user role to 'handwerker'
+          // Only upsert handwerker role if user is not an admin
           if (handwerker.user_id) {
-            await supabase
+            // Check if user is admin before adding handwerker role
+            const { data: existingRoles } = await supabase
               .from('user_roles')
-              .upsert({
-                user_id: handwerker.user_id,
-                role: 'handwerker'
-              }, { onConflict: 'user_id,role' });
+              .select('role')
+              .eq('user_id', handwerker.user_id);
+            
+            const isAdmin = existingRoles?.some(r => 
+              r.role === 'admin' || r.role === 'super_admin'
+            );
+            
+            // Only add handwerker role for non-admins
+            if (!isAdmin) {
+              await supabase
+                .from('user_roles')
+                .upsert({
+                  user_id: handwerker.user_id,
+                  role: 'handwerker'
+                }, { onConflict: 'user_id,role' });
+            }
 
             // Create subscription (if not exists)
             await supabase
@@ -407,28 +420,49 @@ const HandwerkerApprovals = () => {
 
       if (updateError) throw updateError;
 
-      // Parallelize: user role + subscription creation (non-blocking)
+      // Parallelize: subscription creation + conditional role assignment (non-blocking)
       if (handwerker.user_id) {
-        // Run role upsert and subscription creation in parallel
-        Promise.all([
-          supabase
-            .from('user_roles')
-            .upsert({
-              user_id: handwerker.user_id,
-              role: 'handwerker'
-            }, { onConflict: 'user_id,role' }),
-          supabase
-            .from('handwerker_subscriptions')
-            .upsert({
-              user_id: handwerker.user_id,
-              plan_type: 'free',
-              proposals_limit: 5,
-              proposals_used_this_period: 0
-            }, { onConflict: 'user_id' })
-        ]).then(([roleResult, subResult]) => {
-          if (roleResult.error) console.error('Role upsert error (non-critical):', roleResult.error);
-          if (subResult.error) console.error('Subscription creation error (non-critical):', subResult.error);
-        }).catch(err => console.error('Parallel ops error:', err));
+        const userId = handwerker.user_id;
+        
+        // Check if user is admin before adding handwerker role, then run operations
+        (async () => {
+          try {
+            const { data: existingRoles } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', userId);
+            
+            const isAdmin = existingRoles?.some(r => 
+              r.role === 'admin' || r.role === 'super_admin'
+            );
+            
+            // Always create subscription
+            const subResult = await supabase
+              .from('handwerker_subscriptions')
+              .upsert({
+                user_id: userId,
+                plan_type: 'free',
+                proposals_limit: 5,
+                proposals_used_this_period: 0
+              }, { onConflict: 'user_id' });
+            
+            if (subResult.error) console.error('Subscription error (non-critical):', subResult.error);
+            
+            // Only add handwerker role for non-admins
+            if (!isAdmin) {
+              const roleResult = await supabase
+                .from('user_roles')
+                .upsert({
+                  user_id: userId,
+                  role: 'handwerker'
+                }, { onConflict: 'user_id,role' });
+              
+              if (roleResult.error) console.error('Role upsert error (non-critical):', roleResult.error);
+            }
+          } catch (err) {
+            console.error('Parallel ops error:', err);
+          }
+        })();
       }
 
       // Non-blocking: Send approval notification email (fire-and-forget)
