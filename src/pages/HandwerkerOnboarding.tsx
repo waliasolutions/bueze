@@ -794,20 +794,44 @@ const HandwerkerOnboarding = () => {
 
       // If user was already logged in, just navigate without signing out
       if (isAlreadyAuthenticated) {
-        // Non-blocking: Ensure handwerker role is assigned (fire-and-forget)
-        if (import.meta.env.DEV) console.log('Upserting handwerker role for user (non-blocking):', userId);
+        // Non-blocking: Check if user is admin before upserting handwerker role
+        // Admins should NOT get handwerker role added (causes duplicate role issues)
+        if (import.meta.env.DEV) console.log('Checking existing roles before role assignment:', userId);
         supabase
           .from('user_roles')
-          .upsert(
-            { user_id: userId, role: 'handwerker' },
-            { onConflict: 'user_id,role' }
-          )
-          .then(({ error: roleError }) => {
-            if (roleError) {
-              if (import.meta.env.DEV) console.error('Failed to assign handwerker role:', roleError);
-            } else {
-              if (import.meta.env.DEV) console.log('Handwerker role assigned successfully');
+          .select('role')
+          .eq('user_id', userId)
+          .then(({ data: existingRoles, error: rolesError }) => {
+            if (rolesError) {
+              if (import.meta.env.DEV) console.error('Failed to check existing roles:', rolesError);
+              return;
             }
+            
+            // Skip role upsert if user is admin or super_admin
+            const isCurrentlyAdmin = existingRoles?.some(r => 
+              r.role === 'admin' || r.role === 'super_admin'
+            );
+            
+            if (isCurrentlyAdmin) {
+              if (import.meta.env.DEV) console.log('User is admin, skipping handwerker role upsert');
+              return;
+            }
+            
+            // Non-admin user: assign handwerker role
+            if (import.meta.env.DEV) console.log('Upserting handwerker role for user (non-blocking):', userId);
+            supabase
+              .from('user_roles')
+              .upsert(
+                { user_id: userId, role: 'handwerker' },
+                { onConflict: 'user_id,role' }
+              )
+              .then(({ error: roleError }) => {
+                if (roleError) {
+                  if (import.meta.env.DEV) console.error('Failed to assign handwerker role:', roleError);
+                } else {
+                  if (import.meta.env.DEV) console.log('Handwerker role assigned successfully');
+                }
+              });
           });
         
         toast({

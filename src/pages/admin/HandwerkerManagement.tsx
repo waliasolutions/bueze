@@ -200,20 +200,33 @@ export default function HandwerkerManagement() {
 
       if (error) throw error;
 
-      // Create subscription and update role
+      // Create subscription and conditionally update role (not for admins)
       if (handwerker.user_id) {
-        await Promise.all([
-          supabase.from('user_roles').upsert({
+        // Check if user is admin before adding handwerker role
+        const { data: existingRoles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', handwerker.user_id);
+        
+        const isAdmin = existingRoles?.some(r => 
+          r.role === 'admin' || r.role === 'super_admin'
+        );
+        
+        // Always create subscription
+        await supabase.from('handwerker_subscriptions').upsert({
+          user_id: handwerker.user_id,
+          plan_type: 'free',
+          proposals_limit: 5,
+          proposals_used_this_period: 0,
+        }, { onConflict: 'user_id' });
+        
+        // Only add handwerker role for non-admins
+        if (!isAdmin) {
+          await supabase.from('user_roles').upsert({
             user_id: handwerker.user_id,
             role: 'handwerker',
-          }, { onConflict: 'user_id,role' }),
-          supabase.from('handwerker_subscriptions').upsert({
-            user_id: handwerker.user_id,
-            plan_type: 'free',
-            proposals_limit: 5,
-            proposals_used_this_period: 0,
-          }, { onConflict: 'user_id' }),
-        ]);
+          }, { onConflict: 'user_id,role' });
+        }
 
         // Send approval email
         supabase.functions.invoke('send-approval-email', {
@@ -289,18 +302,31 @@ export default function HandwerkerManagement() {
           .eq('id', handwerker.id);
 
         if (handwerker.user_id) {
-          await Promise.all([
-            supabase.from('user_roles').upsert({
+          // Check if user is admin before adding handwerker role
+          const { data: existingRoles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', handwerker.user_id);
+          
+          const isAdmin = existingRoles?.some(r => 
+            r.role === 'admin' || r.role === 'super_admin'
+          );
+          
+          // Always create subscription
+          await supabase.from('handwerker_subscriptions').upsert({
+            user_id: handwerker.user_id,
+            plan_type: 'free',
+            proposals_limit: 5,
+            proposals_used_this_period: 0,
+          }, { onConflict: 'user_id' });
+          
+          // Only add handwerker role for non-admins
+          if (!isAdmin) {
+            await supabase.from('user_roles').upsert({
               user_id: handwerker.user_id,
               role: 'handwerker',
-            }, { onConflict: 'user_id,role' }),
-            supabase.from('handwerker_subscriptions').upsert({
-              user_id: handwerker.user_id,
-              plan_type: 'free',
-              proposals_limit: 5,
-              proposals_used_this_period: 0,
-            }, { onConflict: 'user_id' }),
-          ]);
+            }, { onConflict: 'user_id,role' });
+          }
 
           supabase.functions.invoke('send-approval-email', {
             body: {
