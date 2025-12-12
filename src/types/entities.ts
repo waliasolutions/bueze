@@ -394,6 +394,7 @@ export interface ProposalListItem {
   message: string;
   view_count?: number | null;
   client_viewed_at?: string | null;
+  attachments?: string[] | null;
   leads: {
     title: string;
     category?: string;

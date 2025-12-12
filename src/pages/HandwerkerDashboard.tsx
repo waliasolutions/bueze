@@ -11,14 +11,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useProposalFormValidation } from "@/hooks/useProposalFormValidation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase } from "lucide-react";
+import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
 import { ProposalStatusBadge } from "@/components/ProposalStatusBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
 import { HandwerkerReviewResponse } from "@/components/HandwerkerReviewResponse";
+import { ProposalFileUpload } from "@/components/ProposalFileUpload";
+import { uploadProposalAttachment } from "@/lib/fileUpload";
 import { majorCategories } from "@/config/majorCategories";
 import { getCategoryLabel } from "@/config/categoryLabels";
 import { getCantonLabel } from "@/config/cantons";
@@ -74,6 +77,11 @@ const HandwerkerDashboard = () => {
     estimated_duration_days: ""
   });
   const [submittingProposal, setSubmittingProposal] = useState(false);
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  
+  // Form validation hook
+  const { errors, touched, handleBlur, validateAll, resetValidation } = useProposalFormValidation(proposalForm);
   useEffect(() => {
     let isMounted = true;
     
@@ -354,70 +362,16 @@ const HandwerkerDashboard = () => {
   const handleSubmitProposal = async () => {
     if (!selectedLead || !user?.id) return;
 
-    const priceMin = parseInt(proposalForm.price_min);
-    const priceMax = parseInt(proposalForm.price_max);
-    const duration = proposalForm.estimated_duration_days 
-      ? parseInt(proposalForm.estimated_duration_days) 
-      : null;
-
-    // Validate required fields
-    if (!proposalForm.price_min || !proposalForm.price_max || !proposalForm.message) {
+    // Use validation hook
+    if (!validateAll()) {
       toast({
         title: "Fehlende Angaben",
-        description: "Bitte füllen Sie alle Pflichtfelder aus.",
+        description: "Bitte korrigieren Sie die markierten Felder.",
         variant: "destructive"
       });
       return;
     }
 
-    // Validate price_min >= 0
-    if (priceMin < 0) {
-      toast({
-        title: "Ungültige Preisangabe",
-        description: "Der Preis darf nicht negativ sein.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate price range (price_max >= price_min)
-    if (priceMax < priceMin) {
-      toast({
-        title: "Ungültige Preisangabe",
-        description: "Der Maximalpreis muss grösser oder gleich dem Minimalpreis sein.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate message length (50-2000 characters)
-    if (proposalForm.message.length < 50) {
-      toast({
-        title: "Nachricht zu kurz",
-        description: "Ihre Nachricht muss mindestens 50 Zeichen enthalten.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (proposalForm.message.length > 2000) {
-      toast({
-        title: "Nachricht zu lang",
-        description: "Ihre Nachricht darf maximal 2000 Zeichen enthalten.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate estimated_duration_days > 0 (only if provided)
-    if (duration !== null && duration <= 0) {
-      toast({
-        title: "Ungültige Dauer",
-        description: "Die geschätzte Dauer muss mindestens 1 Tag sein.",
-        variant: "destructive"
-      });
-      return;
-    }
     setSubmittingProposal(true);
     try {
       // Check quota first
@@ -438,6 +392,25 @@ const HandwerkerDashboard = () => {
         return;
       }
 
+      // Upload attachment if present
+      let attachmentUrl: string | null = null;
+      if (attachmentFile) {
+        setUploadingAttachment(true);
+        const uploadResult = await uploadProposalAttachment(attachmentFile, user.id);
+        if (uploadResult.error) {
+          toast({
+            title: 'Upload fehlgeschlagen',
+            description: uploadResult.error,
+            variant: 'destructive'
+          });
+          setUploadingAttachment(false);
+          setSubmittingProposal(false);
+          return;
+        }
+        attachmentUrl = uploadResult.url;
+        setUploadingAttachment(false);
+      }
+
       // Proceed with proposal insertion
       const {
         error
@@ -448,6 +421,7 @@ const HandwerkerDashboard = () => {
         price_max: parseInt(proposalForm.price_max),
         message: proposalForm.message,
         estimated_duration_days: proposalForm.estimated_duration_days ? parseInt(proposalForm.estimated_duration_days) : null,
+        attachments: attachmentUrl ? [attachmentUrl] : [],
         status: 'pending'
       });
       if (error) throw error;
@@ -463,6 +437,8 @@ const HandwerkerDashboard = () => {
         message: "",
         estimated_duration_days: ""
       });
+      setAttachmentFile(null);
+      resetValidation();
       setSelectedLead(null);
 
       // Refresh proposals
@@ -792,44 +768,105 @@ const HandwerkerDashboard = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="space-y-2">
                                         <Label htmlFor="price_min">Preis von (CHF) *</Label>
-                                        <Input id="price_min" type="number" min="0" placeholder="z.B. 5000" value={proposalForm.price_min} onChange={e => setProposalForm({
-                                    ...proposalForm,
-                                    price_min: e.target.value
-                                  })} />
+                                        <Input 
+                                          id="price_min" 
+                                          type="number" 
+                                          min="0" 
+                                          placeholder="z.B. 5000" 
+                                          className={touched.price_min && errors.price_min ? 'border-destructive' : ''}
+                                          value={proposalForm.price_min} 
+                                          onChange={e => setProposalForm({
+                                            ...proposalForm,
+                                            price_min: e.target.value
+                                          })}
+                                          onBlur={() => handleBlur('price_min')}
+                                        />
+                                        {touched.price_min && errors.price_min && (
+                                          <p className="text-xs text-destructive">{errors.price_min}</p>
+                                        )}
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor="price_max">Preis bis (CHF) *</Label>
-                                        <Input id="price_max" type="number" min="0" placeholder="z.B. 7000" value={proposalForm.price_max} onChange={e => setProposalForm({
-                                    ...proposalForm,
-                                    price_max: e.target.value
-                                  })} />
+                                        <Input 
+                                          id="price_max" 
+                                          type="number" 
+                                          min="0" 
+                                          placeholder="z.B. 7000" 
+                                          className={touched.price_max && errors.price_max ? 'border-destructive' : ''}
+                                          value={proposalForm.price_max} 
+                                          onChange={e => setProposalForm({
+                                            ...proposalForm,
+                                            price_max: e.target.value
+                                          })}
+                                          onBlur={() => handleBlur('price_max')}
+                                        />
+                                        {touched.price_max && errors.price_max && (
+                                          <p className="text-xs text-destructive">{errors.price_max}</p>
+                                        )}
                                       </div>
                                     </div>
                                     <div className="space-y-2">
                                       <Label htmlFor="duration">Geschätzte Dauer (Tage)</Label>
-                                      <Input id="duration" type="number" min="1" placeholder="z.B. 5" value={proposalForm.estimated_duration_days} onChange={e => setProposalForm({
-                                  ...proposalForm,
-                                  estimated_duration_days: e.target.value
-                                })} />
+                                      <Input 
+                                        id="duration" 
+                                        type="number" 
+                                        min="1" 
+                                        placeholder="z.B. 5" 
+                                        className={touched.estimated_duration_days && errors.estimated_duration_days ? 'border-destructive' : ''}
+                                        value={proposalForm.estimated_duration_days} 
+                                        onChange={e => setProposalForm({
+                                          ...proposalForm,
+                                          estimated_duration_days: e.target.value
+                                        })}
+                                        onBlur={() => handleBlur('estimated_duration_days')}
+                                      />
+                                      {touched.estimated_duration_days && errors.estimated_duration_days && (
+                                        <p className="text-xs text-destructive">{errors.estimated_duration_days}</p>
+                                      )}
                                     </div>
                                     <div className="space-y-2">
                                       <Label htmlFor="message">Ihre Nachricht * (min. 50 Zeichen)</Label>
-                                      <Textarea id="message" placeholder="Beschreiben Sie, wie Sie den Auftrag ausführen würden..." rows={6} maxLength={2000} value={proposalForm.message} onChange={e => setProposalForm({
-                                  ...proposalForm,
-                                  message: e.target.value
-                                })} />
+                                      <Textarea 
+                                        id="message" 
+                                        placeholder="Beschreiben Sie, wie Sie den Auftrag ausführen würden..." 
+                                        rows={6} 
+                                        maxLength={2000} 
+                                        className={touched.message && errors.message ? 'border-destructive' : ''}
+                                        value={proposalForm.message} 
+                                        onChange={e => setProposalForm({
+                                          ...proposalForm,
+                                          message: e.target.value
+                                        })}
+                                        onBlur={() => handleBlur('message')}
+                                      />
                                       <p className={`text-xs ${proposalForm.message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
                                         {proposalForm.message.length}/50 Zeichen (min. 50)
                                       </p>
+                                      {touched.message && errors.message && (
+                                        <p className="text-xs text-destructive">{errors.message}</p>
+                                      )}
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label>Offerte als Datei (optional)</Label>
+                                      <ProposalFileUpload
+                                        file={attachmentFile}
+                                        onFileSelect={setAttachmentFile}
+                                        uploading={uploadingAttachment}
+                                        disabled={submittingProposal}
+                                      />
                                     </div>
                                     <div className="flex justify-end gap-2">
-                                      <Button variant="outline" onClick={() => setSelectedLead(null)}>
+                                      <Button variant="outline" onClick={() => {
+                                        setSelectedLead(null);
+                                        setAttachmentFile(null);
+                                        resetValidation();
+                                      }}>
                                         Abbrechen
                                       </Button>
-                                      <Button onClick={handleSubmitProposal} disabled={submittingProposal}>
-                                        {submittingProposal ? <>
+                                      <Button onClick={handleSubmitProposal} disabled={submittingProposal || uploadingAttachment}>
+                                        {submittingProposal || uploadingAttachment ? <>
                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                            Wird gesendet...
+                                            {uploadingAttachment ? 'Wird hochgeladen...' : 'Wird gesendet...'}
                                           </> : <>
                                             <Send className="h-4 w-4 mr-2" />
                                             Angebot senden
@@ -885,7 +922,7 @@ const HandwerkerDashboard = () => {
                           <CardContent>
                             <div className="space-y-3">
                               <div className="flex items-center gap-4 text-sm">
-                                <span>{proposal.price_min} - {proposal.price_max} CHF</span>
+                                <span className="font-medium">{proposal.price_min} - {proposal.price_max} CHF</span>
                                 {proposal.estimated_duration_days && (
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-4 w-4 text-muted-foreground" />
@@ -896,13 +933,52 @@ const HandwerkerDashboard = () => {
                               <p className="text-sm text-muted-foreground line-clamp-2">
                                 {proposal.message}
                               </p>
-                              <p className="text-xs text-muted-foreground">
-                                Gesendet: {new Date(proposal.submitted_at).toLocaleDateString('de-CH', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                              </p>
+                              
+                              {/* Attachments */}
+                              {proposal.attachments && proposal.attachments.length > 0 && (
+                                <div className="flex items-center gap-2 text-sm">
+                                  <Paperclip className="h-4 w-4 text-muted-foreground" />
+                                  <span>Anhang:</span>
+                                  {proposal.attachments.map((url, idx) => {
+                                    const fileName = url.split('/').pop() || `Dokument ${idx + 1}`;
+                                    const displayName = fileName.length > 25 ? fileName.substring(0, 25) + '...' : fileName;
+                                    return (
+                                      <a 
+                                        key={idx}
+                                        href={url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 text-primary hover:underline"
+                                      >
+                                        <Download className="h-3 w-3" />
+                                        {displayName}
+                                      </a>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              
+                              {/* View tracking + submission date */}
+                              <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
+                                <span>
+                                  Gesendet: {new Date(proposal.submitted_at).toLocaleDateString('de-CH', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                  })}
+                                </span>
+                                {proposal.client_viewed_at ? (
+                                  <span className="flex items-center gap-1 text-green-600">
+                                    <Eye className="h-3 w-3" />
+                                    Gesehen am {new Date(proposal.client_viewed_at).toLocaleDateString('de-CH')}
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1">
+                                    <EyeOff className="h-3 w-3" />
+                                    Noch nicht angesehen
+                                  </span>
+                                )}
+                              </div>
                               
                               {/* Show client contact details for accepted proposals */}
                               {proposal.status === 'accepted' && proposal.client_contact && (

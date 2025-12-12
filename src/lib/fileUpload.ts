@@ -11,6 +11,15 @@ const ALLOWED_TYPES = [
   'image/gif'
 ];
 
+// Proposal attachment types
+const PROPOSAL_ALLOWED_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+];
+const PROPOSAL_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 export interface UploadResult {
   url: string;
   path: string;
@@ -117,4 +126,62 @@ export async function uploadMultipleFiles(
   }
   
   return results;
+}
+
+/**
+ * Upload a proposal attachment (PDF, JPG, PNG)
+ * Files are stored in lead-media bucket under proposals/{userId}/
+ */
+export async function uploadProposalAttachment(
+  file: File,
+  userId: string
+): Promise<UploadResult> {
+  try {
+    // Validate file size
+    if (file.size > PROPOSAL_MAX_FILE_SIZE) {
+      throw new Error(`Datei zu groß. Maximum: 5MB (aktuell: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+    }
+
+    // Validate file type
+    if (!PROPOSAL_ALLOWED_TYPES.includes(file.type)) {
+      throw new Error('Nur PDF, JPG oder PNG erlaubt');
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const filePath = `proposals/${userId}/${timestamp}_${sanitizedName}`;
+
+    logWithCorrelation('Uploading proposal attachment', { path: filePath, size: file.size, type: file.type });
+
+    // Upload to Supabase Storage (reuse lead-media bucket)
+    const { data, error } = await supabase.storage
+      .from('lead-media')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('lead-media')
+      .getPublicUrl(filePath);
+
+    logWithCorrelation('Proposal attachment uploaded successfully', { url: publicUrl });
+
+    return {
+      url: publicUrl,
+      path: filePath
+    };
+  } catch (error) {
+    logWithCorrelation('Proposal attachment upload failed', { error });
+    captureException(error as Error, { context: 'uploadProposalAttachment', userId });
+    return {
+      url: '',
+      path: '',
+      error: error instanceof Error ? error.message : 'Upload fehlgeschlagen'
+    };
+  }
 }

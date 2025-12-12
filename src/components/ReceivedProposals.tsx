@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter, LayoutGrid, Phone, Mail, Globe, MessageSquare, User } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter, LayoutGrid, Phone, Mail, Globe, MessageSquare, User, Paperclip, Download, FileText, Image } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
 import { HandwerkerRating } from './HandwerkerRating';
@@ -433,6 +433,32 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                   <div className="p-3 bg-[hsl(var(--muted))] rounded-lg">
                     <p className="text-sm whitespace-pre-wrap">{proposal.message}</p>
                   </div>
+
+                  {/* Attachments */}
+                  {proposal.attachments && proposal.attachments.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 p-2 bg-[hsl(var(--muted))] rounded-lg">
+                      <Paperclip className="h-4 w-4 text-[hsl(var(--muted-foreground))]" />
+                      <span className="text-sm">Dokumente:</span>
+                      {proposal.attachments.map((url, idx) => {
+                        const fileName = url.split('/').pop() || `Dokument ${idx + 1}`;
+                        const displayName = fileName.length > 20 ? fileName.substring(0, 20) + '...' : fileName;
+                        const isPdf = url.toLowerCase().endsWith('.pdf');
+                        return (
+                          <a 
+                            key={idx}
+                            href={url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-sm text-primary hover:underline"
+                          >
+                            {isPdf ? <FileText className="h-3 w-3" /> : <Image className="h-3 w-3" />}
+                            <Download className="h-3 w-3" />
+                            {displayName}
+                          </a>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   <div className="text-xs text-[hsl(var(--muted-foreground))]">
                     Eingereicht {formatTimeAgo(proposal.submitted_at)}
