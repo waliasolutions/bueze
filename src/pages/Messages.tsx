@@ -189,7 +189,12 @@ const Messages = () => {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          setMessages(prev => [...prev, payload.new as Message]);
+          const newMsg = payload.new as Message;
+          // Prevent duplicates from optimistic updates
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
         }
       )
       .subscribe();
@@ -203,23 +208,34 @@ const Messages = () => {
     e.preventDefault();
     if (!newMessage.trim() || !user || !conversation || sending) return;
 
+    const messageContent = newMessage.trim();
+    const recipientId = user.id === conversation.homeowner_id 
+      ? conversation.handwerker_id 
+      : conversation.homeowner_id;
+
+    // Optimistic UI update - show message immediately
+    const optimisticId = crypto.randomUUID();
+    const optimisticMessage: Message = {
+      id: optimisticId,
+      conversation_id: conversationId!,
+      sender_id: user.id,
+      recipient_id: recipientId,
+      content: messageContent,
+      created_at: new Date().toISOString(),
+    };
+    
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage(''); // Clear input immediately
+
     setSending(true);
     try {
-      const recipientId = user.id === conversation.homeowner_id 
-        ? conversation.handwerker_id 
-        : conversation.homeowner_id;
-
       const messageData = {
         conversation_id: conversationId,
         sender_id: user.id,
         recipient_id: recipientId,
-        content: newMessage.trim(),
+        content: messageContent,
         lead_id: conversation.lead_id,
       };
-
-      if (import.meta.env.DEV) {
-        console.log('Sending message:', messageData);
-      }
 
       const { data: insertedMessage, error } = await supabase
         .from('messages')
@@ -229,25 +245,28 @@ const Messages = () => {
 
       if (error) throw error;
 
-      // Update conversation last_message_at
-      await supabase
+      // Update optimistic message with real ID (for realtime duplicate prevention)
+      setMessages(prev => prev.map(m => 
+        m.id === optimisticId ? { ...m, id: insertedMessage.id } : m
+      ));
+
+      // Fire-and-forget: Update conversation last_message_at
+      supabase
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
-        .eq('id', conversationId);
+        .eq('id', conversationId)
+        .then(() => {});
 
-      // Trigger message notification edge function
-      try {
-        await supabase.functions.invoke('send-message-notification', {
-          body: { messageId: insertedMessage.id }
-        });
-      } catch (notifError) {
-        console.error('Failed to send message notification:', notifError);
-        // Don't block message sending if notification fails
-      }
+      // Fire-and-forget: Trigger message notification edge function
+      supabase.functions.invoke('send-message-notification', {
+        body: { messageId: insertedMessage.id }
+      }).catch(err => console.error('Notification failed:', err));
 
-      setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
+      // Remove optimistic message on error
+      setMessages(prev => prev.filter(m => m.id !== optimisticId));
+      setNewMessage(messageContent); // Restore the message
       toast({
         title: "Fehler",
         description: "Die Nachricht konnte nicht gesendet werden.",
