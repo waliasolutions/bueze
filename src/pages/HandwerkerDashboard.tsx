@@ -354,11 +354,66 @@ const HandwerkerDashboard = () => {
   const handleSubmitProposal = async () => {
     if (!selectedLead || !user?.id) return;
 
-    // Validate form
+    const priceMin = parseInt(proposalForm.price_min);
+    const priceMax = parseInt(proposalForm.price_max);
+    const duration = proposalForm.estimated_duration_days 
+      ? parseInt(proposalForm.estimated_duration_days) 
+      : null;
+
+    // Validate required fields
     if (!proposalForm.price_min || !proposalForm.price_max || !proposalForm.message) {
       toast({
         title: "Fehlende Angaben",
         description: "Bitte füllen Sie alle Pflichtfelder aus.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate price_min >= 0
+    if (priceMin < 0) {
+      toast({
+        title: "Ungültige Preisangabe",
+        description: "Der Preis darf nicht negativ sein.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate price range (price_max >= price_min)
+    if (priceMax < priceMin) {
+      toast({
+        title: "Ungültige Preisangabe",
+        description: "Der Maximalpreis muss grösser oder gleich dem Minimalpreis sein.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate message length (50-2000 characters)
+    if (proposalForm.message.length < 50) {
+      toast({
+        title: "Nachricht zu kurz",
+        description: "Ihre Nachricht muss mindestens 50 Zeichen enthalten.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (proposalForm.message.length > 2000) {
+      toast({
+        title: "Nachricht zu lang",
+        description: "Ihre Nachricht darf maximal 2000 Zeichen enthalten.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Validate estimated_duration_days > 0 (only if provided)
+    if (duration !== null && duration <= 0) {
+      toast({
+        title: "Ungültige Dauer",
+        description: "Die geschätzte Dauer muss mindestens 1 Tag sein.",
         variant: "destructive"
       });
       return;
@@ -737,14 +792,14 @@ const HandwerkerDashboard = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                       <div className="space-y-2">
                                         <Label htmlFor="price_min">Preis von (CHF) *</Label>
-                                        <Input id="price_min" type="number" placeholder="z.B. 5000" value={proposalForm.price_min} onChange={e => setProposalForm({
+                                        <Input id="price_min" type="number" min="0" placeholder="z.B. 5000" value={proposalForm.price_min} onChange={e => setProposalForm({
                                     ...proposalForm,
                                     price_min: e.target.value
                                   })} />
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor="price_max">Preis bis (CHF) *</Label>
-                                        <Input id="price_max" type="number" placeholder="z.B. 7000" value={proposalForm.price_max} onChange={e => setProposalForm({
+                                        <Input id="price_max" type="number" min="0" placeholder="z.B. 7000" value={proposalForm.price_max} onChange={e => setProposalForm({
                                     ...proposalForm,
                                     price_max: e.target.value
                                   })} />
@@ -752,17 +807,20 @@ const HandwerkerDashboard = () => {
                                     </div>
                                     <div className="space-y-2">
                                       <Label htmlFor="duration">Geschätzte Dauer (Tage)</Label>
-                                      <Input id="duration" type="number" placeholder="z.B. 5" value={proposalForm.estimated_duration_days} onChange={e => setProposalForm({
+                                      <Input id="duration" type="number" min="1" placeholder="z.B. 5" value={proposalForm.estimated_duration_days} onChange={e => setProposalForm({
                                   ...proposalForm,
                                   estimated_duration_days: e.target.value
                                 })} />
                                     </div>
                                     <div className="space-y-2">
-                                      <Label htmlFor="message">Ihre Nachricht *</Label>
-                                      <Textarea id="message" placeholder="Beschreiben Sie, wie Sie den Auftrag ausführen würden..." rows={6} value={proposalForm.message} onChange={e => setProposalForm({
+                                      <Label htmlFor="message">Ihre Nachricht * (min. 50 Zeichen)</Label>
+                                      <Textarea id="message" placeholder="Beschreiben Sie, wie Sie den Auftrag ausführen würden..." rows={6} maxLength={2000} value={proposalForm.message} onChange={e => setProposalForm({
                                   ...proposalForm,
                                   message: e.target.value
                                 })} />
+                                      <p className={`text-xs ${proposalForm.message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                        {proposalForm.message.length}/50 Zeichen (min. 50)
+                                      </p>
                                     </div>
                                     <div className="flex justify-end gap-2">
                                       <Button variant="outline" onClick={() => setSelectedLead(null)}>

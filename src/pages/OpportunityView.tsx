@@ -85,10 +85,54 @@ const OpportunityView = () => {
       return;
     }
 
+    const priceMinVal = parseInt(priceMin);
+    const priceMaxVal = parseInt(priceMax);
+    const durationVal = duration ? parseInt(duration) : null;
+
+    // Validate price_min >= 0
+    if (priceMinVal < 0) {
+      toast({
+        title: 'Ungültige Preisangabe',
+        description: 'Der Preis darf nicht negativ sein.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate price range (price_max >= price_min)
+    if (priceMaxVal < priceMinVal) {
+      toast({
+        title: 'Ungültige Preisangabe',
+        description: 'Der Maximalpreis muss grösser oder gleich dem Minimalpreis sein.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate message length
     if (message.length < 50) {
       toast({
         title: 'Nachricht zu kurz',
-        description: 'Bitte schreiben Sie mindestens 50 Zeichen',
+        description: 'Ihre Nachricht muss mindestens 50 Zeichen enthalten.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (message.length > 2000) {
+      toast({
+        title: 'Nachricht zu lang',
+        description: 'Ihre Nachricht darf maximal 2000 Zeichen enthalten.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate estimated_duration_days > 0 (only if provided)
+    if (durationVal !== null && durationVal <= 0) {
+      toast({
+        title: 'Ungültige Dauer',
+        description: 'Die geschätzte Dauer muss mindestens 1 Tag sein.',
         variant: 'destructive'
       });
       return;
@@ -292,8 +336,8 @@ const OpportunityView = () => {
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="Beschreiben Sie Ihre Erfahrung, Herangehensweise und warum Sie der richtige Handwerker für dieses Projekt sind..."
                   />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {message.length}/2000 Zeichen
+                  <p className={`text-xs mt-1 ${message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {message.length}/50 Zeichen (min. 50)
                   </p>
                 </div>
 
