@@ -53,6 +53,7 @@ const SEOTools = lazy(() => import("./pages/admin/SEOTools"));
 const BulkMetaManager = lazy(() => import("./pages/admin/BulkMetaManager"));
 const GTMConfiguration = lazy(() => import("./pages/admin/GTMConfiguration"));
 const ReviewsManagement = lazy(() => import("./pages/admin/ReviewsManagement"));
+const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
 
 // Legal pages - low priority
 const AGB = lazy(() => import("./pages/legal/AGB"));
@@ -192,6 +193,7 @@ const App = () => {
                 <Route path="/admin/seo/bulk-meta" element={<BulkMetaManager />} />
                 <Route path="/admin/seo/gtm" element={<GTMConfiguration />} />
                 <Route path="/admin/reviews" element={<ReviewsManagement />} />
+                <Route path="/admin/payments" element={<AdminPayments />} />
                 
                 {/* Legal routes */}
                 <Route path="/legal/agb" element={<AGB />} />

@@ -18,7 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { PaymentMethodCard } from '@/components/PaymentMethodCard';
 import { SubscriptionManagement } from '@/components/SubscriptionManagement';
 import { AddPaymentMethodDialog } from '@/components/AddPaymentMethodDialog';
-import { X } from 'lucide-react';
+import { PaymentHistoryTable } from '@/components/PaymentHistoryTable';
+import { X, Receipt } from 'lucide-react';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
 import { SWISS_CANTONS } from '@/config/cantons';
 import ServiceAreaMap from '@/components/ServiceAreaMap';
@@ -389,8 +390,8 @@ const Profile = () => {
               )}
               {isHandwerker && (
                 <TabsTrigger value="payments">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Zahlungen
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Rechnungen
                 </TabsTrigger>
               )}
               <TabsTrigger value="settings">
@@ -737,9 +738,13 @@ const Profile = () => {
               </TabsContent>
             )}
 
-            {/* Payment Methods Tab - Only for Handwerker */}
+            {/* Payments & Invoices Tab - Only for Handwerker */}
             {isHandwerker && (
-              <TabsContent value="payments">
+              <TabsContent value="payments" className="space-y-6">
+                {/* Payment History */}
+                <PaymentHistoryTable userId={user?.id} />
+                
+                {/* Payment Methods */}
                 <PaymentMethodCard
                   paymentMethods={paymentMethods}
                   onAddPaymentMethod={() => setShowAddPaymentDialog(true)}
