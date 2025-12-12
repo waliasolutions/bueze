@@ -360,69 +360,27 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Meine Aufträge</CardTitle>
-                <Eye className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {myLeads.filter(l => l.status === 'active').length}
-                </div>
-                <p className="text-xs text-muted-foreground">Aktive Aufträge</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Offerten</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {myLeads.reduce((sum, lead) => sum + (lead.proposals_count || 0), 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Total erhaltene Offerten
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
           <Tabs defaultValue="leads" className="space-y-6">
             <TabsList>
-              <TabsTrigger value="leads">Meine Aufträge</TabsTrigger>
+              <TabsTrigger value="leads">
+                Meine Aufträge ({myLeads.filter(l => l.status === 'active').length})
+              </TabsTrigger>
               <TabsTrigger value="proposals">
-                <FileText className="h-4 w-4 mr-2" />
-                Erhaltene Offerten
+                Erhaltene Offerten ({myLeads.reduce((sum, lead) => sum + (lead.proposals_count || 0), 0)})
               </TabsTrigger>
               <TabsTrigger value="archive">
-                <Archive className="h-4 w-4 mr-2" />
-                Archiv
+                Archiv ({archivedLeads.length})
               </TabsTrigger>
               <TabsTrigger value="profile">Profil</TabsTrigger>
             </TabsList>
 
             <TabsContent value="leads" className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Meine Aufträge</h2>
-                <Button onClick={() => navigate('/submit-lead')}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Neuen Auftrag erstellen
-                </Button>
-              </div>
-
               {myLeads.length === 0 ? (
                 <Card>
                   <CardContent className="text-center py-12">
-                    <p className="text-muted-foreground mb-4">
+                    <p className="text-muted-foreground">
                       Sie haben noch keine Aufträge erstellt.
                     </p>
-                    <Button onClick={() => navigate('/submit-lead')}>
-                      Ersten Auftrag erstellen
-                    </Button>
                   </CardContent>
                 </Card>
               ) : (

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle, User, Clock, ExternalLink } from 'lucide-react';
 import { formatTime as formatTimeSwiss, formatTimeAgo } from '@/lib/swissTime';
@@ -45,6 +46,7 @@ const ConversationsList = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { isHandwerker } = useUserRole();
 
   const leadIdParam = searchParams.get('lead');
 
@@ -252,10 +254,12 @@ const ConversationsList = () => {
                 <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Keine Unterhaltungen</h3>
                 <p className="text-muted-foreground mb-4">
-                  Sie haben noch keine Nachrichten. Kaufen Sie einen Auftrag oder warten Sie auf Anfragen.
+                  {isHandwerker 
+                    ? 'Sie haben noch keine Nachrichten. Durchsuchen Sie verfügbare Aufträge und reichen Sie Offerten ein.'
+                    : 'Sie haben noch keine Nachrichten. Erstellen Sie einen Auftrag, um Offerten von Handwerkern zu erhalten.'}
                 </p>
-                <Button onClick={() => navigate('/browse-leads')}>
-                  Aufträge durchsuchen
+                <Button onClick={() => navigate(isHandwerker ? '/browse-leads' : '/submit-lead')}>
+                  {isHandwerker ? 'Aufträge durchsuchen' : 'Auftrag erstellen'}
                 </Button>
               </CardContent>
             </Card>

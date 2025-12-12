@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ export const ProposalsList: React.FC<ProposalsListProps> = ({ userId }) => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ pending: 0, accepted: 0, rejected: 0, successRate: 0 });
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProposals();
@@ -162,7 +164,7 @@ export const ProposalsList: React.FC<ProposalsListProps> = ({ userId }) => {
             <p className="text-[hsl(var(--muted-foreground))] mb-4">
               Sie haben noch keine Offerten eingereicht.
             </p>
-            <Button onClick={() => window.location.href = '/browse-leads'}>
+            <Button onClick={() => navigate('/browse-leads')}>
               Anfragen durchsuchen
             </Button>
           </CardContent>
