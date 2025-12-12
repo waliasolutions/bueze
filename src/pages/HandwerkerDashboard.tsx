@@ -122,6 +122,27 @@ const HandwerkerDashboard = () => {
     };
   }, []);
 
+  // Auth state listener - immediately redirect on logout to prevent "load failed" errors
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        // Clear local state to prevent any further queries
+        setUser(null);
+        setHandwerkerProfile(null);
+        setLeads([]);
+        setProposals([]);
+        setReviews([]);
+        setLoading(false);
+        // Navigate immediately
+        navigate('/');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   // Realtime subscription for new leads
   useEffect(() => {
     if (!handwerkerProfile?.verification_status || handwerkerProfile.verification_status !== 'approved') {
@@ -253,6 +274,7 @@ const HandwerkerDashboard = () => {
     browseAllCategories: boolean = false,
     browseAllRegions: boolean = false
   ) => {
+    if (!userId) return; // Guard against null userId after logout
     setLeadsLoading(true);
     try {
       // Fetch active leads and existing proposals in parallel
@@ -300,6 +322,7 @@ const HandwerkerDashboard = () => {
     }
   }, [showAllCategories, showAllRegions]);
   const fetchProposals = async (userId: string) => {
+    if (!userId) return; // Guard against null userId after logout
     setProposalsLoading(true);
     try {
       const { data, error } = await supabase
@@ -369,6 +392,7 @@ const HandwerkerDashboard = () => {
   };
 
   const fetchReviews = async (userId: string) => {
+    if (!userId) return; // Guard against null userId after logout
     setReviewsLoading(true);
     try {
       // First fetch reviews with lead data
