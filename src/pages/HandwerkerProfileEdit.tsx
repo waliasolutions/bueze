@@ -235,9 +235,14 @@ const HandwerkerProfileEdit = () => {
       // Load categories
       setCategories(profileData.categories || []);
       
-      // Determine which major categories are selected based on subcategories
+      // Determine which major categories are selected based on categories array
       const majorCats = new Set<string>();
       (profileData.categories || []).forEach((cat: string) => {
+        // Check if cat is itself a major category ID
+        if (majorCategories[cat]) {
+          majorCats.add(cat);
+        }
+        // Also check if it's a subcategory of any major category
         Object.values(majorCategories).forEach((majorCat) => {
           if (majorCat.subcategories.includes(cat)) {
             majorCats.add(majorCat.id);
@@ -1200,11 +1205,14 @@ const HandwerkerProfileEdit = () => {
                                 setSelectedMajorCategories(prev => 
                                   prev.filter(id => id !== majorCat.id)
                                 );
+                                // Remove both major category ID and its subcategories
                                 setCategories(prev => 
-                                  prev.filter(cat => !majorCat.subcategories.includes(cat))
+                                  prev.filter(cat => cat !== majorCat.id && !majorCat.subcategories.includes(cat))
                                 );
                               } else {
                                 setSelectedMajorCategories(prev => [...prev, majorCat.id]);
+                                // Add major category ID to categories for lead matching
+                                setCategories(prev => [...prev, majorCat.id]);
                               }
                             }}
                           >
