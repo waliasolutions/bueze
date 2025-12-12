@@ -88,6 +88,44 @@ const HandwerkerDashboard = () => {
       isMounted = false;
     };
   }, []);
+
+  // Realtime subscription for new leads
+  useEffect(() => {
+    if (!handwerkerProfile?.verification_status || handwerkerProfile.verification_status !== 'approved') {
+      return;
+    }
+
+    const channel = supabase
+      .channel('leads-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'leads' },
+        (payload) => {
+          const newLead = payload.new as LeadListItem;
+          if (newLead.status === 'active') {
+            // Check if lead matches handwerker's categories and service areas
+            const categories = handwerkerProfile.categories || [];
+            const serviceAreas = handwerkerProfile.service_areas || [];
+            
+            const cantons = serviceAreas.filter(area => area.length === 2);
+            const postalCodes = serviceAreas.filter(area => area.length >= 4);
+            
+            const categoryMatches = categories.length === 0 || categories.includes(newLead.category);
+            const serviceAreaMatches = serviceAreas.length === 0 || 
+              cantons.includes(newLead.canton) || postalCodes.includes(newLead.zip);
+            
+            if (categoryMatches && serviceAreaMatches) {
+              setLeads(prev => [newLead, ...prev]);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [handwerkerProfile?.verification_status, handwerkerProfile?.categories, handwerkerProfile?.service_areas]);
   const checkAuth = async () => {
     try {
       setLoading(true); // Ensure loading state is set
@@ -158,41 +196,7 @@ const HandwerkerDashboard = () => {
       navigate('/auth');
     }
   };
-  const fetchHandwerkerProfile = async (userId: string) => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('handwerker_profiles').select('*').eq('user_id', userId).single();
-      if (error) throw error;
-      setHandwerkerProfile(data);
-      setProfileData({
-        bio: data.bio || "",
-        hourly_rate_min: data.hourly_rate_min?.toString() || "",
-        hourly_rate_max: data.hourly_rate_max?.toString() || "",
-        phone_number: data.phone_number || "",
-        logo_url: data.logo_url || ""
-      });
-
-      // Only fetch leads, proposals and reviews if approved
-      if (data.verification_status === 'approved') {
-        await Promise.all([
-          fetchLeads(data.categories, data.service_areas), 
-          fetchProposals(userId),
-          fetchReviews(userId)
-        ]);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast({
-        title: "Fehler",
-        description: "Profil konnte nicht geladen werden.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Removed duplicate fetchHandwerkerProfile - use checkAuth instead
   const fetchLeads = async (categories: string[], serviceAreas: string[]) => {
     setLeadsLoading(true);
     try {
@@ -284,38 +288,41 @@ const HandwerkerDashboard = () => {
   const fetchProposals = async (userId: string) => {
     setProposalsLoading(true);
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('lead_proposals').select(`
+      const { data, error } = await supabase
+        .from('lead_proposals')
+        .select(`
           *,
-          leads (
-            title,
-            city,
-            canton,
-            owner_id
-          )
-        `).eq('handwerker_id', userId).order('submitted_at', {
-        ascending: false
-      });
+          leads (title, city, canton, owner_id)
+        `)
+        .eq('handwerker_id', userId)
+        .order('submitted_at', { ascending: false });
+
       if (error) throw error;
       
-      // For accepted proposals, fetch client contact details
-      const proposalsWithContacts = await Promise.all((data || []).map(async (proposal) => {
+      // Batch fetch client contacts for accepted proposals (fix N+1 query)
+      const acceptedProposals = (data || []).filter(p => p.status === 'accepted' && p.leads?.owner_id);
+      const ownerIds = [...new Set(acceptedProposals.map(p => p.leads.owner_id))];
+      
+      let ownerProfilesMap = new Map();
+      if (ownerIds.length > 0) {
+        const { data: ownerProfiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, phone')
+          .in('id', ownerIds);
+        
+        ownerProfilesMap = new Map(ownerProfiles?.map(p => [p.id, p]) || []);
+      }
+      
+      // Map contacts to proposals
+      const proposalsWithContacts = (data || []).map(proposal => {
         if (proposal.status === 'accepted' && proposal.leads?.owner_id) {
-          const { data: ownerProfile } = await supabase
-            .from('profiles')
-            .select('full_name, email, phone')
-            .eq('id', proposal.leads.owner_id)
-            .single();
-          
           return {
             ...proposal,
-            client_contact: ownerProfile
+            client_contact: ownerProfilesMap.get(proposal.leads.owner_id) || null
           };
         }
         return proposal;
-      }));
+      });
       
       setProposals(proposalsWithContacts);
     } catch (error) {
@@ -445,8 +452,8 @@ const HandwerkerDashboard = () => {
         description: "Ihre Änderungen wurden gespeichert."
       });
 
-      // Refresh profile
-      await fetchHandwerkerProfile(user.id);
+      // Refresh profile via checkAuth
+      await checkAuth();
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
