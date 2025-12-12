@@ -116,15 +116,9 @@ const Messages = () => {
         variant: "destructive",
       });
       
-      // Navigate to appropriate dashboard based on user role
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user?.id)
-        .single();
-      
-      const isHandwerker = roles?.role === 'handwerker';
-      navigate(isHandwerker ? '/handwerker-dashboard' : '/dashboard');
+      // Navigate to appropriate dashboard based on conversation role
+      const isHandwerkerInConversation = user?.id && conversation?.handwerker_id === user.id;
+      navigate(isHandwerkerInConversation ? '/handwerker-dashboard' : '/dashboard');
     }
   };
 
@@ -196,18 +190,36 @@ const Messages = () => {
         sender_id: user.id,
         recipient_id: recipientId,
         content: newMessage.trim(),
-        lead_id: conversation.lead_id, // Required field
+        lead_id: conversation.lead_id,
       };
 
       if (import.meta.env.DEV) {
         console.log('Sending message:', messageData);
       }
 
-      const { error } = await supabase
+      const { data: insertedMessage, error } = await supabase
         .from('messages')
-        .insert(messageData);
+        .insert(messageData)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Update conversation last_message_at
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      // Trigger message notification edge function
+      try {
+        await supabase.functions.invoke('send-message-notification', {
+          body: { messageId: insertedMessage.id }
+        });
+      } catch (notifError) {
+        console.error('Failed to send message notification:', notifError);
+        // Don't block message sending if notification fails
+      }
 
       setNewMessage('');
     } catch (error) {
@@ -274,15 +286,10 @@ const Messages = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" onClick={async () => {
-              const { data: roles } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', user?.id)
-                .single();
-              
-              const isHandwerker = roles?.role === 'handwerker';
-              navigate(isHandwerker ? '/handwerker-dashboard' : '/dashboard');
+            <Button variant="ghost" onClick={() => {
+              // Determine navigation based on user's role in conversation
+              const isHandwerkerInConversation = user?.id === conversation?.handwerker_id;
+              navigate(isHandwerkerInConversation ? '/handwerker-dashboard' : '/dashboard');
             }}>
               <ArrowLeft className="h-4 w-4" />
             </Button>

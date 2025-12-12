@@ -6,6 +6,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
 import { ClientNotifications } from './ClientNotifications';
+import { HandwerkerNotifications } from './HandwerkerNotifications';
 import { AdminViewSwitcher } from './AdminViewSwitcher';
 import logo from '@/assets/bueze-logo.png';
 
@@ -31,6 +32,7 @@ export const Header = () => {
   }, [isMenuOpen]);
 
   const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+  const isHandwerker = userRole === 'handwerker';
 
   useEffect(() => {
     const checkUser = async () => {
@@ -137,16 +139,17 @@ export const Header = () => {
           </nav>
 
           <div className="hidden lg:flex items-center gap-4">
-            {user ? (
+              {user ? (
               <div className="flex items-center gap-3">
-                {/* Client notifications for non-admin users */}
-                {!isAdmin && <ClientNotifications />}
+                {/* Role-specific notifications */}
                 {isAdmin && (
                   <>
                     <AdminNotifications />
                     <AdminViewSwitcher />
                   </>
                 )}
+                {isHandwerker && !isAdmin && <HandwerkerNotifications />}
+                {!isAdmin && !isHandwerker && <ClientNotifications />}
                 <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
                   <Plus className="h-4 w-4" />
                   Auftrag erstellen
