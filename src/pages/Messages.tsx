@@ -138,12 +138,8 @@ const Messages = () => {
       setConversation(conversationWithProfiles);
     } catch (error) {
       console.error('Error fetching conversation:', error);
-      toast({
-        title: "Fehler",
-        description: "Die Unterhaltung konnte nicht geladen werden.",
-        variant: "destructive",
-      });
-      navigate('/conversations');
+      // Silent fail - show 404 UI instead of toast
+      setConversation(null);
     }
   };
 
@@ -310,9 +306,22 @@ const Messages = () => {
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8 pt-24">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-2xl font-bold mb-4">Unterhaltung nicht gefunden</h1>
-            <Button onClick={() => navigate('/dashboard')}>Zurück zum Dashboard</Button>
+          <div className="max-w-md mx-auto text-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
+              <User className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Unterhaltung nicht gefunden</h1>
+            <p className="text-muted-foreground mb-6">
+              Diese Unterhaltung existiert nicht oder Sie haben keinen Zugriff darauf.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={() => navigate('/conversations')}>
+                Alle Nachrichten
+              </Button>
+              <Button variant="outline" onClick={() => navigate('/')}>
+                Zur Startseite
+              </Button>
+            </div>
           </div>
         </main>
         <Footer />
