@@ -494,7 +494,23 @@ const ProposalsManagement = () => {
                             <Button 
                               variant="outline" 
                               className="mt-2"
-                              onClick={() => navigate(`/conversations?lead=${proposal.lead_id}`)}
+                              onClick={async () => {
+                                const { data: conversation } = await supabase
+                                  .from('conversations')
+                                  .select('id')
+                                  .eq('lead_id', proposal.lead_id)
+                                  .eq('handwerker_id', proposal.handwerker_id)
+                                  .maybeSingle();
+                                
+                                if (conversation) {
+                                  navigate(`/messages/${conversation.id}`);
+                                } else {
+                                  toast({
+                                    title: "Keine Unterhaltung gefunden",
+                                    description: "Es wurde noch keine Unterhaltung mit diesem Handwerker erstellt.",
+                                  });
+                                }
+                              }}
                             >
                               <MessageSquare className="h-4 w-4 mr-2" />
                               Nachricht senden

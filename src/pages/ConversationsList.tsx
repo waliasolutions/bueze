@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,10 @@ const ConversationsList = () => {
   const [conversations, setConversations] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+
+  const leadIdParam = searchParams.get('lead');
 
   useEffect(() => {
     fetchUser();
@@ -54,6 +57,21 @@ const ConversationsList = () => {
       fetchConversations();
     }
   }, [user]);
+
+  // Auto-navigate to conversation if ?lead= parameter is present
+  useEffect(() => {
+    if (leadIdParam && conversations.length > 0 && !loading) {
+      const targetConversation = conversations.find(c => c.lead_id === leadIdParam);
+      if (targetConversation) {
+        navigate(`/messages/${targetConversation.id}`, { replace: true });
+      } else {
+        toast({
+          title: "Keine Unterhaltung gefunden",
+          description: "Es wurde keine Unterhaltung für diesen Auftrag gefunden.",
+        });
+      }
+    }
+  }, [leadIdParam, conversations, loading]);
 
   const fetchUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();

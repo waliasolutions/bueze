@@ -575,12 +575,15 @@ const LeadDetails = () => {
                             .select('id')
                             .eq('lead_id', lead.id)
                             .eq('handwerker_id', user.id)
-                            .single();
+                            .maybeSingle();
                           
                           if (conversation) {
                             navigate(`/messages/${conversation.id}`);
                           } else {
-                            navigate('/conversations');
+                            toast({
+                              title: "Keine Unterhaltung gefunden",
+                              description: "Es wurde noch keine Unterhaltung für diesen Auftrag erstellt.",
+                            });
                           }
                         }}
                       >

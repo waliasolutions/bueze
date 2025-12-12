@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +62,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProposals();
@@ -542,7 +544,23 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                       <Button 
                         variant="outline" 
                         size="sm"
-                        onClick={() => window.location.href = `/conversations?lead=${proposal.lead_id}`}
+                        onClick={async () => {
+                          const { data: conversation } = await supabase
+                            .from('conversations')
+                            .select('id')
+                            .eq('lead_id', proposal.lead_id)
+                            .eq('handwerker_id', proposal.handwerker_id)
+                            .maybeSingle();
+                          
+                          if (conversation) {
+                            navigate(`/messages/${conversation.id}`);
+                          } else {
+                            toast({
+                              title: "Keine Unterhaltung gefunden",
+                              description: "Es wurde noch keine Unterhaltung mit diesem Handwerker erstellt.",
+                            });
+                          }
+                        }}
                       >
                         <MessageSquare className="h-4 w-4 mr-2" />
                         Nachricht senden
