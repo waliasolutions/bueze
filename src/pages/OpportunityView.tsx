@@ -10,10 +10,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin, Clock, Coins, Calendar, AlertCircle } from 'lucide-react';
+import { useProposalFormValidation } from '@/hooks/useProposalFormValidation';
+import { MapPin, Clock, Coins, Calendar, AlertCircle, Loader2 } from 'lucide-react';
 import { getUrgencyLabel } from '@/config/urgencyLevels';
 import { getCantonLabel } from '@/config/cantons';
 import { getCategoryLabel } from '@/config/categoryLabels';
+import { ProposalFileUpload } from '@/components/ProposalFileUpload';
+import { uploadProposalAttachment } from '@/lib/fileUpload';
 
 const OpportunityView = () => {
   const { leadId } = useParams();
@@ -25,10 +28,16 @@ const OpportunityView = () => {
   const [submitting, setSubmitting] = useState(false);
   const [hasProposal, setHasProposal] = useState(false);
 
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
-  const [duration, setDuration] = useState('');
-  const [message, setMessage] = useState('');
+  const [formValues, setFormValues] = useState({
+    price_min: '',
+    price_max: '',
+    message: '',
+    estimated_duration_days: ''
+  });
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+
+  const { errors, touched, handleBlur, validateAll, resetValidation } = useProposalFormValidation(formValues);
 
   useEffect(() => {
     fetchData();
@@ -85,54 +94,11 @@ const OpportunityView = () => {
       return;
     }
 
-    const priceMinVal = parseInt(priceMin);
-    const priceMaxVal = parseInt(priceMax);
-    const durationVal = duration ? parseInt(duration) : null;
-
-    // Validate price_min >= 0
-    if (priceMinVal < 0) {
+    // Use validation hook
+    if (!validateAll()) {
       toast({
-        title: 'Ungültige Preisangabe',
-        description: 'Der Preis darf nicht negativ sein.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Validate price range (price_max >= price_min)
-    if (priceMaxVal < priceMinVal) {
-      toast({
-        title: 'Ungültige Preisangabe',
-        description: 'Der Maximalpreis muss grösser oder gleich dem Minimalpreis sein.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Validate message length
-    if (message.length < 50) {
-      toast({
-        title: 'Nachricht zu kurz',
-        description: 'Ihre Nachricht muss mindestens 50 Zeichen enthalten.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (message.length > 2000) {
-      toast({
-        title: 'Nachricht zu lang',
-        description: 'Ihre Nachricht darf maximal 2000 Zeichen enthalten.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Validate estimated_duration_days > 0 (only if provided)
-    if (durationVal !== null && durationVal <= 0) {
-      toast({
-        title: 'Ungültige Dauer',
-        description: 'Die geschätzte Dauer muss mindestens 1 Tag sein.',
+        title: 'Fehlende Angaben',
+        description: 'Bitte korrigieren Sie die markierten Felder.',
         variant: 'destructive'
       });
       return;
@@ -157,15 +123,35 @@ const OpportunityView = () => {
         return;
       }
 
+      // Upload attachment if present
+      let attachmentUrl: string | null = null;
+      if (attachmentFile) {
+        setUploadingAttachment(true);
+        const uploadResult = await uploadProposalAttachment(attachmentFile, user.id);
+        if (uploadResult.error) {
+          toast({
+            title: 'Upload fehlgeschlagen',
+            description: uploadResult.error,
+            variant: 'destructive'
+          });
+          setUploadingAttachment(false);
+          setSubmitting(false);
+          return;
+        }
+        attachmentUrl = uploadResult.url;
+        setUploadingAttachment(false);
+      }
+
       const { error: proposalError } = await supabase
         .from('lead_proposals')
         .insert({
           lead_id: leadId,
           handwerker_id: user.id,
-          price_min: parseInt(priceMin),
-          price_max: parseInt(priceMax),
-          estimated_duration_days: duration ? parseInt(duration) : null,
-          message
+          price_min: parseInt(formValues.price_min),
+          price_max: parseInt(formValues.price_max),
+          estimated_duration_days: formValues.estimated_duration_days ? parseInt(formValues.estimated_duration_days) : null,
+          message: formValues.message,
+          attachments: attachmentUrl ? [attachmentUrl] : []
         });
 
       if (proposalError) throw proposalError;
@@ -286,45 +272,60 @@ const OpportunityView = () => {
                 <h3 className="font-semibold text-lg">Ihre Offerte einreichen</h3>
                 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="priceMin">Preis von (CHF) *</Label>
                     <Input
                       id="priceMin"
                       type="number"
                       required
                       min="0"
-                      value={priceMin}
-                      onChange={(e) => setPriceMin(e.target.value)}
+                      className={touched.price_min && errors.price_min ? 'border-destructive' : ''}
+                      value={formValues.price_min}
+                      onChange={(e) => setFormValues(prev => ({ ...prev, price_min: e.target.value }))}
+                      onBlur={() => handleBlur('price_min')}
                       placeholder="z.B. 1000"
                     />
+                    {touched.price_min && errors.price_min && (
+                      <p className="text-xs text-destructive">{errors.price_min}</p>
+                    )}
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="priceMax">Preis bis (CHF) *</Label>
                     <Input
                       id="priceMax"
                       type="number"
                       required
                       min="0"
-                      value={priceMax}
-                      onChange={(e) => setPriceMax(e.target.value)}
+                      className={touched.price_max && errors.price_max ? 'border-destructive' : ''}
+                      value={formValues.price_max}
+                      onChange={(e) => setFormValues(prev => ({ ...prev, price_max: e.target.value }))}
+                      onBlur={() => handleBlur('price_max')}
                       placeholder="z.B. 1500"
                     />
+                    {touched.price_max && errors.price_max && (
+                      <p className="text-xs text-destructive">{errors.price_max}</p>
+                    )}
                   </div>
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="duration">Geschätzte Dauer (Tage)</Label>
                   <Input
                     id="duration"
                     type="number"
                     min="1"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
+                    className={touched.estimated_duration_days && errors.estimated_duration_days ? 'border-destructive' : ''}
+                    value={formValues.estimated_duration_days}
+                    onChange={(e) => setFormValues(prev => ({ ...prev, estimated_duration_days: e.target.value }))}
+                    onBlur={() => handleBlur('estimated_duration_days')}
                     placeholder="z.B. 5"
                   />
+                  {touched.estimated_duration_days && errors.estimated_duration_days && (
+                    <p className="text-xs text-destructive">{errors.estimated_duration_days}</p>
+                  )}
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="message">Ihre Nachricht * (min. 50 Zeichen)</Label>
                   <Textarea
                     id="message"
@@ -332,13 +333,28 @@ const OpportunityView = () => {
                     minLength={50}
                     maxLength={2000}
                     rows={6}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
+                    className={touched.message && errors.message ? 'border-destructive' : ''}
+                    value={formValues.message}
+                    onChange={(e) => setFormValues(prev => ({ ...prev, message: e.target.value }))}
+                    onBlur={() => handleBlur('message')}
                     placeholder="Beschreiben Sie Ihre Erfahrung, Herangehensweise und warum Sie der richtige Handwerker für dieses Projekt sind..."
                   />
-                  <p className={`text-xs mt-1 ${message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {message.length}/50 Zeichen (min. 50)
+                  <p className={`text-xs ${formValues.message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {formValues.message.length}/50 Zeichen (min. 50)
                   </p>
+                  {touched.message && errors.message && (
+                    <p className="text-xs text-destructive">{errors.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Offerte als Datei (optional)</Label>
+                  <ProposalFileUpload
+                    file={attachmentFile}
+                    onFileSelect={setAttachmentFile}
+                    uploading={uploadingAttachment}
+                    disabled={submitting}
+                  />
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -350,9 +366,14 @@ const OpportunityView = () => {
                 <Button 
                   type="submit" 
                   className="w-full"
-                  disabled={submitting}
+                  disabled={submitting || uploadingAttachment}
                 >
-                  {submitting ? 'Wird eingereicht...' : 'Offerte einreichen'}
+                  {submitting || uploadingAttachment ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {uploadingAttachment ? 'Wird hochgeladen...' : 'Wird eingereicht...'}
+                    </>
+                  ) : 'Offerte einreichen'}
                 </Button>
               </form>
             )}
