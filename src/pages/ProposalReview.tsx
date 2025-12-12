@@ -24,31 +24,43 @@ const ProposalReview = () => {
 
   const fetchProposal = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch proposal with lead data (avoid FK ambiguity by fetching profile separately)
+      const { data: proposalData, error: proposalError } = await supabase
         .from('lead_proposals')
         .select(`
           *,
-          leads!lead_proposals_lead_id_fkey(
-            id, title, description, category, budget_min, budget_max
-          ),
-          profiles!lead_proposals_handwerker_id_fkey(
-            full_name, avatar_url, city
-          )
+          leads(id, title, description, category, budget_min, budget_max)
         `)
         .eq('id', proposalId)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (proposalError) throw proposalError;
+      if (!proposalData) {
+        setLoading(false);
+        return;
+      }
 
-      await supabase
+      // Fetch handwerker profile separately to avoid FK ambiguity
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url, city')
+        .eq('id', proposalData.handwerker_id)
+        .maybeSingle();
+
+      // Fire-and-forget: Update view tracking
+      supabase
         .from('lead_proposals')
         .update({
           client_viewed_at: new Date().toISOString(),
-          view_count: (data.view_count || 0) + 1
+          view_count: (proposalData.view_count || 0) + 1
         })
-        .eq('id', proposalId);
+        .eq('id', proposalId)
+        .then(() => {});
 
-      setProposal(data);
+      setProposal({
+        ...proposalData,
+        profiles: profileData
+      });
     } catch (error) {
       console.error('Error fetching proposal:', error);
       toast({
