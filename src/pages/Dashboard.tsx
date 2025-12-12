@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { User } from '@supabase/supabase-js';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ReceivedProposals } from '@/components/ReceivedProposals';
@@ -22,7 +23,7 @@ import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
 
 const Dashboard = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfileBasic | null>(null);
   const [myLeads, setMyLeads] = useState<LeadListItem[]>([]);
   const [archivedLeads, setArchivedLeads] = useState<LeadListItem[]>([]);
