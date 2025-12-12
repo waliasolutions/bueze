@@ -71,11 +71,7 @@ const OpportunityView = () => {
 
     } catch (error) {
       console.error('Error fetching opportunity:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Anfrage konnte nicht geladen werden',
-        variant: 'destructive'
-      });
+      // Silent fail - show 404 UI instead of toast
     } finally {
       setLoading(false);
     }
@@ -176,11 +172,41 @@ const OpportunityView = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Lädt...</div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-8">
+          <div className="max-w-3xl mx-auto space-y-4">
+            <div className="h-8 bg-muted rounded w-1/2 animate-pulse" />
+            <div className="h-64 bg-muted rounded animate-pulse" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   if (!lead) {
-    return <div className="min-h-screen flex items-center justify-center">Anfrage nicht gefunden</div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-8">
+          <div className="max-w-md mx-auto text-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
+              <AlertCircle className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Anfrage nicht gefunden</h1>
+            <p className="text-muted-foreground mb-6">
+              Diese Anfrage existiert nicht mehr oder ist nicht mehr aktiv.
+            </p>
+            <Button onClick={() => navigate('/handwerker-dashboard')}>
+              Zum Dashboard
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   const isExpired = lead.proposal_deadline && new Date(lead.proposal_deadline) < new Date();

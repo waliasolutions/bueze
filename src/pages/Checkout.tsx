@@ -34,11 +34,7 @@ export default function Checkout() {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      toast({
-        title: "Anmeldung erforderlich",
-        description: "Bitte melden Sie sich an, um fortzufahren.",
-        variant: "destructive",
-      });
+      // Silent redirect - the redirect URL itself indicates the intent
       navigate("/auth?redirect=/checkout?plan=" + selectedPlan);
       return;
     }

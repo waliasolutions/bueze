@@ -150,11 +150,7 @@ const ProposalsManagement = () => {
       setProposals(proposalsWithRatings as any);
     } catch (error) {
       console.error('Error fetching proposals:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Offerten konnten nicht geladen werden',
-        variant: 'destructive'
-      });
+      // Silent fail - empty state will show instead
     } finally {
       setLoading(false);
     }
