@@ -352,14 +352,14 @@ const Messages = () => {
 
           {/* Messages */}
           <Card className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-lg">{conversation.lead.title}</CardTitle>
-              <CardDescription>{conversation.lead.description}</CardDescription>
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-base sm:text-lg line-clamp-1">{conversation.lead.title}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm line-clamp-2">{conversation.lead.description}</CardDescription>
             </CardHeader>
-            <CardContent className="max-h-96 overflow-y-auto">
-              <div className="space-y-4">
+            <CardContent className="h-[50vh] sm:h-[60vh] max-h-[500px] overflow-y-auto p-3 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
                 {messages.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
+                  <p className="text-center text-muted-foreground py-8 text-sm">
                     Noch keine Nachrichten. Schreiben Sie die erste Nachricht!
                   </p>
                 ) : (
@@ -371,8 +371,8 @@ const Messages = () => {
                     return (
                       <div key={message.id}>
                         {showDate && (
-                          <div className="text-center my-4">
-                            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
+                          <div className="text-center my-3 sm:my-4">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                               {formatDateRelative(message.created_at)}
                             </span>
                           </div>
@@ -381,14 +381,14 @@ const Messages = () => {
                           className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-[70%] rounded-lg px-3 py-2 ${
+                            className={`max-w-[85%] sm:max-w-[70%] rounded-lg px-3 py-2 ${
                               isOwnMessage
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-muted'
                             }`}
                           >
-                            <p className="text-sm">{message.content}</p>
-                            <p className={`text-xs mt-1 ${
+                            <p className="text-sm break-words">{message.content}</p>
+                            <p className={`text-[10px] sm:text-xs mt-1 ${
                               isOwnMessage ? 'text-primary-foreground/70' : 'text-muted-foreground'
                             }`}>
                               {formatTime(message.created_at)}
@@ -406,16 +406,20 @@ const Messages = () => {
 
           {/* Message Input */}
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <form onSubmit={sendMessage} className="flex gap-2">
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Nachricht schreiben..."
                   disabled={sending}
-                  className="flex-1"
+                  className="flex-1 min-h-[44px] text-base"
                 />
-                <Button type="submit" disabled={sending || !newMessage.trim()}>
+                <Button 
+                  type="submit" 
+                  disabled={sending || !newMessage.trim()}
+                  className="min-w-[44px] min-h-[44px]"
+                >
                   {sending ? (
                     <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
                   ) : (

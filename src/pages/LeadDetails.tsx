@@ -280,12 +280,12 @@ const LeadDetails = () => {
 
           {/* Action Buttons - Prominent */}
           <Card className="mb-6">
-            <CardContent className="pt-6">
-              <div className="flex flex-wrap gap-3">
+            <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
                 <Button
                   onClick={() => navigate(`/lead/${id}/edit`)}
                   size="lg"
-                  className="flex-1 sm:flex-none"
+                  className="w-full sm:w-auto min-h-[44px]"
                 >
                   <Edit2 className="h-4 w-4 mr-2" />
                   Bearbeiten
@@ -297,7 +297,7 @@ const LeadDetails = () => {
                     variant="outline"
                     size="lg"
                     disabled={updating}
-                    className="flex-1 sm:flex-none"
+                    className="w-full sm:w-auto min-h-[44px]"
                   >
                     <Pause className="h-4 w-4 mr-2" />
                     Pausieren
@@ -310,7 +310,7 @@ const LeadDetails = () => {
                     variant="outline"
                     size="lg"
                     disabled={updating}
-                    className="flex-1 sm:flex-none"
+                    className="w-full sm:w-auto min-h-[44px]"
                   >
                     <Play className="h-4 w-4 mr-2" />
                     Reaktivieren
@@ -324,22 +324,23 @@ const LeadDetails = () => {
                         variant="outline" 
                         size="lg" 
                         disabled={updating}
-                        className="flex-1 sm:flex-none"
+                        className="w-full sm:w-auto min-h-[44px]"
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
-                        Als erledigt markieren
+                        <span className="hidden sm:inline">Als erledigt markieren</span>
+                        <span className="sm:hidden">Erledigt</span>
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="mx-4 sm:mx-auto max-w-[calc(100vw-2rem)] sm:max-w-lg">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Auftrag abschließen?</AlertDialogTitle>
                         <AlertDialogDescription>
                           Der Auftrag wird als erledigt markiert und ist nicht mehr für Handwerker sichtbar.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleStatusChange('complete')}>
+                      <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                        <AlertDialogCancel className="min-h-[44px]">Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleStatusChange('complete')} className="min-h-[44px]">
                           Bestätigen
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -353,24 +354,24 @@ const LeadDetails = () => {
                       variant="destructive" 
                       size="lg" 
                       disabled={updating}
-                      className="flex-1 sm:flex-none"
+                      className="w-full sm:w-auto min-h-[44px]"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Löschen
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent className="mx-4 sm:mx-auto max-w-[calc(100vw-2rem)] sm:max-w-lg">
                     <AlertDialogHeader>
                       <AlertDialogTitle>Auftrag löschen?</AlertDialogTitle>
                       <AlertDialogDescription>
                         Diese Aktion kann nicht rückgängig gemacht werden. Der Auftrag wird dauerhaft gelöscht.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                    <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                      <AlertDialogCancel className="min-h-[44px]">Abbrechen</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={() => handleStatusChange('delete')}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[44px]"
                       >
                         Löschen
                       </AlertDialogAction>

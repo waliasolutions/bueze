@@ -545,20 +545,20 @@ const SubmitLead = () => {
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-2xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Auftrag erstellen</h1>
-            <p className="text-muted-foreground">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Auftrag erstellen</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Beschreiben Sie Ihr Projekt und erhalten Sie Angebote von qualifizierten Handwerkern.
             </p>
           </div>
 
           {/* Progress indicator */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">
+              <span className="text-xs sm:text-sm font-medium">
                 Schritt {step} von {isAuthenticated ? 3 : 4}
               </span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {Math.round((step / (isAuthenticated ? 3 : 4)) * 100)}%
               </span>
             </div>
@@ -567,6 +567,13 @@ const SubmitLead = () => {
                 className="bg-primary h-2 rounded-full transition-all duration-300" 
                 style={{ width: `${(step / (isAuthenticated ? 3 : 4)) * 100}%` }}
               />
+            </div>
+            {/* Step labels on mobile */}
+            <div className="flex justify-between mt-2 text-[10px] sm:text-xs text-muted-foreground">
+              <span className={step >= 1 ? "text-primary font-medium" : ""}>Projekt</span>
+              <span className={step >= 2 ? "text-primary font-medium" : ""}>Budget</span>
+              <span className={step >= 3 ? "text-primary font-medium" : ""}>Standort</span>
+              {!isAuthenticated && <span className={step >= 4 ? "text-primary font-medium" : ""}>Kontakt</span>}
             </div>
           </div>
 
@@ -623,7 +630,7 @@ const SubmitLead = () => {
                             <p className="text-sm text-muted-foreground">
                               Wählen Sie die passende Kategorie für Ihr Projekt:
                             </p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
                               {Object.values(majorCategories).map((majorCat) => {
                                 const Icon = majorCat.icon;
                                 const isSelected = field.value === majorCat.id;
@@ -632,36 +639,37 @@ const SubmitLead = () => {
                                   <Card
                                     key={majorCat.id}
                                     className={cn(
-                                      "cursor-pointer transition-all hover:shadow-lg hover-scale",
+                                      "cursor-pointer transition-all hover:shadow-lg active:scale-95 min-h-[44px]",
                                       isSelected && "ring-2 ring-brand-600 bg-brand-50 shadow-lg"
                                     )}
                                     onClick={() => field.onChange(majorCat.id)}
                                   >
-                                    <CardContent className="p-6 text-center">
+                                    <CardContent className="p-3 sm:p-4 md:p-6 flex sm:flex-col items-center sm:text-center gap-3 sm:gap-0">
                                       <div className={cn(
-                                        "w-16 h-16 rounded-full flex items-center justify-center text-white mx-auto mb-3 transition-transform",
+                                        "w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-white sm:mx-auto sm:mb-3 transition-transform flex-shrink-0",
                                         `bg-gradient-to-br ${majorCat.color}`,
                                         isSelected ? 'scale-110' : ''
                                       )}>
-                                        <Icon className="w-8 h-8" />
+                                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
                                       </div>
-                                      <p className="text-sm font-semibold leading-tight">
-                                        {majorCat.id === 'elektroinstallationen' ? (
-                                          <>
-                                            Elektro-
-                                            <br />
-                                            installationen
-                                          </>
-                                        ) : (
-                                          majorCat.label
+                                      <div className="flex-1 sm:flex-none">
+                                        <p className="text-xs sm:text-sm font-semibold leading-tight">
+                                          {majorCat.id === 'elektroinstallationen' ? (
+                                            <>
+                                              <span className="sm:hidden">Elektro</span>
+                                              <span className="hidden sm:inline">Elektro-<br />installationen</span>
+                                            </>
+                                          ) : (
+                                            majorCat.label
+                                          )}
+                                        </p>
+                                        {isSelected && (
+                                          <Badge className="mt-1 sm:mt-3 bg-brand-600 text-[10px] sm:text-xs">
+                                            <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                                            Gewählt
+                                          </Badge>
                                         )}
-                                      </p>
-                                      {isSelected && (
-                                        <Badge className="mt-3 bg-brand-600">
-                                          <CheckCircle className="h-3 w-3 mr-1" />
-                                          Gewählt
-                                        </Badge>
-                                      )}
+                                      </div>
                                     </CardContent>
                                   </Card>
                                 );
@@ -743,7 +751,7 @@ const SubmitLead = () => {
 
                       {/* Uploaded Files Preview */}
                       {uploadedUrls.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3">
                           {uploadedUrls.map((url, index) => (
                             <div 
                               key={index} 
@@ -764,7 +772,7 @@ const SubmitLead = () => {
                                 type="button"
                                 variant="destructive"
                                 size="icon"
-                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-1 right-1 min-h-[44px] min-w-[44px] h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                                 onClick={() => handleRemoveFile(index)}
                               >
                                 <X className="h-4 w-4" />
@@ -1129,20 +1137,20 @@ const SubmitLead = () => {
                 </Card>
               )}
 
-              <div className="flex justify-between">
+              <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
                 {step > 1 && (
-                  <Button type="button" variant="outline" onClick={prevStep}>
+                  <Button type="button" variant="outline" onClick={prevStep} className="min-h-[44px] w-full sm:w-auto">
                     Zurück
                   </Button>
                 )}
                 
                 {step < (isAuthenticated ? 3 : 4) ? (
-                  <Button type="button" onClick={nextStep} className="ml-auto">
+                  <Button type="button" onClick={nextStep} className="ml-auto min-h-[44px] w-full sm:w-auto">
                     Weiter
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 ) : (
-                  <Button type="submit" disabled={isSubmitting} className="ml-auto">
+                  <Button type="submit" disabled={isSubmitting} className="ml-auto min-h-[44px] w-full sm:w-auto">
                     {isSubmitting ? 'Wird erstellt...' : 'Auftrag erstellen'}
                   </Button>
                 )}

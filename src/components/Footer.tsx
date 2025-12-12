@@ -74,26 +74,36 @@ export const Footer = () => {
 
           {/* Categories Grid - 9 columns on desktop */}
           <div className="lg:col-span-9">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
               {categoriesWithSubs.map((category) => (
-                <div key={category.id} className="space-y-3">
+                <div key={category.id} className="space-y-2 sm:space-y-3">
                 <Link
                   to={`/kategorien/${category.slug}`}
-                  className="font-semibold text-surface hover:text-brand-400 transition-colors block"
+                  className="font-semibold text-surface hover:text-brand-400 transition-colors block text-sm sm:text-base min-h-[44px] flex items-center"
                 >
                   {category.label}
                 </Link>
-                  <ul className="space-y-2">
-                    {category.subcategories.map((sub) => (
+                  <ul className="space-y-1.5 sm:space-y-2 hidden sm:block">
+                    {category.subcategories.slice(0, 4).map((sub) => (
                       <li key={sub.value}>
                       <Link 
                         to={`/kategorien/${category.slug}#${sub.value}`}
-                        className="text-ink-300 hover:text-brand-400 transition-colors text-sm block"
+                        className="text-ink-300 hover:text-brand-400 transition-colors text-xs sm:text-sm block py-0.5"
                       >
                         {sub.label}
                       </Link>
                       </li>
                     ))}
+                    {category.subcategories.length > 4 && (
+                      <li>
+                        <Link 
+                          to={`/kategorien/${category.slug}`}
+                          className="text-brand-400 hover:text-brand-300 transition-colors text-xs sm:text-sm block py-0.5"
+                        >
+                          +{category.subcategories.length - 4} mehr
+                        </Link>
+                      </li>
+                    )}
                   </ul>
                 </div>
               ))}

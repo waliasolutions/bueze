@@ -2391,8 +2391,25 @@ const HandwerkerOnboarding = () => {
       <Header />
       <main className="pt-24 pb-12">
         <div className="container max-w-3xl mx-auto px-4">
-        {/* Visual Progress Indicator */}
-        <div className="mb-8">
+        {/* Mobile Sticky Progress Bar */}
+        <div className="sm:hidden sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b py-3 -mx-4 px-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Schritt {currentStep} von 6</span>
+            <span className="text-sm font-bold text-brand-600">{Math.round(progress)}%</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+          <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+            {['Firma', 'Person', 'Adresse', 'Vers.', 'Fach', 'Prüf.'].map((label, idx) => (
+              <span key={idx} className={cn(
+                idx + 1 === currentStep && "text-brand-600 font-bold",
+                idx + 1 < currentStep && "text-primary"
+              )}>{label}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop Visual Progress Indicator */}
+        <div className="mb-8 hidden sm:block">
           <div className="flex items-center justify-between mb-4">
               {[1, 2, 3, 4, 5, 6].map((step) => {
                 const isCompleted = step < currentStep;
@@ -2402,15 +2419,15 @@ const HandwerkerOnboarding = () => {
               return (
                 <div key={step} className="flex flex-col items-center flex-1">
                   <div className={cn(
-                    "w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg transition-all duration-300",
+                    "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-base md:text-lg transition-all duration-300",
                     isCompleted && "bg-primary text-primary-foreground shadow-lg scale-110",
                     isCurrent && "bg-brand-500 text-white shadow-xl scale-125 ring-4 ring-brand-200",
                     !isCompleted && !isCurrent && "bg-muted text-muted-foreground"
                   )}>
-                    {isCompleted ? <CheckCircle className="h-6 w-6" /> : step}
+                    {isCompleted ? <CheckCircle className="h-5 w-5 md:h-6 md:w-6" /> : step}
                   </div>
                   <p className={cn(
-                    "text-xs mt-2 font-medium text-center",
+                    "text-[10px] md:text-xs mt-2 font-medium text-center",
                     isCurrent && "text-brand-600 font-bold",
                     isCompleted && "text-primary",
                     !isCompleted && !isCurrent && "text-muted-foreground"
@@ -2467,13 +2484,13 @@ const HandwerkerOnboarding = () => {
             {renderStepContent()}
           </CardContent>
 
-          <CardFooter className="flex gap-4 pt-6 border-t">
+          <CardFooter className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t">
             {currentStep > 1 && (
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleBack}
-                className="h-12 px-6 text-base flex-1"
+                className="h-12 px-6 text-base w-full sm:flex-1 min-h-[44px]"
                 disabled={isLoading}
               >
                 <ChevronLeft className="h-5 w-5 mr-2" />
@@ -2485,10 +2502,10 @@ const HandwerkerOnboarding = () => {
                 <Button
                   type="button"
                   onClick={handleNext}
-                  className="h-12 px-6 text-base flex-1"
+                  className="h-12 px-6 text-base w-full sm:flex-1 min-h-[44px]"
                   disabled={isLoading}
                 >
-                  {currentStep === 5 ? "Weiter zur Zusammenfassung" : "Weiter"}
+                  {currentStep === 5 ? "Zur Zusammenfassung" : "Weiter"}
                   <ChevronRight className="h-5 w-5 ml-2" />
                 </Button>
               )}
@@ -2498,7 +2515,7 @@ const HandwerkerOnboarding = () => {
                 type="button"
                 onClick={handleSubmit}
                 disabled={isLoading}
-                className="h-12 px-6 text-base flex-1 bg-brand-600 hover:bg-brand-700"
+                className="h-12 px-6 text-base w-full sm:flex-1 bg-brand-600 hover:bg-brand-700 min-h-[44px]"
               >
                 {isLoading ? (
                   <>
@@ -2508,7 +2525,8 @@ const HandwerkerOnboarding = () => {
                 ) : (
                   <>
                     <CheckCircle className="h-5 w-5 mr-2" />
-                    Bestätigen & Profil einreichen
+                    <span className="hidden sm:inline">Bestätigen & Profil einreichen</span>
+                    <span className="sm:hidden">Einreichen</span>
                   </>
                 )}
               </Button>
