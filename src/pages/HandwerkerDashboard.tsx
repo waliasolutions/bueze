@@ -19,20 +19,13 @@ import { ProposalStatusBadge } from "@/components/ProposalStatusBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
 import { HandwerkerReviewResponse } from "@/components/HandwerkerReviewResponse";
 import { majorCategories } from "@/config/majorCategories";
-import { categoryLabels } from "@/config/categoryLabels";
-import { subcategoryLabels } from "@/config/subcategoryLabels";
+import { getCategoryLabel } from "@/config/categoryLabels";
 import { getCantonLabel } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic } from "@/types/entities";
 
-// Helper function to get human-readable category label
-const getCategoryLabel = (category: string): string => {
-  if (categoryLabels[category]) return categoryLabels[category];
-  if (subcategoryLabels[category]) return subcategoryLabels[category].label;
-  return category.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-};
 const HandwerkerDashboard = () => {
   const navigate = useNavigate();
   const {

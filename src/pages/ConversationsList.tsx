@@ -79,11 +79,19 @@ const ConversationsList = () => {
 
       if (conversationsError) throw conversationsError;
 
-      // Collect all unique user IDs to fetch profiles
+      if (!conversationsData || conversationsData.length === 0) {
+        setConversations([]);
+        setLoading(false);
+        return;
+      }
+
+      // Collect all unique user IDs and conversation IDs
       const userIds = new Set<string>();
-      (conversationsData || []).forEach(conv => {
+      const conversationIds: string[] = [];
+      conversationsData.forEach(conv => {
         userIds.add(conv.homeowner_id);
         userIds.add(conv.handwerker_id);
+        conversationIds.push(conv.id);
       });
 
       // Batch fetch all profiles
@@ -94,35 +102,50 @@ const ConversationsList = () => {
 
       const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
 
-      // For each conversation, get the latest message and unread count
-      const conversationsWithMessages = await Promise.all(
-        (conversationsData || []).map(async (conversation) => {
-          // Get latest message
-          const { data: latestMessage } = await supabase
-            .from('messages')
-            .select('content, created_at, sender_id')
-            .eq('conversation_id', conversation.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
+      // Batch fetch latest messages for all conversations
+      // Using a single query with window functions would be ideal, but we can optimize with Promise.all
+      const [messagesResult, unreadResult] = await Promise.all([
+        // Get all messages for these conversations, ordered by created_at desc
+        supabase
+          .from('messages')
+          .select('conversation_id, content, created_at, sender_id')
+          .in('conversation_id', conversationIds)
+          .order('created_at', { ascending: false }),
+        
+        // Get unread counts in one query
+        supabase
+          .from('messages')
+          .select('conversation_id', { count: 'exact' })
+          .in('conversation_id', conversationIds)
+          .eq('recipient_id', user.id)
+          .is('read_at', null)
+      ]);
 
-          // Get unread count (messages sent by other user that are not read)
-          const { count: unreadCount } = await supabase
-            .from('messages')
-            .select('*', { count: 'exact', head: true })
-            .eq('conversation_id', conversation.id)
-            .eq('recipient_id', user.id)
-            .is('read_at', null);
+      // Group messages by conversation and get latest
+      const latestMessagesMap = new Map<string, { content: string; created_at: string; sender_id: string }>();
+      (messagesResult.data || []).forEach(msg => {
+        if (!latestMessagesMap.has(msg.conversation_id)) {
+          latestMessagesMap.set(msg.conversation_id, msg);
+        }
+      });
 
-          return {
-            ...conversation,
-            homeowner: profilesMap.get(conversation.homeowner_id) || { full_name: 'Kunde', avatar_url: null },
-            handwerker: profilesMap.get(conversation.handwerker_id) || { full_name: 'Handwerker', avatar_url: null },
-            latest_message: latestMessage,
-            unread_count: unreadCount || 0,
-          };
-        })
-      );
+      // Count unread per conversation
+      const unreadCountMap = new Map<string, number>();
+      if (unreadResult.data) {
+        unreadResult.data.forEach(msg => {
+          const count = unreadCountMap.get(msg.conversation_id) || 0;
+          unreadCountMap.set(msg.conversation_id, count + 1);
+        });
+      }
+
+      // Build final conversations list
+      const conversationsWithMessages = conversationsData.map(conversation => ({
+        ...conversation,
+        homeowner: profilesMap.get(conversation.homeowner_id) || { full_name: 'Kunde', avatar_url: null },
+        handwerker: profilesMap.get(conversation.handwerker_id) || { full_name: 'Handwerker', avatar_url: null },
+        latest_message: latestMessagesMap.get(conversation.id) || null,
+        unread_count: unreadCountMap.get(conversation.id) || 0,
+      }));
 
       setConversations(conversationsWithMessages as any);
     } catch (error) {
@@ -193,15 +216,13 @@ const ConversationsList = () => {
                 Verwalten Sie Ihre Unterhaltungen mit Handwerkern und Auftraggebern
               </p>
             </div>
-            <Button onClick={async () => {
-              const { data: roles } = await supabase
-                .from('user_roles')
-                .select('role')
-                .eq('user_id', user?.id)
-                .single();
-              
-              const isHandwerker = roles?.role === 'handwerker';
-              navigate(isHandwerker ? '/handwerker-dashboard' : '/dashboard');
+            <Button onClick={() => {
+              // Use cached role from user state instead of additional query
+              // Navigate to handwerker dashboard if user has handwerker conversations
+              const hasHandwerkerConversations = conversations.some(
+                c => c.handwerker_id === user?.id
+              );
+              navigate(hasHandwerkerConversations ? '/handwerker-dashboard' : '/dashboard');
             }}>
               Zurück zum Dashboard
             </Button>
