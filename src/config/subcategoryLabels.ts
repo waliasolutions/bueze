@@ -9,155 +9,7 @@ export interface SubcategoryInfo {
 
 export const subcategoryLabels: Record<string, SubcategoryInfo> = {
   // ============================================
-  // NEW MERGED SUBCATEGORIES (max 8 per category)
-  // ============================================
-  
-  // Bau & Renovation (merged entries)
-  bau_hochbau_rohbau: {
-    value: 'bau_hochbau_rohbau',
-    label: 'Hochbau & Rohbau',
-    slug: 'hochbau-rohbau',
-    shortDescription: 'Fundamente, Mauern, Beton',
-    majorCategoryId: 'bau_renovation',
-    keywords: ['Hochbau', 'Rohbau', 'Fundament', 'Mauerarbeit', 'Betonarbeiten', 'Fundament']
-  },
-  bau_holzbau_zimmerei: {
-    value: 'bau_holzbau_zimmerei',
-    label: 'Holzbau & Zimmerei',
-    slug: 'holzbau-zimmerei',
-    shortDescription: 'Dachstühle, Holzkonstruktionen',
-    majorCategoryId: 'bau_renovation',
-    keywords: ['Holzbau', 'Zimmermann', 'Dachstuhl', 'Holzkonstruktion', 'Zimmerei']
-  },
-  bau_dacharbeiten: {
-    value: 'bau_dacharbeiten',
-    label: 'Dacharbeiten',
-    slug: 'dacharbeiten',
-    shortDescription: 'Dach neu, Reparatur, Isolation',
-    majorCategoryId: 'bau_renovation',
-    keywords: ['Dachdecker', 'Dach', 'Dachziegel', 'Dachreparatur', 'Dachisolation']
-  },
-  bau_fassadenarbeiten: {
-    value: 'bau_fassadenarbeiten',
-    label: 'Fassadenarbeiten',
-    slug: 'fassadenarbeiten',
-    shortDescription: 'Fassade, Verkleidung, Sanierung',
-    majorCategoryId: 'bau_renovation',
-    keywords: ['Fassade', 'Fassadenbauer', 'Fassadensanierung', 'Verputz', 'WDVS']
-  },
-  bau_abbruch_durchbrueche: {
-    value: 'bau_abbruch_durchbrueche',
-    label: 'Abbruch & Durchbrüche',
-    slug: 'abbruch-durchbrueche',
-    shortDescription: 'Abbruch, Kernbohrungen',
-    majorCategoryId: 'bau_renovation',
-    keywords: ['Abbruch', 'Durchbruch', 'Kernbohrung', 'Demontage', 'Mauerwerk']
-  },
-  bau_renovierung_umbau: {
-    value: 'bau_renovierung_umbau',
-    label: 'Renovierung & Umbau',
-    slug: 'renovierung-umbau',
-    shortDescription: 'Umbau, Sanierung, Garage',
-    majorCategoryId: 'bau_renovation',
-    keywords: ['Renovation', 'Umbau', 'Sanierung', 'Betonsanierung', 'Garage', 'Carport']
-  },
-  bau_sonstige: {
-    value: 'bau_sonstige',
-    label: 'Sonstige Bauarbeiten',
-    slug: 'sonstige-bauarbeiten',
-    shortDescription: 'Weitere Bauarbeiten',
-    majorCategoryId: 'bau_renovation',
-    keywords: ['Bau', 'Bauarbeiten', 'Sonstige']
-  },
-
-  // Elektroinstallationen (merged entries)
-  elektro_beleuchtung_geraete: {
-    value: 'elektro_beleuchtung_geraete',
-    label: 'Beleuchtung & Geräte',
-    slug: 'beleuchtung-geraete',
-    shortDescription: 'LED, Leuchten, Küchengeräte',
-    majorCategoryId: 'elektroinstallationen',
-    keywords: ['Beleuchtung', 'LED', 'Spots', 'Kochfeld', 'Backofen', 'Geschirrspüler', 'Geräte anschliessen']
-  },
-  elektro_smart_home_netzwerk: {
-    value: 'elektro_smart_home_netzwerk',
-    label: 'Smart Home & Netzwerk',
-    slug: 'smart-home-netzwerk',
-    shortDescription: 'KNX, WLAN, Sprechanlage',
-    majorCategoryId: 'elektroinstallationen',
-    keywords: ['Smart Home', 'KNX', 'Loxone', 'Netzwerk', 'WLAN', 'LAN', 'Sprechanlage', 'Automation']
-  },
-  elektro_pruefung_sicherheit: {
-    value: 'elektro_pruefung_sicherheit',
-    label: 'Prüfung & Sicherheit',
-    slug: 'pruefung-sicherheit',
-    shortDescription: 'Kontrollen, Erdung, Blitzschutz',
-    majorCategoryId: 'elektroinstallationen',
-    keywords: ['Kontrolle', 'Prüfung', 'Sicherheit', 'NIV', 'SiNa', 'Erdung', 'Blitzschutz', 'Überspannungsschutz']
-  },
-  elektro_sonstige: {
-    value: 'elektro_sonstige',
-    label: 'Sonstige Elektroarbeiten',
-    slug: 'sonstige-elektroarbeiten',
-    shortDescription: 'Weitere Elektroarbeiten',
-    majorCategoryId: 'elektroinstallationen',
-    keywords: ['Elektriker', 'Elektro', 'Sonstige']
-  },
-
-  // Innenausbau & Schreiner (merged entries)
-  innenausbau_moebelbau: {
-    value: 'innenausbau_moebelbau',
-    label: 'Möbelbau',
-    slug: 'moebelbau',
-    shortDescription: 'Massanfertigung, Restauration',
-    majorCategoryId: 'innenausbau_schreiner',
-    keywords: ['Möbel', 'Massanfertigung', 'Restauration', 'Schreiner']
-  },
-  innenausbau_holz_metall: {
-    value: 'innenausbau_holz_metall',
-    label: 'Innenausbau (Holz/Metall)',
-    slug: 'innenausbau-holz-metall',
-    shortDescription: 'Holz- und Metallarbeiten',
-    majorCategoryId: 'innenausbau_schreiner',
-    keywords: ['Holzarbeiten', 'Metallarbeiten', 'Innenausbau']
-  },
-
-  // Räumung & Entsorgung
-  raeumung: {
-    value: 'raeumung',
-    label: 'Räumungsdienst',
-    slug: 'raeumungsdienst',
-    shortDescription: 'Wohnungs- und Hausräumungen',
-    majorCategoryId: 'raeumung_entsorgung',
-    keywords: ['Räumung', 'Wohnungsräumung', 'Hausräumung', 'Entrümpelung']
-  },
-  entsorgung: {
-    value: 'entsorgung',
-    label: 'Entsorgungsdienst',
-    slug: 'entsorgungsdienst',
-    shortDescription: 'Fachgerechte Entsorgung',
-    majorCategoryId: 'raeumung_entsorgung',
-    keywords: ['Entsorgung', 'Abfall', 'Sperrgut', 'Recycling']
-  },
-  baureinigung: {
-    value: 'baureinigung',
-    label: 'Baureinigung',
-    slug: 'baureinigung',
-    shortDescription: 'Endreinigung nach Bauarbeiten',
-    majorCategoryId: 'raeumung_entsorgung',
-    keywords: ['Baureinigung', 'Endreinigung', 'Baustelle', 'Reinigung']
-  },
-  raeumung_sonstige: {
-    value: 'raeumung_sonstige',
-    label: 'Sonstige Dienstleistungen',
-    slug: 'sonstige-dienstleistungen',
-    shortDescription: 'Weitere Dienstleistungen',
-    majorCategoryId: 'raeumung_entsorgung',
-    keywords: ['Räumung', 'Entsorgung', 'Sonstige']
-  },
-
-  // ============================================
-  // EXISTING SUBCATEGORIES (kept for backward compatibility)
+  // EXISTING SUBCATEGORIES (matches database enum)
   // ============================================
   
   // Elektroinstallationen (15 subcategories)
@@ -362,7 +214,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Sonstige Aussenarbeiten',
     slug: 'aussenarbeiten-sonstige',
     shortDescription: 'Diverse Aussenarbeiten',
-    majorCategoryId: 'bau_renovation',
+    majorCategoryId: 'garten_umgebung',
     keywords: ['Aussen', 'Garten', 'Terrasse']
   },
 
@@ -441,13 +293,13 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     majorCategoryId: 'heizung_klima',
     keywords: ['Cheminée', 'Kamin', 'Ofen', 'Cheminee']
   },
-  solarthermie: {
-    value: 'solarthermie',
-    label: 'Solarthermie (Warmwasser)',
-    slug: 'solarthermie',
-    shortDescription: 'Solarthermie für Warmwasser',
+  solarheizung: {
+    value: 'solarheizung',
+    label: 'Solarheizung (Warmwasser)',
+    slug: 'solarheizung',
+    shortDescription: 'Solarheizung für Warmwasser',
     majorCategoryId: 'heizung_klima',
-    keywords: ['Solarthermie', 'Solarkollektor', 'Warmwasser', 'Sonnenenergie']
+    keywords: ['Solarheizung', 'Solarthermie', 'Solarkollektor', 'Warmwasser', 'Sonnenenergie']
   },
   photovoltaik: {
     value: 'photovoltaik',
@@ -672,7 +524,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Gartenbau',
     slug: 'gartenbau',
     shortDescription: 'Gartengestaltung',
-    majorCategoryId: 'bau_renovation',
+    majorCategoryId: 'garten_umgebung',
     keywords: ['Garten']
   },
   pflasterarbeiten: {
@@ -680,7 +532,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Pflasterarbeiten',
     slug: 'pflasterarbeiten',
     shortDescription: 'Pflasterungen',
-    majorCategoryId: 'bau_renovation',
+    majorCategoryId: 'garten_umgebung',
     keywords: ['Pflaster']
   },
   zaun_torbau: {
@@ -688,7 +540,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Zaun- und Torbau',
     slug: 'zaun-torbau',
     shortDescription: 'Zäune, Tore',
-    majorCategoryId: 'bau_renovation',
+    majorCategoryId: 'garten_umgebung',
     keywords: ['Zaun', 'Tor']
   },
   fenster_tueren: {
@@ -736,8 +588,16 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Reinigung',
     slug: 'reinigung',
     shortDescription: 'Reinigung',
-    majorCategoryId: 'raeumung_entsorgung',
+    majorCategoryId: 'reinigung_hauswartung',
     keywords: ['Reinigung']
+  },
+  reinigung_hauswartung: {
+    value: 'reinigung_hauswartung',
+    label: 'Hauswartung',
+    slug: 'hauswartung',
+    shortDescription: 'Hauswartungsdienste',
+    majorCategoryId: 'reinigung_hauswartung',
+    keywords: ['Hauswartung', 'Hauswart', 'Facility']
   },
   schlosserei: {
     value: 'schlosserei',
