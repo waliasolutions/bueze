@@ -527,7 +527,7 @@ export default function HandwerkerManagement() {
         <HandwerkerProfileModal
           handwerkerId={selectedHandwerkerId}
           open={!!selectedHandwerkerId}
-          onClose={() => setSelectedHandwerkerId(null)}
+          onOpenChange={(open) => !open && setSelectedHandwerkerId(null)}
         />
       )}
     </AdminLayout>
