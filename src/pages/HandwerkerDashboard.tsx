@@ -184,7 +184,7 @@ const HandwerkerDashboard = () => {
       // Only fetch leads if verified
       if (profile.verification_status === 'approved') {
         await Promise.all([
-          fetchLeads(profile.categories, profile.service_areas), 
+          fetchLeads(currentUser.id, profile.categories, profile.service_areas), 
           fetchProposals(currentUser.id),
           fetchReviews(currentUser.id)
         ]);
@@ -196,20 +196,22 @@ const HandwerkerDashboard = () => {
     }
   };
   // Removed duplicate fetchHandwerkerProfile - use checkAuth instead
-  const fetchLeads = async (categories: string[], serviceAreas: string[]) => {
+  const fetchLeads = async (userId: string, categories: string[], serviceAreas: string[]) => {
     setLeadsLoading(true);
     try {
-      // Fetch ALL active leads - let RLS handle visibility
-      const {
-        data,
-        error
-      } = await supabase.from('leads').select('*').eq('status', 'active').order('created_at', {
-        ascending: false
-      });
-      if (error) throw error;
+      // Fetch active leads and existing proposals in parallel
+      const [leadsResult, proposalsResult] = await Promise.all([
+        supabase.from('leads').select('*').eq('status', 'active').order('created_at', { ascending: false }),
+        supabase.from('lead_proposals').select('lead_id').eq('handwerker_id', userId)
+      ]);
 
-      // Combined filter: BOTH category AND service area must match
-      let filteredLeads = data || [];
+      if (leadsResult.error) throw leadsResult.error;
+      
+      // Create set of lead IDs where handwerker already has proposals
+      const proposedLeadIds = new Set(proposalsResult.data?.map(p => p.lead_id) || []);
+
+      // Combined filter: category, service area, AND not already proposed
+      let filteredLeads = leadsResult.data || [];
       
       // Extract cantons (2 chars) and postal codes (4+ chars) once
       const cantons = serviceAreas.filter(area => area.length === 2);
@@ -217,6 +219,11 @@ const HandwerkerDashboard = () => {
       
       // Apply combined filter with explicit AND logic
       filteredLeads = filteredLeads.filter(lead => {
+        // CONDITION 0: Not already proposed
+        if (proposedLeadIds.has(lead.id)) {
+          return false;
+        }
+        
         // CONDITION 1: Category Match (required if handwerker has categories)
         let categoryMatches = false;
         
@@ -257,24 +264,7 @@ const HandwerkerDashboard = () => {
         }
         
         // BOTH conditions must be true
-        const shouldShow = categoryMatches && serviceAreaMatches;
-        
-        // Debug logging for sanitaer leads
-        if (import.meta.env.DEV && (lead.category === 'sanitaer' || lead.category?.includes('sanitaer'))) {
-          console.log('🔍 Sanitär Lead Filter:', {
-            leadId: lead.id,
-            leadCategory: lead.category,
-            leadZip: lead.zip,
-            leadCanton: lead.canton,
-            handwerkerCategories: categories,
-            handwerkerServiceAreas: serviceAreas,
-            categoryMatches,
-            serviceAreaMatches,
-            shouldShow
-          });
-        }
-        
-        return shouldShow;
+        return categoryMatches && serviceAreaMatches;
       });
       
       setLeads(filteredLeads);
@@ -374,7 +364,28 @@ const HandwerkerDashboard = () => {
 
     setSubmittingProposal(true);
     try {
-      // Check quota first
+      // Defense-in-depth: Check for existing proposal before inserting
+      const { data: existingProposal } = await supabase
+        .from('lead_proposals')
+        .select('id')
+        .eq('lead_id', selectedLead.id)
+        .eq('handwerker_id', user.id)
+        .maybeSingle();
+
+      if (existingProposal) {
+        toast({
+          title: "Bereits gesendet",
+          description: "Sie haben bereits ein Angebot für diesen Auftrag gesendet.",
+          variant: "destructive"
+        });
+        setSelectedLead(null);
+        // Refresh leads to remove this one from list
+        await fetchLeads(user.id, handwerkerProfile?.categories || [], handwerkerProfile?.service_areas || []);
+        setSubmittingProposal(false);
+        return;
+      }
+
+      // Check quota
       const {
         data: canSubmit,
         error: checkError
@@ -441,8 +452,11 @@ const HandwerkerDashboard = () => {
       resetValidation();
       setSelectedLead(null);
 
-      // Refresh proposals
-      await fetchProposals(user.id);
+      // Refresh both proposals and leads lists
+      await Promise.all([
+        fetchProposals(user.id),
+        fetchLeads(user.id, handwerkerProfile?.categories || [], handwerkerProfile?.service_areas || [])
+      ]);
     } catch (error: any) {
       console.error('Error submitting proposal:', error);
       toast({
