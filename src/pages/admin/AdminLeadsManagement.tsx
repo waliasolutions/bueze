@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
+import { useUserRole } from "@/hooks/useUserRole";
 import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2 } from "lucide-react";
 import { majorCategories } from "@/config/majorCategories";
 import { SWISS_CANTONS, getCantonLabel } from "@/config/cantons";
@@ -47,6 +48,7 @@ import type { LeadWithOwnerContact, AdminProposal } from "@/types/entities";
 
 export default function AdminLeadsManagement() {
   const navigate = useNavigate();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [leads, setLeads] = useState<LeadWithOwnerContact[]>([]);
   const [proposals, setProposals] = useState<Record<string, AdminProposal[]>>({});
   const [loading, setLoading] = useState(true);
@@ -63,35 +65,15 @@ export default function AdminLeadsManagement() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    checkAdminAndFetchData();
-  }, []);
-
-  const checkAdminAndFetchData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
-
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .single();
-
-      if (roleData?.role !== "admin" && roleData?.role !== "super_admin") {
+    if (!roleLoading) {
+      if (!isAdmin) {
         toast.error("Zugriff verweigert");
         navigate("/");
-        return;
+      } else {
+        fetchLeads();
       }
-
-      await fetchLeads();
-    } catch (error) {
-      console.error("Error checking admin status:", error);
-      toast.error("Fehler beim Laden");
     }
-  };
+  }, [roleLoading, isAdmin]);
 
   const fetchLeads = async () => {
     setLoading(true);

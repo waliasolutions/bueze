@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
+import { getCategoryLabel } from '@/config/categoryLabels';
 import { 
   Loader2, 
   Users, 
@@ -80,8 +82,8 @@ const looksLikeTestData = (handwerker: PendingHandwerker) => {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     pendingCount: 0,
@@ -95,54 +97,27 @@ const AdminDashboard = () => {
   const [isResettingData, setIsResettingData] = useState(false);
 
   useEffect(() => {
-    checkAdminAccess();
-  }, []);
-
-  useEffect(() => {
-    if (isAdmin) {
-      loadDashboardData();
-    }
-  }, [dateFilter, isAdmin]);
-
-  const checkAdminAccess = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: 'Nicht angemeldet',
-          description: 'Bitte melden Sie sich an.',
-          variant: 'destructive',
-        });
-        navigate('/auth');
-        return;
-      }
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .in('role', ['admin', 'super_admin']);
-
-      if (!roleData || roleData.length === 0) {
+    if (!roleLoading) {
+      if (!isAdmin) {
         toast({
           title: 'Zugriff verweigert',
           description: 'Sie haben keine Berechtigung für diese Seite.',
           variant: 'destructive',
         });
         navigate('/dashboard');
-        return;
+      } else {
+        loadDashboardData();
+        setIsLoading(false);
       }
-
-      setIsAdmin(true);
-      await loadDashboardData();
-    } catch (error) {
-      console.error('Error checking admin access:', error);
-      navigate('/dashboard');
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [roleLoading, isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin && !roleLoading) {
+      loadDashboardData();
+    }
+  }, [dateFilter]);
+
 
   const loadDashboardData = async () => {
     try {

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { 
   ArrowLeft, 
   RefreshCw, 
@@ -98,9 +99,9 @@ const PLAN_COLORS: Record<string, string> = {
 const AdminPayments = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [stats, setStats] = useState<RevenueStats>({
     totalRevenue: 0,
@@ -111,43 +112,20 @@ const AdminPayments = () => {
   const [planBreakdown, setPlanBreakdown] = useState<PlanBreakdown[]>([]);
 
   useEffect(() => {
-    checkAdminAccess();
-  }, []);
-
-  const checkAdminAccess = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
-
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .in('role', ['admin', 'super_admin']);
-
-      if (!roleData || roleData.length === 0) {
+    if (!roleLoading) {
+      if (!isAdmin) {
         toast({
           title: 'Zugriff verweigert',
           description: 'Sie haben keine Berechtigung für diese Seite.',
           variant: 'destructive',
         });
         navigate('/dashboard');
-        return;
+      } else {
+        loadData();
+        setIsLoading(false);
       }
-
-      setIsAdmin(true);
-      await loadData();
-    } catch (error) {
-      console.error('Error checking admin access:', error);
-      navigate('/dashboard');
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [roleLoading, isAdmin]);
 
   const loadData = async () => {
     try {

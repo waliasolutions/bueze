@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Search, MapPin, Clock, Send, Eye, FileText, User, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase } from "lucide-react";
@@ -31,6 +32,7 @@ const HandwerkerDashboard = () => {
   const {
     toast
   } = useToast();
+  const { isAdmin, loading: roleLoading } = useUserRole();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfileBasic | null>(null);
@@ -52,7 +54,6 @@ const HandwerkerDashboard = () => {
   // Tab State
   const [activeTab, setActiveTab] = useState("leads");
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   // Profile Tab
   const [profileEditing, setProfileEditing] = useState(false);
@@ -174,16 +175,6 @@ const HandwerkerDashboard = () => {
 
       // Only fetch leads if verified
       if (profile.verification_status === 'approved') {
-        // Also check if user is admin
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', currentUser.id)
-          .in('role', ['admin', 'super_admin'])
-          .maybeSingle();
-        
-        setIsAdmin(!!roleData);
-        
         await Promise.all([
           fetchLeads(profile.categories, profile.service_areas), 
           fetchProposals(currentUser.id),

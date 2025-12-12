@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, MapPin, Eye, Users, FileText, Trash2, Archive, RotateCcw } from 'lucide-react';
 import { formatTimeAgo, formatNumber } from '@/lib/swissTime';
@@ -26,7 +27,7 @@ const Dashboard = () => {
   const [myLeads, setMyLeads] = useState<LeadListItem[]>([]);
   const [archivedLeads, setArchivedLeads] = useState<LeadListItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { isAdmin, isHandwerker, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -49,13 +50,12 @@ const Dashboard = () => {
 
       setUser(user);
 
-      // Fetch user data in parallel
+      // Fetch user data in parallel (role check via useUserRole hook)
       const [
         { data: profileData },
         { data: leadsData },
         { data: archivedData },
-        { data: handwerkerProfileData },
-        { data: roleData }
+        { data: handwerkerProfileData }
       ] = await Promise.all([
         // Fetch user profile
         supabase
@@ -87,14 +87,6 @@ const Dashboard = () => {
           .from('handwerker_profiles')
           .select('id, is_verified')
           .eq('user_id', user.id)
-          .maybeSingle(),
-        
-        // Check if user is admin
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .in('role', ['admin', 'super_admin'])
           .maybeSingle()
       ]);
 
@@ -114,15 +106,14 @@ const Dashboard = () => {
       // Set leads data
       setMyLeads(leadsData || []);
       setArchivedLeads(archivedData || []);
-      setIsAdmin(!!roleData);
 
       // Check if handwerker and redirect if needed (but NOT for admins testing client view)
-      if (handwerkerProfileData && !roleData) {
+      if (handwerkerProfileData && !isAdmin) {
         navigate('/handwerker-dashboard');
         return;
       }
       
-      logWithCorrelation('Dashboard: User data loaded', { 
+      logWithCorrelation('Dashboard: User data loaded', {
         leadsCount: leadsData?.length 
       });
     } catch (error) {
