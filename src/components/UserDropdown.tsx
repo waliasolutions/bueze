@@ -15,83 +15,49 @@ import {
   LogOut, 
   LayoutDashboard, 
   MessageSquare, 
-  Plus
+  Plus,
+  ClipboardList
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { clearVersionedData, STORAGE_KEYS } from '@/lib/localStorageVersioning';
+import { useUserRole } from '@/hooks/useUserRole';
 import type { UserProfileBasic } from '@/types/entities';
 
 export const UserDropdown = () => {
-  const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfileBasic | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isHandwerker, setIsHandwerker] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { userId, isAdmin, isHandwerker, isClient, loading: roleLoading } = useUserRole();
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchProfile = async () => {
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+      
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
         
-        if (user) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          
-          setProfile(profileData);
-
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', user.id)
-            .in('role', ['admin', 'super_admin'])
-            .maybeSingle();
-          
-          setIsAdmin(!!roleData);
-
-          // Check if user has handwerker profile
-          const { data: handwerkerData } = await supabase
-            .from('handwerker_profiles')
-            .select('id')
-            .eq('user_id', user.id)
-            .maybeSingle();
-          
-          setIsHandwerker(!!handwerkerData);
-        }
+        setProfile(profileData);
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.error('Error fetching profile:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchUserData();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Only synchronous state updates here
-      setUser(session?.user ?? null);
-      
-      // Defer ALL database calls to avoid deadlock
-      if (session?.user) {
-        setTimeout(() => {
-          fetchUserData();
-        }, 0);
-      } else {
-        setProfile(null);
-        setIsAdmin(false);
-        setIsHandwerker(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+    if (!roleLoading) {
+      fetchProfile();
+    }
+  }, [userId, roleLoading]);
 
   const handleSignOut = async () => {
     // Enhanced logout - clear all session data
@@ -129,7 +95,7 @@ export const UserDropdown = () => {
       return `${profile.first_name} ${profile.last_name}`;
     }
     if (profile?.first_name) return profile.first_name;
-    return user?.email?.split('@')[0] || 'Benutzer';
+    return profile?.email?.split('@')[0] || 'Benutzer';
   };
 
   const getRoleLabel = () => {
@@ -138,7 +104,7 @@ export const UserDropdown = () => {
     return 'Kunde';
   };
 
-  if (isLoading || !user) {
+  if (isLoading || roleLoading || !userId) {
     return (
       <Button variant="ghost" onClick={() => navigate('/auth')}>
         <User className="h-4 w-4 mr-2" />
@@ -175,7 +141,7 @@ export const UserDropdown = () => {
               {getUserDisplayName()}
             </p>
             <p className="text-xs text-ink-500">
-              {user.email}
+              {profile?.email}
             </p>
             <p className="text-xs text-brand-600 font-medium">
               {getRoleLabel()}
@@ -198,6 +164,10 @@ export const UserDropdown = () => {
           </>
         ) : (
           <>
+            <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
+              <ClipboardList className="mr-2 h-4 w-4" />
+              <span>Meine Aufträge</span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/submit-lead')} className="cursor-pointer">
               <Plus className="mr-2 h-4 w-4" />
               <span>Auftrag erstellen</span>

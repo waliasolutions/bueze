@@ -25,6 +25,8 @@ import { SWISS_CANTONS } from '@/config/cantons';
 import ServiceAreaMap from '@/components/ServiceAreaMap';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 import { Label } from '@/components/ui/label';
+import { majorCategories } from '@/config/majorCategories';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name muss mindestens 2 Zeichen haben'),
@@ -47,16 +49,11 @@ const handwerkerSchema = z.object({
 type ProfileFormData = z.infer<typeof profileSchema>;
 type HandwerkerFormData = z.infer<typeof handwerkerSchema>;
 
-const categories = [
-  { value: 'plumbing', label: 'Sanitär' },
-  { value: 'electrical', label: 'Elektrik' },
-  { value: 'painting', label: 'Malerei' },
-  { value: 'carpentry', label: 'Schreinerei' },
-  { value: 'roofing', label: 'Dacharbeiten' },
-  { value: 'flooring', label: 'Bodenbeläge' },
-  { value: 'heating', label: 'Heizung' },
-  { value: 'garden', label: 'Garten' },
-];
+// SSOT: Generate categories from majorCategories config
+const categories = Object.values(majorCategories).map(cat => ({
+  value: cat.id,
+  label: cat.label,
+}));
 
 
 const languages = [
@@ -78,6 +75,16 @@ const Profile = () => {
   const [serviceAreaInput, setServiceAreaInput] = useState('');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isHandwerker: isHandwerkerRole } = useUserRole();
+
+  // Role-aware back navigation
+  const handleBackNavigation = () => {
+    if (isHandwerkerRole) {
+      navigate('/handwerker-dashboard');
+    } else {
+      navigate('/dashboard');
+    }
+  };
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -359,7 +366,7 @@ const Profile = () => {
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" onClick={() => navigate('/dashboard')}>
+            <Button variant="ghost" onClick={handleBackNavigation}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div>
