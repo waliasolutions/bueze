@@ -306,12 +306,23 @@ const HandwerkerDashboard = () => {
         .from('lead_proposals')
         .select(`
           *,
-          leads (title, city, canton, owner_id)
+          leads!lead_proposals_lead_id_fkey (title, city, canton, owner_id)
         `)
         .eq('handwerker_id', userId)
         .order('submitted_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching proposals:', error);
+        // Handle specific RLS/database errors gracefully
+        if (error.message?.includes('infinite recursion') || error.code === '42P17') {
+          toast({
+            title: 'Fehler beim Laden',
+            description: 'Bitte laden Sie die Seite neu.',
+            variant: 'destructive',
+          });
+        }
+        throw error;
+      }
       
       // Add defensive fallback for missing lead data (e.g., RLS restrictions on completed leads)
       const proposalsWithFallback = (data || []).map(proposal => ({
