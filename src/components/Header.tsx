@@ -23,6 +23,7 @@ export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role, isAdmin, isHandwerker, userId } = useUserRole();
+  const isOnAdminPage = location.pathname.startsWith('/admin');
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -259,6 +260,12 @@ export const Header = () => {
             })}
             <div className="flex flex-col gap-3 pt-4 border-t border-line-200 mt-4">
               {userId ? (
+                // Simplified menu for admins on admin pages - full nav is in AdminSidebar
+                isAdmin && isOnAdminPage ? (
+                  <div className="px-4 py-3 text-sm text-muted-foreground">
+                    <p>Admin-Navigation im Seitenmenü verfügbar</p>
+                  </div>
+                ) : (
                 <div className="space-y-1">
                   {/* User Info Header */}
                   <div className="px-4 py-3 mb-2 bg-muted/50 rounded-lg flex items-center gap-3">
@@ -381,6 +388,7 @@ export const Header = () => {
                     </button>
                   </div>
                 </div>
+                )
               ) : (
                 <div className="space-y-2">
                   <Button 
