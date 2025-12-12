@@ -120,12 +120,7 @@ const LeadDetails = () => {
       setOwner(profileData);
     } catch (error) {
       console.error('Error fetching lead:', error);
-      toast({
-        title: "Fehler",
-        description: "Der Auftrag konnte nicht geladen werden.",
-        variant: "destructive",
-      });
-      navigate('/search');
+      // Silent fail - show 404 UI instead of toast
     } finally {
       setLoading(false);
     }

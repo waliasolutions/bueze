@@ -63,11 +63,7 @@ const ProposalReview = () => {
       });
     } catch (error) {
       console.error('Error fetching proposal:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Offerte konnte nicht geladen werden',
-        variant: 'destructive'
-      });
+      // Silent fail - show 404 UI instead of toast
     } finally {
       setLoading(false);
     }
@@ -112,11 +108,41 @@ const ProposalReview = () => {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Lädt...</div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="max-w-3xl mx-auto space-y-4">
+            <div className="h-8 bg-muted rounded w-1/2 animate-pulse" />
+            <div className="h-64 bg-muted rounded animate-pulse" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   if (!proposal) {
-    return <div className="min-h-screen flex items-center justify-center">Offerte nicht gefunden</div>;
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto text-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
+              <XCircle className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Offerte nicht gefunden</h1>
+            <p className="text-muted-foreground mb-6">
+              Diese Offerte existiert nicht oder Sie haben keinen Zugriff darauf.
+            </p>
+            <Button onClick={() => navigate('/dashboard')}>
+              Zum Dashboard
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   const handwerkerName = proposal.profiles?.full_name?.split(' ')[0] || 'Handwerker';

@@ -96,11 +96,7 @@ const EditLead = () => {
         .single();
 
       if (error || !lead) {
-        toast({
-          title: "Fehler",
-          description: "Auftrag nicht gefunden oder Sie haben keine Berechtigung.",
-          variant: "destructive",
-        });
+        console.error('Lead not found or no permission:', error);
         navigate('/dashboard');
         return;
       }
@@ -120,11 +116,7 @@ const EditLead = () => {
       });
     } catch (error) {
       console.error('Error fetching lead:', error);
-      toast({
-        title: "Fehler",
-        description: "Beim Laden des Auftrags ist ein Fehler aufgetreten.",
-        variant: "destructive",
-      });
+      // Silent fail - navigate away
       navigate('/dashboard');
     } finally {
       setLoading(false);
