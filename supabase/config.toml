@@ -9,6 +9,9 @@ verify_jwt = true
 [functions.create-handwerker-account]
 verify_jwt = false
 
+[functions.delete-user]
+verify_jwt = false
+
 [functions.generate-sitemap]
 verify_jwt = false
 
