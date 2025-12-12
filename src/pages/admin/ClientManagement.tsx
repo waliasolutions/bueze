@@ -298,7 +298,7 @@ export default function ClientManagement() {
       {/* Filters */}
       <Card className="mb-6">
         <CardContent className="pt-4">
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -308,7 +308,7 @@ export default function ClientManagement() {
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" onClick={fetchClients}>
+            <Button variant="outline" onClick={fetchClients} className="w-full sm:w-auto">
               <RefreshCw className="h-4 w-4 mr-2" />
               Aktualisieren
             </Button>
@@ -319,15 +319,16 @@ export default function ClientManagement() {
       {/* Clients Table */}
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <div className="overflow-x-auto">
+          <Table className="min-w-[800px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8"></TableHead>
                 <TableHead>Kunde</TableHead>
-                <TableHead>Kontakt</TableHead>
+                <TableHead className="hidden md:table-cell">Kontakt</TableHead>
                 <TableHead>Aufträge</TableHead>
-                <TableHead>Letzte Aktivität</TableHead>
-                <TableHead>Registriert</TableHead>
+                <TableHead className="hidden sm:table-cell">Letzte Aktivität</TableHead>
+                <TableHead className="hidden md:table-cell">Registriert</TableHead>
                 <TableHead className="text-right">Aktionen</TableHead>
               </TableRow>
             </TableHeader>
@@ -372,7 +373,7 @@ export default function ClientManagement() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="space-y-1">
                           <a href={`mailto:${client.email}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                             <Mail className="h-3 w-3" />
@@ -397,7 +398,7 @@ export default function ClientManagement() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         {client.last_lead_date ? (
                           <span className="text-sm text-muted-foreground">
                             {formatDistanceToNow(new Date(client.last_lead_date), {
@@ -409,7 +410,7 @@ export default function ClientManagement() {
                           <span className="text-sm text-muted-foreground">—</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <span className="text-sm text-muted-foreground">
                           {new Date(client.created_at).toLocaleDateString('de-CH')}
                         </span>
@@ -457,11 +458,11 @@ export default function ClientManagement() {
                                   <strong className="text-destructive">Diese Aktion kann nicht rückgängig gemacht werden!</strong>
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                              <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                <AlertDialogCancel className="w-full sm:w-auto">Abbrechen</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => deleteClient(client)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
                                   Endgültig löschen
                                 </AlertDialogAction>
@@ -516,6 +517,7 @@ export default function ClientManagement() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
     </AdminLayout>

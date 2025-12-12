@@ -352,19 +352,20 @@ export default function AdminLeadsManagement() {
       ) : (
         <Card>
           <ScrollArea className="h-[600px]">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[1000px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
                   <TableHead>Auftrag</TableHead>
-                  <TableHead>Auftraggeber</TableHead>
-                  <TableHead>Kategorie</TableHead>
+                  <TableHead className="hidden md:table-cell">Auftraggeber</TableHead>
+                  <TableHead className="hidden lg:table-cell">Kategorie</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Standort</TableHead>
-                  <TableHead>Budget</TableHead>
-                  <TableHead>Dringlichkeit</TableHead>
-                  <TableHead>Offerten</TableHead>
-                  <TableHead>Erstellt</TableHead>
+                  <TableHead className="hidden md:table-cell">Standort</TableHead>
+                  <TableHead className="hidden lg:table-cell">Budget</TableHead>
+                  <TableHead className="hidden lg:table-cell">Dringlichkeit</TableHead>
+                  <TableHead className="hidden sm:table-cell">Offerten</TableHead>
+                  <TableHead className="hidden md:table-cell">Erstellt</TableHead>
                   <TableHead className="w-32">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
@@ -389,7 +390,7 @@ export default function AdminLeadsManagement() {
                           </CollapsibleTrigger>
                         </TableCell>
                         <TableCell className="font-medium">{lead.title}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <div className="text-sm">
                             <div className="font-medium">{lead.owner_name || "Unbekannt"}</div>
                             <div className="text-muted-foreground flex items-center gap-1">
@@ -404,7 +405,7 @@ export default function AdminLeadsManagement() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           {getCategoryLabel(lead.category)}
                         </TableCell>
                         <TableCell>
@@ -412,18 +413,18 @@ export default function AdminLeadsManagement() {
                             {LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.label || lead.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <div className="flex items-center gap-1 text-sm">
                             <MapPin className="h-3 w-3" />
                             {lead.city}, {getCantonLabel(lead.canton)}
                           </div>
                         </TableCell>
-                        <TableCell className="text-sm">{formatBudget(lead)}</TableCell>
-                        <TableCell className="text-sm">{getUrgencyLabel(lead.urgency)}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm">{formatBudget(lead)}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm">{getUrgencyLabel(lead.urgency)}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <Badge variant="outline">{lead.proposals_count || 0}</Badge>
                         </TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="hidden md:table-cell text-sm">
                           {format(new Date(lead.created_at), "dd.MM.yyyy", { locale: de })}
                         </TableCell>
                         <TableCell>
@@ -538,6 +539,7 @@ export default function AdminLeadsManagement() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           </ScrollArea>
         </Card>
       )}

@@ -617,7 +617,8 @@ export default function HandwerkerManagement() {
 
         <Card>
           <CardContent className="p-0">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[900px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">
@@ -627,12 +628,12 @@ export default function HandwerkerManagement() {
                     />
                   </TableHead>
                   <TableHead>Handwerker</TableHead>
-                  <TableHead>Kontakt</TableHead>
-                  <TableHead>Kategorien</TableHead>
-                  <TableHead>Standort</TableHead>
-                  <TableHead>Profil</TableHead>
+                  <TableHead className="hidden md:table-cell">Kontakt</TableHead>
+                  <TableHead className="hidden lg:table-cell">Kategorien</TableHead>
+                  <TableHead className="hidden md:table-cell">Standort</TableHead>
+                  <TableHead className="hidden lg:table-cell">Profil</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Abo</TableHead>
+                  <TableHead className="hidden sm:table-cell">Abo</TableHead>
                   <TableHead className="text-right">Aktionen</TableHead>
                 </TableRow>
               </TableHeader>
@@ -673,7 +674,7 @@ export default function HandwerkerManagement() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <div className="space-y-1">
                             {h.email && (
                               <a href={`mailto:${h.email}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -689,7 +690,7 @@ export default function HandwerkerManagement() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           <div className="flex flex-wrap gap-1">
                             {h.categories.slice(0, 2).map((cat) => (
                               <Badge key={cat} variant="outline" className="text-xs">
@@ -703,7 +704,7 @@ export default function HandwerkerManagement() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           {h.business_city && (
                             <div className="flex items-center gap-1 text-sm">
                               <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -712,14 +713,14 @@ export default function HandwerkerManagement() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           <div className="w-20">
                             <Progress value={completeness.percentage} className="h-2" />
                             <span className="text-xs text-muted-foreground">{completeness.percentage}%</span>
                           </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(h.verification_status)}</TableCell>
-                        <TableCell>{getSubscriptionBadge(h.user_id)}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{getSubscriptionBadge(h.user_id)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
@@ -791,11 +792,11 @@ export default function HandwerkerManagement() {
                                     <strong className="text-destructive">Diese Aktion kann nicht rückgängig gemacht werden!</strong>
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                  <AlertDialogCancel className="w-full sm:w-auto">Abbrechen</AlertDialogCancel>
                                   <AlertDialogAction
                                     onClick={() => deleteHandwerker(h)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                   >
                                     Endgültig löschen
                                   </AlertDialogAction>
@@ -810,6 +811,7 @@ export default function HandwerkerManagement() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </Tabs>

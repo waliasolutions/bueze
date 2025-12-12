@@ -269,7 +269,7 @@ const ReviewsManagement = () => {
                   />
                 </div>
                 <Select value={filterRating} onValueChange={setFilterRating}>
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[150px]">
                     <SelectValue placeholder="Bewertung" />
                   </SelectTrigger>
                   <SelectContent>
@@ -282,7 +282,7 @@ const ReviewsManagement = () => {
                   </SelectContent>
                 </Select>
                 <Select value={filterVisibility} onValueChange={setFilterVisibility}>
-                  <SelectTrigger className="w-[150px]">
+                  <SelectTrigger className="w-full sm:w-[150px]">
                     <SelectValue placeholder="Sichtbarkeit" />
                   </SelectTrigger>
                   <SelectContent>
@@ -309,14 +309,14 @@ const ReviewsManagement = () => {
                 />
               ) : (
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="min-w-[800px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Datum</TableHead>
+                        <TableHead className="hidden sm:table-cell">Datum</TableHead>
                         <TableHead>Bewertung</TableHead>
-                        <TableHead>Kunde</TableHead>
+                        <TableHead className="hidden md:table-cell">Kunde</TableHead>
                         <TableHead>Handwerker</TableHead>
-                        <TableHead>Kommentar</TableHead>
+                        <TableHead className="hidden lg:table-cell">Kommentar</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Aktionen</TableHead>
                       </TableRow>
@@ -324,7 +324,7 @@ const ReviewsManagement = () => {
                     <TableBody>
                       {filteredReviews.map((review) => (
                         <TableRow key={review.id}>
-                          <TableCell className="whitespace-nowrap">
+                          <TableCell className="hidden sm:table-cell whitespace-nowrap">
                             {format(new Date(review.created_at), 'dd.MM.yyyy', { locale: de })}
                           </TableCell>
                           <TableCell>
@@ -335,7 +335,7 @@ const ReviewsManagement = () => {
                               )}
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden md:table-cell">
                             <div className="text-sm">
                               {review.reviewer?.full_name || 'Unbekannt'}
                             </div>
@@ -346,7 +346,7 @@ const ReviewsManagement = () => {
                                `${review.handwerker?.first_name} ${review.handwerker?.last_name}`}
                             </div>
                           </TableCell>
-                          <TableCell className="max-w-xs">
+                          <TableCell className="hidden lg:table-cell max-w-xs">
                             <div className="text-sm truncate" title={review.comment || ''}>
                               {review.comment || '-'}
                             </div>
@@ -389,11 +389,11 @@ const ReviewsManagement = () => {
                                       Diese Aktion kann nicht rückgängig gemacht werden.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                  <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                                    <AlertDialogCancel className="w-full sm:w-auto">Abbrechen</AlertDialogCancel>
                                     <AlertDialogAction
                                       onClick={() => deleteReview(review.id)}
-                                      className="bg-destructive text-destructive-foreground"
+                                      className="w-full sm:w-auto bg-destructive text-destructive-foreground"
                                     >
                                       Löschen
                                     </AlertDialogAction>
