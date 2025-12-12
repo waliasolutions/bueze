@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus, LogOut } from 'lucide-react';
+import { Menu, X, Plus, LogOut, LayoutDashboard, MessageSquare, User, FileText } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
@@ -9,13 +9,13 @@ import { HandwerkerNotifications } from './HandwerkerNotifications';
 import { AdminViewSwitcher } from './AdminViewSwitcher';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import logo from '@/assets/bueze-logo.png';
 
 export const Header = () => {
@@ -259,35 +259,127 @@ export const Header = () => {
             })}
             <div className="flex flex-col gap-3 pt-4 border-t border-line-200 mt-4">
               {userId ? (
-                <div className="space-y-3">
-                  {/* Mobile notifications */}
-                  <div className="px-4 py-2 flex items-center gap-2">
-                    {isAdmin && <AdminNotifications />}
-                    {isHandwerker && !isAdmin && <HandwerkerNotifications />}
-                    {!isAdmin && !isHandwerker && <ClientNotifications />}
+                <div className="space-y-1">
+                  {/* User Info Header */}
+                  <div className="px-4 py-3 mb-2 bg-muted/50 rounded-lg flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
+                        {isHandwerker ? 'H' : isAdmin ? 'A' : 'K'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-ink-900">
+                        {isHandwerker ? 'Handwerker' : isAdmin ? 'Admin' : 'Kunde'}
+                      </span>
+                      <span className="text-xs text-muted-foreground">Eingeloggt</span>
+                    </div>
+                    {/* Notifications */}
+                    <div className="ml-auto">
+                      {isAdmin && <AdminNotifications />}
+                      {isHandwerker && !isAdmin && <HandwerkerNotifications />}
+                      {!isAdmin && !isHandwerker && <ClientNotifications />}
+                    </div>
                   </div>
+
+                  {/* Admin View Switcher */}
                   {isAdmin && (
-                    <div className="px-4 py-2">
+                    <div className="px-4 py-2 mb-2">
                       <AdminViewSwitcher currentView={getCurrentView()} />
                     </div>
                   )}
-                  {/* Minimal logout for admins, full UserDropdown for others */}
-                  {isAdmin ? (
-                    <Button 
-                      variant="ghost" 
-                      className="justify-start gap-2 w-full text-destructive hover:text-destructive" 
+
+                  {/* Role-specific navigation items */}
+                  {isHandwerker && !isAdmin && (
+                    <>
+                      <Link
+                        to="/handwerker-dashboard"
+                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <LayoutDashboard className="h-5 w-5" />
+                        Dashboard
+                      </Link>
+                      <Link
+                        to="/conversations"
+                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <MessageSquare className="h-5 w-5" />
+                        Nachrichten
+                      </Link>
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <User className="h-5 w-5" />
+                        Profil
+                      </Link>
+                    </>
+                  )}
+
+                  {!isHandwerker && !isAdmin && (
+                    <>
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <FileText className="h-5 w-5" />
+                        Meine Aufträge
+                      </Link>
+                      <Link
+                        to="/submit-lead"
+                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Plus className="h-5 w-5" />
+                        Auftrag erstellen
+                      </Link>
+                      <Link
+                        to="/conversations"
+                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <MessageSquare className="h-5 w-5" />
+                        Nachrichten
+                      </Link>
+                      <Link
+                        to="/profile"
+                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <User className="h-5 w-5" />
+                        Profil
+                      </Link>
+                    </>
+                  )}
+
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <LayoutDashboard className="h-5 w-5" />
+                      Admin Dashboard
+                    </Link>
+                  )}
+
+                  {/* Logout Button - always at bottom */}
+                  <div className="pt-2 mt-2 border-t border-line-200">
+                    <button 
+                      className="flex items-center gap-3 py-3 px-4 w-full text-destructive hover:bg-destructive/10 rounded-lg transition-colors font-medium"
                       onClick={async () => {
+                        setIsMenuOpen(false);
                         await supabase.auth.signOut();
                         navigate('/');
-                        setIsMenuOpen(false);
                       }}
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-5 w-5" />
                       Abmelden
-                    </Button>
-                  ) : (
-                    <UserDropdown />
-                  )}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2">
