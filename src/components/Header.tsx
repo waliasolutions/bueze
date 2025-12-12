@@ -40,8 +40,23 @@ export const Header = () => {
 
   // Determine current view for AdminViewSwitcher based on route
   const getCurrentView = (): 'admin' | 'client' | 'handwerker' => {
-    if (location.pathname.startsWith('/admin')) return 'admin';
-    if (location.pathname.startsWith('/handwerker-dashboard')) return 'handwerker';
+    const path = location.pathname;
+    
+    // Admin routes
+    if (path.startsWith('/admin')) return 'admin';
+    
+    // Handwerker routes - include all handwerker-related pages
+    if (
+      path.startsWith('/handwerker-dashboard') ||
+      path.startsWith('/handwerker-profile') ||
+      path.startsWith('/handwerker-onboarding') ||
+      path === '/browse-leads' ||
+      path.startsWith('/opportunity')
+    ) {
+      return 'handwerker';
+    }
+    
+    // Client routes (default)
     return 'client';
   };
 
