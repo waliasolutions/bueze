@@ -107,6 +107,31 @@ serve(async (req: Request) => {
           console.error("Error updating subscription:", subError);
         } else {
           console.log(`Subscription activated for user ${userId}, plan: ${planType}`);
+          
+          // Send subscription confirmation email
+          try {
+            const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-subscription-confirmation`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+              },
+              body: JSON.stringify({
+                userId,
+                planType,
+                periodEnd: periodEnd.toISOString(),
+                amount: session.amount_total,
+              }),
+            });
+            
+            if (emailResponse.ok) {
+              console.log(`Subscription confirmation email sent for user ${userId}`);
+            } else {
+              console.error('Failed to send subscription confirmation email:', await emailResponse.text());
+            }
+          } catch (emailError) {
+            console.error('Error sending subscription confirmation email:', emailError);
+          }
         }
         break;
       }
