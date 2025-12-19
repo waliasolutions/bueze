@@ -6,11 +6,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Email template for rejected proposal notification to handwerker
-const proposalRejectedTemplate = (data: {
+// Subscription confirmation email template
+const subscriptionConfirmationTemplate = (data: {
   handwerkerName: string;
-  projectTitle: string;
-  clientCity: string;
+  planName: string;
+  planType: string;
+  periodEnd: string;
+  amount: string;
 }) => `
 <!DOCTYPE html>
 <html lang="de">
@@ -61,6 +63,12 @@ const proposalRejectedTemplate = (data: {
       padding: 15px;
       margin: 20px 0;
     }
+    .success-box {
+      background: #d1fae5;
+      border-left: 4px solid #10b981;
+      padding: 15px;
+      margin: 20px 0;
+    }
     .footer {
       background: #f5f5f5;
       padding: 20px;
@@ -77,6 +85,22 @@ const proposalRejectedTemplate = (data: {
       color: #0066CC;
       margin-top: 0;
     }
+    .feature-list {
+      list-style: none;
+      padding: 0;
+    }
+    .feature-list li {
+      padding: 8px 0;
+      padding-left: 25px;
+      position: relative;
+    }
+    .feature-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #10b981;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -85,24 +109,33 @@ const proposalRejectedTemplate = (data: {
       <h1>BÜEZE.CH</h1>
     </div>
     <div class="content">
-      <h2>Offerte nicht ausgewählt</h2>
+      <h2>🎉 Willkommen als Premium-Handwerker!</h2>
       <p>Hallo ${data.handwerkerName},</p>
-      <p>Leider wurde Ihre Offerte für das Projekt <strong>"${data.projectTitle}"</strong> in ${data.clientCity} nicht ausgewählt.</p>
+      <p>Vielen Dank für Ihr Upgrade! Ihr Abonnement wurde erfolgreich aktiviert.</p>
       
-      <div class="info-box">
-        <p>Der Kunde hat sich für einen anderen Handwerker entschieden. Das ist völlig normal – nicht jede Offerte führt zum Auftrag.</p>
+      <div class="success-box">
+        <h3 style="margin-top: 0; color: #065f46;">Abonnement aktiviert</h3>
+        <p><strong>Plan:</strong> ${data.planName}</p>
+        <p><strong>Betrag:</strong> ${data.amount}</p>
+        <p><strong>Gültig bis:</strong> ${data.periodEnd}</p>
       </div>
 
-      <p><strong>Bleiben Sie dran!</strong></p>
-      <p>Auf Büeze.ch gibt es täglich neue Anfragen in Ihrer Region. Schauen Sie regelmässig vorbei und reichen Sie weitere Offerten ein.</p>
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #0066CC;">Ihre Vorteile</h3>
+        <ul class="feature-list">
+          <li>Unbegrenzte Offerten pro Monat</li>
+          <li>Bevorzugte Platzierung in Suchergebnissen</li>
+          <li>Erweiterte Profilstatistiken</li>
+          <li>Prioritäts-Support</li>
+        </ul>
+      </div>
 
       <p style="text-align: center;">
-        <a href="https://bueeze.ch/handwerker-dashboard" class="button">Neue Anfragen ansehen</a>
+        <a href="https://bueeze.ch/handwerker-dashboard" class="button">Zum Dashboard</a>
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        <strong>Tipp:</strong> Eine detaillierte und persönliche Offerte mit fairen Preisen erhöht Ihre Chancen, 
-        vom Kunden ausgewählt zu werden.
+        Sie können Ihr Abonnement jederzeit in Ihrem Dashboard verwalten. Bei Fragen stehen wir Ihnen gerne zur Verfügung.
       </p>
     </div>
     <div class="footer">
@@ -118,57 +151,52 @@ const proposalRejectedTemplate = (data: {
 </html>
 `;
 
+const planNames: Record<string, string> = {
+  'monthly': 'Monatlich',
+  '6_month': '6 Monate',
+  'yearly': 'Jährlich',
+  'annual': 'Jährlich',
+};
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { proposalId }: { proposalId: string } = await req.json();
+    const { userId, planType, periodEnd, amount } = await req.json();
 
-    if (!proposalId) {
-      throw new Error("proposalId is required");
+    if (!userId || !planType) {
+      throw new Error("userId and planType are required");
     }
 
-    console.log(`[send-proposal-rejection-email] Processing proposal: ${proposalId}`);
+    console.log(`[send-subscription-confirmation] Processing for user: ${userId}, plan: ${planType}`);
 
     const smtp2goApiKey = Deno.env.get("SMTP2GO_API_KEY");
     if (!smtp2goApiKey) {
       throw new Error("SMTP2GO_API_KEY not configured");
     }
 
-    // Create Supabase admin client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Step 1: Get proposal details with lead
-    const { data: proposal, error: proposalError } = await supabase
-      .from('lead_proposals')
-      .select('*, leads(title, city)')
-      .eq('id', proposalId)
-      .single();
-
-    if (proposalError || !proposal) {
-      throw new Error(`Proposal not found: ${proposalError?.message}`);
-    }
-
-    // Step 2: Get handwerker profile separately
+    // Get handwerker profile
     const { data: hwProfile } = await supabase
       .from('handwerker_profiles')
       .select('first_name, last_name, company_name')
-      .eq('user_id', proposal.handwerker_id)
+      .eq('user_id', userId)
       .single();
 
-    // Step 3: Get handwerker email from profiles table
-    const { data: hwEmailProfile } = await supabase
+    // Get email from profiles table
+    const { data: emailProfile } = await supabase
       .from('profiles')
-      .select('email')
-      .eq('id', proposal.handwerker_id)
+      .select('email, full_name')
+      .eq('id', userId)
       .single();
 
-    if (!hwEmailProfile?.email) {
-      console.log('[send-proposal-rejection-email] No handwerker email found, skipping notification');
+    if (!emailProfile?.email) {
+      console.log('[send-subscription-confirmation] No email found, skipping notification');
       return new Response(
         JSON.stringify({ success: true, message: 'No email to send' }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -177,15 +205,22 @@ serve(async (req: Request) => {
 
     const handwerkerName = hwProfile?.company_name ||
       `${hwProfile?.first_name || ''} ${hwProfile?.last_name || ''}`.trim() ||
-      'Handwerker';
+      emailProfile.full_name || 'Handwerker';
 
-    console.log(`[send-proposal-rejection-email] Sending rejection email to ${hwEmailProfile.email}`);
+    const planName = planNames[planType] || planType;
+    const formattedPeriodEnd = periodEnd 
+      ? new Date(periodEnd).toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : 'Unbegrenzt';
+    const formattedAmount = amount ? `CHF ${(amount / 100).toFixed(2)}` : 'Gemäss Ihrem Plan';
 
-    // Send rejection email using SMTP2GO
-    const emailHtml = proposalRejectedTemplate({
+    console.log(`[send-subscription-confirmation] Sending confirmation to ${emailProfile.email}`);
+
+    const emailHtml = subscriptionConfirmationTemplate({
       handwerkerName,
-      projectTitle: proposal.leads?.title || 'Projekt',
-      clientCity: proposal.leads?.city || 'Schweiz',
+      planName,
+      planType,
+      periodEnd: formattedPeriodEnd,
+      amount: formattedAmount,
     });
 
     const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
@@ -196,8 +231,8 @@ serve(async (req: Request) => {
       },
       body: JSON.stringify({
         sender: 'noreply@bueeze.ch',
-        to: [hwEmailProfile.email],
-        subject: `Offerte nicht ausgewählt - ${proposal.leads?.title}`,
+        to: [emailProfile.email],
+        subject: `🎉 Ihr ${planName}-Abonnement ist aktiv - Büeze.ch`,
         html_body: emailHtml,
       }),
     });
@@ -205,18 +240,18 @@ serve(async (req: Request) => {
     const emailData = await emailResponse.json();
 
     if (!emailResponse.ok) {
-      console.error("[send-proposal-rejection-email] Email sending failed:", emailData);
+      console.error("[send-subscription-confirmation] Email sending failed:", emailData);
       throw new Error(`Email sending failed: ${JSON.stringify(emailData)}`);
     }
 
-    console.log("[send-proposal-rejection-email] Rejection email sent successfully");
+    console.log("[send-subscription-confirmation] Confirmation email sent successfully");
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Rejection email sent' }),
+      JSON.stringify({ success: true, message: 'Subscription confirmation sent' }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("[send-proposal-rejection-email] Error:", error);
+    console.error("[send-subscription-confirmation] Error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

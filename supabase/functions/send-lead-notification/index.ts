@@ -33,6 +33,8 @@ serve(async (req) => {
       throw new Error('Missing required field: leadId');
     }
 
+    console.log(`[send-lead-notification] Processing lead: ${leadId}`);
+
     const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
     if (!smtp2goApiKey) {
       throw new Error('SMTP2GO_API_KEY not configured');
@@ -42,10 +44,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch lead details with owner profile
+    // Step 1: Fetch lead details
     const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .select('*, profiles!leads_owner_id_fkey(full_name, email)')
+      .select('*')
       .eq('id', leadId)
       .single();
 
@@ -53,16 +55,27 @@ serve(async (req) => {
       throw new Error(`Lead not found: ${leadError?.message}`);
     }
 
+    // Step 2: Fetch owner profile separately (no FK join)
+    const { data: ownerProfile, error: ownerError } = await supabase
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', lead.owner_id)
+      .single();
+
+    if (ownerError) {
+      console.warn(`Could not fetch owner profile: ${ownerError.message}`);
+    }
+
     const categoryLabel = categoryLabels[lead.category] || lead.category;
 
     // ==========================================
     // STEP 1: Send Admin Notification Email
     // ==========================================
-    console.log('Sending admin notification email for new lead...');
+    console.log('[send-lead-notification] Sending admin notification email...');
     
     const adminEmailHtml = newLeadAdminNotificationTemplate({
-      clientName: lead.profiles?.full_name || 'Unbekannt',
-      clientEmail: lead.profiles?.email || 'Unbekannt',
+      clientName: ownerProfile?.full_name || 'Unbekannt',
+      clientEmail: ownerProfile?.email || 'Unbekannt',
       category: categoryLabel,
       city: lead.city || 'Nicht angegeben',
       canton: lead.canton || '',
@@ -96,19 +109,19 @@ serve(async (req) => {
 
     const adminEmailData = await adminEmailResponse.json();
     if (!adminEmailResponse.ok) {
-      console.error('Admin notification email failed:', adminEmailData);
+      console.error('[send-lead-notification] Admin notification email failed:', adminEmailData);
     } else {
-      console.log('Admin notification email sent successfully to info@bueeze.ch');
+      console.log('[send-lead-notification] Admin notification email sent successfully to info@bueeze.ch');
     }
 
     // ==========================================
     // STEP 2: Send Handwerker Notifications
     // ==========================================
 
-    // Fetch matching handwerkers
+    // Fetch matching handwerkers (basic data only)
     const { data: handwerkers, error: handwerkersError } = await supabase
       .from('handwerker_profiles')
-      .select('user_id, profiles!handwerker_profiles_user_id_fkey(email, full_name), service_areas, categories')
+      .select('user_id, service_areas, categories')
       .eq('verification_status', 'approved')
       .contains('categories', [lead.category]);
 
@@ -116,10 +129,10 @@ serve(async (req) => {
       throw new Error(`Error fetching handwerkers: ${handwerkersError.message}`);
     }
 
-    console.log(`Found ${handwerkers?.length || 0} potential handwerkers for category ${lead.category}`);
+    console.log(`[send-lead-notification] Found ${handwerkers?.length || 0} potential handwerkers for category ${lead.category}`);
 
     // Filter by service area (PLZ matching with range support)
-    const leadPLZ = parseInt(lead.zip?.toString() || lead.postal_code?.toString() || '0');
+    const leadPLZ = parseInt(lead.zip?.toString() || '0');
     
     const matchingHandwerkers = handwerkers?.filter(hw => {
       if (!hw.service_areas || hw.service_areas.length === 0) return false;
@@ -143,7 +156,7 @@ serve(async (req) => {
       });
     }) || [];
 
-    console.log(`${matchingHandwerkers.length} handwerkers match service area for PLZ ${leadPLZ}`);
+    console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match service area for PLZ ${leadPLZ}`);
 
     // Generate magic tokens and send emails
     let successCount = 0;
@@ -151,6 +164,19 @@ serve(async (req) => {
 
     for (const hw of matchingHandwerkers) {
       try {
+        // Fetch handwerker's profile (email, name) separately
+        const { data: hwProfile, error: hwProfileError } = await supabase
+          .from('profiles')
+          .select('email, full_name')
+          .eq('id', hw.user_id)
+          .single();
+
+        if (hwProfileError || !hwProfile?.email) {
+          console.warn(`[send-lead-notification] No profile/email for handwerker ${hw.user_id}, skipping`);
+          errorCount++;
+          continue;
+        }
+
         // Generate magic token
         const token = crypto.randomUUID().replace(/-/g, '');
         const expiresAt = new Date();
@@ -168,7 +194,7 @@ serve(async (req) => {
           });
 
         if (tokenError) {
-          console.error(`Failed to create token for user ${hw.user_id}:`, tokenError);
+          console.error(`[send-lead-notification] Failed to create token for user ${hw.user_id}:`, tokenError);
           errorCount++;
           continue;
         }
@@ -185,8 +211,10 @@ serve(async (req) => {
           budgetMax: lead.budget_max,
           urgency: lead.urgency || 'normal',
           magicLink,
-          handwerkerName: hw.profiles?.full_name || 'Handwerker',
+          handwerkerName: hwProfile.full_name || 'Handwerker',
         });
+
+        console.log(`[send-lead-notification] Sending email to ${hwProfile.email}...`);
 
         const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
           method: 'POST',
@@ -196,7 +224,7 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             sender: 'noreply@bueeze.ch',
-            to: [hw.profiles?.email],
+            to: [hwProfile.email],
             subject: `Neue Anfrage in ${categoryLabel} - ${lead.city}`,
             html_body: emailHtml,
           }),
@@ -205,19 +233,19 @@ serve(async (req) => {
         const emailData = await emailResponse.json();
 
         if (!emailResponse.ok) {
-          console.error(`Email failed for ${hw.profiles?.email}:`, emailData);
+          console.error(`[send-lead-notification] Email failed for ${hwProfile.email}:`, emailData);
           errorCount++;
         } else {
-          console.log(`Email sent successfully to ${hw.profiles?.email}`);
+          console.log(`[send-lead-notification] Email sent successfully to ${hwProfile.email}`);
           successCount++;
         }
       } catch (error) {
-        console.error(`Error processing handwerker ${hw.user_id}:`, error);
+        console.error(`[send-lead-notification] Error processing handwerker ${hw.user_id}:`, error);
         errorCount++;
       }
     }
 
-    console.log(`Email sending complete: ${successCount} success, ${errorCount} errors`);
+    console.log(`[send-lead-notification] Complete: ${successCount} success, ${errorCount} errors`);
 
     return new Response(
       JSON.stringify({ 
@@ -232,7 +260,7 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error in send-lead-notification:', error);
+    console.error('[send-lead-notification] Error:', error);
     return new Response(
       JSON.stringify({ 
         error: error.message,

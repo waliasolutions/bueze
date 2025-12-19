@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -127,12 +126,15 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const resendApiKey = Deno.env.get("SMTP2GO_API_KEY");
+    const smtp2goApiKey = Deno.env.get("SMTP2GO_API_KEY");
     
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const resend = new Resend(resendApiKey);
+    if (!smtp2goApiKey) {
+      throw new Error("SMTP2GO_API_KEY not configured");
+    }
 
-    console.log("Starting rating reminder check...");
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    console.log("[send-rating-reminder] Starting rating reminder check...");
 
     // Find accepted proposals from ~7 days ago that haven't been rated yet
     const sevenDaysAgo = new Date();
@@ -159,11 +161,11 @@ const handler = async (req: Request): Promise<Response> => {
       .lt('responded_at', sevenDaysAgo.toISOString());
 
     if (proposalsError) {
-      console.error("Error fetching proposals:", proposalsError);
+      console.error("[send-rating-reminder] Error fetching proposals:", proposalsError);
       throw proposalsError;
     }
 
-    console.log(`Found ${proposals?.length || 0} proposals to check for rating reminders`);
+    console.log(`[send-rating-reminder] Found ${proposals?.length || 0} proposals to check for rating reminders`);
 
     let emailsSent = 0;
     let skipped = 0;
@@ -179,12 +181,12 @@ const handler = async (req: Request): Promise<Response> => {
         .maybeSingle();
 
       if (existingReview) {
-        console.log(`Review already exists for lead ${leadId}, skipping`);
+        console.log(`[send-rating-reminder] Review already exists for lead ${leadId}, skipping`);
         skipped++;
         continue;
       }
 
-      // Get client details
+      // Get client details separately (no FK join)
       const { data: clientProfile } = await supabase
         .from('profiles')
         .select('full_name, first_name, email')
@@ -192,12 +194,12 @@ const handler = async (req: Request): Promise<Response> => {
         .single();
 
       if (!clientProfile?.email) {
-        console.log(`No email for client on lead ${leadId}, skipping`);
+        console.log(`[send-rating-reminder] No email for client on lead ${leadId}, skipping`);
         skipped++;
         continue;
       }
 
-      // Get handwerker details
+      // Get handwerker details separately
       const { data: handwerkerProfile } = await supabase
         .from('handwerker_profiles')
         .select('first_name, last_name, company_name')
@@ -231,7 +233,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       const ratingLink = `https://bueeze.ch/dashboard?rating=${leadId}`;
 
-      // Send email
+      // Send email using SMTP2GO
       const emailHtml = ratingReminderTemplate({
         clientName,
         projectTitle,
@@ -240,21 +242,35 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       try {
-        await resend.emails.send({
-          from: "BÜEZE.CH <noreply@bueeze.ch>",
-          to: [clientProfile.email],
-          subject: `⭐ Wie war ${handwerkerName}? Ihre Bewertung zählt!`,
-          html: emailHtml,
+        console.log(`[send-rating-reminder] Sending reminder to ${clientProfile.email}`);
+
+        const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Smtp2go-Api-Key': smtp2goApiKey,
+          },
+          body: JSON.stringify({
+            sender: 'noreply@bueeze.ch',
+            to: [clientProfile.email],
+            subject: `⭐ Wie war ${handwerkerName}? Ihre Bewertung zählt!`,
+            html_body: emailHtml,
+          }),
         });
-        
-        console.log(`Rating reminder sent to ${clientProfile.email} for lead ${leadId}`);
-        emailsSent++;
+
+        if (emailResponse.ok) {
+          console.log(`[send-rating-reminder] Rating reminder sent to ${clientProfile.email} for lead ${leadId}`);
+          emailsSent++;
+        } else {
+          const errorData = await emailResponse.json();
+          console.error(`[send-rating-reminder] Failed to send email to ${clientProfile.email}:`, errorData);
+        }
       } catch (emailError) {
-        console.error(`Failed to send email to ${clientProfile.email}:`, emailError);
+        console.error(`[send-rating-reminder] Failed to send email to ${clientProfile.email}:`, emailError);
       }
     }
 
-    console.log(`Rating reminder job complete: ${emailsSent} emails sent, ${skipped} skipped`);
+    console.log(`[send-rating-reminder] Complete: ${emailsSent} emails sent, ${skipped} skipped`);
 
     return new Response(
       JSON.stringify({ 
@@ -269,7 +285,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    console.error("Error in send-rating-reminder:", error);
+    console.error("[send-rating-reminder] Error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

@@ -90,6 +90,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('[proposal-deadline-reminder] Starting deadline reminder check...');
+
     const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
     if (!smtp2goApiKey) {
       throw new Error('SMTP2GO_API_KEY not configured');
@@ -107,6 +109,7 @@ serve(async (req) => {
     const twoDaysStart = new Date(twoDaysFromNow);
     twoDaysStart.setHours(0, 0, 0, 0);
 
+    // Step 1: Fetch expiring leads (basic data only - no FK join)
     const { data: expiringLeads, error: leadsError } = await supabase
       .from('leads')
       .select(`
@@ -119,26 +122,36 @@ serve(async (req) => {
         budget_max,
         proposal_deadline,
         proposals_count,
-        owner_id,
-        profiles!leads_owner_id_fkey(email, full_name)
+        owner_id
       `)
       .eq('status', 'active')
       .gte('proposal_deadline', twoDaysStart.toISOString())
       .lte('proposal_deadline', twoDaysFromNow.toISOString());
 
     if (leadsError) {
-      console.error('Error fetching expiring leads:', leadsError);
+      console.error('[proposal-deadline-reminder] Error fetching expiring leads:', leadsError);
       throw leadsError;
     }
 
-    console.log(`Found ${expiringLeads?.length || 0} leads expiring in 2 days`);
+    console.log(`[proposal-deadline-reminder] Found ${expiringLeads?.length || 0} leads expiring in 2 days`);
 
     let clientEmailsSent = 0;
     let handwerkerEmailsSent = 0;
 
     for (const lead of expiringLeads || []) {
+      // Step 2: Fetch owner profile separately
+      const { data: ownerProfile, error: ownerError } = await supabase
+        .from('profiles')
+        .select('email, full_name')
+        .eq('id', lead.owner_id)
+        .single();
+
+      if (ownerError) {
+        console.warn(`[proposal-deadline-reminder] Could not fetch owner profile for lead ${lead.id}: ${ownerError.message}`);
+      }
+
       // Send reminder to client if they have proposals
-      if (lead.proposals_count > 0) {
+      if (lead.proposals_count > 0 && ownerProfile?.email) {
         const { data: proposals } = await supabase
           .from('lead_proposals')
           .select('id, status')
@@ -147,14 +160,16 @@ serve(async (req) => {
 
         if (proposals && proposals.length > 0) {
           const clientEmailHtml = clientReminderTemplate({
-            clientName: lead.profiles?.full_name || 'Kunde',
+            clientName: ownerProfile.full_name || 'Kunde',
             leadTitle: lead.title,
             proposalsCount: proposals.length,
             deadline: lead.proposal_deadline,
             dashboardLink: 'https://bueeze.ch/dashboard'
           });
 
-          await fetch('https://api.smtp2go.com/v3/email/send', {
+          console.log(`[proposal-deadline-reminder] Sending client reminder to ${ownerProfile.email}`);
+
+          const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -162,13 +177,18 @@ serve(async (req) => {
             },
             body: JSON.stringify({
               sender: 'noreply@bueeze.ch',
-              to: [lead.profiles?.email],
+              to: [ownerProfile.email],
               subject: `Erinnerung: ${proposals.length} Offerten warten auf Ihre Antwort`,
               html_body: clientEmailHtml,
             }),
           });
 
-          clientEmailsSent++;
+          if (emailResponse.ok) {
+            clientEmailsSent++;
+          } else {
+            const errorData = await emailResponse.json();
+            console.error(`[proposal-deadline-reminder] Client email failed:`, errorData);
+          }
         }
       }
 
@@ -191,6 +211,7 @@ serve(async (req) => {
         const nonProposedViewers = viewerIds.filter(id => !proposedIds.has(id));
 
         for (const handwerkerId of nonProposedViewers) {
+          // Fetch handwerker profile separately
           const { data: profile } = await supabase
             .from('profiles')
             .select('email, full_name')
@@ -223,7 +244,9 @@ serve(async (req) => {
               budgetMax: lead.budget_max
             });
 
-            await fetch('https://api.smtp2go.com/v3/email/send', {
+            console.log(`[proposal-deadline-reminder] Sending handwerker reminder to ${profile.email}`);
+
+            const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -237,13 +260,18 @@ serve(async (req) => {
               }),
             });
 
-            handwerkerEmailsSent++;
+            if (emailResponse.ok) {
+              handwerkerEmailsSent++;
+            } else {
+              const errorData = await emailResponse.json();
+              console.error(`[proposal-deadline-reminder] Handwerker email failed:`, errorData);
+            }
           }
         }
       }
     }
 
-    console.log(`Deadline reminders sent: ${clientEmailsSent} clients, ${handwerkerEmailsSent} handwerkers`);
+    console.log(`[proposal-deadline-reminder] Complete: ${clientEmailsSent} clients, ${handwerkerEmailsSent} handwerkers`);
 
     return new Response(
       JSON.stringify({
@@ -257,7 +285,7 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in proposal-deadline-reminder:', error);
+    console.error('[proposal-deadline-reminder] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message, success: false }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
