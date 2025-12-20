@@ -361,10 +361,28 @@ export default function HandwerkerManagement() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      toast({ 
-        title: handwerker.user_id ? 'Handwerker vollständig gelöscht' : 'Gastregistrierung gelöscht',
-        description: 'Alle Daten wurden entfernt.',
-      });
+      // Show detailed deletion stats
+      const stats = data?.deletionStats || {};
+      const totalDeleted = Object.values(stats).reduce((sum: number, val: any) => sum + (val || 0), 0);
+      const verified = data?.verified ?? false;
+      const warnings = data?.warnings || [];
+      const isGuest = !handwerker.user_id;
+
+      if (verified) {
+        toast({ 
+          title: isGuest ? 'Gastregistrierung gelöscht' : 'Handwerker vollständig gelöscht',
+          description: `${totalDeleted} Datensätze gelöscht. Verifiziert: Keine verwaisten Daten.`,
+        });
+      } else {
+        toast({ 
+          title: isGuest ? 'Gastregistrierung gelöscht (Warnung)' : 'Handwerker gelöscht (Warnung)',
+          description: warnings.length > 0 
+            ? warnings.join('. ')
+            : `${totalDeleted} Datensätze gelöscht. Möglicherweise verwaiste Daten.`,
+          variant: 'destructive',
+        });
+      }
+      
       fetchHandwerkers();
     } catch (error: any) {
       console.error('Error deleting handwerker:', error);

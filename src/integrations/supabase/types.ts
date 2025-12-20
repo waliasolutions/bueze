@@ -418,6 +418,48 @@ export type Database = {
         }
         Relationships: []
       }
+      deletion_audit: {
+        Row: {
+          created_at: string | null
+          deleted_by: string | null
+          deleted_email: string
+          deleted_user_id: string | null
+          deletion_stats: Json | null
+          deletion_type: string
+          error_message: string | null
+          id: string
+          orphaned_records: Json | null
+          success: boolean | null
+          verified_clean: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_by?: string | null
+          deleted_email: string
+          deleted_user_id?: string | null
+          deletion_stats?: Json | null
+          deletion_type: string
+          error_message?: string | null
+          id?: string
+          orphaned_records?: Json | null
+          success?: boolean | null
+          verified_clean?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_by?: string | null
+          deleted_email?: string
+          deleted_user_id?: string | null
+          deletion_stats?: Json | null
+          deletion_type?: string
+          error_message?: string | null
+          id?: string
+          orphaned_records?: Json | null
+          success?: boolean | null
+          verified_clean?: boolean | null
+        }
+        Relationships: []
+      }
       form_submissions: {
         Row: {
           created_at: string

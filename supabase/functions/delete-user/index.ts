@@ -2,13 +2,30 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 
+interface DeletionResult {
+  success: boolean;
+  deletionType: 'full' | 'guest' | 'partial';
+  deletionStats: Record<string, number>;
+  verified: boolean;
+  orphanedRecords: Record<string, number>;
+  message: string;
+  warnings: string[];
+}
+
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
   if (corsResponse) return corsResponse;
 
-  try {
-    const supabase = createSupabaseAdmin();
+  const supabase = createSupabaseAdmin();
+  let deletedEmail = '';
+  let deletedUserId: string | null = null;
+  let deletedBy: string | null = null;
+  let deletionType: 'full' | 'guest' | 'partial' = 'full';
+  let deletionStats: Record<string, number> = {};
+  let success = true;
+  let errorMessage: string | null = null;
 
+  try {
     // Get authorization header to verify admin
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -34,13 +51,16 @@ serve(async (req) => {
       return errorResponse('Admin access required', 403);
     }
 
+    deletedBy = caller.id;
     const { userId, email } = await req.json();
     
-    // Support email-based deletion for guest registrations
+    // ============================================
+    // GUEST REGISTRATION DELETION (by email only)
+    // ============================================
     if (!userId && email) {
-      console.log(`Deleting guest registration by email: ${email}`);
-      
-      const guestDeletionStats: Record<string, number> = {};
+      console.log(`[DELETE-USER] Deleting guest registration by email: ${email}`);
+      deletedEmail = email;
+      deletionType = 'guest';
       
       // Get guest profiles by email (no user_id)
       const { data: guestProfiles } = await supabase
@@ -58,7 +78,7 @@ serve(async (req) => {
           .delete()
           .in('handwerker_profile_id', profileIds)
           .select('id');
-        guestDeletionStats.handwerker_documents = docs?.length || 0;
+        deletionStats.handwerker_documents = docs?.length || 0;
         
         // Delete approval history
         const { data: history } = await supabase
@@ -66,7 +86,7 @@ serve(async (req) => {
           .delete()
           .in('handwerker_profile_id', profileIds)
           .select('id');
-        guestDeletionStats.handwerker_approval_history = history?.length || 0;
+        deletionStats.handwerker_approval_history = history?.length || 0;
         
         // Delete the profiles
         const { data: profiles } = await supabase
@@ -75,18 +95,46 @@ serve(async (req) => {
           .eq('email', email)
           .is('user_id', null)
           .select('id');
-        guestDeletionStats.handwerker_profiles = profiles?.length || 0;
+        deletionStats.handwerker_profiles = profiles?.length || 0;
       }
       
-      console.log(`Guest registration deleted for ${email}. Stats:`, guestDeletionStats);
+      // Verify guest is fully deleted
+      const orphanedRecords = await verifyEmailFreed(supabase, email, null);
+      const verified = Object.values(orphanedRecords).every(v => v === 0);
       
-      return successResponse({ 
-        success: true, 
-        deletionStats: guestDeletionStats,
-        message: 'Guest registration deleted'
+      // Log to audit table
+      await logDeletionAudit(supabase, {
+        deletedUserId: null,
+        deletedEmail: email,
+        deletedBy,
+        deletionType: 'guest',
+        deletionStats,
+        success: true,
+        errorMessage: null,
+        verified,
+        orphanedRecords,
       });
+      
+      console.log(`[DELETE-USER] Guest registration deleted for ${email}. Stats:`, deletionStats);
+      
+      const result: DeletionResult = { 
+        success: true, 
+        deletionType: 'guest',
+        deletionStats,
+        verified,
+        orphanedRecords,
+        message: verified 
+          ? 'Guest registration fully deleted and verified clean'
+          : 'Guest registration deleted but some orphaned records remain',
+        warnings: verified ? [] : ['Orphaned records detected - manual cleanup may be needed'],
+      };
+      
+      return successResponse(result);
     }
     
+    // ============================================
+    // FULL USER DELETION (by userId)
+    // ============================================
     if (!userId) {
       return errorResponse('userId or email is required', 400);
     }
@@ -96,9 +144,17 @@ serve(async (req) => {
       return errorResponse('Cannot delete your own account', 400);
     }
 
-    console.log(`Deleting user ${userId} by admin ${caller.email}`);
+    deletedUserId = userId;
+    console.log(`[DELETE-USER] Deleting user ${userId} by admin ${caller.email}`);
 
-    const deletionStats: Record<string, number> = {};
+    // Get user email before deletion for verification
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    deletedEmail = userProfile?.email || '';
 
     // Get handwerker profile ID for this user (if any)
     const { data: handwerkerProfile } = await supabase
@@ -107,17 +163,35 @@ serve(async (req) => {
       .eq('user_id', userId)
       .maybeSingle();
 
-    // IMPORTANT: Delete auth user FIRST to prevent orphaned records
-    // If this fails, we don't proceed with data deletion to maintain consistency
+    // ============================================
+    // CRITICAL: Delete auth user FIRST
+    // If this fails, we abort to prevent orphaned data
+    // ============================================
     const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
     if (deleteAuthError) {
-      console.error('Error deleting auth user:', deleteAuthError);
-      throw new Error(`Failed to delete auth user: ${deleteAuthError.message}. No data was deleted.`);
+      console.error('[DELETE-USER] CRITICAL: Failed to delete auth user:', deleteAuthError);
+      
+      // Log failed attempt
+      await logDeletionAudit(supabase, {
+        deletedUserId: userId,
+        deletedEmail,
+        deletedBy,
+        deletionType: 'full',
+        deletionStats: {},
+        success: false,
+        errorMessage: `Auth user deletion failed: ${deleteAuthError.message}`,
+        verified: false,
+        orphanedRecords: {},
+      });
+      
+      throw new Error(`Failed to delete auth user: ${deleteAuthError.message}. No data was deleted to prevent orphaned records.`);
     }
     deletionStats.auth_user = 1;
-    console.log(`Auth user ${userId} deleted successfully`);
+    console.log(`[DELETE-USER] Auth user ${userId} deleted successfully`);
 
-    // Now clean up any remaining data (in case triggers didn't fire or data was orphaned)
+    // ============================================
+    // Clean up all related data (auth user triggers may have handled some)
+    // ============================================
     
     // 1. Messages
     const { data: msgs } = await supabase
@@ -265,16 +339,183 @@ serve(async (req) => {
       .select('id');
     deletionStats.profiles = profiles?.length || 0;
 
-    console.log(`User ${userId} fully deleted. Stats:`, deletionStats);
+    // ============================================
+    // VERIFICATION: Check if email is truly freed
+    // ============================================
+    const orphanedRecords = await verifyEmailFreed(supabase, deletedEmail, userId);
+    const verified = Object.values(orphanedRecords).every(v => v === 0);
+    
+    if (!verified) {
+      console.warn(`[DELETE-USER] WARNING: Orphaned records detected after deletion:`, orphanedRecords);
+      deletionType = 'partial';
+    }
 
-    return successResponse({ 
-      success: true, 
+    // Log to audit table
+    await logDeletionAudit(supabase, {
+      deletedUserId: userId,
+      deletedEmail,
+      deletedBy,
+      deletionType,
       deletionStats,
-      message: 'User and all related data permanently deleted'
+      success: true,
+      errorMessage: null,
+      verified,
+      orphanedRecords,
     });
 
+    console.log(`[DELETE-USER] User ${userId} fully deleted. Verified: ${verified}. Stats:`, deletionStats);
+
+    const warnings: string[] = [];
+    if (!verified) {
+      warnings.push('Some orphaned records were detected after deletion');
+      Object.entries(orphanedRecords).forEach(([table, count]) => {
+        if (count > 0) {
+          warnings.push(`${count} orphaned record(s) in ${table}`);
+        }
+      });
+    }
+
+    const result: DeletionResult = { 
+      success: true,
+      deletionType,
+      deletionStats,
+      verified,
+      orphanedRecords,
+      message: verified 
+        ? 'User and all related data permanently deleted and verified clean'
+        : 'User deleted but some orphaned records may remain',
+      warnings,
+    };
+
+    return successResponse(result);
+
   } catch (error) {
-    console.error('Error in delete-user:', error);
-    return errorResponse(error instanceof Error ? error.message : 'Unknown error', 500);
+    console.error('[DELETE-USER] Error:', error);
+    success = false;
+    errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Try to log failed attempt (may fail if supabase is unavailable)
+    try {
+      await logDeletionAudit(supabase, {
+        deletedUserId,
+        deletedEmail,
+        deletedBy,
+        deletionType: 'partial',
+        deletionStats,
+        success: false,
+        errorMessage,
+        verified: false,
+        orphanedRecords: {},
+      });
+    } catch (logError) {
+      console.error('[DELETE-USER] Failed to log audit:', logError);
+    }
+    
+    return errorResponse(errorMessage, 500);
   }
 });
+
+/**
+ * Verify that an email is truly freed after deletion
+ * Checks all tables that might still reference the user
+ */
+async function verifyEmailFreed(
+  supabase: any,
+  email: string,
+  userId: string | null
+): Promise<Record<string, number>> {
+  const orphanedRecords: Record<string, number> = {};
+
+  // Check profiles table
+  if (email) {
+    const { count: profileCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('email', email);
+    orphanedRecords.profiles = profileCount || 0;
+  }
+
+  // Check handwerker_profiles
+  if (email) {
+    const { count: hwProfileCount } = await supabase
+      .from('handwerker_profiles')
+      .select('*', { count: 'exact', head: true })
+      .eq('email', email);
+    orphanedRecords.handwerker_profiles = hwProfileCount || 0;
+  }
+
+  // Check user_roles by user_id
+  if (userId) {
+    const { count: rolesCount } = await supabase
+      .from('user_roles')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    orphanedRecords.user_roles = rolesCount || 0;
+  }
+
+  // Check handwerker_subscriptions
+  if (userId) {
+    const { count: subsCount } = await supabase
+      .from('handwerker_subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    orphanedRecords.handwerker_subscriptions = subsCount || 0;
+  }
+
+  // Check notifications
+  if (userId) {
+    const { count: clientNotifCount } = await supabase
+      .from('client_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    orphanedRecords.client_notifications = clientNotifCount || 0;
+
+    const { count: hwNotifCount } = await supabase
+      .from('handwerker_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    orphanedRecords.handwerker_notifications = hwNotifCount || 0;
+  }
+
+  return orphanedRecords;
+}
+
+/**
+ * Log deletion attempt to audit table
+ */
+async function logDeletionAudit(
+  supabase: any,
+  data: {
+    deletedUserId: string | null;
+    deletedEmail: string;
+    deletedBy: string | null;
+    deletionType: 'full' | 'guest' | 'partial';
+    deletionStats: Record<string, number>;
+    success: boolean;
+    errorMessage: string | null;
+    verified: boolean;
+    orphanedRecords: Record<string, number>;
+  }
+): Promise<void> {
+  try {
+    const { error } = await supabase.from('deletion_audit').insert({
+      deleted_user_id: data.deletedUserId,
+      deleted_email: data.deletedEmail,
+      deleted_by: data.deletedBy,
+      deletion_type: data.deletionType,
+      deletion_stats: data.deletionStats,
+      success: data.success,
+      error_message: data.errorMessage,
+      verified_clean: data.verified,
+      orphaned_records: data.orphanedRecords,
+    });
+
+    if (error) {
+      console.error('[DELETE-USER] Failed to log audit:', error);
+    } else {
+      console.log('[DELETE-USER] Audit logged successfully');
+    }
+  } catch (err) {
+    console.error('[DELETE-USER] Exception logging audit:', err);
+  }
+}

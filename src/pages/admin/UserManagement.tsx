@@ -240,17 +240,33 @@ export default function UserManagement() {
       });
 
       if (error) throw error;
-
-      toast({
-        title: 'Benutzer gelöscht',
-        description: 'Benutzer und alle zugehörigen Daten wurden vollständig gelöscht.',
-      });
+      
+      // Show detailed deletion stats
+      const stats = data?.deletionStats || {};
+      const totalDeleted = Object.values(stats).reduce((sum: number, val: any) => sum + (val || 0), 0);
+      const verified = data?.verified ?? false;
+      const warnings = data?.warnings || [];
+      
+      if (verified) {
+        toast({
+          title: 'Benutzer vollständig gelöscht',
+          description: `${totalDeleted} Datensätze gelöscht. Verifiziert: Keine verwaisten Daten.`,
+        });
+      } else {
+        toast({
+          title: 'Benutzer gelöscht (mit Warnungen)',
+          description: warnings.length > 0 
+            ? warnings.join('. ')
+            : `${totalDeleted} Datensätze gelöscht. Einige verwaiste Daten könnten verblieben sein.`,
+          variant: 'destructive',
+        });
+      }
 
       await loadUsers();
     } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({
-        title: 'Fehler',
+        title: 'Fehler beim Löschen',
         description: error.message || 'Fehler beim Löschen des Benutzers.',
         variant: 'destructive',
       });
