@@ -31,7 +31,7 @@ serve(async (req) => {
 
   try {
     const supabase = createSupabaseAdmin();
-    console.log('[ORPHAN-CHECK] Starting orphaned records scan...');
+    console.log('[ORPHAN-CHECK] Starte Suche nach verwaisten Datensätzen...');
 
     const report: OrphanReport = {
       orphaned_profiles: [],
@@ -47,12 +47,12 @@ serve(async (req) => {
     // Get all auth user IDs for comparison
     const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
     if (authError) {
-      console.error('[ORPHAN-CHECK] Failed to list auth users:', authError);
-      throw new Error(`Failed to list auth users: ${authError.message}`);
+      console.error('[ORPHAN-CHECK] Fehler beim Abrufen der Auth-Benutzer:', authError);
+      throw new Error(`Fehler beim Abrufen der Auth-Benutzer: ${authError.message}`);
     }
 
     const authUserIds = new Set(authUsers.users.map(u => u.id));
-    console.log(`[ORPHAN-CHECK] Found ${authUserIds.size} auth users`);
+    console.log(`[ORPHAN-CHECK] ${authUserIds.size} Auth-Benutzer gefunden`);
 
     // 1. Check for orphaned profiles
     const { data: profiles } = await supabase
@@ -66,7 +66,7 @@ serve(async (req) => {
         }
       }
     }
-    console.log(`[ORPHAN-CHECK] Found ${report.orphaned_profiles.length} orphaned profiles`);
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_profiles.length} verwaiste Profile gefunden`);
 
     // 2. Check for orphaned user_roles
     const { data: userRoles } = await supabase
@@ -80,7 +80,7 @@ serve(async (req) => {
         }
       }
     }
-    console.log(`[ORPHAN-CHECK] Found ${report.orphaned_user_roles.length} orphaned user_roles`);
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_user_roles.length} verwaiste user_roles gefunden`);
 
     // 3. Check for orphaned handwerker_profiles (with user_id that doesn't exist)
     const { data: hwProfiles } = await supabase
@@ -99,7 +99,7 @@ serve(async (req) => {
         }
       }
     }
-    console.log(`[ORPHAN-CHECK] Found ${report.orphaned_handwerker_profiles.length} orphaned handwerker_profiles`);
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_handwerker_profiles.length} verwaiste handwerker_profiles gefunden`);
 
     // 4. Check for orphaned subscriptions
     const { data: subscriptions } = await supabase
@@ -113,7 +113,7 @@ serve(async (req) => {
         }
       }
     }
-    console.log(`[ORPHAN-CHECK] Found ${report.orphaned_subscriptions.length} orphaned subscriptions`);
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_subscriptions.length} verwaiste Abonnements gefunden`);
 
     // 5. Count orphaned notifications (don't list all for brevity)
     const { data: clientNotifs } = await supabase
@@ -145,17 +145,17 @@ serve(async (req) => {
       report.orphaned_client_notifications +
       report.orphaned_handwerker_notifications;
 
-    console.log(`[ORPHAN-CHECK] Total orphaned records: ${report.total_orphans}`);
+    console.log(`[ORPHAN-CHECK] Total verwaiste Datensätze: ${report.total_orphans}`);
 
     // Create admin notification if orphans found
     if (report.total_orphans > 0) {
       const summary = [
-        report.orphaned_profiles.length > 0 ? `${report.orphaned_profiles.length} profiles` : '',
-        report.orphaned_user_roles.length > 0 ? `${report.orphaned_user_roles.length} user_roles` : '',
-        report.orphaned_handwerker_profiles.length > 0 ? `${report.orphaned_handwerker_profiles.length} handwerker_profiles` : '',
-        report.orphaned_subscriptions.length > 0 ? `${report.orphaned_subscriptions.length} subscriptions` : '',
-        report.orphaned_client_notifications > 0 ? `${report.orphaned_client_notifications} client notifications` : '',
-        report.orphaned_handwerker_notifications > 0 ? `${report.orphaned_handwerker_notifications} handwerker notifications` : '',
+        report.orphaned_profiles.length > 0 ? `${report.orphaned_profiles.length} Profile` : '',
+        report.orphaned_user_roles.length > 0 ? `${report.orphaned_user_roles.length} Benutzerrollen` : '',
+        report.orphaned_handwerker_profiles.length > 0 ? `${report.orphaned_handwerker_profiles.length} Handwerker-Profile` : '',
+        report.orphaned_subscriptions.length > 0 ? `${report.orphaned_subscriptions.length} Abonnements` : '',
+        report.orphaned_client_notifications > 0 ? `${report.orphaned_client_notifications} Kunden-Benachrichtigungen` : '',
+        report.orphaned_handwerker_notifications > 0 ? `${report.orphaned_handwerker_notifications} Handwerker-Benachrichtigungen` : '',
       ].filter(Boolean).join(', ');
 
       await supabase.from('admin_notifications').insert({
@@ -168,21 +168,35 @@ serve(async (req) => {
         },
       });
 
-      console.log('[ORPHAN-CHECK] Admin notification created');
+      console.log('[ORPHAN-CHECK] Admin-Benachrichtigung erstellt');
     }
 
     return successResponse({
       success: true,
       message: report.total_orphans === 0 
-        ? 'No orphaned records found'
-        : `Found ${report.total_orphans} orphaned records`,
+        ? 'Keine verwaisten Datensätze gefunden'
+        : `${report.total_orphans} verwaiste Datensätze gefunden`,
       report,
     });
 
   } catch (error) {
-    console.error('[ORPHAN-CHECK] Error:', error);
+    console.error('[ORPHAN-CHECK] Fehler:', error);
+    
+    // Try to create admin notification for scan failure
+    try {
+      const supabase = createSupabaseAdmin();
+      await supabase.from('admin_notifications').insert({
+        type: 'orphan_scan_failed',
+        title: 'Verwaiste-Datensätze-Scan fehlgeschlagen',
+        message: `Fehler beim Scannen nach verwaisten Datensätzen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        metadata: { error: error instanceof Error ? error.message : 'Unbekannter Fehler' },
+      });
+    } catch (notifError) {
+      console.error('[ORPHAN-CHECK] Fehler beim Erstellen der Admin-Benachrichtigung:', notifError);
+    }
+    
     return errorResponse(
-      error instanceof Error ? error.message : 'Unknown error',
+      error instanceof Error ? error.message : 'Unbekannter Fehler',
       500
     );
   }

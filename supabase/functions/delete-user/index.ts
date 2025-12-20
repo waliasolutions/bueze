@@ -29,7 +29,7 @@ serve(async (req) => {
     // Get authorization header to verify admin
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return errorResponse('Unauthorized', 401);
+      return errorResponse('Nicht autorisiert', 401);
     }
 
     // Verify caller is admin
@@ -37,7 +37,7 @@ serve(async (req) => {
     const { data: { user: caller }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !caller) {
-      return errorResponse('Invalid token', 401);
+      return errorResponse('Ungültiges Token', 401);
     }
 
     // Check if caller is admin
@@ -48,7 +48,7 @@ serve(async (req) => {
 
     const isAdmin = callerRoles?.some(r => r.role === 'admin' || r.role === 'super_admin');
     if (!isAdmin) {
-      return errorResponse('Admin access required', 403);
+      return errorResponse('Admin-Zugang erforderlich', 403);
     }
 
     deletedBy = caller.id;
@@ -115,7 +115,27 @@ serve(async (req) => {
         orphanedRecords,
       });
       
+      // Create admin notification if orphaned records detected
+      if (!verified) {
+        await createAdminNotification(supabase, {
+          type: 'deletion_warning',
+          title: 'Löschung mit Warnungen',
+          message: `Gastregistrierung ${email} gelöscht, aber ${Object.values(orphanedRecords).reduce((a, b) => a + b, 0)} verwaiste Datensätze gefunden.`,
+          metadata: { deletedEmail: email, deletionStats, orphanedRecords },
+        });
+      }
+      
       console.log(`[DELETE-USER] Guest registration deleted for ${email}. Stats:`, deletionStats);
+      
+      const warnings: string[] = [];
+      if (!verified) {
+        warnings.push('Verwaiste Datensätze erkannt - manuelle Bereinigung erforderlich');
+        Object.entries(orphanedRecords).forEach(([table, count]) => {
+          if (count > 0) {
+            warnings.push(`${count} ${count === 1 ? 'verwaister Datensatz' : 'verwaiste Datensätze'} in ${table}`);
+          }
+        });
+      }
       
       const result: DeletionResult = { 
         success: true, 
@@ -124,9 +144,9 @@ serve(async (req) => {
         verified,
         orphanedRecords,
         message: verified 
-          ? 'Guest registration fully deleted and verified clean'
-          : 'Guest registration deleted but some orphaned records remain',
-        warnings: verified ? [] : ['Orphaned records detected - manual cleanup may be needed'],
+          ? 'Gastregistrierung vollständig gelöscht und verifiziert'
+          : 'Gastregistrierung gelöscht, aber einige verwaiste Datensätze verbleiben',
+        warnings,
       };
       
       return successResponse(result);
@@ -136,12 +156,12 @@ serve(async (req) => {
     // FULL USER DELETION (by userId)
     // ============================================
     if (!userId) {
-      return errorResponse('userId or email is required', 400);
+      return errorResponse('userId oder E-Mail erforderlich', 400);
     }
 
     // Prevent self-deletion
     if (userId === caller.id) {
-      return errorResponse('Cannot delete your own account', 400);
+      return errorResponse('Sie können Ihr eigenes Konto nicht löschen', 400);
     }
 
     deletedUserId = userId;
@@ -171,6 +191,8 @@ serve(async (req) => {
     if (deleteAuthError) {
       console.error('[DELETE-USER] CRITICAL: Failed to delete auth user:', deleteAuthError);
       
+      const authErrorMessage = `Authentifizierungsbenutzer konnte nicht gelöscht werden: ${deleteAuthError.message}. Es wurden keine Daten gelöscht, um verwaiste Datensätze zu vermeiden.`;
+      
       // Log failed attempt
       await logDeletionAudit(supabase, {
         deletedUserId: userId,
@@ -179,12 +201,20 @@ serve(async (req) => {
         deletionType: 'full',
         deletionStats: {},
         success: false,
-        errorMessage: `Auth user deletion failed: ${deleteAuthError.message}`,
+        errorMessage: authErrorMessage,
         verified: false,
         orphanedRecords: {},
       });
       
-      throw new Error(`Failed to delete auth user: ${deleteAuthError.message}. No data was deleted to prevent orphaned records.`);
+      // Create admin notification for critical failure
+      await createAdminNotification(supabase, {
+        type: 'deletion_failed',
+        title: 'Löschung fehlgeschlagen',
+        message: `Benutzer ${deletedEmail} konnte nicht gelöscht werden: ${deleteAuthError.message}`,
+        metadata: { deletedEmail, userId, error: deleteAuthError.message },
+      });
+      
+      throw new Error(authErrorMessage);
     }
     deletionStats.auth_user = 1;
     console.log(`[DELETE-USER] Auth user ${userId} deleted successfully`);
@@ -348,6 +378,14 @@ serve(async (req) => {
     if (!verified) {
       console.warn(`[DELETE-USER] WARNING: Orphaned records detected after deletion:`, orphanedRecords);
       deletionType = 'partial';
+      
+      // Create admin notification for partial deletion
+      await createAdminNotification(supabase, {
+        type: 'deletion_warning',
+        title: 'Löschung mit verwaisten Datensätzen',
+        message: `Benutzer ${deletedEmail} gelöscht, aber ${Object.values(orphanedRecords).reduce((a, b) => a + b, 0)} verwaiste Datensätze gefunden. Manuelle Bereinigung erforderlich.`,
+        metadata: { deletedEmail, userId, deletionStats, orphanedRecords },
+      });
     }
 
     // Log to audit table
@@ -367,10 +405,10 @@ serve(async (req) => {
 
     const warnings: string[] = [];
     if (!verified) {
-      warnings.push('Some orphaned records were detected after deletion');
+      warnings.push('Einige verwaiste Datensätze wurden nach dem Löschen erkannt');
       Object.entries(orphanedRecords).forEach(([table, count]) => {
         if (count > 0) {
-          warnings.push(`${count} orphaned record(s) in ${table}`);
+          warnings.push(`${count} ${count === 1 ? 'verwaister Datensatz' : 'verwaiste Datensätze'} in ${table}`);
         }
       });
     }
@@ -382,8 +420,8 @@ serve(async (req) => {
       verified,
       orphanedRecords,
       message: verified 
-        ? 'User and all related data permanently deleted and verified clean'
-        : 'User deleted but some orphaned records may remain',
+        ? 'Benutzer und alle zugehörigen Daten dauerhaft gelöscht und verifiziert'
+        : 'Benutzer gelöscht, aber einige verwaiste Datensätze könnten verbleiben',
       warnings,
     };
 
@@ -392,7 +430,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[DELETE-USER] Error:', error);
     success = false;
-    errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    errorMessage = error instanceof Error ? error.message : 'Unbekannter Fehler';
     
     // Try to log failed attempt (may fail if supabase is unavailable)
     try {
@@ -406,6 +444,14 @@ serve(async (req) => {
         errorMessage,
         verified: false,
         orphanedRecords: {},
+      });
+      
+      // Create admin notification for any deletion error
+      await createAdminNotification(supabase, {
+        type: 'deletion_failed',
+        title: 'Löschung fehlgeschlagen',
+        message: `Fehler beim Löschen von Benutzer ${deletedEmail || deletedUserId}: ${errorMessage}`,
+        metadata: { deletedEmail, deletedUserId, error: errorMessage, deletionStats },
       });
     } catch (logError) {
       console.error('[DELETE-USER] Failed to log audit:', logError);
@@ -478,6 +524,36 @@ async function verifyEmailFreed(
   }
 
   return orphanedRecords;
+}
+
+/**
+ * Create admin notification for deletion events
+ */
+async function createAdminNotification(
+  supabase: any,
+  data: {
+    type: string;
+    title: string;
+    message: string;
+    metadata: Record<string, any>;
+  }
+): Promise<void> {
+  try {
+    const { error } = await supabase.from('admin_notifications').insert({
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      metadata: data.metadata,
+    });
+
+    if (error) {
+      console.error('[DELETE-USER] Failed to create admin notification:', error);
+    } else {
+      console.log('[DELETE-USER] Admin notification created:', data.title);
+    }
+  } catch (err) {
+    console.error('[DELETE-USER] Exception creating admin notification:', err);
+  }
 }
 
 /**
