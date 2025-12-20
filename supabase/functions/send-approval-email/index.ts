@@ -1,25 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { sendEmail } from '../_shared/smtp2go.ts';
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     const { userId, userName, userEmail } = await req.json();
     
     if (!userId || !userEmail) {
       throw new Error('Missing required fields: userId and userEmail are required');
-    }
-
-    const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
-    if (!smtp2goApiKey) {
-      throw new Error('SMTP2GO_API_KEY not configured');
     }
 
     const subject = 'Ihr Büeze.ch Profil wurde freigeschaltet';
@@ -40,50 +31,24 @@ Bei Fragen stehen wir Ihnen gerne zur Verfügung.
 Viel Erfolg!
 Ihr Büeze.ch Team`;
 
-    const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': smtp2goApiKey,
-      },
-      body: JSON.stringify({
-        sender: 'noreply@bueeze.ch',
-        to: [userEmail],
-        subject: subject,
-        text_body: body,
-      }),
+    const result = await sendEmail({
+      to: userEmail,
+      subject,
+      textBody: body,
     });
 
-    const emailData = await emailResponse.json();
-
-    if (!emailResponse.ok) {
-      throw new Error(`Email sending failed: ${JSON.stringify(emailData)}`);
+    if (!result.success) {
+      throw new Error(result.error || 'Email sending failed');
     }
 
     console.log('Email sent successfully:', { userId, userEmail });
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Email sent successfully',
-        emailData 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
+    return successResponse({ 
+      success: true, 
+      message: 'Email sent successfully',
+    });
   } catch (error) {
     console.error('Error in send-approval-email:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
-      }
-    );
+    return errorResponse(error);
   }
 });

@@ -1,8 +1,10 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
-import { format } from "https://esm.sh/date-fns@3.6.0";
-import { toZonedTime } from "https://esm.sh/date-fns-tz@3.2.0";
-import { adminRegistrationNotificationTemplate } from "../_shared/emailTemplates.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { format } from 'https://esm.sh/date-fns@3.6.0';
+import { toZonedTime } from 'https://esm.sh/date-fns-tz@3.2.0';
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
+import { sendEmail } from '../_shared/smtp2go.ts';
+import { adminRegistrationNotificationTemplate } from '../_shared/emailTemplates.ts';
 
 const SWISS_TIMEZONE = 'Europe/Zurich';
 
@@ -15,16 +17,9 @@ function formatSwissDateTime(date: Date | string): string {
   return format(swissDate, 'dd.MM.yyyy HH:mm', { timeZone: SWISS_TIMEZONE });
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     const { profileId } = await req.json();
@@ -35,10 +30,7 @@ serve(async (req) => {
 
     console.log('Processing admin notification for profile:', profileId);
 
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createSupabaseAdmin();
 
     // Fetch the handwerker profile
     const { data: profile, error: profileError } = await supabase
@@ -75,62 +67,26 @@ serve(async (req) => {
     // Generate email HTML
     const emailHtml = adminRegistrationNotificationTemplate(emailData);
 
-    // Send email via SMTP2GO
-    const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
-    if (!smtp2goApiKey) {
-      throw new Error('SMTP2GO_API_KEY not configured');
-    }
-
-    const emailPayload = {
-      api_key: smtp2goApiKey,
-      to: ['info@bueeze.ch'],
-      sender: 'noreply@bueeze.ch',
-      subject: `Neue Handwerker-Registrierung: ${profile.first_name} ${profile.last_name}`,
-      html_body: emailHtml,
-    };
-
     console.log('Sending email to info@bueeze.ch');
 
-    const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(emailPayload),
+    const result = await sendEmail({
+      to: 'info@bueeze.ch',
+      subject: `Neue Handwerker-Registrierung: ${profile.first_name} ${profile.last_name}`,
+      htmlBody: emailHtml,
     });
 
-    const emailResult = await emailResponse.json();
-
-    if (!emailResponse.ok) {
-      console.error('SMTP2GO error:', emailResult);
-      throw new Error(`Failed to send email: ${JSON.stringify(emailResult)}`);
+    if (!result.success) {
+      throw new Error(result.error || 'Email sending failed');
     }
 
-    console.log('Email sent successfully:', emailResult);
+    console.log('Email sent successfully');
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Admin notification sent successfully',
-        emailResult 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
-
+    return successResponse({ 
+      success: true, 
+      message: 'Admin notification sent successfully',
+    });
   } catch (error) {
     console.error('Error in send-admin-registration-notification:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: error.toString()
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
-      }
-    );
+    return errorResponse(error, 500);
   }
 });

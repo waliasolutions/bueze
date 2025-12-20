@@ -1,16 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
+import { sendEmail } from '../_shared/smtp2go.ts';
+import { fetchClientProfile, fetchHandwerkerProfile } from '../_shared/profileHelpers.ts';
 import { ratingResponseClientTemplate } from '../_shared/emailTemplates.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     const { reviewId } = await req.json();
@@ -19,16 +16,11 @@ serve(async (req) => {
       throw new Error('Missing required field: reviewId');
     }
 
-    const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
-    if (!smtp2goApiKey) {
-      throw new Error('SMTP2GO_API_KEY not configured');
-    }
+    console.log(`[send-rating-response-notification] Processing review: ${reviewId}`);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createSupabaseAdmin();
 
-    // Fetch review with lead and handwerker details
+    // Fetch review with handwerker response and lead details
     const { data: review, error: reviewError } = await supabase
       .from('reviews')
       .select(`
@@ -48,70 +40,46 @@ serve(async (req) => {
 
     if (!review.handwerker_response) {
       console.log('No handwerker response found, skipping notification');
-      return new Response(
-        JSON.stringify({ success: true, message: 'No response to notify' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
+      return successResponse({ success: true, message: 'No response to notify' });
     }
 
-    // Get client (reviewer) and handwerker profiles
-    const [clientResult, handwerkerProfileResult] = await Promise.all([
-      supabase.from('profiles').select('full_name, email').eq('id', review.reviewer_id).single(),
-      supabase.from('handwerker_profiles').select('company_name, profiles!handwerker_profiles_user_id_fkey(full_name)').eq('user_id', review.reviewed_id).single()
-    ]);
+    // Fetch profiles using shared helpers
+    const clientProfile = await fetchClientProfile(supabase, review.reviewer_id);
+    const handwerkerProfile = await fetchHandwerkerProfile(supabase, review.reviewed_id);
 
-    if (!clientResult.data?.email) {
+    if (!clientProfile?.email) {
       console.log('Client email not found, skipping notification');
-      return new Response(
-        JSON.stringify({ success: true, message: 'No client email' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-      );
+      return successResponse({ success: true, message: 'No client email' });
     }
 
-    const handwerkerName = handwerkerProfileResult.data?.company_name || 
-                          handwerkerProfileResult.data?.profiles?.full_name || 
-                          'Der Handwerker';
+    const handwerkerName = handwerkerProfile?.fullName || 'Der Handwerker';
     const reviewLink = `https://bueeze.ch/dashboard`;
 
+    console.log(`[send-rating-response-notification] Sending notification to ${clientProfile.email}`);
+
     const emailHtml = ratingResponseClientTemplate({
-      clientName: clientResult.data.full_name || 'Kunde',
+      clientName: clientProfile.fullName || 'Kunde',
       handwerkerName,
       projectTitle: review.leads?.title || 'Projekt',
       responseText: review.handwerker_response,
       reviewLink,
     });
 
-    const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': smtp2goApiKey,
-      },
-      body: JSON.stringify({
-        sender: 'noreply@bueeze.ch',
-        to: [clientResult.data.email],
-        subject: `${handwerkerName} hat auf Ihre Bewertung geantwortet - Büeze.ch`,
-        html_body: emailHtml,
-      }),
+    const result = await sendEmail({
+      to: clientProfile.email,
+      subject: `${handwerkerName} hat auf Ihre Bewertung geantwortet - Büeze.ch`,
+      htmlBody: emailHtml,
     });
 
-    const emailData = await emailResponse.json();
-
-    if (!emailResponse.ok) {
-      throw new Error(`Email sending failed: ${JSON.stringify(emailData)}`);
+    if (!result.success) {
+      throw new Error(result.error || 'Email sending failed');
     }
 
-    console.log('Rating response notification sent:', { reviewId, clientEmail: clientResult.data.email });
+    console.log('Rating response notification sent:', { reviewId, clientEmail: clientProfile.email });
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'Rating response notification sent' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    );
+    return successResponse({ success: true, message: 'Rating response notification sent' });
   } catch (error) {
     console.error('Error in send-rating-response-notification:', error);
-    return new Response(
-      JSON.stringify({ error: error.message, success: false }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    );
+    return errorResponse(error);
   }
 });
