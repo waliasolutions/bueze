@@ -1,30 +1,14 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
+import { sendEmail } from '../_shared/smtp2go.ts';
+import { fetchClientProfile, createMagicToken } from '../_shared/profileHelpers.ts';
+import { getCategoryLabel } from '../_shared/categoryLabels.ts';
 import { newLeadNotificationTemplate, newLeadAdminNotificationTemplate } from '../_shared/emailTemplates.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-// Category labels for human-readable display
-const categoryLabels: Record<string, string> = {
-  'bau_renovation': 'Bau & Renovation',
-  'elektroinstallationen': 'Elektroinstallationen',
-  'heizung_klima': 'Heizung & Klima',
-  'sanitaer': 'Sanitär',
-  'bodenbelaege': 'Bodenbeläge',
-  'innenausbau_schreiner': 'Innenausbau & Schreiner',
-  'kueche': 'Küche',
-  'garten_umgebung': 'Garten & Aussenbereich',
-  'reinigung_hauswartung': 'Reinigung & Hauswartung',
-  'raeumung_entsorgung': 'Räumung & Entsorgung',
-};
-
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     const { leadId } = await req.json();
@@ -35,16 +19,9 @@ serve(async (req) => {
 
     console.log(`[send-lead-notification] Processing lead: ${leadId}`);
 
-    const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
-    if (!smtp2goApiKey) {
-      throw new Error('SMTP2GO_API_KEY not configured');
-    }
+    const supabase = createSupabaseAdmin();
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Step 1: Fetch lead details
+    // Fetch lead details
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .select('*')
@@ -55,26 +32,16 @@ serve(async (req) => {
       throw new Error(`Lead not found: ${leadError?.message}`);
     }
 
-    // Step 2: Fetch owner profile separately (no FK join)
-    const { data: ownerProfile, error: ownerError } = await supabase
-      .from('profiles')
-      .select('full_name, email')
-      .eq('id', lead.owner_id)
-      .single();
+    // Fetch owner profile
+    const ownerProfile = await fetchClientProfile(supabase, lead.owner_id);
 
-    if (ownerError) {
-      console.warn(`Could not fetch owner profile: ${ownerError.message}`);
-    }
+    const categoryLabel = getCategoryLabel(lead.category);
 
-    const categoryLabel = categoryLabels[lead.category] || lead.category;
-
-    // ==========================================
-    // STEP 1: Send Admin Notification Email
-    // ==========================================
+    // Send Admin Notification Email
     console.log('[send-lead-notification] Sending admin notification email...');
     
     const adminEmailHtml = newLeadAdminNotificationTemplate({
-      clientName: ownerProfile?.full_name || 'Unbekannt',
+      clientName: ownerProfile?.fullName || 'Unbekannt',
       clientEmail: ownerProfile?.email || 'Unbekannt',
       category: categoryLabel,
       city: lead.city || 'Nicht angegeben',
@@ -93,32 +60,17 @@ serve(async (req) => {
       }),
     });
 
-    const adminEmailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': smtp2goApiKey,
-      },
-      body: JSON.stringify({
-        sender: 'noreply@bueeze.ch',
-        to: ['info@bueeze.ch'],
-        subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city}`,
-        html_body: adminEmailHtml,
-      }),
+    const adminResult = await sendEmail({
+      to: 'info@bueeze.ch',
+      subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city}`,
+      htmlBody: adminEmailHtml,
     });
 
-    const adminEmailData = await adminEmailResponse.json();
-    if (!adminEmailResponse.ok) {
-      console.error('[send-lead-notification] Admin notification email failed:', adminEmailData);
-    } else {
-      console.log('[send-lead-notification] Admin notification email sent successfully to info@bueeze.ch');
+    if (adminResult.success) {
+      console.log('[send-lead-notification] Admin notification email sent successfully');
     }
 
-    // ==========================================
-    // STEP 2: Send Handwerker Notifications
-    // ==========================================
-
-    // Fetch matching handwerkers (basic data only)
+    // Send Handwerker Notifications
     const { data: handwerkers, error: handwerkersError } = await supabase
       .from('handwerker_profiles')
       .select('user_id, service_areas, categories')
@@ -131,14 +83,13 @@ serve(async (req) => {
 
     console.log(`[send-lead-notification] Found ${handwerkers?.length || 0} potential handwerkers for category ${lead.category}`);
 
-    // Filter by service area (PLZ matching with range support)
+    // Filter by service area
     const leadPLZ = parseInt(lead.zip?.toString() || '0');
     
     const matchingHandwerkers = handwerkers?.filter(hw => {
       if (!hw.service_areas || hw.service_areas.length === 0) return false;
       
       return hw.service_areas.some((area: string) => {
-        // Handle range: "8000-8099"
         if (area.includes('-')) {
           const [start, end] = area.split('-').map(p => parseInt(p.trim()));
           if (!isNaN(start) && !isNaN(end)) {
@@ -146,7 +97,6 @@ serve(async (req) => {
           }
         }
         
-        // Handle single PLZ: "8000"
         const servicePLZ = parseInt(area.trim());
         if (!isNaN(servicePLZ)) {
           return leadPLZ === servicePLZ;
@@ -158,51 +108,32 @@ serve(async (req) => {
 
     console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match service area for PLZ ${leadPLZ}`);
 
-    // Generate magic tokens and send emails
     let successCount = 0;
     let errorCount = 0;
 
     for (const hw of matchingHandwerkers) {
       try {
-        // Fetch handwerker's profile (email, name) separately
-        const { data: hwProfile, error: hwProfileError } = await supabase
-          .from('profiles')
-          .select('email, full_name')
-          .eq('id', hw.user_id)
-          .single();
+        const hwProfile = await fetchClientProfile(supabase, hw.user_id);
 
-        if (hwProfileError || !hwProfile?.email) {
-          console.warn(`[send-lead-notification] No profile/email for handwerker ${hw.user_id}, skipping`);
+        if (!hwProfile?.email) {
+          console.warn(`[send-lead-notification] No email for handwerker ${hw.user_id}, skipping`);
           errorCount++;
           continue;
         }
 
         // Generate magic token
-        const token = crypto.randomUUID().replace(/-/g, '');
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiry
+        const tokenResult = await createMagicToken(supabase, {
+          userId: hw.user_id,
+          resourceType: 'lead',
+          resourceId: leadId,
+          expiryDays: 7,
+        });
 
-        // Store magic token
-        const { error: tokenError } = await supabase
-          .from('magic_tokens')
-          .insert({
-            token,
-            user_id: hw.user_id,
-            resource_type: 'lead',
-            resource_id: leadId,
-            expires_at: expiresAt.toISOString(),
-          });
-
-        if (tokenError) {
-          console.error(`[send-lead-notification] Failed to create token for user ${hw.user_id}:`, tokenError);
+        if (!tokenResult) {
           errorCount++;
           continue;
         }
 
-        // Create magic link
-        const magicLink = `https://bueeze.ch/opportunity/${leadId}?token=${token}`;
-
-        // Send email
         const emailHtml = newLeadNotificationTemplate({
           category: categoryLabel,
           city: lead.city || 'Nicht angegeben',
@@ -210,34 +141,22 @@ serve(async (req) => {
           budgetMin: lead.budget_min,
           budgetMax: lead.budget_max,
           urgency: lead.urgency || 'normal',
-          magicLink,
-          handwerkerName: hwProfile.full_name || 'Handwerker',
+          magicLink: tokenResult.magicLink,
+          handwerkerName: hwProfile.fullName || 'Handwerker',
         });
 
         console.log(`[send-lead-notification] Sending email to ${hwProfile.email}...`);
 
-        const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Smtp2go-Api-Key': smtp2goApiKey,
-          },
-          body: JSON.stringify({
-            sender: 'noreply@bueeze.ch',
-            to: [hwProfile.email],
-            subject: `Neue Anfrage in ${categoryLabel} - ${lead.city}`,
-            html_body: emailHtml,
-          }),
+        const result = await sendEmail({
+          to: hwProfile.email,
+          subject: `Neue Anfrage in ${categoryLabel} - ${lead.city}`,
+          htmlBody: emailHtml,
         });
 
-        const emailData = await emailResponse.json();
-
-        if (!emailResponse.ok) {
-          console.error(`[send-lead-notification] Email failed for ${hwProfile.email}:`, emailData);
-          errorCount++;
-        } else {
-          console.log(`[send-lead-notification] Email sent successfully to ${hwProfile.email}`);
+        if (result.success) {
           successCount++;
+        } else {
+          errorCount++;
         }
       } catch (error) {
         console.error(`[send-lead-notification] Error processing handwerker ${hw.user_id}:`, error);
@@ -247,29 +166,14 @@ serve(async (req) => {
 
     console.log(`[send-lead-notification] Complete: ${successCount} success, ${errorCount} errors`);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Admin notified, ${successCount} handwerkers notified`,
-        successCount,
-        errorCount,
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
+    return successResponse({ 
+      success: true, 
+      message: `Admin notified, ${successCount} handwerkers notified`,
+      successCount,
+      errorCount,
+    });
   } catch (error) {
     console.error('[send-lead-notification] Error:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
-      }
-    );
+    return errorResponse(error);
   }
 });

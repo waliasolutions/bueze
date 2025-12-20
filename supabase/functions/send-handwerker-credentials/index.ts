@@ -1,25 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { sendEmail } from '../_shared/smtp2go.ts';
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     const { email, password, firstName, lastName, companyName } = await req.json();
     
     if (!email || !password) {
       throw new Error('Missing required fields: email and password are required');
-    }
-
-    const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
-    if (!smtp2goApiKey) {
-      throw new Error('SMTP2GO_API_KEY not configured');
     }
 
     const subject = 'Willkommen bei Büeze.ch - Ihre Zugangsdaten';
@@ -51,49 +42,24 @@ Bei Fragen stehen wir Ihnen gerne zur Verfügung unter info@bueeze.ch
 Viel Erfolg!
 Ihr Büeze.ch Team`;
 
-    const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': smtp2goApiKey,
-      },
-      body: JSON.stringify({
-        sender: 'noreply@bueeze.ch',
-        to: [email],
-        subject: subject,
-        text_body: body,
-      }),
+    const result = await sendEmail({
+      to: email,
+      subject,
+      textBody: body,
     });
 
-    const emailData = await emailResponse.json();
-
-    if (!emailResponse.ok) {
-      throw new Error(`Email sending failed: ${JSON.stringify(emailData)}`);
+    if (!result.success) {
+      throw new Error(result.error || 'Email sending failed');
     }
 
     console.log('Welcome email sent successfully:', { email, companyName });
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Welcome email sent successfully'
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200 
-      }
-    );
+    return successResponse({ 
+      success: true, 
+      message: 'Welcome email sent successfully'
+    });
   } catch (error) {
     console.error('Error in send-handwerker-credentials:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400 
-      }
-    );
+    return errorResponse(error);
   }
 });
