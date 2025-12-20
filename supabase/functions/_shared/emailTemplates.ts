@@ -915,3 +915,54 @@ export const proposalRejectionTemplate = (data: ProposalRejectionData) => {
     </div>
   `);
 };
+
+// Handwerker Welcome Template (for account creation after approval)
+interface HandwerkerWelcomeData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+}
+
+export const handwerkerWelcomeTemplate = (data: HandwerkerWelcomeData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>🎉 Willkommen bei BÜEZE.CH!</h2>
+      <p>Hallo ${data.firstName} ${data.lastName},</p>
+      <p>Gute Nachrichten - Ihr Handwerker-Profil wurde erfolgreich geprüft und freigeschaltet!</p>
+      
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #0066CC;">Ihre Zugangsdaten</h3>
+        <p><strong>E-Mail:</strong> ${data.email}</p>
+        <p><strong>Passwort:</strong> <code style="background: #fff; padding: 4px 8px; border-radius: 3px;">${data.password}</code></p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="https://bueeze.ch/auth" class="button">🚀 Jetzt einloggen und loslegen</a>
+      </p>
+
+      <div class="info-box" style="border-left-color: #FF6B00;">
+        <p><strong>⚠️ WICHTIG:</strong> Aus Sicherheitsgründen empfehlen wir, das Passwort nach der ersten Anmeldung zu ändern.</p>
+      </div>
+
+      <hr class="divider">
+      
+      <h3>Sie können jetzt:</h3>
+      <ul>
+        <li>✅ Alle aktiven Aufträge durchsuchen</li>
+        <li>✅ Angebote an interessierte Kunden senden</li>
+        <li>✅ Ihr Profil bearbeiten und optimieren</li>
+        <li>✅ Direkt mit Auftraggebern kommunizieren</li>
+      </ul>
+
+      <div class="info-box">
+        <p><strong>📱 Nach dem ersten Login:</strong></p>
+        <p>Sie gelangen direkt zu Ihrem Dashboard, wo Sie Ihr Profil bearbeiten, aktive Aufträge durchsuchen und Angebote senden können.</p>
+      </div>
+
+      <p style="font-size: 14px; color: #666;">
+        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+      </p>
+    </div>
+  `);
+};

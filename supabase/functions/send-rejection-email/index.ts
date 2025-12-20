@@ -1,10 +1,7 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { rejectionNotificationTemplate } from "../_shared/emailTemplates.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { sendEmail } from '../_shared/smtp2go.ts';
+import { rejectionNotificationTemplate } from '../_shared/emailTemplates.ts';
 
 interface RejectionEmailRequest {
   email: string;
@@ -14,86 +11,9 @@ interface RejectionEmailRequest {
   reason?: string;
 }
 
-async function sendRejectionEmail(data: RejectionEmailRequest) {
-  const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
-  
-  if (!smtp2goApiKey) {
-    throw new Error('SMTP2GO_API_KEY not configured');
-  }
-
-  const htmlBody = rejectionNotificationTemplate({
-    firstName: data.firstName,
-    lastName: data.lastName,
-    companyName: data.companyName,
-    reason: data.reason,
-    email: data.email,
-  });
-
-  const textBody = `
-Registrierung nicht genehmigt
-
-Sehr geehrte/r ${data.firstName} ${data.lastName},
-
-Vielen Dank für Ihr Interesse an einer Zusammenarbeit mit Büeze.ch.
-
-Nach sorgfältiger Prüfung Ihrer Unterlagen müssen wir Ihnen leider mitteilen, 
-dass wir Ihre Registrierung ${data.companyName ? `für ${data.companyName}` : ''} 
-zum jetzigen Zeitpunkt nicht genehmigen können.
-
-${data.reason ? `\nGrund der Ablehnung:\n${data.reason}\n` : ''}
-
-Was Sie tun können:
-
-- Fehlende Dokumente: Falls Dokumente fehlen oder unvollständig sind, können Sie diese nachreichen
-- Ungültige Informationen: Überprüfen Sie Ihre angegebenen Daten und korrigieren Sie diese
-- Lizenz oder Versicherung: Stellen Sie sicher, dass alle erforderlichen Lizenzen und Versicherungen aktuell sind
-- Rückfragen: Kontaktieren Sie uns für weitere Informationen
-
-Kontakt:
-E-Mail: info@bueeze.ch
-Website: www.bueeze.ch
-
-Wir bedauern, Ihnen keine positivere Nachricht übermitteln zu können, 
-und stehen bei Fragen gerne zur Verfügung.
-
-Mit freundlichen Grüssen
-Das Büeze.ch Team
-  `;
-
-  try {
-    const response = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': smtp2goApiKey,
-      },
-      body: JSON.stringify({
-        sender: 'Büeze.ch <noreply@bueeze.ch>',
-        to: [data.email],
-        subject: 'Ihre Registrierung bei Büeze.ch',
-        text_body: textBody,
-        html_body: htmlBody,
-      }),
-    });
-
-    const result = await response.json();
-    console.log('Rejection email sent:', result);
-    
-    if (!response.ok) {
-      throw new Error(`Email sending failed: ${JSON.stringify(result)}`);
-    }
-
-    return result;
-  } catch (error) {
-    console.error('Error sending rejection email:', error);
-    throw error;
-  }
-}
-
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     const requestData: RejectionEmailRequest = await req.json();
@@ -105,30 +25,29 @@ serve(async (req) => {
       throw new Error('Missing required fields: email, firstName, lastName');
     }
 
-    await sendRejectionEmail(requestData);
+    const htmlBody = rejectionNotificationTemplate({
+      firstName: requestData.firstName,
+      lastName: requestData.lastName,
+      companyName: requestData.companyName,
+      reason: requestData.reason,
+      email: requestData.email,
+    });
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Rejection email sent successfully',
-      }), 
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
+    const result = await sendEmail({
+      to: requestData.email,
+      subject: 'Ihre Registrierung bei Büeze.ch',
+      htmlBody: htmlBody,
+    });
 
-  } catch (error: any) {
+    console.log('Rejection email sent:', result.success);
+
+    return successResponse({ 
+      success: true,
+      message: 'Rejection email sent successfully',
+    });
+
+  } catch (error) {
     console.error('Error in send-rejection-email:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Unknown error occurred',
-        success: false,
-      }), 
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
-    );
+    return errorResponse(error instanceof Error ? error.message : 'Unknown error');
   }
 });

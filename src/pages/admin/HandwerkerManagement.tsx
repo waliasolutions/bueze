@@ -343,43 +343,27 @@ export default function HandwerkerManagement() {
   };
 
   const deleteHandwerker = async (handwerker: Handwerker) => {
-    if (!handwerker.user_id) {
-      // For guest registrations without user_id, just delete the profile
-      setDeleteLoading(handwerker.id);
-      try {
-        const { error } = await supabase
-          .from('handwerker_profiles')
-          .delete()
-          .eq('id', handwerker.id);
-
-        if (error) throw error;
-        toast({ title: 'Handwerker-Profil gelöscht' });
-        fetchHandwerkers();
-      } catch (error) {
-        console.error('Error deleting profile:', error);
-        toast({ title: 'Fehler beim Löschen', variant: 'destructive' });
-      } finally {
-        setDeleteLoading(null);
-      }
-      return;
-    }
-
     setDeleteLoading(handwerker.id);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
+      // Use delete-user edge function for both guest and authenticated users
+      // This ensures complete cleanup including documents and approval history
       const { data, error } = await supabase.functions.invoke('delete-user', {
-        body: { userId: handwerker.user_id },
+        body: handwerker.user_id 
+          ? { userId: handwerker.user_id }
+          : { email: handwerker.email }, // For guest registrations, use email
         headers: {
           Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({ 
-        title: 'Handwerker vollständig gelöscht',
-        description: `Alle Daten wurden entfernt.`,
+        title: handwerker.user_id ? 'Handwerker vollständig gelöscht' : 'Gastregistrierung gelöscht',
+        description: 'Alle Daten wurden entfernt.',
       });
       fetchHandwerkers();
     } catch (error: any) {
