@@ -21,6 +21,16 @@ interface OrphanReport {
   orphaned_subscriptions: { id: string; user_id: string }[];
   orphaned_client_notifications: number;
   orphaned_handwerker_notifications: number;
+  orphaned_reviews: number;
+  orphaned_lead_proposals: number;
+  orphaned_lead_views: number;
+  orphaned_lead_purchases: number;
+  orphaned_leads: number;
+  orphaned_magic_tokens: number;
+  orphaned_payment_history: number;
+  orphaned_handwerker_documents: number;
+  orphaned_messages: number;
+  orphaned_conversations: number;
   total_orphans: number;
   scan_timestamp: string;
 }
@@ -40,6 +50,16 @@ serve(async (req) => {
       orphaned_subscriptions: [],
       orphaned_client_notifications: 0,
       orphaned_handwerker_notifications: 0,
+      orphaned_reviews: 0,
+      orphaned_lead_proposals: 0,
+      orphaned_lead_views: 0,
+      orphaned_lead_purchases: 0,
+      orphaned_leads: 0,
+      orphaned_magic_tokens: 0,
+      orphaned_payment_history: 0,
+      orphaned_handwerker_documents: 0,
+      orphaned_messages: 0,
+      orphaned_conversations: 0,
       total_orphans: 0,
       scan_timestamp: new Date().toISOString(),
     };
@@ -136,6 +156,127 @@ serve(async (req) => {
       ).length;
     }
 
+    // 6. Check for orphaned reviews
+    const { data: reviews } = await supabase
+      .from('reviews')
+      .select('reviewer_id, reviewed_id');
+
+    if (reviews) {
+      report.orphaned_reviews = reviews.filter(
+        r => !authUserIds.has(r.reviewer_id) || !authUserIds.has(r.reviewed_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_reviews} verwaiste Bewertungen gefunden`);
+
+    // 7. Check for orphaned lead_proposals
+    const { data: proposals } = await supabase
+      .from('lead_proposals')
+      .select('handwerker_id');
+
+    if (proposals) {
+      report.orphaned_lead_proposals = proposals.filter(
+        p => !authUserIds.has(p.handwerker_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_lead_proposals} verwaiste Offerten gefunden`);
+
+    // 8. Check for orphaned lead_views
+    const { data: leadViews } = await supabase
+      .from('lead_views')
+      .select('viewer_id');
+
+    if (leadViews) {
+      report.orphaned_lead_views = leadViews.filter(
+        v => !authUserIds.has(v.viewer_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_lead_views} verwaiste Lead-Ansichten gefunden`);
+
+    // 9. Check for orphaned lead_purchases
+    const { data: purchases } = await supabase
+      .from('lead_purchases')
+      .select('buyer_id');
+
+    if (purchases) {
+      report.orphaned_lead_purchases = purchases.filter(
+        p => !authUserIds.has(p.buyer_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_lead_purchases} verwaiste Lead-Käufe gefunden`);
+
+    // 10. Check for orphaned leads
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('owner_id');
+
+    if (leads) {
+      report.orphaned_leads = leads.filter(
+        l => !authUserIds.has(l.owner_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_leads} verwaiste Aufträge gefunden`);
+
+    // 11. Check for orphaned magic_tokens
+    const { data: tokens } = await supabase
+      .from('magic_tokens')
+      .select('user_id')
+      .not('user_id', 'is', null);
+
+    if (tokens) {
+      report.orphaned_magic_tokens = tokens.filter(
+        t => t.user_id && !authUserIds.has(t.user_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_magic_tokens} verwaiste Magic-Tokens gefunden`);
+
+    // 12. Check for orphaned payment_history
+    const { data: payments } = await supabase
+      .from('payment_history')
+      .select('user_id');
+
+    if (payments) {
+      report.orphaned_payment_history = payments.filter(
+        p => !authUserIds.has(p.user_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_payment_history} verwaiste Zahlungen gefunden`);
+
+    // 13. Check for orphaned handwerker_documents
+    const { data: docs } = await supabase
+      .from('handwerker_documents')
+      .select('user_id');
+
+    if (docs) {
+      report.orphaned_handwerker_documents = docs.filter(
+        d => !authUserIds.has(d.user_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_handwerker_documents} verwaiste Dokumente gefunden`);
+
+    // 14. Check for orphaned messages
+    const { data: messages } = await supabase
+      .from('messages')
+      .select('sender_id, recipient_id');
+
+    if (messages) {
+      report.orphaned_messages = messages.filter(
+        m => !authUserIds.has(m.sender_id) || !authUserIds.has(m.recipient_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_messages} verwaiste Nachrichten gefunden`);
+
+    // 15. Check for orphaned conversations
+    const { data: conversations } = await supabase
+      .from('conversations')
+      .select('homeowner_id, handwerker_id');
+
+    if (conversations) {
+      report.orphaned_conversations = conversations.filter(
+        c => !authUserIds.has(c.homeowner_id) || !authUserIds.has(c.handwerker_id)
+      ).length;
+    }
+    console.log(`[ORPHAN-CHECK] ${report.orphaned_conversations} verwaiste Konversationen gefunden`);
+
     // Calculate total
     report.total_orphans =
       report.orphaned_profiles.length +
@@ -143,7 +284,17 @@ serve(async (req) => {
       report.orphaned_handwerker_profiles.length +
       report.orphaned_subscriptions.length +
       report.orphaned_client_notifications +
-      report.orphaned_handwerker_notifications;
+      report.orphaned_handwerker_notifications +
+      report.orphaned_reviews +
+      report.orphaned_lead_proposals +
+      report.orphaned_lead_views +
+      report.orphaned_lead_purchases +
+      report.orphaned_leads +
+      report.orphaned_magic_tokens +
+      report.orphaned_payment_history +
+      report.orphaned_handwerker_documents +
+      report.orphaned_messages +
+      report.orphaned_conversations;
 
     console.log(`[ORPHAN-CHECK] Total verwaiste Datensätze: ${report.total_orphans}`);
 
@@ -156,6 +307,16 @@ serve(async (req) => {
         report.orphaned_subscriptions.length > 0 ? `${report.orphaned_subscriptions.length} Abonnements` : '',
         report.orphaned_client_notifications > 0 ? `${report.orphaned_client_notifications} Kunden-Benachrichtigungen` : '',
         report.orphaned_handwerker_notifications > 0 ? `${report.orphaned_handwerker_notifications} Handwerker-Benachrichtigungen` : '',
+        report.orphaned_reviews > 0 ? `${report.orphaned_reviews} Bewertungen` : '',
+        report.orphaned_lead_proposals > 0 ? `${report.orphaned_lead_proposals} Offerten` : '',
+        report.orphaned_lead_views > 0 ? `${report.orphaned_lead_views} Lead-Ansichten` : '',
+        report.orphaned_lead_purchases > 0 ? `${report.orphaned_lead_purchases} Lead-Käufe` : '',
+        report.orphaned_leads > 0 ? `${report.orphaned_leads} Aufträge` : '',
+        report.orphaned_magic_tokens > 0 ? `${report.orphaned_magic_tokens} Magic-Tokens` : '',
+        report.orphaned_payment_history > 0 ? `${report.orphaned_payment_history} Zahlungen` : '',
+        report.orphaned_handwerker_documents > 0 ? `${report.orphaned_handwerker_documents} Dokumente` : '',
+        report.orphaned_messages > 0 ? `${report.orphaned_messages} Nachrichten` : '',
+        report.orphaned_conversations > 0 ? `${report.orphaned_conversations} Konversationen` : '',
       ].filter(Boolean).join(', ');
 
       await supabase.from('admin_notifications').insert({

@@ -67,7 +67,22 @@ serve(async (req) => {
 
     if (authError) {
       console.error('Error creating auth user:', authError);
-      throw new Error(`Failed to create auth account: ${authError.message}`);
+      
+      // Create admin notification for auth creation failure
+      await supabase.from('admin_notifications').insert({
+        type: 'account_creation_failed',
+        title: 'Konto-Erstellung fehlgeschlagen',
+        message: `Auth-Benutzer für ${profile.email} konnte nicht erstellt werden: ${authError.message}`,
+        related_id: profileId,
+        metadata: { 
+          profileId, 
+          email: profile.email, 
+          error: authError.message,
+          adminId,
+        },
+      });
+      
+      throw new Error(`Auth-Konto konnte nicht erstellt werden: ${authError.message}`);
     }
 
     console.log('Auth user created:', authUser.user.id);
@@ -86,7 +101,46 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('Error updating profile:', updateError);
-      throw new Error(`Failed to update profile: ${updateError.message}`);
+      
+      // ROLLBACK: Delete the created auth user to prevent orphans
+      console.log('Rolling back: deleting auth user', authUser.user.id);
+      const { error: rollbackError } = await supabase.auth.admin.deleteUser(authUser.user.id);
+      
+      if (rollbackError) {
+        console.error('CRITICAL: Rollback failed, orphaned auth user:', authUser.user.id);
+        
+        // Create critical admin notification
+        await supabase.from('admin_notifications').insert({
+          type: 'account_creation_critical',
+          title: 'KRITISCH: Verwaister Auth-Benutzer',
+          message: `Auth-Benutzer ${authUser.user.id} (${profile.email}) wurde erstellt, aber Profil-Update fehlgeschlagen. Rollback fehlgeschlagen. Manuelle Bereinigung erforderlich.`,
+          related_id: profileId,
+          metadata: { 
+            profileId, 
+            email: profile.email, 
+            userId: authUser.user.id,
+            updateError: updateError.message,
+            rollbackError: rollbackError.message,
+          },
+        });
+      } else {
+        console.log('Rollback successful: auth user deleted');
+        
+        // Create admin notification for failed account creation
+        await supabase.from('admin_notifications').insert({
+          type: 'account_creation_failed',
+          title: 'Konto-Erstellung fehlgeschlagen (Rollback erfolgreich)',
+          message: `Profil-Update für ${profile.email} fehlgeschlagen. Auth-Benutzer wurde zurückgerollt. Bitte erneut versuchen.`,
+          related_id: profileId,
+          metadata: { 
+            profileId, 
+            email: profile.email, 
+            error: updateError.message,
+          },
+        });
+      }
+      
+      throw new Error(`Profil konnte nicht aktualisiert werden: ${updateError.message}`);
     }
 
     console.log('Profile updated with user_id');
@@ -109,15 +163,31 @@ serve(async (req) => {
 
     console.log('Welcome email sent:', emailResult.success);
 
+    // Create admin notification if email failed (non-blocking)
+    if (!emailResult.success) {
+      await supabase.from('admin_notifications').insert({
+        type: 'email_send_failed',
+        title: 'Willkommens-E-Mail nicht gesendet',
+        message: `Willkommens-E-Mail an ${profile.email} konnte nicht gesendet werden. Konto wurde trotzdem erstellt.`,
+        related_id: profileId,
+        metadata: { 
+          profileId, 
+          email: profile.email, 
+          userId: authUser.user.id,
+          emailError: emailResult.error,
+        },
+      });
+    }
+
     return successResponse({ 
       success: true,
       userId: authUser.user.id,
-      message: 'Account created successfully and welcome email sent',
+      message: 'Konto erfolgreich erstellt und Willkommens-E-Mail gesendet',
       emailSent: emailResult.success,
     });
 
   } catch (error) {
     console.error('Error in create-handwerker-account:', error);
-    return errorResponse(error instanceof Error ? error.message : 'Unknown error');
+    return errorResponse(error instanceof Error ? error.message : 'Unbekannter Fehler');
   }
 });

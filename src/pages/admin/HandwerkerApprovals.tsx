@@ -520,7 +520,7 @@ const HandwerkerApprovals = () => {
   };
 
   const deleteHandwerker = async (handwerker: PendingHandwerker) => {
-    const confirmMessage = `Sind Sie sicher, dass Sie ${handwerker.first_name} ${handwerker.last_name} (${handwerker.email}) löschen möchten?\n\nDies löscht das Handwerker-Profil. Der Benutzer kann sich danach neu registrieren.\n\nDieser Vorgang kann nicht rückgängig gemacht werden.`;
+    const confirmMessage = `Sind Sie sicher, dass Sie ${handwerker.first_name} ${handwerker.last_name} (${handwerker.email}) löschen möchten?\n\nDies löscht alle zugehörigen Daten vollständig. Der Benutzer kann sich danach neu registrieren.\n\nDieser Vorgang kann nicht rückgängig gemacht werden.`;
     
     if (!window.confirm(confirmMessage)) {
       return;
@@ -528,18 +528,38 @@ const HandwerkerApprovals = () => {
 
     setApproving(handwerker.id);
     try {
-      // Delete the handwerker profile (this is the main data)
-      const { error: profileError } = await supabase
-        .from('handwerker_profiles')
-        .delete()
-        .eq('id', handwerker.id);
-
-      if (profileError) throw profileError;
-
-      toast({
-        title: 'Handwerker gelöscht',
-        description: `${handwerker.first_name} ${handwerker.last_name} wurde erfolgreich gelöscht und kann sich neu registrieren.`,
+      // Use the delete-user edge function for complete cleanup
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // If handwerker has a user_id, delete via userId; otherwise delete via email (guest registration)
+      const deletePayload = handwerker.user_id 
+        ? { userId: handwerker.user_id }
+        : { email: handwerker.email };
+      
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: deletePayload,
       });
+
+      if (error) throw error;
+
+      // Show appropriate message based on deletion result
+      if (data?.verified) {
+        toast({
+          title: 'Handwerker vollständig gelöscht',
+          description: `${handwerker.first_name} ${handwerker.last_name} und alle zugehörigen Daten wurden erfolgreich gelöscht.`,
+        });
+      } else if (data?.warnings?.length > 0) {
+        toast({
+          title: 'Handwerker gelöscht (mit Warnungen)',
+          description: `${handwerker.first_name} ${handwerker.last_name} wurde gelöscht. ${data.warnings.length} Warnungen - Details im Admin-Bereich.`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Handwerker gelöscht',
+          description: data?.message || `${handwerker.first_name} ${handwerker.last_name} wurde erfolgreich gelöscht.`,
+        });
+      }
 
       await fetchPendingHandwerkers();
     } catch (error) {

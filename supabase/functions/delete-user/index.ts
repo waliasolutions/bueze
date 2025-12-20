@@ -499,6 +499,96 @@ async function verifyEmailFreed(
     orphanedRecords.user_roles = rolesCount || 0;
   }
 
+  // Check reviews (as reviewer or reviewed)
+  if (userId) {
+    const { count: reviewsCount } = await supabase
+      .from('reviews')
+      .select('*', { count: 'exact', head: true })
+      .or(`reviewer_id.eq.${userId},reviewed_id.eq.${userId}`);
+    orphanedRecords.reviews = reviewsCount || 0;
+  }
+
+  // Check lead_proposals
+  if (userId) {
+    const { count: proposalsCount } = await supabase
+      .from('lead_proposals')
+      .select('*', { count: 'exact', head: true })
+      .eq('handwerker_id', userId);
+    orphanedRecords.lead_proposals = proposalsCount || 0;
+  }
+
+  // Check lead_views
+  if (userId) {
+    const { count: viewsCount } = await supabase
+      .from('lead_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('viewer_id', userId);
+    orphanedRecords.lead_views = viewsCount || 0;
+  }
+
+  // Check lead_purchases
+  if (userId) {
+    const { count: purchasesCount } = await supabase
+      .from('lead_purchases')
+      .select('*', { count: 'exact', head: true })
+      .eq('buyer_id', userId);
+    orphanedRecords.lead_purchases = purchasesCount || 0;
+  }
+
+  // Check leads (owned by user)
+  if (userId) {
+    const { count: leadsCount } = await supabase
+      .from('leads')
+      .select('*', { count: 'exact', head: true })
+      .eq('owner_id', userId);
+    orphanedRecords.leads = leadsCount || 0;
+  }
+
+  // Check magic_tokens
+  if (userId) {
+    const { count: tokensCount } = await supabase
+      .from('magic_tokens')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    orphanedRecords.magic_tokens = tokensCount || 0;
+  }
+
+  // Check payment_history
+  if (userId) {
+    const { count: paymentsCount } = await supabase
+      .from('payment_history')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    orphanedRecords.payment_history = paymentsCount || 0;
+  }
+
+  // Check handwerker_documents
+  if (userId) {
+    const { count: docsCount } = await supabase
+      .from('handwerker_documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    orphanedRecords.handwerker_documents = docsCount || 0;
+  }
+
+  // Check messages
+  if (userId) {
+    const { count: msgsCount } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`);
+    orphanedRecords.messages = msgsCount || 0;
+  }
+
+  // Check conversations
+  if (userId) {
+    const { count: convsCount } = await supabase
+      .from('conversations')
+      .select('*', { count: 'exact', head: true })
+      .or(`homeowner_id.eq.${userId},handwerker_id.eq.${userId}`);
+    orphanedRecords.conversations = convsCount || 0;
+  }
+
   // Check handwerker_subscriptions
   if (userId) {
     const { count: subsCount } = await supabase
