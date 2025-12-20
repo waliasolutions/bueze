@@ -230,27 +230,28 @@ export default function UserManagement() {
   const handleDeleteUser = async (userId: string) => {
     setActionLoading(true);
     try {
-      // Delete user role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
 
-      if (roleError) throw roleError;
+      if (error) throw error;
 
-      // Note: Deleting the actual user account requires admin API
-      // For now, we just remove the role
       toast({
-        title: 'Erfolg',
-        description: 'Benutzerrolle wurde entfernt.',
+        title: 'Benutzer gelöscht',
+        description: 'Benutzer und alle zugehörigen Daten wurden vollständig gelöscht.',
       });
 
       await loadUsers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
       toast({
         title: 'Fehler',
-        description: 'Fehler beim Löschen des Benutzers.',
+        description: error.message || 'Fehler beim Löschen des Benutzers.',
         variant: 'destructive',
       });
     } finally {
@@ -457,15 +458,34 @@ export default function UserManagement() {
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" title="Benutzer löschen">
+                              <Button variant="ghost" size="sm" title="Benutzer löschen" disabled={actionLoading}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Benutzerrolle entfernen?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Diese Aktion entfernt die Rolle des Benutzers. Der Benutzer kann sich weiterhin anmelden.
+                                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                                  <AlertTriangle className="h-5 w-5" />
+                                  Benutzer endgültig löschen?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="space-y-3">
+                                  <div className="rounded-md bg-destructive/10 p-3 border border-destructive/20">
+                                    <p className="font-semibold text-destructive">ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!</p>
+                                  </div>
+                                  <p>
+                                    <strong>{user.full_name || user.email}</strong> wird unwiderruflich gelöscht.
+                                  </p>
+                                  <p className="text-sm">Folgende Daten werden entfernt:</p>
+                                  <ul className="list-disc list-inside text-sm space-y-1">
+                                    <li>Benutzerprofil und Konto</li>
+                                    <li>Alle Nachrichten und Konversationen</li>
+                                    <li>Alle Aufträge und Angebote</li>
+                                    <li>Handwerker-Profil (falls vorhanden)</li>
+                                    <li>Bewertungen und Abonnements</li>
+                                  </ul>
+                                  <p className="text-sm text-muted-foreground mt-2">
+                                    Die E-Mail-Adresse kann danach neu registriert werden.
+                                  </p>
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

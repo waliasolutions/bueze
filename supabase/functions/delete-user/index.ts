@@ -50,9 +50,63 @@ serve(async (req) => {
       });
     }
 
-    const { userId } = await req.json();
+    const { userId, email } = await req.json();
+    
+    // Support email-based deletion for guest registrations
+    if (!userId && email) {
+      console.log(`Deleting guest registration by email: ${email}`);
+      
+      const guestDeletionStats: Record<string, number> = {};
+      
+      // Delete handwerker_documents for guest profiles
+      const { data: guestProfiles } = await supabase
+        .from('handwerker_profiles')
+        .select('id')
+        .eq('email', email)
+        .is('user_id', null);
+      
+      if (guestProfiles && guestProfiles.length > 0) {
+        const profileIds = guestProfiles.map(p => p.id);
+        
+        // Delete documents
+        const { data: docs } = await supabase
+          .from('handwerker_documents')
+          .delete()
+          .in('handwerker_profile_id', profileIds)
+          .select('id');
+        guestDeletionStats.handwerker_documents = docs?.length || 0;
+        
+        // Delete approval history
+        const { data: history } = await supabase
+          .from('handwerker_approval_history')
+          .delete()
+          .in('handwerker_profile_id', profileIds)
+          .select('id');
+        guestDeletionStats.handwerker_approval_history = history?.length || 0;
+        
+        // Delete the profiles
+        const { data: profiles } = await supabase
+          .from('handwerker_profiles')
+          .delete()
+          .eq('email', email)
+          .is('user_id', null)
+          .select('id');
+        guestDeletionStats.handwerker_profiles = profiles?.length || 0;
+      }
+      
+      console.log(`Guest registration deleted for ${email}. Stats:`, guestDeletionStats);
+      
+      return new Response(JSON.stringify({ 
+        success: true, 
+        deletionStats: guestDeletionStats,
+        message: 'Guest registration deleted'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     if (!userId) {
-      return new Response(JSON.stringify({ error: 'userId is required' }), {
+      return new Response(JSON.stringify({ error: 'userId or email is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -70,7 +124,15 @@ serve(async (req) => {
 
     const deletionStats: Record<string, number> = {};
 
+    // Get handwerker profile ID for this user (if any)
+    const { data: handwerkerProfile } = await supabase
+      .from('handwerker_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
     // Delete in order respecting foreign key constraints
+    
     // 1. Messages
     const { data: msgs } = await supabase
       .from('messages')
@@ -127,7 +189,41 @@ serve(async (req) => {
       .select('id');
     deletionStats.leads = leads?.length || 0;
 
-    // 8. Handwerker subscriptions
+    // 8. Magic tokens
+    const { data: tokens } = await supabase
+      .from('magic_tokens')
+      .delete()
+      .eq('user_id', userId)
+      .select('id');
+    deletionStats.magic_tokens = tokens?.length || 0;
+
+    // 9. Handwerker documents (if handwerker profile exists)
+    if (handwerkerProfile) {
+      const { data: docs } = await supabase
+        .from('handwerker_documents')
+        .delete()
+        .eq('handwerker_profile_id', handwerkerProfile.id)
+        .select('id');
+      deletionStats.handwerker_documents = docs?.length || 0;
+      
+      // Also delete by user_id
+      const { data: userDocs } = await supabase
+        .from('handwerker_documents')
+        .delete()
+        .eq('user_id', userId)
+        .select('id');
+      deletionStats.handwerker_documents = (deletionStats.handwerker_documents || 0) + (userDocs?.length || 0);
+      
+      // 10. Handwerker approval history
+      const { data: approvalHistory } = await supabase
+        .from('handwerker_approval_history')
+        .delete()
+        .eq('handwerker_profile_id', handwerkerProfile.id)
+        .select('id');
+      deletionStats.handwerker_approval_history = approvalHistory?.length || 0;
+    }
+
+    // 11. Handwerker subscriptions
     const { data: subs } = await supabase
       .from('handwerker_subscriptions')
       .delete()
@@ -135,7 +231,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_subscriptions = subs?.length || 0;
 
-    // 9. Handwerker profiles
+    // 12. Handwerker profiles
     const { data: hwProfiles } = await supabase
       .from('handwerker_profiles')
       .delete()
@@ -143,7 +239,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_profiles = hwProfiles?.length || 0;
 
-    // 10. Client notifications
+    // 13. Client notifications
     const { data: clientNotifs } = await supabase
       .from('client_notifications')
       .delete()
@@ -151,7 +247,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.client_notifications = clientNotifs?.length || 0;
 
-    // 11. Handwerker notifications
+    // 14. Handwerker notifications
     const { data: hwNotifs } = await supabase
       .from('handwerker_notifications')
       .delete()
@@ -159,7 +255,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_notifications = hwNotifs?.length || 0;
 
-    // 12. Payment history
+    // 15. Payment history
     const { data: payments } = await supabase
       .from('payment_history')
       .delete()
@@ -167,7 +263,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.payment_history = payments?.length || 0;
 
-    // 13. User roles
+    // 16. User roles
     const { data: roles } = await supabase
       .from('user_roles')
       .delete()
@@ -175,7 +271,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.user_roles = roles?.length || 0;
 
-    // 14. Profile
+    // 17. Profile
     const { data: profiles } = await supabase
       .from('profiles')
       .delete()
@@ -183,7 +279,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.profiles = profiles?.length || 0;
 
-    // 15. Delete auth user
+    // 18. Delete auth user
     const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
     if (deleteAuthError) {
       console.error('Error deleting auth user:', deleteAuthError);
