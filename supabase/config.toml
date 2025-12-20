@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.delete-user]
 verify_jwt = false
 
+[functions.find-orphaned-records]
+verify_jwt = false
+
 [functions.generate-sitemap]
 verify_jwt = false
 
