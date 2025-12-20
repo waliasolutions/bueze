@@ -25,12 +25,22 @@ serve(async (req) => {
 
     const supabase = createSupabaseAdmin();
 
-    // Check if user already exists
-    const { data: existingUser } = await supabase.auth.admin.listUsers();
-    const userExists = existingUser?.users.some(u => u.email === email);
+    // Check if user already exists - use efficient direct lookup instead of listing all users
+    const { data: existingUsers } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .limit(1);
 
-    if (userExists) {
+    if (existingUsers && existingUsers.length > 0) {
       console.log('User already exists:', email);
+      return successResponse({ success: true, message: 'User already exists', created: false });
+    }
+    
+    // Also check auth.users directly in case profile doesn't exist
+    const { data: authCheck } = await supabase.auth.admin.getUserByEmail(email);
+    if (authCheck?.user) {
+      console.log('Auth user already exists:', email);
       return successResponse({ success: true, message: 'User already exists', created: false });
     }
 

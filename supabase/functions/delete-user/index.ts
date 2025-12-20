@@ -1,28 +1,18 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createSupabaseAdmin();
 
     // Get authorization header to verify admin
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return errorResponse('Unauthorized', 401);
     }
 
     // Verify caller is admin
@@ -30,10 +20,7 @@ serve(async (req) => {
     const { data: { user: caller }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !caller) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return errorResponse('Invalid token', 401);
     }
 
     // Check if caller is admin
@@ -44,10 +31,7 @@ serve(async (req) => {
 
     const isAdmin = callerRoles?.some(r => r.role === 'admin' || r.role === 'super_admin');
     if (!isAdmin) {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return errorResponse('Admin access required', 403);
     }
 
     const { userId, email } = await req.json();
@@ -58,7 +42,7 @@ serve(async (req) => {
       
       const guestDeletionStats: Record<string, number> = {};
       
-      // Delete handwerker_documents for guest profiles
+      // Get guest profiles by email (no user_id)
       const { data: guestProfiles } = await supabase
         .from('handwerker_profiles')
         .select('id')
@@ -96,28 +80,20 @@ serve(async (req) => {
       
       console.log(`Guest registration deleted for ${email}. Stats:`, guestDeletionStats);
       
-      return new Response(JSON.stringify({ 
+      return successResponse({ 
         success: true, 
         deletionStats: guestDeletionStats,
         message: 'Guest registration deleted'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
     
     if (!userId) {
-      return new Response(JSON.stringify({ error: 'userId or email is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return errorResponse('userId or email is required', 400);
     }
 
     // Prevent self-deletion
     if (userId === caller.id) {
-      return new Response(JSON.stringify({ error: 'Cannot delete your own account' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return errorResponse('Cannot delete your own account', 400);
     }
 
     console.log(`Deleting user ${userId} by admin ${caller.email}`);
@@ -131,7 +107,17 @@ serve(async (req) => {
       .eq('user_id', userId)
       .maybeSingle();
 
-    // Delete in order respecting foreign key constraints
+    // IMPORTANT: Delete auth user FIRST to prevent orphaned records
+    // If this fails, we don't proceed with data deletion to maintain consistency
+    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
+    if (deleteAuthError) {
+      console.error('Error deleting auth user:', deleteAuthError);
+      throw new Error(`Failed to delete auth user: ${deleteAuthError.message}. No data was deleted.`);
+    }
+    deletionStats.auth_user = 1;
+    console.log(`Auth user ${userId} deleted successfully`);
+
+    // Now clean up any remaining data (in case triggers didn't fire or data was orphaned)
     
     // 1. Messages
     const { data: msgs } = await supabase
@@ -197,7 +183,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.magic_tokens = tokens?.length || 0;
 
-    // 9. Handwerker documents (if handwerker profile exists)
+    // 9. Handwerker documents (both by profile_id and user_id)
     if (handwerkerProfile) {
       const { data: docs } = await supabase
         .from('handwerker_documents')
@@ -206,15 +192,7 @@ serve(async (req) => {
         .select('id');
       deletionStats.handwerker_documents = docs?.length || 0;
       
-      // Also delete by user_id
-      const { data: userDocs } = await supabase
-        .from('handwerker_documents')
-        .delete()
-        .eq('user_id', userId)
-        .select('id');
-      deletionStats.handwerker_documents = (deletionStats.handwerker_documents || 0) + (userDocs?.length || 0);
-      
-      // 10. Handwerker approval history
+      // Delete approval history
       const { data: approvalHistory } = await supabase
         .from('handwerker_approval_history')
         .delete()
@@ -222,8 +200,16 @@ serve(async (req) => {
         .select('id');
       deletionStats.handwerker_approval_history = approvalHistory?.length || 0;
     }
+    
+    // Also delete documents by user_id (in case profile was already deleted)
+    const { data: userDocs } = await supabase
+      .from('handwerker_documents')
+      .delete()
+      .eq('user_id', userId)
+      .select('id');
+    deletionStats.handwerker_documents = (deletionStats.handwerker_documents || 0) + (userDocs?.length || 0);
 
-    // 11. Handwerker subscriptions
+    // 10. Handwerker subscriptions
     const { data: subs } = await supabase
       .from('handwerker_subscriptions')
       .delete()
@@ -231,7 +217,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_subscriptions = subs?.length || 0;
 
-    // 12. Handwerker profiles
+    // 11. Handwerker profiles
     const { data: hwProfiles } = await supabase
       .from('handwerker_profiles')
       .delete()
@@ -239,7 +225,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_profiles = hwProfiles?.length || 0;
 
-    // 13. Client notifications
+    // 12. Client notifications
     const { data: clientNotifs } = await supabase
       .from('client_notifications')
       .delete()
@@ -247,7 +233,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.client_notifications = clientNotifs?.length || 0;
 
-    // 14. Handwerker notifications
+    // 13. Handwerker notifications
     const { data: hwNotifs } = await supabase
       .from('handwerker_notifications')
       .delete()
@@ -255,7 +241,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_notifications = hwNotifs?.length || 0;
 
-    // 15. Payment history
+    // 14. Payment history
     const { data: payments } = await supabase
       .from('payment_history')
       .delete()
@@ -263,7 +249,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.payment_history = payments?.length || 0;
 
-    // 16. User roles
+    // 15. User roles (should be cascade deleted, but ensure cleanup)
     const { data: roles } = await supabase
       .from('user_roles')
       .delete()
@@ -271,7 +257,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.user_roles = roles?.length || 0;
 
-    // 17. Profile
+    // 16. Profile (should be cascade deleted, but ensure cleanup)
     const { data: profiles } = await supabase
       .from('profiles')
       .delete()
@@ -279,30 +265,16 @@ serve(async (req) => {
       .select('id');
     deletionStats.profiles = profiles?.length || 0;
 
-    // 18. Delete auth user
-    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
-    if (deleteAuthError) {
-      console.error('Error deleting auth user:', deleteAuthError);
-      // Continue anyway - data is already deleted
-    } else {
-      deletionStats.auth_user = 1;
-    }
+    console.log(`User ${userId} fully deleted. Stats:`, deletionStats);
 
-    console.log(`User ${userId} deleted. Stats:`, deletionStats);
-
-    return new Response(JSON.stringify({ 
+    return successResponse({ 
       success: true, 
       deletionStats,
       message: 'User and all related data permanently deleted'
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in delete-user:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return errorResponse(error instanceof Error ? error.message : 'Unknown error', 500);
   }
 });
