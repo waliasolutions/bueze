@@ -11,10 +11,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 
 interface User {
   id: string;
@@ -61,23 +62,16 @@ export default function UserManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isSuperAdmin, loading: roleLoading } = useUserRole();
+  const { loading: authLoading, isAuthorized } = useAuthGuard({
+    requiredRoles: ['super_admin'],
+    unauthorizedRedirect: '/dashboard',
+  });
 
   useEffect(() => {
-    if (!roleLoading && !isSuperAdmin) {
-      toast({
-        title: 'Zugriff verweigert',
-        description: 'Nur Super Administratoren können auf diese Seite zugreifen.',
-        variant: 'destructive',
-      });
-      navigate('/dashboard');
-      return;
-    }
-    
-    if (!roleLoading && isSuperAdmin) {
+    if (isAuthorized) {
       loadUsers();
     }
-  }, [roleLoading, isSuperAdmin]);
+  }, [isAuthorized]);
 
   useEffect(() => {
     // Filter users based on search query
@@ -334,6 +328,9 @@ export default function UserManagement() {
     setEditUserRole(user.role);
     setIsEditDialogOpen(true);
   };
+
+  if (authLoading) return <PageSkeleton />;
+  if (!isAuthorized) return null;
 
   if (loading) {
     return (

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -24,13 +26,19 @@ interface PageContent {
 const ContentManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [contents, setContents] = useState<PageContent[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchContents();
-  }, []);
+    if (isAuthorized) {
+      fetchContents();
+    }
+  }, [isAuthorized]);
+
+  if (authLoading) return <PageSkeleton />;
+  if (!isAuthorized) return null;
 
   const fetchContents = async () => {
     try {
