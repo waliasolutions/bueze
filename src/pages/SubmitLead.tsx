@@ -25,6 +25,7 @@ import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { Badge } from '@/components/ui/badge';
 import { runAllSpamChecks, recordAttempt } from '@/lib/spamProtection';
+import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 
 
 const leadSchema = z.object({
@@ -338,11 +339,12 @@ const SubmitLead = () => {
           return;
         }
 
-        // Validate password length (minimum 8 characters to match Auth.tsx)
-        if (data.contactPassword.length < 8) {
+        // Validate password using SSOT validation helper
+        const passwordValidation = validatePassword(data.contactPassword);
+        if (!passwordValidation.valid) {
           toast({
-            title: "Passwort zu kurz",
-            description: "Das Passwort muss mindestens 8 Zeichen lang sein.",
+            title: "Passwort ungültig",
+            description: passwordValidation.error,
             variant: "destructive",
           });
           setIsSubmitting(false);

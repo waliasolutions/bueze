@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
 import { Loader2, Star, Eye, EyeOff, Trash2, Search, ArrowLeft, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -24,7 +24,7 @@ const ReviewsManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [isLoading, setIsLoading] = useState(true);
   const [reviews, setReviews] = useState<ReviewForAdmin[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<ReviewForAdmin[]>([]);
@@ -33,20 +33,10 @@ const ReviewsManagement = () => {
   const [filterVisibility, setFilterVisibility] = useState<string>('all');
 
   useEffect(() => {
-    if (!roleLoading && !isAdmin) {
-      toast({
-        title: 'Zugriff verweigert',
-        description: 'Sie haben keine Berechtigung für diese Seite.',
-        variant: 'destructive',
-      });
-      navigate('/dashboard');
-      return;
-    }
-    
-    if (!roleLoading && isAdmin) {
+    if (!authLoading && isAuthorized) {
       loadReviews();
     }
-  }, [roleLoading, isAdmin]);
+  }, [authLoading, isAuthorized]);
 
   useEffect(() => {
     applyFilters();
@@ -206,7 +196,7 @@ const ReviewsManagement = () => {
   const hiddenCount = reviews.filter(r => !r.is_public).length;
   const withResponse = reviews.filter(r => r.handwerker_response).length;
 
-  if (isLoading) {
+  if (authLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -214,7 +204,7 @@ const ReviewsManagement = () => {
     );
   }
 
-  if (!isAdmin) return null;
+  if (!isAuthorized) return null;
 
   return (
     <AdminLayout title="Bewertungen verwalten" description="Übersicht und Moderation aller Plattform-Bewertungen">

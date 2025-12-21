@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { ROLE_CONFIG, isAdminRole, getPrimaryRole, type AppRole } from '@/config/roles';
 
-type UserRole = 'admin' | 'super_admin' | 'handwerker' | 'client' | 'user' | null;
-
-// Role priority order (highest to lowest)
-const ROLE_PRIORITY: UserRole[] = ['super_admin', 'admin', 'handwerker', 'client', 'user'];
+// Use AppRole from roles.ts as SSOT
+type UserRole = AppRole | null;
 
 interface UseUserRoleResult {
   role: UserRole;
-  allRoles: UserRole[];
+  allRoles: AppRole[];
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isHandwerker: boolean;
@@ -21,11 +20,11 @@ interface UseUserRoleResult {
 }
 
 // Cache for role data to prevent repeated queries
-const roleCache = new Map<string, { roles: UserRole[]; timestamp: number }>();
+const roleCache = new Map<string, { roles: AppRole[]; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 export function useUserRole(): UseUserRoleResult {
-  const [allRoles, setAllRoles] = useState<UserRole[]>([]);
+  const [allRoles, setAllRoles] = useState<AppRole[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -70,7 +69,7 @@ export function useUserRole(): UseUserRoleResult {
         }
 
         // Extract roles array
-        const fetchedRoles: UserRole[] = rolesData?.map(r => r.role as UserRole) || ['user'];
+        const fetchedRoles: AppRole[] = rolesData?.map(r => r.role as AppRole) || ['user'];
         
         // Update cache
         roleCache.set(user.id, { roles: fetchedRoles, timestamp: Date.now() });
@@ -108,11 +107,11 @@ export function useUserRole(): UseUserRoleResult {
     };
   }, []);
 
-  // Get the highest priority role
-  const primaryRole = ROLE_PRIORITY.find(r => allRoles.includes(r)) || (allRoles.length > 0 ? allRoles[0] : null);
+  // Get the highest priority role using SSOT getPrimaryRole
+  const primaryRole = getPrimaryRole(allRoles) || (allRoles.length > 0 ? allRoles[0] : null);
   
-  // Check for specific role types
-  const hasAdminRole = allRoles.includes('admin') || allRoles.includes('super_admin');
+  // Check for specific role types using SSOT isAdminRole
+  const hasAdminRole = allRoles.some(r => isAdminRole(r));
   const hasSuperAdminRole = allRoles.includes('super_admin');
   const hasHandwerkerRole = allRoles.includes('handwerker');
 

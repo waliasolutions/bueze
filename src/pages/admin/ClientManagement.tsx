@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
 import {
   Loader2,
   Search,
@@ -61,7 +61,7 @@ interface Lead {
 export default function ClientManagement() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,21 +71,10 @@ export default function ClientManagement() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!roleLoading && !isAdmin) {
-      toast({
-        title: 'Zugriff verweigert',
-        description: 'Sie haben keine Berechtigung für diese Seite.',
-        variant: 'destructive',
-      });
-      navigate('/dashboard');
-    }
-  }, [roleLoading, isAdmin]);
-
-  useEffect(() => {
-    if (isAdmin) {
+    if (!authLoading && isAuthorized) {
       fetchClients();
     }
-  }, [isAdmin]);
+  }, [authLoading, isAuthorized]);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -253,7 +242,7 @@ export default function ClientManagement() {
   const totalLeads = clients.reduce((sum, c) => sum + c.leads_count, 0);
   const activeClients = clients.filter((c) => c.leads_count > 0).length;
 
-  if (roleLoading || loading) {
+  if (authLoading || loading) {
     return (
       <AdminLayout title="Kunden" description="Verwalten Sie alle Kunden-Konten">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -262,6 +251,8 @@ export default function ClientManagement() {
       </AdminLayout>
     );
   }
+
+  if (!isAuthorized) return null;
 
   return (
     <AdminLayout title="Kunden" description="Verwalten Sie alle Kunden-Konten">

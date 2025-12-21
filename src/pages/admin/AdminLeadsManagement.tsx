@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { useUserRole } from "@/hooks/useUserRole";
+import { useAdminGuard } from "@/hooks/useAuthGuard";
 import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2 } from "lucide-react";
 import { majorCategories } from "@/config/majorCategories";
 import { SWISS_CANTONS, getCantonLabel } from "@/config/cantons";
@@ -49,7 +49,7 @@ import type { LeadWithOwnerContact, AdminProposal } from "@/types/entities";
 
 export default function AdminLeadsManagement() {
   const navigate = useNavigate();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [leads, setLeads] = useState<LeadWithOwnerContact[]>([]);
   const [proposals, setProposals] = useState<Record<string, AdminProposal[]>>({});
   const [loading, setLoading] = useState(true);
@@ -66,15 +66,10 @@ export default function AdminLeadsManagement() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!roleLoading) {
-      if (!isAdmin) {
-        toast.error("Zugriff verweigert");
-        navigate("/");
-      } else {
-        fetchLeads();
-      }
+    if (!authLoading && isAuthorized) {
+      fetchLeads();
     }
-  }, [roleLoading, isAdmin]);
+  }, [authLoading, isAuthorized]);
 
   const fetchLeads = async () => {
     setLoading(true);
