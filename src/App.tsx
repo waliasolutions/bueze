@@ -55,6 +55,7 @@ const BulkMetaManager = lazy(() => import("./pages/admin/BulkMetaManager"));
 const GTMConfiguration = lazy(() => import("./pages/admin/GTMConfiguration"));
 const ReviewsManagement = lazy(() => import("./pages/admin/ReviewsManagement"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const DeletionAudit = lazy(() => import("./pages/admin/DeletionAudit"));
 
 // Legal pages - low priority
 const AGB = lazy(() => import("./pages/legal/AGB"));

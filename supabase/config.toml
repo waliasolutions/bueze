@@ -3,6 +3,9 @@ project_id = "ztthhdlhuhtwaaennfia"
 [functions.check-admin-role]
 verify_jwt = true
 
+[functions.create-admin-user]
+verify_jwt = true
+
 [functions.document-expiry-reminder]
 verify_jwt = false
 
