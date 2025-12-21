@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 export default function ResetPassword() {
@@ -59,11 +60,12 @@ export default function ResetPassword() {
       return;
     }
 
-    // Validate password length
-    if (password.length < 8) {
+    // Validate password using SSOT validation helper
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
       toast({
         title: 'Fehler',
-        description: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+        description: passwordValidation.error,
         variant: 'destructive',
       });
       return;
@@ -186,7 +188,7 @@ export default function ResetPassword() {
             </div>
             <CardTitle className="text-2xl">Neues Passwort erstellen</CardTitle>
             <CardDescription>
-              Geben Sie Ihr neues Passwort ein. Es muss mindestens 8 Zeichen lang sein.
+              Geben Sie Ihr neues Passwort ein. Es muss mindestens {PASSWORD_MIN_LENGTH} Zeichen lang sein.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -196,7 +198,7 @@ export default function ResetPassword() {
                 <Input
                   id="password"
                   type="password"
-                  placeholder="Mindestens 8 Zeichen"
+                  placeholder={`Mindestens ${PASSWORD_MIN_LENGTH} Zeichen`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required

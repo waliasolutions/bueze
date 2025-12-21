@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
 import { 
   Loader2, 
   Users, 
@@ -38,7 +38,7 @@ interface DashboardStats {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
@@ -53,20 +53,11 @@ const AdminDashboard = () => {
   const [attentionItems, setAttentionItems] = useState<{ type: string; count: number; link: string }[]>([]);
 
   useEffect(() => {
-    if (!roleLoading) {
-      if (!isAdmin) {
-        toast({
-          title: 'Zugriff verweigert',
-          description: 'Sie haben keine Berechtigung für diese Seite.',
-          variant: 'destructive',
-        });
-        navigate('/dashboard');
-      } else {
-        loadDashboardData();
-        setIsLoading(false);
-      }
+    if (!authLoading && isAuthorized) {
+      loadDashboardData();
+      setIsLoading(false);
     }
-  }, [roleLoading, isAdmin]);
+  }, [authLoading, isAuthorized]);
 
   const loadDashboardData = async () => {
     try {
@@ -170,7 +161,7 @@ const AdminDashboard = () => {
     }
   };
 
-  if (isLoading || roleLoading) {
+  if (authLoading || isLoading) {
     return (
       <AdminLayout title="Dashboard" description="Übersicht und Schnellzugriff">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -180,7 +171,7 @@ const AdminDashboard = () => {
     );
   }
 
-  if (!isAdmin) return null;
+  if (!isAuthorized) return null;
 
   return (
     <AdminLayout title="Dashboard" description="Übersicht und Schnellzugriff">

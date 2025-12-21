@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
-import { getUserRoles, checkUserHasRole } from '@/lib/roleHelpers';
+import { getUserRoles } from '@/lib/roleHelpers';
+import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 
@@ -124,11 +125,12 @@ export default function Auth() {
       return;
     }
 
-    // Validate password length
-    if (signUpData.password.length < 8) {
+    // Validate password using SSOT validation helper
+    const passwordValidation = validatePassword(signUpData.password);
+    if (!passwordValidation.valid) {
       toast({
         title: 'Fehler',
-        description: 'Das Passwort muss mindestens 8 Zeichen lang sein.',
+        description: passwordValidation.error,
         variant: 'destructive',
       });
       setIsLoading(false);
@@ -277,7 +279,7 @@ export default function Auth() {
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="Mindestens 8 Zeichen"
+                    placeholder={`Mindestens ${PASSWORD_MIN_LENGTH} Zeichen`}
                     value={signUpData.password}
                     onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
                     required

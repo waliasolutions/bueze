@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
 import { checkUserIsAdmin, upsertUserRole } from '@/lib/roleHelpers';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getCantonLabel } from '@/config/cantons';
@@ -81,7 +81,7 @@ interface Subscription {
 export default function HandwerkerManagement() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [loading, setLoading] = useState(true);
   const [handwerkers, setHandwerkers] = useState<Handwerker[]>([]);
   const [subscriptions, setSubscriptions] = useState<Map<string, Subscription>>(new Map());
@@ -95,22 +95,11 @@ export default function HandwerkerManagement() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!roleLoading && !isAdmin) {
-      toast({
-        title: 'Zugriff verweigert',
-        description: 'Sie haben keine Berechtigung für diese Seite.',
-        variant: 'destructive',
-      });
-      navigate('/dashboard');
-    }
-  }, [roleLoading, isAdmin]);
-
-  useEffect(() => {
-    if (isAdmin) {
+    if (!authLoading && isAuthorized) {
       fetchHandwerkers();
       fetchSubscriptions();
     }
-  }, [isAdmin]);
+  }, [authLoading, isAuthorized]);
 
   const fetchHandwerkers = async () => {
     setLoading(true);
@@ -481,7 +470,7 @@ export default function HandwerkerManagement() {
     rejected: handwerkers.filter((h) => h.verification_status === 'rejected').length,
   };
 
-  if (roleLoading || loading) {
+  if (authLoading || loading) {
     return (
       <AdminLayout title="Handwerker" description="Verwalten Sie alle Handwerker-Profile">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -490,6 +479,8 @@ export default function HandwerkerManagement() {
       </AdminLayout>
     );
   }
+
+  if (!isAuthorized) return null;
 
   return (
     <AdminLayout title="Handwerker" description="Verwalten Sie alle Handwerker-Profile">
