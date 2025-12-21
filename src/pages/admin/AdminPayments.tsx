@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { 
   ArrowLeft, 
   RefreshCw, 
@@ -98,7 +99,7 @@ const PLAN_COLORS: Record<string, string> = {
 const AdminPayments = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -111,20 +112,14 @@ const AdminPayments = () => {
   const [planBreakdown, setPlanBreakdown] = useState<PlanBreakdown[]>([]);
 
   useEffect(() => {
-    if (!roleLoading) {
-      if (!isAdmin) {
-        toast({
-          title: 'Zugriff verweigert',
-          description: 'Sie haben keine Berechtigung für diese Seite.',
-          variant: 'destructive',
-        });
-        navigate('/dashboard');
-      } else {
-        loadData();
-        setIsLoading(false);
-      }
+    if (isAuthorized) {
+      loadData();
+      setIsLoading(false);
     }
-  }, [roleLoading, isAdmin]);
+  }, [isAuthorized]);
+
+  if (authLoading) return <PageSkeleton />;
+  if (!isAuthorized) return null;
 
   const loadData = async () => {
     try {
@@ -218,10 +213,6 @@ const AdminPayments = () => {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  if (!isAdmin) {
-    return null;
   }
 
   return (

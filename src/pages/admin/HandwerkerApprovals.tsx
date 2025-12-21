@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
 import { checkUserIsAdmin, upsertUserRole } from '@/lib/roleHelpers';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, AlertTriangle, Search, Filter, History, Trash2, Pencil } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -80,7 +81,7 @@ interface ApprovalHistoryEntry {
 const HandwerkerApprovals = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [isLoading, setIsLoading] = useState(true);
   const [pendingHandwerkers, setPendingHandwerkers] = useState<PendingHandwerker[]>([]);
   const [filteredHandwerkers, setFilteredHandwerkers] = useState<PendingHandwerker[]>([]);
@@ -95,21 +96,15 @@ const HandwerkerApprovals = () => {
   const [editFormData, setEditFormData] = useState<Partial<PendingHandwerker>>({});
 
   useEffect(() => {
-    if (!roleLoading) {
-      if (!isAdmin) {
-        toast({
-          title: 'Zugriff verweigert',
-          description: 'Sie haben keine Berechtigung für diese Seite.',
-          variant: 'destructive',
-        });
-        navigate('/dashboard');
-      } else {
-        fetchPendingHandwerkers();
-        fetchApprovalHistory();
-        setIsLoading(false);
-      }
+    if (isAuthorized) {
+      fetchPendingHandwerkers();
+      fetchApprovalHistory();
+      setIsLoading(false);
     }
-  }, [roleLoading, isAdmin]);
+  }, [isAuthorized]);
+
+  if (authLoading) return <PageSkeleton />;
+  if (!isAuthorized) return null;
 
   useEffect(() => {
     applyFilters();
@@ -616,9 +611,6 @@ const HandwerkerApprovals = () => {
     );
   }
 
-  if (!isAdmin) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-background">

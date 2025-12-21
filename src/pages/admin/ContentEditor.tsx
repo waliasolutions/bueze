@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -24,15 +26,19 @@ const ContentEditor = () => {
   const { pageKey } = useParams<{ pageKey: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [content, setContent] = useState<PageContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (pageKey) {
+    if (pageKey && isAuthorized) {
       fetchContent();
     }
-  }, [pageKey]);
+  }, [pageKey, isAuthorized]);
+
+  if (authLoading) return <PageSkeleton />;
+  if (!isAuthorized) return null;
 
   const fetchContent = async () => {
     try {

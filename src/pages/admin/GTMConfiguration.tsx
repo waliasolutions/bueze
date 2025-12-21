@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +15,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 export default function GTMConfiguration() {
   const navigate = useNavigate();
   const { settings, loading, updateSettings } = useSiteSettings();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     gtm_container_id: '',
@@ -25,6 +28,9 @@ export default function GTMConfiguration() {
       });
     }
   }, [settings]);
+
+  if (authLoading) return <PageSkeleton />;
+  if (!isAuthorized) return null;
 
   const handleSave = async () => {
     setSaving(true);
