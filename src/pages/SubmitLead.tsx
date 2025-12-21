@@ -338,11 +338,11 @@ const SubmitLead = () => {
           return;
         }
 
-        // Validate password length
-        if (data.contactPassword.length < 6) {
+        // Validate password length (minimum 8 characters to match Auth.tsx)
+        if (data.contactPassword.length < 8) {
           toast({
             title: "Passwort zu kurz",
-            description: "Das Passwort muss mindestens 6 Zeichen lang sein.",
+            description: "Das Passwort muss mindestens 8 Zeichen lang sein.",
             variant: "destructive",
           });
           setIsSubmitting(false);

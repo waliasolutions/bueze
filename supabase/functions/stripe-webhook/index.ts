@@ -169,6 +169,13 @@ serve(async (req: Request) => {
         const subscription = event.data.object as Stripe.Subscription;
         console.log(`Subscription deleted: ${subscription.id}`);
 
+        // Get subscription info before downgrade for notification
+        const { data: subInfo } = await supabase
+          .from('handwerker_subscriptions')
+          .select('user_id, plan_type')
+          .eq('stripe_subscription_id', subscription.id)
+          .single();
+
         // Downgrade to free tier
         const { error } = await supabase
           .from('handwerker_subscriptions')
@@ -185,6 +192,40 @@ serve(async (req: Request) => {
           console.error("Error downgrading subscription:", error);
         } else {
           console.log(`Subscription downgraded to free tier`);
+
+          // Create admin notification for subscription cancellation
+          if (subInfo) {
+            // Get handwerker profile for notification details
+            const { data: handwerkerProfile } = await supabase
+              .from('handwerker_profiles')
+              .select('first_name, last_name, company_name, email')
+              .eq('user_id', subInfo.user_id)
+              .single();
+
+            const handwerkerName = handwerkerProfile?.company_name || 
+              `${handwerkerProfile?.first_name || ''} ${handwerkerProfile?.last_name || ''}`.trim() ||
+              'Unbekannter Handwerker';
+
+            const { error: notifError } = await supabase
+              .from('admin_notifications')
+              .insert({
+                type: 'subscription_cancelled',
+                title: 'Abonnement gekündigt',
+                message: `${handwerkerName} hat das ${subInfo.plan_type}-Abonnement gekündigt und wurde auf Free-Tier herabgestuft.`,
+                related_id: subInfo.user_id,
+                metadata: {
+                  user_id: subInfo.user_id,
+                  previous_plan: subInfo.plan_type,
+                  handwerker_email: handwerkerProfile?.email,
+                }
+              });
+
+            if (notifError) {
+              console.error("Error creating admin notification for subscription cancellation:", notifError);
+            } else {
+              console.log(`Admin notification created for subscription cancellation: ${subInfo.user_id}`);
+            }
+          }
         }
         break;
       }
@@ -272,6 +313,40 @@ serve(async (req: Request) => {
 
           if (paymentError) {
             console.error("Error inserting failed payment history:", paymentError);
+          }
+
+          // Get handwerker profile for notification details
+          const { data: handwerkerProfile } = await supabase
+            .from('handwerker_profiles')
+            .select('first_name, last_name, company_name, email')
+            .eq('user_id', subscriptionData.user_id)
+            .single();
+
+          const handwerkerName = handwerkerProfile?.company_name || 
+            `${handwerkerProfile?.first_name || ''} ${handwerkerProfile?.last_name || ''}`.trim() ||
+            'Unbekannter Handwerker';
+
+          // Create admin notification for payment failure
+          const { error: notifError } = await supabase
+            .from('admin_notifications')
+            .insert({
+              type: 'payment_failed',
+              title: 'Zahlung fehlgeschlagen',
+              message: `Zahlung für ${handwerkerName} (${subscriptionData.plan_type}) ist fehlgeschlagen. Betrag: CHF ${(invoice.amount_due / 100).toFixed(2)}`,
+              related_id: subscriptionData.user_id,
+              metadata: {
+                user_id: subscriptionData.user_id,
+                plan_type: subscriptionData.plan_type,
+                invoice_id: invoice.id,
+                amount: invoice.amount_due,
+                handwerker_email: handwerkerProfile?.email,
+              }
+            });
+
+          if (notifError) {
+            console.error("Error creating admin notification for payment failure:", notifError);
+          } else {
+            console.log(`Admin notification created for payment failure: ${subscriptionData.user_id}`);
           }
         }
         break;

@@ -286,6 +286,27 @@ const handler = async (req: Request): Promise<Response> => {
     );
   } catch (error: any) {
     console.error("[send-rating-reminder] Error:", error);
+    
+    // Create admin notification for function failure
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      await supabase.from('admin_notifications').insert({
+        type: 'scheduled_function_error',
+        title: 'Rating Reminder fehlgeschlagen',
+        message: `Die geplante Funktion send-rating-reminder ist fehlgeschlagen: ${error.message}`,
+        metadata: {
+          function_name: 'send-rating-reminder',
+          error_message: error.message,
+          timestamp: new Date().toISOString(),
+        }
+      });
+    } catch (notifError) {
+      console.error("[send-rating-reminder] Failed to create admin notification:", notifError);
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message }),
       {

@@ -70,7 +70,7 @@ export const RatingForm: React.FC<RatingFormProps> = ({
 
       const isVerified = !!proposalData;
 
-      const { error: insertError } = await supabase
+      const { data: insertedReview, error: insertError } = await supabase
         .from('reviews')
         .insert({
           lead_id: leadId,
@@ -80,7 +80,9 @@ export const RatingForm: React.FC<RatingFormProps> = ({
           comment: comment.trim() || null,
           is_public: true,
           is_verified: isVerified,
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) {
         if (insertError.code === '23505') {
@@ -93,6 +95,27 @@ export const RatingForm: React.FC<RatingFormProps> = ({
           throw insertError;
         }
         return;
+      }
+
+      // Create admin notification for low-star reviews (1-2 stars)
+      if (rating <= 2 && insertedReview) {
+        try {
+          await supabase.from('admin_notifications').insert({
+            type: 'low_rating_alert',
+            title: 'Niedrige Bewertung erhalten',
+            message: `${handwerkerName} hat eine ${rating}-Sterne Bewertung für "${leadTitle}" erhalten.`,
+            related_id: insertedReview.id,
+            metadata: {
+              review_id: insertedReview.id,
+              handwerker_id: handwerkerId,
+              lead_id: leadId,
+              rating,
+              has_comment: !!comment.trim(),
+            }
+          });
+        } catch (notifError) {
+          console.error('Failed to create admin notification for low rating:', notifError);
+        }
       }
 
       await invalidateReviewQueries(queryClient, handwerkerId);
