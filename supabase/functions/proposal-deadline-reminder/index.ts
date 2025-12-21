@@ -286,6 +286,27 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[proposal-deadline-reminder] Error:', error);
+    
+    // Create admin notification for function failure
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      await supabase.from('admin_notifications').insert({
+        type: 'scheduled_function_error',
+        title: 'Proposal Deadline Reminder fehlgeschlagen',
+        message: `Die geplante Funktion proposal-deadline-reminder ist fehlgeschlagen: ${error.message}`,
+        metadata: {
+          function_name: 'proposal-deadline-reminder',
+          error_message: error.message,
+          timestamp: new Date().toISOString(),
+        }
+      });
+    } catch (notifError) {
+      console.error('[proposal-deadline-reminder] Failed to create admin notification:', notifError);
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message, success: false }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }

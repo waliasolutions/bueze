@@ -253,10 +253,8 @@ const Messages = () => {
         .eq('id', conversationId)
         .then(() => {});
 
-      // Fire-and-forget: Trigger message notification edge function
-      supabase.functions.invoke('send-message-notification', {
-        body: { messageId: insertedMessage.id }
-      }).catch(err => console.error('Notification failed:', err));
+      // Note: Message notification is handled by database trigger (trigger_send_message_notification)
+      // No need to manually invoke the edge function here
 
     } catch (error) {
       console.error('Error sending message:', error);
