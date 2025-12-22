@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { 
   Loader2, 
   Search, 
@@ -42,6 +42,7 @@ interface DeletionAuditRecord {
 }
 
 export default function DeletionAudit() {
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<DeletionAuditRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<DeletionAuditRecord[]>([]);
@@ -50,25 +51,12 @@ export default function DeletionAudit() {
   const [selectedRecord, setSelectedRecord] = useState<DeletionAuditRecord | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { isAdmin, isSuperAdmin, loading: roleLoading } = useUserRole();
 
   useEffect(() => {
-    if (!roleLoading && !isAdmin && !isSuperAdmin) {
-      toast({
-        title: 'Zugriff verweigert',
-        description: 'Sie haben keine Berechtigung für diese Seite.',
-        variant: 'destructive',
-      });
-      navigate('/dashboard');
-      return;
-    }
-
-    if (!roleLoading && (isAdmin || isSuperAdmin)) {
+    if (isAuthorized) {
       loadRecords();
     }
-  }, [roleLoading, isAdmin, isSuperAdmin]);
+  }, [isAuthorized]);
 
   useEffect(() => {
     let filtered = records;
@@ -112,11 +100,7 @@ export default function DeletionAudit() {
       setRecords(data || []);
     } catch (error) {
       console.error('Error loading deletion audit:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Löschprotokoll konnte nicht geladen werden.',
-        variant: 'destructive',
-      });
+      toast.error('Löschprotokoll konnte nicht geladen werden.');
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -169,7 +153,11 @@ export default function DeletionAudit() {
     setIsDetailOpen(true);
   };
 
-  if (loading || roleLoading) {
+  if (authLoading || !isAuthorized) {
+    return <PageSkeleton />;
+  }
+
+  if (loading) {
     return (
       <AdminLayout title="Löschprotokoll" description="Übersicht aller Benutzerlöschungen">
         <div className="flex items-center justify-center min-h-[400px]">

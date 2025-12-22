@@ -36,10 +36,8 @@ import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic, Revi
 
 const HandwerkerDashboard = () => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { toast } = useToast();
+  const { isAdmin } = useUserRole();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfileBasic | null>(null);

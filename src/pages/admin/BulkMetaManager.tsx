@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,7 +41,7 @@ interface PageMeta {
 }
 
 export default function BulkMetaManager() {
-  const navigate = useNavigate();
+  const { loading: authLoading, isAuthorized } = useAdminGuard();
   const { contents, loading, refetch } = useAllPageContent();
   const { settings: siteSettings, updateSettings } = useSiteSettings();
   const [search, setSearch] = useState('');
@@ -135,6 +136,10 @@ export default function BulkMetaManager() {
     if (score >= 25) return <Badge variant="outline" className="border-ink-300 text-ink-700">Needs Work</Badge>;
     return <Badge variant="destructive">Critical</Badge>;
   };
+
+  if (authLoading || !isAuthorized) {
+    return <PageSkeleton />;
+  }
 
   if (loading) {
     return (
