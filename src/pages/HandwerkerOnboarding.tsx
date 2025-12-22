@@ -381,13 +381,9 @@ const HandwerkerOnboarding = () => {
       } else if (formData.companyName.trim().length < 2) {
         newErrors.companyName = "Firmenname muss mindestens 2 Zeichen lang sein";
       }
-      // UID and MWST are optional, only validate format if provided
-      if (formData.uidNumber && formData.uidNumber.trim() && !validateUID(formData.uidNumber)) {
-        newErrors.uidNumber = "Ungültiges Format. Beispiel: CHE-123.456.789";
-      }
-      if (formData.mwstNumber && formData.mwstNumber.trim() && !validateMWST(formData.mwstNumber)) {
-        newErrors.mwstNumber = "Ungültiges Format. Beispiel: CHE-123.456.789 MWST";
-      }
+      // UID and MWST are completely optional - no format validation
+      // Admins can verify and correct these during approval
+      // This allows franchises, subsidiaries, and partial entries
     } else if (step === 2) {
       // Personal Information validation - only name, email, phone required
       if (!formData.firstName.trim()) {
@@ -768,9 +764,19 @@ const HandwerkerOnboarding = () => {
           console.error('Error hint:', error.hint);
         }
         
-        // More user-friendly error messages
+        // More specific and user-friendly error messages
+        if (error.code === '23505') { // Unique constraint violation
+          if (error.message.includes('email') || error.details?.includes('email')) {
+            throw new Error('Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.');
+          }
+          // Generic unique constraint (shouldn't happen after UID constraint removal)
+          throw new Error('Ein Eintrag mit diesen Daten existiert bereits. Bitte überprüfen Sie Ihre Eingaben.');
+        }
         if (error.message.includes('row-level security') || error.message.includes('policy')) {
           throw new Error('Berechtigungsfehler: Profil konnte nicht erstellt werden. Bitte kontaktieren Sie den Support.');
+        }
+        if (error.code === '23503') { // Foreign key violation
+          throw new Error('Verknüpfungsfehler: Bitte versuchen Sie es erneut.');
         }
         throw error;
       }
