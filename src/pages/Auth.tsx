@@ -63,17 +63,21 @@ export default function Auth() {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        // Use SSOT roleHelpers to get user roles
-        const allRoles = await getUserRoles(session.user.id);
-        const primaryRole = allRoles[0] || null;
-        const roleData = primaryRole ? { role: primaryRole } : null;
-        const isHandwerkerRole = allRoles.includes('handwerker');
-        
-        // Defer to avoid deadlock
-        setTimeout(() => {
-          handlePostLoginRedirect(session.user, roleData, isHandwerkerRole);
+        // Defer ALL async operations to avoid deadlock - per Supabase best practices
+        setTimeout(async () => {
+          try {
+            const allRoles = await getUserRoles(session.user.id);
+            const primaryRole = allRoles[0] || null;
+            const roleData = primaryRole ? { role: primaryRole } : null;
+            const isHandwerkerRole = allRoles.includes('handwerker');
+            handlePostLoginRedirect(session.user, roleData, isHandwerkerRole);
+          } catch (error) {
+            console.error('Error fetching roles during auth:', error);
+            // Fallback to dashboard on error
+            navigate('/dashboard');
+          }
         }, 0);
       }
     });
