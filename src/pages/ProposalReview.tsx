@@ -47,7 +47,7 @@ const ProposalReview = () => {
         .eq('id', proposalData.handwerker_id)
         .maybeSingle();
 
-      // Fire-and-forget: Update view tracking
+      // Update view tracking with proper error handling
       supabase
         .from('lead_proposals')
         .update({
@@ -55,7 +55,11 @@ const ProposalReview = () => {
           view_count: (proposalData.view_count || 0) + 1
         })
         .eq('id', proposalId)
-        .then(() => {});
+        .then(({ error }) => {
+          if (error) {
+            console.error('Failed to update proposal view tracking:', error);
+          }
+        });
 
       setProposal({
         ...proposalData,

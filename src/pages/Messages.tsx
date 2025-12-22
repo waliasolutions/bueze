@@ -156,7 +156,7 @@ const Messages = () => {
       if (error) throw error;
       setMessages(data || []);
 
-      // Mark unread messages as read (fire and forget)
+      // Mark unread messages as read with proper error handling
       if (authUser) {
         supabase
           .from('messages')
@@ -164,7 +164,11 @@ const Messages = () => {
           .eq('conversation_id', conversationId)
           .eq('recipient_id', authUser.id)
           .is('read_at', null)
-          .then(() => {});
+          .then(({ error }) => {
+            if (error) {
+              console.error('Failed to mark messages as read:', error);
+            }
+          });
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -246,12 +250,16 @@ const Messages = () => {
         m.id === optimisticId ? { ...m, id: insertedMessage.id } : m
       ));
 
-      // Fire-and-forget: Update conversation last_message_at
+      // Update conversation last_message_at with proper error handling
       supabase
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', conversationId)
-        .then(() => {});
+        .then(({ error }) => {
+          if (error) {
+            console.error('Failed to update conversation timestamp:', error);
+          }
+        });
 
       // Note: Message notification is handled by database trigger (trigger_send_message_notification)
       // No need to manually invoke the edge function here
