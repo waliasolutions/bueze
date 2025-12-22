@@ -4,20 +4,54 @@
 
 /**
  * Validates Swiss UID (Unternehmens-Identifikationsnummer)
- * Format: CHE-###.###.###
+ * Format: CHE-###.###.### (relaxed - accepts partial/incomplete UIDs)
+ * 
+ * This validation is intentionally lenient because:
+ * - UID is optional during registration
+ * - Admins can verify and correct during approval
+ * - Franchises/subsidiaries may share UIDs
  */
 export const validateUID = (uid: string): boolean => {
-  if (!uid) return false;
-  return /^CHE-\d{3}\.\d{3}\.\d{3}$/.test(uid);
+  if (!uid) return true; // Empty is valid (optional field)
+  const trimmed = uid.trim();
+  if (!trimmed) return true; // Whitespace-only is valid
+  
+  // Full format: CHE-###.###.###
+  if (/^CHE-\d{3}\.\d{3}\.\d{3}$/.test(trimmed)) return true;
+  
+  // Allow CHE prefix with partial numbers (e.g., "CHE-123" during typing)
+  if (/^CHE-?\d*\.?\d*\.?\d*$/.test(trimmed)) return true;
+  
+  // Allow just 9 digits (can be auto-formatted later)
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (digitsOnly.length === 9) return true;
+  
+  // Allow partial entry (at least some digits)
+  if (digitsOnly.length > 0 && digitsOnly.length <= 9) return true;
+  
+  return false;
 };
 
 /**
  * Validates Swiss MWST (Mehrwertsteuer) number
- * Format: CHE-###.###.### MWST
+ * Format: CHE-###.###.### MWST (relaxed - accepts partial/incomplete numbers)
  */
 export const validateMWST = (mwst: string): boolean => {
   if (!mwst) return true; // Optional field
-  return /^CHE-\d{3}\.\d{3}\.\d{3}\s+MWST$/.test(mwst);
+  const trimmed = mwst.trim();
+  if (!trimmed) return true; // Whitespace-only is valid
+  
+  // Full format: CHE-###.###.### MWST
+  if (/^CHE-\d{3}\.\d{3}\.\d{3}\s+MWST$/i.test(trimmed)) return true;
+  
+  // Allow partial entry (CHE prefix with some numbers, with or without MWST suffix)
+  if (/^CHE-?\d*\.?\d*\.?\d*\s*(MWST)?$/i.test(trimmed)) return true;
+  
+  // Allow just numbers that could be formatted later
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (digitsOnly.length >= 1 && digitsOnly.length <= 9) return true;
+  
+  return false;
 };
 
 /**
