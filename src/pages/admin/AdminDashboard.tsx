@@ -39,8 +39,8 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { loading: authLoading, isAuthorized } = useAdminGuard();
-  const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [statsLoaded, setStatsLoaded] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     pendingCount: 0,
     approvedCount: 0,
@@ -55,7 +55,6 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (!authLoading && isAuthorized) {
       loadDashboardData();
-      setIsLoading(false);
     }
   }, [authLoading, isAuthorized]);
 
@@ -121,6 +120,7 @@ const AdminDashboard = () => {
       });
     } finally {
       setIsRefreshing(false);
+      setStatsLoaded(true);
     }
   };
 
@@ -161,7 +161,8 @@ const AdminDashboard = () => {
     }
   };
 
-  if (authLoading || isLoading) {
+  // Single auth loading check - no double spinner
+  if (authLoading) {
     return (
       <AdminLayout title="Dashboard" description="Übersicht und Schnellzugriff">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -172,6 +173,19 @@ const AdminDashboard = () => {
   }
 
   if (!isAuthorized) return null;
+
+  // Skeleton component for stats cards
+  const StatCardSkeleton = () => (
+    <Card className="border-l-4 border-l-muted">
+      <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+        <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+        <div className="h-8 w-12 bg-muted animate-pulse rounded mt-2" />
+      </CardHeader>
+      <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+        <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+      </CardContent>
+    </Card>
+  );
 
   return (
     <AdminLayout title="Dashboard" description="Übersicht und Schnellzugriff">
@@ -218,57 +232,68 @@ const AdminDashboard = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
-        <Card className="border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/handwerkers')}>
-          <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
-            <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
-              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="truncate">Ausstehend</span>
-            </CardDescription>
-            <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-amber-600">{stats.pendingCount}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Handwerker-Freigaben</p>
-          </CardContent>
-        </Card>
+        {!statsLoaded ? (
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <Card className="border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/handwerkers')}>
+              <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+                <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
+                  <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                  <span className="truncate">Ausstehend</span>
+                </CardDescription>
+                <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-amber-600">{stats.pendingCount}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Handwerker-Freigaben</p>
+              </CardContent>
+            </Card>
 
-        <Card className="border-l-4 border-l-green-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/handwerkers')}>
-          <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
-            <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
-              <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="truncate">Aktive Handwerker</span>
-            </CardDescription>
-            <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-green-600">{stats.approvedCount}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Freigeschaltet</p>
-          </CardContent>
-        </Card>
+            <Card className="border-l-4 border-l-green-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/handwerkers')}>
+              <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+                <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
+                  <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                  <span className="truncate">Aktive Handwerker</span>
+                </CardDescription>
+                <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-green-600">{stats.approvedCount}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Freigeschaltet</p>
+              </CardContent>
+            </Card>
 
-        <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/leads')}>
-          <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
-            <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
-              <Briefcase className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="truncate">Aktive Aufträge</span>
-            </CardDescription>
-            <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-blue-600">{stats.activeLeads}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Von {stats.totalLeads} gesamt</p>
-          </CardContent>
-        </Card>
+            <Card className="border-l-4 border-l-blue-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/leads')}>
+              <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+                <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
+                  <Briefcase className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                  <span className="truncate">Aktive Aufträge</span>
+                </CardDescription>
+                <CardTitle className="text-lg sm:text-2xl md:text-3xl font-bold text-blue-600">{stats.activeLeads}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Von {stats.totalLeads} gesamt</p>
+              </CardContent>
+            </Card>
 
-        <Card className="border-l-4 border-l-purple-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/payments')}>
-          <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
-            <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
-              <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-              <span className="truncate">Umsatz</span>
-            </CardDescription>
-            <CardTitle className="text-base sm:text-xl md:text-2xl font-bold text-purple-600 truncate">CHF {stats.totalRevenue.toLocaleString()}</CardTitle>
-          </CardHeader>
-          <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
-            <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Gesamtumsatz</p>
-          </CardContent>
-        </Card>
+            <Card className="border-l-4 border-l-purple-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/payments')}>
+              <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
+                <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
+                  <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                  <span className="truncate">Umsatz</span>
+                </CardDescription>
+                <CardTitle className="text-base sm:text-xl md:text-2xl font-bold text-purple-600 truncate">CHF {stats.totalRevenue.toLocaleString()}</CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Gesamtumsatz</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Attention Needed */}

@@ -31,25 +31,10 @@ export function useUserRole(): UseUserRoleResult {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchRoles = async () => {
+    const fetchRoles = async (userId: string) => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          if (isMounted) {
-            setAllRoles([]);
-            setUserId(null);
-            setLoading(false);
-          }
-          return;
-        }
-
-        if (isMounted) {
-          setUserId(user.id);
-        }
-
         // Check cache first
-        const cached = roleCache.get(user.id);
+        const cached = roleCache.get(userId);
         if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
           if (isMounted) {
             setAllRoles(cached.roles);
@@ -62,7 +47,7 @@ export function useUserRole(): UseUserRoleResult {
         const { data: rolesData, error } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
 
         if (error) {
           console.error('Error fetching user roles:', error);
@@ -72,7 +57,7 @@ export function useUserRole(): UseUserRoleResult {
         const fetchedRoles: AppRole[] = rolesData?.map(r => r.role as AppRole) || ['user'];
         
         // Update cache
-        roleCache.set(user.id, { roles: fetchedRoles, timestamp: Date.now() });
+        roleCache.set(userId, { roles: fetchedRoles, timestamp: Date.now() });
 
         if (isMounted) {
           setAllRoles(fetchedRoles.length > 0 ? fetchedRoles : ['user']);
@@ -86,18 +71,44 @@ export function useUserRole(): UseUserRoleResult {
       }
     };
 
-    fetchRoles();
+    // Initialize: Check for existing session first
+    const initializeAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        if (isMounted) {
+          setUserId(session.user.id);
+        }
+        await fetchRoles(session.user.id);
+      } else {
+        if (isMounted) {
+          setAllRoles([]);
+          setUserId(null);
+          setLoading(false);
+        }
+      }
+    };
 
-    // Listen for auth changes
+    initializeAuth();
+
+    // Listen for auth changes - NO async callback to prevent deadlock
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
+        // Synchronous state updates only
         setAllRoles([]);
         setUserId(null);
         roleCache.clear();
+        setLoading(false);
       } else if (session?.user && isMounted) {
-        // Clear cache for this user and refetch
-        roleCache.delete(session.user.id);
-        fetchRoles();
+        // Synchronous state update
+        setUserId(session.user.id);
+        // Defer async role fetching with setTimeout to avoid deadlock
+        setTimeout(() => {
+          if (isMounted) {
+            roleCache.delete(session.user.id);
+            fetchRoles(session.user.id);
+          }
+        }, 0);
       }
     });
 
