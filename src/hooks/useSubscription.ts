@@ -114,14 +114,9 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
       console.error('Error fetching subscription:', error);
       setError(error);
       
+      // Only call onError callback if provided - no default toast
       if (onError) {
         onError(error);
-      } else {
-        toast({
-          title: 'Fehler',
-          description: 'Abo-Informationen konnten nicht geladen werden',
-          variant: 'destructive',
-        });
       }
     } finally {
       setLoading(false);

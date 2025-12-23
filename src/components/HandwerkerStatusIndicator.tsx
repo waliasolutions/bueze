@@ -112,7 +112,7 @@ export const HandwerkerStatusIndicator: React.FC<HandwerkerStatusIndicatorProps>
       return {
         type: 'pending',
         label: 'In Prüfung',
-        description: 'Ihr Profil wird geprüft. Sie werden per E-Mail benachrichtigt, sobald die Prüfung abgeschlossen ist.',
+        description: 'Ihr Profil wird geprüft und verifiziert. Sie werden per E-Mail benachrichtigt, sobald die Verifizierung abgeschlossen ist.',
         dotColor: 'bg-yellow-500',
         icon: <Clock className="h-4 w-4 text-yellow-600" />
       };
