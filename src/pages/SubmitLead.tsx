@@ -42,11 +42,12 @@ const leadSchema = z.object({
   city: z.string().optional().or(z.literal('')), // Display only, optional
   canton: z.string().optional().or(z.literal('')), // Auto-derived from PLZ
   address: z.string().optional(),
-  contactEmail: z.string().email('Gültige E-Mail erforderlich').optional().or(z.literal('')),
+  // Contact fields - required for guests (enforced at submit with inline validation)
+  contactEmail: z.string().min(1, 'E-Mail ist erforderlich').email('Gültige E-Mail erforderlich').or(z.literal('')),
   contactPhone: z.string().optional().or(z.literal('')),
-  contactFirstName: z.string().optional().or(z.literal('')),
-  contactLastName: z.string().optional().or(z.literal('')),
-  contactPassword: z.string().optional().or(z.literal('')),
+  contactFirstName: z.string().min(1, 'Vorname ist erforderlich').or(z.literal('')),
+  contactLastName: z.string().min(1, 'Nachname ist erforderlich').or(z.literal('')),
+  contactPassword: z.string().min(PASSWORD_MIN_LENGTH, `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen haben`).or(z.literal('')),
   // Honeypot field - must remain empty (bots fill hidden fields)
   website: z.string().max(0, 'Spam erkannt').optional().default(''),
 }).refine((data) => {
@@ -341,30 +342,18 @@ const SubmitLead = () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       user = currentUser;
       
-      // If user is not authenticated, validate contact details and create account
+      // If user is not authenticated, validate contact details with inline validation (no toast)
       if (!user) {
-        // Validate contact details are provided
-        if (!data.contactEmail || !data.contactFirstName || !data.contactLastName || !data.contactPassword) {
-          toast({
-            title: "Kontaktdaten fehlen",
-            description: "Bitte füllen Sie alle erforderlichen Kontaktdaten aus oder melden Sie sich an.",
-            variant: "destructive",
-          });
+        // Trigger inline field validation - no premature toast
+        const emailValid = await form.trigger('contactEmail');
+        const firstNameValid = await form.trigger('contactFirstName');
+        const lastNameValid = await form.trigger('contactLastName');
+        const passwordValid = await form.trigger('contactPassword');
+        
+        if (!emailValid || !firstNameValid || !lastNameValid || !passwordValid) {
           setIsSubmitting(false);
-          setStep(4); // Go to contact details step
-          return;
-        }
-
-        // Validate password using SSOT validation helper
-        const passwordValidation = validatePassword(data.contactPassword);
-        if (!passwordValidation.valid) {
-          toast({
-            title: "Passwort ungültig",
-            description: passwordValidation.error,
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          setStep(4);
+          setStep(4); // Go to contact details step - FormMessage shows inline errors
+          clearTimeout(timeoutId);
           return;
         }
 
@@ -1017,73 +1006,16 @@ const SubmitLead = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {!showLoginForm ? (
-                      <>
-                        <div className="space-y-4">
-                          <p className="text-sm text-muted-foreground">
-                            Haben Sie bereits ein Konto?
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setShowLoginForm(true)}
-                            className="w-full"
-                          >
-                            Login
-                          </Button>
-                          
-                          <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                              <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                              <span className="bg-background px-2 text-muted-foreground">
-                                Oder neues Konto erstellen
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="contactFirstName"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Vorname</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Max" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-
-                            <FormField
-                              control={form.control}
-                              name="contactLastName"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Nachname</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Mustermann" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
                           <FormField
                             control={form.control}
-                            name="contactEmail"
+                            name="contactFirstName"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>E-Mail</FormLabel>
+                                <FormLabel>Vorname *</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    type="email" 
-                                    placeholder="max.mustermann@example.com" 
-                                    {...field} 
-                                  />
+                                  <Input placeholder="Max" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -1092,44 +1024,88 @@ const SubmitLead = () => {
 
                           <FormField
                             control={form.control}
-                            name="contactPhone"
+                            name="contactLastName"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Telefon (optional)</FormLabel>
+                                <FormLabel>Nachname *</FormLabel>
                                 <FormControl>
-                                  <Input 
-                                    type="tel" 
-                                    placeholder="+41 79 123 45 67" 
-                                    {...field} 
-                                  />
+                                  <Input placeholder="Mustermann" {...field} />
                                 </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="contactPassword"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Passwort</FormLabel>
-                                <FormControl>
-                                  <Input 
-                                    type="password" 
-                                    placeholder="Mindestens 6 Zeichen" 
-                                    {...field} 
-                                  />
-                                </FormControl>
-                                <FormDescription>
-                                  Wählen Sie ein sicheres Passwort für Ihr Konto
-                                </FormDescription>
                                 <FormMessage />
                               </FormItem>
                             )}
                           />
                         </div>
-                      </>
+
+                        <FormField
+                          control={form.control}
+                          name="contactEmail"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>E-Mail *</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="email" 
+                                  placeholder="max.mustermann@example.com" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="contactPhone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Telefon (optional)</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="tel" 
+                                  placeholder="+41 79 123 45 67" 
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="contactPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Passwort *</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="password" 
+                                  placeholder={`Mindestens ${PASSWORD_MIN_LENGTH} Zeichen`}
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                Wählen Sie ein sicheres Passwort für Ihr Konto
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Subtle login link at bottom */}
+                        <p className="text-sm text-muted-foreground text-center pt-2">
+                          Bereits registriert?{' '}
+                          <button 
+                            type="button" 
+                            onClick={() => setShowLoginForm(true)}
+                            className="text-primary hover:underline font-medium"
+                          >
+                            Hier anmelden
+                          </button>
+                        </p>
+                      </div>
                     ) : (
                       <>
                         <div className="space-y-4">
