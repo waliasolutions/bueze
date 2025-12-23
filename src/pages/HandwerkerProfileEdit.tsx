@@ -732,7 +732,7 @@ const HandwerkerProfileEdit = () => {
       companyName, companyLegalForm, uidNumber, mwstNumber,
       businessAddress, businessZip, businessCity, businessCanton,
       iban, bankName, liabilityInsuranceProvider, policyNumber, tradeLicenseNumber, insuranceValidUntil,
-      logoUrl, categories, selectedCantons, manualPostalCodes, verificationDocuments]);
+      logoUrl, categories, serviceAreaPlz, serviceRadius, customCantons, verificationDocuments]);
 
   if (loading) {
     return (
@@ -815,10 +815,11 @@ const HandwerkerProfileEdit = () => {
                 bio: bio,
                 hourly_rate_min: hourlyRateMin ? parseInt(hourlyRateMin) : null,
                 hourly_rate_max: hourlyRateMax ? parseInt(hourlyRateMax) : null,
-                service_areas: [
-                  ...selectedCantons,
-                  ...manualPostalCodes
-                ],
+                service_areas: buildServiceAreas(serviceRadius, {
+                  plz: serviceAreaPlz,
+                  canton: serviceAreaCanton,
+                  customCantons
+                }),
                 website: website,
                 logo_url: logoUrl,
                 portfolio_urls: portfolioUrls,
@@ -951,10 +952,6 @@ const HandwerkerProfileEdit = () => {
               onRadiusChange={setServiceRadius}
               onCustomCantonsChange={setCustomCantons}
             />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
 
             {/* Website Section */}
             <Card>
