@@ -22,7 +22,9 @@ import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
 import { cn } from "@/lib/utils";
 import { PostalCodeInput } from "@/components/PostalCodeInput";
+import { ServiceAreaSelector } from "@/components/ServiceAreaSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ServiceRadius, buildServiceAreas, parseServiceAreas } from "@/lib/serviceAreaHelpers";
 import { 
   saveVersionedData, 
   loadVersionedData, 
@@ -55,7 +57,7 @@ const HandwerkerOnboarding = () => {
   const [businessPlz, setBusinessPlz] = useState('');
   const [businessCity, setBusinessCity] = useState('');
   const [businessCanton, setBusinessCanton] = useState('');
-  const [serviceRadius, setServiceRadius] = useState<'city' | 'canton' | 'nationwide' | 'custom'>('canton');
+  const [serviceRadius, setServiceRadius] = useState<ServiceRadius>('canton');
   const [customCantons, setCustomCantons] = useState<string[]>([]);
   
   const [showPassword, setShowPassword] = useState(false);
@@ -122,49 +124,21 @@ const HandwerkerOnboarding = () => {
   const currentContent = stepContent[currentStep as keyof typeof stepContent];
   const progress = ((currentStep - 1) / totalSteps) * 100;
 
-  // Update formData.serviceAreas based on radius selection
+  // Update formData.serviceAreas based on radius selection using shared helper
   const updateServiceAreasFromRadius = (
-    radius: 'city' | 'canton' | 'nationwide' | 'custom',
+    radius: ServiceRadius,
     plz: string,
     canton: string,
     selectedCustomCantons: string[]
   ) => {
-    let areas: string[] = [];
-    
-    switch (radius) {
-      case 'city':
-        // Just the PLZ
-        if (plz) areas = [plz];
-        break;
-      case 'canton':
-        // The detected canton
-        if (canton) areas = [canton];
-        break;
-      case 'nationwide':
-        // All cantons
-        areas = SWISS_CANTONS.map(c => c.value);
-        break;
-      case 'custom':
-        // Selected cantons
-        areas = selectedCustomCantons;
-        break;
-    }
-    
+    const areas = buildServiceAreas(radius, {
+      plz,
+      canton,
+      customCantons: selectedCustomCantons,
+    });
     setFormData(prev => ({ ...prev, serviceAreas: areas }));
   };
 
-  // Toggle custom canton selection
-  const toggleCustomCanton = (canton: string) => {
-    setCustomCantons(prev => {
-      const isSelected = prev.includes(canton);
-      const newSelection = isSelected 
-        ? prev.filter(c => c !== canton)
-        : [...prev, canton];
-      
-      updateServiceAreasFromRadius(serviceRadius, businessPlz, businessCanton, newSelection);
-      return newSelection;
-    });
-  };
 
   // Check authentication status on mount and capture initial state
   useEffect(() => {
@@ -214,34 +188,20 @@ const HandwerkerOnboarding = () => {
     checkAuth();
   }, [navigate, toast]);
 
-  // Parse serviceAreas to restore state when data is loaded
+  // Parse serviceAreas to restore state when data is loaded using shared helper
   useEffect(() => {
     if (formData.serviceAreas.length > 0) {
-      // Check what type of service areas are stored
-      const allCantonCodes = SWISS_CANTONS.map(c => c.value);
-      const storedCantons = formData.serviceAreas.filter(area => 
-        area.length === 2 && allCantonCodes.includes(area as typeof allCantonCodes[number])
-      );
-      const storedPlz = formData.serviceAreas.find(area => /^\d{4}$/.test(area));
+      const config = parseServiceAreas(formData.serviceAreas);
       
-      if (storedPlz) {
-        setBusinessPlz(storedPlz);
+      if (config.businessPlz) {
+        setBusinessPlz(config.businessPlz);
       }
-      
-      if (storedCantons.length === allCantonCodes.length) {
-        // All cantons = nationwide
-        setServiceRadius('nationwide');
-      } else if (storedCantons.length > 1) {
-        // Multiple cantons = custom selection
-        setServiceRadius('custom');
-        setCustomCantons(storedCantons);
-      } else if (storedCantons.length === 1) {
-        // Single canton
-        setServiceRadius('canton');
-        setBusinessCanton(storedCantons[0]);
-      } else if (storedPlz) {
-        // Just PLZ = city
-        setServiceRadius('city');
+      if (config.businessCanton) {
+        setBusinessCanton(config.businessCanton);
+      }
+      setServiceRadius(config.radius);
+      if (config.radius === 'custom') {
+        setCustomCantons(config.customCantons);
       }
     }
   }, []);
@@ -437,8 +397,11 @@ const HandwerkerOnboarding = () => {
           description: "Fahren Sie mit der Registrierung fort.",
         });
         
-        // Proceed to next step
+        // Proceed to next step and scroll to top
         setCurrentStep(2);
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
       }
     } catch (error) {
       toast({
@@ -533,8 +496,11 @@ const HandwerkerOnboarding = () => {
         description: "Wählen Sie jetzt Ihre Dienstleistungen.",
       });
       
-      // Proceed to Step 2 (Services)
+      // Proceed to Step 2 (Services) and scroll to top
       setCurrentStep(2);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 100);
     } catch (error) {
       toast({
         title: "Fehler bei der Registrierung",
@@ -555,14 +521,18 @@ const HandwerkerOnboarding = () => {
       return;
     }
     
-    // For other steps, just proceed
+    // For other steps, just proceed and scroll after render
     setCurrentStep(prev => Math.min(prev + 1, totalSteps));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
   const handleBack = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
   };
 
   const handleSubmit = async () => {
@@ -1022,132 +992,34 @@ const HandwerkerOnboarding = () => {
               </CardContent>
             </Card>
 
-            {/* Service Areas - Simplified PLZ + Radius */}
-            <Card className="border-2">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  Einsatzgebiet
-                </CardTitle>
-                <CardDescription>
-                  Wo möchten Sie Aufträge erhalten?
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Business Location PLZ */}
-                <div className="space-y-2">
-                  <Label className="text-base font-medium">Ihr Standort (PLZ)</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <PostalCodeInput
-                      value={businessPlz}
-                      onValueChange={(plz) => {
-                        setBusinessPlz(plz);
-                        // Reset city/canton when PLZ changes
-                        if (plz.length < 4) {
-                          setBusinessCity('');
-                          setBusinessCanton('');
-                        }
-                      }}
-                      onAddressSelect={(address) => {
-                        setBusinessCity(address.city);
-                        setBusinessCanton(address.canton);
-                        // Update service areas based on current radius
-                        updateServiceAreasFromRadius(serviceRadius, businessPlz, address.canton, customCantons);
-                      }}
-                      placeholder="z.B. 8000"
-                    />
-                    {businessCity && (
-                      <div className="flex items-center px-3 py-2 bg-muted rounded-md">
-                        <span className="text-sm font-medium">{businessCity} ({businessCanton})</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Radius Selection */}
-                {businessPlz.length === 4 && businessCanton && (
-                  <div className="space-y-3">
-                    <Label className="text-base font-medium">Einsatzgebiet</Label>
-                    <RadioGroup
-                      value={serviceRadius}
-                      onValueChange={(value: 'city' | 'canton' | 'nationwide' | 'custom') => {
-                        setServiceRadius(value);
-                        updateServiceAreasFromRadius(value, businessPlz, businessCanton, customCantons);
-                      }}
-                      className="space-y-2"
-                    >
-                      <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                        <RadioGroupItem value="city" id="radius-city" />
-                        <Label htmlFor="radius-city" className="flex-1 cursor-pointer">
-                          <span className="font-medium">Nur meine Stadt</span>
-                          <span className="text-sm text-muted-foreground ml-2">({businessCity})</span>
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                        <RadioGroupItem value="canton" id="radius-canton" />
-                        <Label htmlFor="radius-canton" className="flex-1 cursor-pointer">
-                          <span className="font-medium">Mein Kanton</span>
-                          <span className="text-sm text-muted-foreground ml-2">({SWISS_CANTONS.find(c => c.value === businessCanton)?.label || businessCanton})</span>
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                        <RadioGroupItem value="nationwide" id="radius-nationwide" />
-                        <Label htmlFor="radius-nationwide" className="flex-1 cursor-pointer">
-                          <span className="font-medium">Ganze Schweiz</span>
-                          <span className="text-sm text-muted-foreground ml-2">(Alle Kantone)</span>
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer">
-                        <RadioGroupItem value="custom" id="radius-custom" />
-                        <Label htmlFor="radius-custom" className="flex-1 cursor-pointer">
-                          <span className="font-medium">Mehrere Kantone auswählen</span>
-                        </Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                )}
-
-                {/* Custom Canton Selection */}
-                {serviceRadius === 'custom' && (
-                  <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
-                    <Label className="text-sm font-medium">Kantone auswählen</Label>
-                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
-                      {SWISS_CANTONS.map(canton => (
-                        <Badge
-                          key={canton.value}
-                          variant={customCantons.includes(canton.value) ? "default" : "outline"}
-                          className="cursor-pointer justify-center py-2 text-xs hover:scale-105 transition-transform"
-                          onClick={() => toggleCustomCanton(canton.value)}
-                        >
-                          {canton.value}
-                          {customCantons.includes(canton.value) && (
-                            <CheckCircle className="ml-1 h-3 w-3" />
-                          )}
-                        </Badge>
-                      ))}
-                    </div>
-                    {customCantons.length > 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        {customCantons.length} Kanton{customCantons.length > 1 ? 'e' : ''} ausgewählt
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Summary */}
-                {businessPlz && formData.serviceAreas.length > 0 && (
-                  <Alert className="bg-primary/5 border-primary/20">
-                    <CheckCircle className="h-4 w-4 text-primary" />
-                    <AlertDescription className="text-sm">
-                      {serviceRadius === 'city' && `Sie erhalten Aufträge aus ${businessCity}`}
-                      {serviceRadius === 'canton' && `Sie erhalten Aufträge aus dem Kanton ${SWISS_CANTONS.find(c => c.value === businessCanton)?.label || businessCanton}`}
-                      {serviceRadius === 'nationwide' && 'Sie erhalten Aufträge aus der ganzen Schweiz'}
-                      {serviceRadius === 'custom' && `Sie erhalten Aufträge aus ${customCantons.length} Kantonen`}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
+            {/* Service Areas - Using shared component */}
+            <ServiceAreaSelector
+              businessPlz={businessPlz}
+              businessCity={businessCity}
+              businessCanton={businessCanton}
+              serviceRadius={serviceRadius}
+              customCantons={customCantons}
+              onBusinessPlzChange={(plz) => {
+                setBusinessPlz(plz);
+                if (plz.length < 4) {
+                  setBusinessCity('');
+                  setBusinessCanton('');
+                }
+              }}
+              onAddressSelect={(address) => {
+                setBusinessCity(address.city);
+                setBusinessCanton(address.canton);
+                updateServiceAreasFromRadius(serviceRadius, businessPlz, address.canton, customCantons);
+              }}
+              onRadiusChange={(radius) => {
+                setServiceRadius(radius);
+                updateServiceAreasFromRadius(radius, businessPlz, businessCanton, customCantons);
+              }}
+              onCustomCantonsChange={(cantons) => {
+                setCustomCantons(cantons);
+                updateServiceAreasFromRadius(serviceRadius, businessPlz, businessCanton, cantons);
+              }}
+            />
 
             {/* Optional Additional Info */}
             <Card className="border-2">
