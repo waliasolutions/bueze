@@ -26,6 +26,8 @@ import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { Badge } from '@/components/ui/badge';
 import { runAllSpamChecks, recordAttempt } from '@/lib/spamProtection';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
+import { useMultiStepForm } from '@/hooks/useMultiStepForm';
+import { MultiStepProgress } from '@/components/ui/multi-step-progress';
 
 
 // Schema with proper validation - no more .or(z.literal('')) bug
@@ -99,8 +101,9 @@ const budgetPresets = [
   { value: 'xlarge', label: 'Über 20\'000 CHF', min: 20000, max: 100000 },
 ];
 
+type StepContent = 'contact' | 'project' | 'location';
+
 const SubmitLead = () => {
-  const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [uploadedPaths, setUploadedPaths] = useState<string[]>([]);
@@ -120,6 +123,34 @@ const SubmitLead = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const preselectedCategory = searchParams.get('category');
+
+  // Step configuration - use startedAsGuest for consistent flow
+  const stepConfig = startedAsGuest
+    ? { 1: 'contact' as StepContent, 2: 'project' as StepContent, 3: 'location' as StepContent }
+    : { 1: 'project' as StepContent, 2: 'location' as StepContent };
+  
+  const stepLabelsConfig = startedAsGuest
+    ? ['Kontakt', 'Projekt', 'Standort']
+    : ['Projekt', 'Standort'];
+  
+  const totalStepsConfig = startedAsGuest ? 3 : 2;
+
+  // Use SSOT multi-step form hook
+  const {
+    currentStep,
+    currentContent,
+    progress,
+    stepLabels,
+    isFirstStep,
+    isLastStep,
+    nextStep: goNextStep,
+    prevStep: goPrevStep,
+    setStep,
+  } = useMultiStepForm<StepContent>({
+    totalSteps: totalStepsConfig,
+    stepContent: stepConfig,
+    stepLabels: stepLabelsConfig,
+  });
 
   const form = useForm<LeadFormData>({
     resolver: zodResolver(leadSchema),
@@ -521,32 +552,8 @@ const SubmitLead = () => {
       setIsSubmitting(false);
     }
   };
-
-  // Step navigation - use startedAsGuest for consistent flow throughout session
-  // For guests: Step 1 = Contact, Step 2 = Project, Step 3 = Location
-  // For authenticated: Step 1 = Project, Step 2 = Location
-  const getStepContent = () => {
-    if (startedAsGuest) {
-      // Started as guest: 3 steps (Contact, Project, Location) - consistent even after account creation
-      return {
-        1: 'contact',
-        2: 'project',
-        3: 'location',
-      };
-    } else {
-      // Started authenticated: 2 steps (Project, Location)
-      return {
-        1: 'project',
-        2: 'location',
-      };
-    }
-  };
-
-  const stepContent = getStepContent();
-  const totalSteps = startedAsGuest ? 3 : 2;
-  const currentContent = stepContent[step as keyof typeof stepContent];
-
-  const nextStep = async () => {
+  // Validation before advancing to next step
+  const handleNextStep = async () => {
     if (currentContent === 'project') {
       const titleValid = await form.trigger('title');
       const catValid = await form.trigger('category');
@@ -556,22 +563,10 @@ const SubmitLead = () => {
       if (!zipValid) return;
     }
     
-    if (step < totalSteps) setStep(step + 1);
+    goNextStep();
   };
 
-  const prevStep = () => {
-    if (step > 1) setStep(step - 1);
-  };
-
-  // Step labels for progress indicator - use startedAsGuest for consistency
-  const getStepLabels = () => {
-    if (startedAsGuest) {
-      return ['Kontakt', 'Projekt', 'Standort'];
-    } else {
-      return ['Projekt', 'Standort'];
-    }
-  };
-  const stepLabels = getStepLabels();
+  const totalSteps = totalStepsConfig;
 
   // Show loading state until initial auth check is complete
   if (startedAsGuest === null) {
@@ -604,30 +599,13 @@ const SubmitLead = () => {
             </p>
           </div>
 
-          {/* Progress indicator */}
-          <div className="mb-6 sm:mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs sm:text-sm font-medium">
-                Schritt {step} von {totalSteps}
-              </span>
-              <span className="text-xs sm:text-sm text-muted-foreground">
-                {Math.round((step / totalSteps) * 100)}%
-              </span>
-            </div>
-            <div className="w-full bg-muted rounded-full h-2">
-              <div 
-                className="bg-primary h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${(step / totalSteps) * 100}%` }}
-              />
-            </div>
-            <div className="flex justify-between mt-2 text-[10px] sm:text-xs text-muted-foreground">
-              {stepLabels.map((label, index) => (
-                <span key={label} className={step >= index + 1 ? "text-primary font-medium" : ""}>
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
+          {/* Progress indicator - using SSOT component */}
+          <MultiStepProgress
+            currentStep={currentStep}
+            totalSteps={totalSteps}
+            stepLabels={stepLabels}
+            progress={progress}
+          />
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -1126,8 +1104,8 @@ const SubmitLead = () => {
 
               {/* Navigation buttons */}
               <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
-                {step > 1 && (
-                  <Button type="button" variant="outline" onClick={prevStep} className="min-h-[44px] w-full sm:w-auto">
+                {!isFirstStep && (
+                  <Button type="button" variant="outline" onClick={goPrevStep} className="min-h-[44px] w-full sm:w-auto">
                     Zurück
                   </Button>
                 )}
@@ -1146,15 +1124,15 @@ const SubmitLead = () => {
                 )}
 
                 {/* Normal next step */}
-                {currentContent !== 'contact' && step < totalSteps && (
-                  <Button type="button" onClick={nextStep} className="ml-auto min-h-[44px] w-full sm:w-auto">
+                {currentContent !== 'contact' && !isLastStep && (
+                  <Button type="button" onClick={handleNextStep} className="ml-auto min-h-[44px] w-full sm:w-auto">
                     Weiter
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
 
                 {/* Final submit */}
-                {step === totalSteps && currentContent !== 'contact' && (
+                {isLastStep && currentContent !== 'contact' && (
                   <Button type="submit" disabled={isSubmitting} className="ml-auto min-h-[44px] w-full sm:w-auto">
                     {isSubmitting ? 'Wird erstellt...' : 'Auftrag erstellen'}
                   </Button>
