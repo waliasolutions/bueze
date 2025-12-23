@@ -57,10 +57,8 @@ export function AdminLayout({ children, title, description, isLoading = false }:
             </div>
             {/* Content with fade transition */}
             <div 
-              className={cn(
-                "transition-opacity duration-200",
-                isLoading ? "opacity-0" : "opacity-100 animate-fade-in"
-              )}
+              className="transition-opacity duration-300 ease-out"
+              style={{ opacity: isLoading ? 0 : 1 }}
             >
               {children}
             </div>
