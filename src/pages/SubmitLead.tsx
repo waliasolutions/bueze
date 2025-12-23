@@ -28,30 +28,28 @@ import { runAllSpamChecks, recordAttempt } from '@/lib/spamProtection';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 
 
+// Schema with proper validation - no more .or(z.literal('')) bug
 const leadSchema = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
-  description: z.string().optional().or(z.literal('')), // Made optional for faster submission
+  description: z.string().optional().or(z.literal('')),
   category: z.string().min(1, 'Bitte wählen Sie eine Kategorie'),
-  // Budget is now optional with presets
   budgetPreset: z.string().optional(),
   budget_min: z.number().optional().nullable(),
   budget_max: z.number().optional().nullable(),
   urgency: z.string().optional().default('planning'),
-  // PLZ-only location - canton is auto-derived, city is display-only
   zip: z.string().regex(/^\d{4}$/, 'PLZ muss genau 4 Ziffern haben'),
-  city: z.string().optional().or(z.literal('')), // Display only, optional
-  canton: z.string().optional().or(z.literal('')), // Auto-derived from PLZ
+  city: z.string().optional().or(z.literal('')),
+  canton: z.string().optional().or(z.literal('')),
   address: z.string().optional(),
-  // Contact fields - required for guests (enforced at submit with inline validation)
-  contactEmail: z.string().min(1, 'E-Mail ist erforderlich').email('Gültige E-Mail erforderlich').or(z.literal('')),
+  // Contact fields - REQUIRED for guests, properly validated (no .or(z.literal('')))
+  contactEmail: z.string().email('Gültige E-Mail erforderlich'),
   contactPhone: z.string().optional().or(z.literal('')),
-  contactFirstName: z.string().min(1, 'Vorname ist erforderlich').or(z.literal('')),
-  contactLastName: z.string().min(1, 'Nachname ist erforderlich').or(z.literal('')),
-  contactPassword: z.string().min(PASSWORD_MIN_LENGTH, `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen haben`).or(z.literal('')),
-  // Honeypot field - must remain empty (bots fill hidden fields)
+  contactFirstName: z.string().min(1, 'Vorname ist erforderlich'),
+  contactLastName: z.string().min(1, 'Nachname ist erforderlich'),
+  contactPassword: z.string().min(PASSWORD_MIN_LENGTH, `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen haben`),
+  // Honeypot field
   website: z.string().max(0, 'Spam erkannt').optional().default(''),
 }).refine((data) => {
-  // Budget validation: if both set, max should be >= min
   if (data.budget_min && data.budget_max) {
     return data.budget_max >= data.budget_min;
   }
@@ -113,8 +111,8 @@ const SubmitLead = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat?: number; lng?: number }>({});
-  // Track form load time for spam protection
   const [formLoadTime] = useState(() => Date.now());
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -140,8 +138,10 @@ const SubmitLead = () => {
       contactFirstName: '',
       contactLastName: '',
       contactPassword: '',
-      website: '', // Honeypot field
+      website: '',
     },
+    // For authenticated users, we don't need contact field validation
+    mode: 'onBlur',
   });
 
   // Check authentication status on mount
@@ -153,11 +153,9 @@ const SubmitLead = () => {
     checkAuth();
   }, []);
 
-  // Auto-select category from URL parameter
   // Handle preselected category from URL parameter
   useEffect(() => {
     if (preselectedCategory) {
-      // Check if it's a major category ID
       const isMajorCategory = Object.values(majorCategories).some(
         cat => cat.id === preselectedCategory
       );
@@ -179,7 +177,6 @@ const SubmitLead = () => {
 
     const filesArray = Array.from(files);
     
-    // Check total file count (max 2)
     if (uploadedUrls.length + filesArray.length > 2) {
       toast({
         title: "Zu viele Dateien",
@@ -189,7 +186,6 @@ const SubmitLead = () => {
       return;
     }
 
-    // For guests, store files temporarily in state
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id || sessionStorage.getItem('correlation_id') || 'guest';
 
@@ -232,7 +228,6 @@ const SubmitLead = () => {
     } catch (error) {
       captureException(error as Error, { context: 'handleFileUpload' });
       
-      // Enhanced error messaging for file uploads
       let errorMsg = "Ein unerwarteter Fehler ist aufgetreten.";
       if (error instanceof Error) {
         if (error.message.includes('3MB') || error.message.includes('groß')) {
@@ -289,8 +284,10 @@ const SubmitLead = () => {
       setShowLoginForm(false);
       toast({
         title: "Anmeldung erfolgreich",
-        description: "Sie können jetzt Ihren Auftrag abschließen.",
+        description: "Sie können jetzt Ihren Auftrag erstellen.",
       });
+      // Move to next step (Project details) after login
+      setStep(2);
     } catch (error) {
       toast({
         title: "Anmeldung fehlgeschlagen",
@@ -302,8 +299,109 @@ const SubmitLead = () => {
     }
   };
 
+  // Create account immediately after Step 1 contact validation (for guests)
+  const handleCreateAccountAndProceed = async () => {
+    // Validate contact fields
+    const emailValid = await form.trigger('contactEmail');
+    const firstNameValid = await form.trigger('contactFirstName');
+    const lastNameValid = await form.trigger('contactLastName');
+    const passwordValid = await form.trigger('contactPassword');
+    
+    if (!emailValid || !firstNameValid || !lastNameValid || !passwordValid) {
+      return; // FormMessage shows inline errors
+    }
+
+    const data = form.getValues();
+    setIsCreatingAccount(true);
+
+    try {
+      const accountRequestId = getOrCreateRequestId('create-account');
+      logWithCorrelation('Creating account for guest at Step 1', { email: data.contactEmail, accountRequestId });
+
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: data.contactEmail,
+        password: data.contactPassword,
+        options: {
+          data: {
+            first_name: data.contactFirstName,
+            last_name: data.contactLastName,
+            full_name: `${data.contactFirstName} ${data.contactLastName}`,
+            phone: data.contactPhone || '',
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          toast({
+            title: "E-Mail bereits registriert",
+            description: "Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.",
+            variant: "destructive",
+          });
+          setShowLoginForm(true);
+          setLoginEmail(data.contactEmail);
+        } else {
+          throw signUpError;
+        }
+        return;
+      }
+
+      clearRequestId('create-account');
+
+      // Check if email confirmation is required
+      if (signUpData.user && !signUpData.session) {
+        toast({
+          title: "E-Mail-Bestätigung erforderlich",
+          description: "Bitte bestätigen Sie Ihre E-Mail-Adresse. Sie können sich danach hier anmelden.",
+          variant: "default",
+        });
+        setShowLoginForm(true);
+        setLoginEmail(data.contactEmail);
+        return;
+      }
+
+      // User is signed in - refresh session
+      await supabase.auth.refreshSession();
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "E-Mail-Bestätigung erforderlich",
+          description: "Bitte bestätigen Sie Ihre E-Mail-Adresse und melden Sie sich dann an.",
+          variant: "default",
+        });
+        setShowLoginForm(true);
+        setLoginEmail(data.contactEmail);
+        return;
+      }
+
+      // Success! User is now authenticated
+      setIsAuthenticated(true);
+      toast({
+        title: "Konto erstellt",
+        description: "Beschreiben Sie jetzt Ihr Projekt.",
+      });
+      
+      logWithCorrelation('Account created successfully at Step 1', { userId: signUpData.user?.id });
+      
+      // Proceed to Step 2 (Project details)
+      setStep(2);
+    } catch (error) {
+      captureException(error as Error, { context: 'createAccountStep1' });
+      toast({
+        title: "Fehler bei der Registrierung",
+        description: error instanceof Error ? error.message : "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
+
   const onSubmit = async (data: LeadFormData) => {
-    // Run spam protection checks before processing
+    // Run spam protection
     const spamCheck = runAllSpamChecks({
       honeypotValue: data.website || '',
       formLoadTime,
@@ -323,135 +421,27 @@ const SubmitLead = () => {
       return;
     }
     
-    // Record this submission attempt for rate limiting
     recordAttempt('lead_submit');
-    
     setIsSubmitting(true);
     
-    // Add timeout warning after 15 seconds
     const timeoutId = setTimeout(() => {
       toast({
         title: "Dauert länger als erwartet...",
-        description: "Bitte haben Sie noch einen Moment Geduld. Falls es nicht funktioniert, laden Sie die Seite neu.",
+        description: "Bitte haben Sie noch einen Moment Geduld.",
       });
     }, 15000);
     
-    let user: any = null; // Declare user outside try block for error handling access
-    
     try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      user = currentUser;
+      // User should already be authenticated (either from Step 1 or pre-existing)
+      const { data: { user } } = await supabase.auth.getUser();
       
-      // If user is not authenticated, validate contact details with inline validation (no toast)
       if (!user) {
-        // Trigger inline field validation - no premature toast
-        const emailValid = await form.trigger('contactEmail');
-        const firstNameValid = await form.trigger('contactFirstName');
-        const lastNameValid = await form.trigger('contactLastName');
-        const passwordValid = await form.trigger('contactPassword');
-        
-        if (!emailValid || !firstNameValid || !lastNameValid || !passwordValid) {
-          setIsSubmitting(false);
-          setStep(4); // Go to contact details step - FormMessage shows inline errors
-          clearTimeout(timeoutId);
-          return;
-        }
-
-        const accountRequestId = getOrCreateRequestId('create-account');
-        
-        logWithCorrelation('Creating new account for guest', { email: data.contactEmail, accountRequestId });
-
-        // Create new account
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: data.contactEmail,
-          password: data.contactPassword,
-          options: {
-            data: {
-              first_name: data.contactFirstName,
-              last_name: data.contactLastName,
-              full_name: `${data.contactFirstName} ${data.contactLastName}`,
-              phone: data.contactPhone || '',
-            },
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-          },
-        });
-
-        if (signUpError) {
-          if (signUpError.message.includes('already registered')) {
-            toast({
-              title: "E-Mail bereits registriert",
-              description: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.",
-              variant: "destructive",
-            });
-            setShowLoginForm(true);
-            setStep(4);
-          } else {
-            throw signUpError;
-          }
-          setIsSubmitting(false);
-          return;
-        }
-
-        clearRequestId('create-account');
-
-        // Check if email confirmation is required (user exists but no session)
-        if (signUpData.user && !signUpData.session) {
-          // Email confirmation is required
-          toast({
-            title: "E-Mail-Bestätigung erforderlich",
-            description: "Bitte bestätigen Sie Ihre E-Mail-Adresse und versuchen Sie es dann erneut, oder melden Sie sich an wenn Sie bereits ein Konto haben.",
-            variant: "default",
-          });
-          setShowLoginForm(true);
-          setLoginEmail(data.contactEmail);
-          setStep(4);
-          setIsSubmitting(false);
-          clearTimeout(timeoutId);
-          return;
-        }
-
-        // User is already signed in after signUp, just refresh the session
-        await supabase.auth.refreshSession();
-
-        // Add 300ms delay for session propagation through Supabase connection pool
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Verify session is available
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          // Session not available - likely email confirmation required
-          toast({
-            title: "E-Mail-Bestätigung erforderlich",
-            description: "Bitte bestätigen Sie Ihre E-Mail-Adresse und melden Sie sich dann an.",
-            variant: "default",
-          });
-          setShowLoginForm(true);
-          setLoginEmail(data.contactEmail);
-          setStep(4);
-          setIsSubmitting(false);
-          clearTimeout(timeoutId);
-          return;
-        }
-
-        user = signUpData.user;
-        
-        toast({
-          title: "Konto erstellt",
-          description: "Ihr Auftrag wird jetzt gespeichert...",
-        });
-
-        logWithCorrelation('Account created successfully', { userId: user?.id });
-      }
-
-      if (!user) {
-        throw new Error('User authentication failed');
+        throw new Error('Nicht angemeldet. Bitte laden Sie die Seite neu.');
       }
 
       const requestId = getOrCreateRequestId('create-lead');
-      
       logWithCorrelation('Creating lead', { requestId, mediaCount: uploadedUrls.length });
 
-      // Use supabaseQuery wrapper with optimized config
       const leadResult = await supabaseQuery(async () => {
         return await supabase
           .from('leads')
@@ -476,62 +466,41 @@ const SubmitLead = () => {
           })
           .select();
       }, {
-        maxAttempts: 1,  // No retries for faster response
-        timeout: 5000,   // Reduce timeout to 5s
+        maxAttempts: 1,
+        timeout: 5000,
       });
 
       clearRequestId('create-lead');
-      
       logWithCorrelation('Lead created successfully', { requestId });
 
       toast({
         title: "Auftrag erstellt",
-        description: "Ihr Auftrag wurde erfolgreich erstellt und ist jetzt sichtbar für Handwerker.",
+        description: "Ihr Auftrag wurde erfolgreich erstellt.",
       });
 
-      // Redirect to thank you page with lead title for GTM tracking
       navigate('/auftrag-erfolgreich', { 
         state: { leadTitle: data.title } 
       });
     } catch (error) {
-      captureException(error as Error, { 
-        context: 'submitLead',
-        userId: user?.id
-      });
-      logWithCorrelation('Lead creation failed', { 
-        error,
-        userId: user?.id 
-      });
+      captureException(error as Error, { context: 'submitLead' });
       
-      // Enhanced error messaging with specific RLS handling
       const errorMessage = error instanceof Error ? error.message : 'Ein unerwarteter Fehler ist aufgetreten.';
       let userFriendlyMessage = errorMessage;
       
-      // Add RLS-specific error handling
       if (errorMessage.includes('row-level security') || 
           errorMessage.includes('policy') ||
           errorMessage.includes('permission denied') ||
           (error as any)?.code === '42501') {
-        userFriendlyMessage = 'Sitzung nicht bereit. Bitte warten Sie einen Moment und versuchen Sie es erneut, oder melden Sie sich erneut an.';
-        logWithCorrelation('RLS policy violation detected', { 
-          errorMessage,
-          errorCode: (error as any)?.code,
-          userId: user?.id
-        });
+        userFriendlyMessage = 'Sitzung nicht bereit. Bitte laden Sie die Seite neu und versuchen Sie es erneut.';
       } else if (errorMessage.includes('duplicate key') || (error as any)?.code === '23505') {
-        // Lead was already created, just navigate
         userFriendlyMessage = 'Auftrag wurde bereits erstellt.';
         clearRequestId('create-lead');
         toast({
           title: "Auftrag erstellt",
-          description: "Ihr Auftrag wurde erfolgreich erstellt und ist jetzt sichtbar für Handwerker.",
+          description: "Ihr Auftrag wurde erfolgreich erstellt.",
         });
         navigate('/dashboard');
         return;
-      } else if (errorMessage.includes('email')) {
-        userFriendlyMessage = 'Problem mit der E-Mail-Adresse. Bitte überprüfen Sie Ihre Eingabe.';
-      } else if (errorMessage.includes('password')) {
-        userFriendlyMessage = 'Problem mit dem Passwort. Es muss mindestens 6 Zeichen lang sein.';
       } else if (errorMessage.includes('network')) {
         userFriendlyMessage = 'Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.';
       } else if (errorMessage.includes('timeout')) {
@@ -549,30 +518,56 @@ const SubmitLead = () => {
     }
   };
 
+  // Step navigation
+  // For guests: Step 1 = Contact, Step 2 = Project, Step 3 = Location
+  // For authenticated: Step 1 = Project, Step 2 = Location, Step 3 = Location (budget is in step 2)
+  const getStepContent = () => {
+    if (isAuthenticated) {
+      // Authenticated: 2 steps (Project, Location)
+      return {
+        1: 'project',
+        2: 'location',
+      };
+    } else {
+      // Guest: 3 steps (Contact, Project, Location)
+      return {
+        1: 'contact',
+        2: 'project',
+        3: 'location',
+      };
+    }
+  };
+
+  const stepContent = getStepContent();
+  const totalSteps = isAuthenticated ? 2 : 3;
+  const currentContent = stepContent[step as keyof typeof stepContent];
+
   const nextStep = async () => {
-    const maxStep = isAuthenticated ? 3 : 4;
-    
-    // Validate current step before proceeding
-    if (step === 1) {
+    if (currentContent === 'project') {
       const titleValid = await form.trigger('title');
       const catValid = await form.trigger('category');
-      // Description is now optional, don't require it
       if (!titleValid || !catValid) return;
-    } else if (step === 2) {
-      // Budget and urgency are now optional - no blocking validation needed
-      // Just proceed to next step
-    } else if (step === 3) {
-      // Validate PLZ on Step 3 (Location step)
+    } else if (currentContent === 'location') {
       const zipValid = await form.trigger('zip');
       if (!zipValid) return;
     }
     
-    if (step < maxStep) setStep(step + 1);
+    if (step < totalSteps) setStep(step + 1);
   };
 
   const prevStep = () => {
     if (step > 1) setStep(step - 1);
   };
+
+  // Step labels for progress indicator
+  const getStepLabels = () => {
+    if (isAuthenticated) {
+      return ['Projekt', 'Standort'];
+    } else {
+      return ['Kontakt', 'Projekt', 'Standort'];
+    }
+  };
+  const stepLabels = getStepLabels();
 
   return (
     <div className="min-h-screen bg-background">
@@ -590,30 +585,30 @@ const SubmitLead = () => {
           <div className="mb-6 sm:mb-8">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs sm:text-sm font-medium">
-                Schritt {step} von {isAuthenticated ? 3 : 4}
+                Schritt {step} von {totalSteps}
               </span>
               <span className="text-xs sm:text-sm text-muted-foreground">
-                {Math.round((step / (isAuthenticated ? 3 : 4)) * 100)}%
+                {Math.round((step / totalSteps) * 100)}%
               </span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
               <div 
                 className="bg-primary h-2 rounded-full transition-all duration-300" 
-                style={{ width: `${(step / (isAuthenticated ? 3 : 4)) * 100}%` }}
+                style={{ width: `${(step / totalSteps) * 100}%` }}
               />
             </div>
-            {/* Step labels on mobile */}
             <div className="flex justify-between mt-2 text-[10px] sm:text-xs text-muted-foreground">
-              <span className={step >= 1 ? "text-primary font-medium" : ""}>Projekt</span>
-              <span className={step >= 2 ? "text-primary font-medium" : ""}>Budget</span>
-              <span className={step >= 3 ? "text-primary font-medium" : ""}>Standort</span>
-              {!isAuthenticated && <span className={step >= 4 ? "text-primary font-medium" : ""}>Kontakt</span>}
+              {stepLabels.map((label, index) => (
+                <span key={label} className={step >= index + 1 ? "text-primary font-medium" : ""}>
+                  {label}
+                </span>
+              ))}
             </div>
           </div>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Honeypot field - hidden from humans, bots will fill */}
+              {/* Honeypot field */}
               <div className="absolute left-[-9999px] opacity-0 pointer-events-none" aria-hidden="true">
                 <FormField
                   control={form.control}
@@ -622,386 +617,20 @@ const SubmitLead = () => {
                     <FormItem>
                       <FormLabel>Website</FormLabel>
                       <FormControl>
-                        <Input 
-                          {...field} 
-                          tabIndex={-1} 
-                          autoComplete="off"
-                          placeholder="Leave empty"
-                        />
+                        <Input {...field} tabIndex={-1} autoComplete="off" placeholder="Leave empty" />
                       </FormControl>
                     </FormItem>
                   )}
                 />
               </div>
-              {step === 1 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Projektdetails</CardTitle>
-                    <CardDescription>Beschreiben Sie Ihr Projekt im Detail</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Projekttitel</FormLabel>
-                          <FormControl>
-                            <Input placeholder="z.B. Badezimmer sanieren" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
 
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Kategorie</FormLabel>
-                          <div className="space-y-3">
-                            <p className="text-sm text-muted-foreground">
-                              Wählen Sie die passende Kategorie für Ihr Projekt:
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                              {Object.values(majorCategories).map((majorCat) => {
-                                const Icon = majorCat.icon;
-                                const isSelected = field.value === majorCat.id;
-                                
-                                return (
-                                  <Card
-                                    key={majorCat.id}
-                                    className={cn(
-                                      "cursor-pointer transition-all hover:shadow-lg active:scale-95 min-h-[44px]",
-                                      isSelected && "ring-2 ring-brand-600 bg-brand-50 shadow-lg"
-                                    )}
-                                    onClick={() => field.onChange(majorCat.id)}
-                                  >
-                                    <CardContent className="p-3 sm:p-4 md:p-6 flex sm:flex-col items-center sm:text-center gap-3 sm:gap-0">
-                                      <div className={cn(
-                                        "w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-white sm:mx-auto sm:mb-3 transition-transform flex-shrink-0",
-                                        `bg-gradient-to-br ${majorCat.color}`,
-                                        isSelected ? 'scale-110' : ''
-                                      )}>
-                                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
-                                      </div>
-                                      <div className="flex-1 sm:flex-none">
-                                        <p className="text-xs sm:text-sm font-semibold leading-tight">
-                                          {majorCat.id === 'elektroinstallationen' ? (
-                                            <>
-                                              <span className="sm:hidden">Elektro</span>
-                                              <span className="hidden sm:inline">Elektro-<br />installationen</span>
-                                            </>
-                                          ) : (
-                                            majorCat.label
-                                          )}
-                                        </p>
-                                        {isSelected && (
-                                          <Badge className="mt-1 sm:mt-3 bg-brand-600 text-[10px] sm:text-xs">
-                                            <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
-                                            Gewählt
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </CardContent>
-                                  </Card>
-                                );
-                              })}
-                            </div>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Projektbeschreibung</FormLabel>
-                          <FormControl>
-                            <Textarea 
-                              placeholder="Beschreiben Sie Ihr Projekt detailliert..."
-                              className="min-h-[120px]"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Je detaillierter die Beschreibung, desto besser können Handwerker Ihr Projekt einschätzen.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* File Upload Section */}
-                    <div className="space-y-4">
-                      <div>
-                        <FormLabel>Bilder (optional)</FormLabel>
-                        <FormDescription className="mb-2">
-                          Laden Sie bis zu 2 Bilder hoch (max. 3MB pro Bild)
-                        </FormDescription>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => document.getElementById('file-upload')?.click()}
-                            disabled={isUploading || uploadedUrls.length >= 2}
-                          >
-                            <Upload className="mr-2 h-4 w-4" />
-                            {isUploading ? 'Wird hochgeladen...' : 'Bilder auswählen'}
-                          </Button>
-                          <Input
-                            id="file-upload"
-                            type="file"
-                            multiple
-                            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
-                            className="hidden"
-                            onChange={(e) => handleFileUpload(e.target.files)}
-                          />
-                          <span className="text-sm text-muted-foreground">
-                            {uploadedUrls.length}/2
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Upload Progress */}
-                      {isUploading && (
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>Upload läuft...</span>
-                            <span>{Math.round(uploadProgress)}%</span>
-                          </div>
-                          <div className="w-full bg-muted rounded-full h-2">
-                            <div 
-                              className="bg-primary h-2 rounded-full transition-all duration-300" 
-                              style={{ width: `${uploadProgress}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Uploaded Files Preview */}
-                      {uploadedUrls.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                          {uploadedUrls.map((url, index) => (
-                            <div 
-                              key={index} 
-                              className="relative group border rounded-lg overflow-hidden aspect-video"
-                            >
-                              {url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
-                                <img 
-                                  src={url} 
-                                  alt={`Upload ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center bg-muted">
-                                  <FileIcon className="h-8 w-8 text-muted-foreground" />
-                                </div>
-                              )}
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-1 right-1 min-h-[44px] min-w-[44px] h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                                onClick={() => handleRemoveFile(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {step === 2 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Budget & Dringlichkeit</CardTitle>
-                    <CardDescription>Diese Angaben sind optional und helfen Handwerkern bei der Einschätzung</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="budgetPreset"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Geschätztes Budget</FormLabel>
-                          <Select 
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              // Auto-set budget_min/max based on preset
-                              const preset = budgetPresets.find(p => p.value === value);
-                              if (preset) {
-                                form.setValue('budget_min', preset.min);
-                                form.setValue('budget_max', preset.max);
-                              }
-                            }} 
-                            value={field.value || 'unknown'}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Wählen Sie einen Budgetrahmen" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {budgetPresets.map((preset) => (
-                                <SelectItem key={preset.value} value={preset.value}>
-                                  {preset.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Falls Sie das Budget noch nicht kennen, wählen Sie "Noch unklar"
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="urgency"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Dringlichkeit</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value || 'planning'}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Wann soll das Projekt starten?" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {urgencyLevels.map((level) => (
-                                <SelectItem key={level.value} value={level.value}>
-                                  {level.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {step === 3 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Standort</CardTitle>
-                    <CardDescription>Wo soll das Projekt durchgeführt werden?</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="canton"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Kanton</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Wählen Sie einen Kanton" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {SWISS_CANTONS.map((canton) => (
-                                <SelectItem key={canton.value} value={canton.value}>
-                                  {canton.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="zip"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>PLZ</FormLabel>
-                            <FormControl>
-                              <PostalCodeInput
-                                value={field.value}
-                                onValueChange={field.onChange}
-                                onAddressSelect={(address) => {
-                                  // Auto-fill city if provided
-                                  if (address.city) {
-                                    form.setValue('city', address.city);
-                                  }
-                                  form.setValue('canton', address.canton as any);
-                                  // Store coordinates for map visualization
-                                  if (address.latitude && address.longitude) {
-                                    setCoordinates({ lat: address.latitude, lng: address.longitude });
-                                  }
-                                }}
-                              />
-                            </FormControl>
-              <FormDescription>
-                Stadt und Kanton können automatisch ausgefüllt werden
-              </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="city"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Stadt</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="z.B. Zürich"
-                  {...field}
-                />
-              </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Adresse (optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Bahnhofstrasse 1" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Die genaue Adresse wird nur mit ausgewählten Handwerkern geteilt.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {step === 4 && !isAuthenticated && (
+              {/* STEP 1 for Guests: Contact Details */}
+              {currentContent === 'contact' && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Kontaktdaten</CardTitle>
                     <CardDescription>
-                      Um Ihren Auftrag zu erstellen, benötigen wir Ihre Kontaktdaten
+                      Erstellen Sie ein kostenloses Konto, um Ihren Auftrag zu veröffentlichen
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1094,7 +723,6 @@ const SubmitLead = () => {
                           )}
                         />
 
-                        {/* Subtle login link at bottom */}
                         <p className="text-sm text-muted-foreground text-center pt-2">
                           Bereits registriert?{' '}
                           <button 
@@ -1107,58 +735,373 @@ const SubmitLead = () => {
                         </p>
                       </div>
                     ) : (
-                      <>
-                        <div className="space-y-4">
-                          <p className="text-sm text-muted-foreground">
-                            Melden Sie sich mit Ihrem bestehenden Konto an
-                          </p>
-                          
-                          <div className="space-y-3">
-                            <div>
-                              <FormLabel>E-Mail</FormLabel>
-                              <Input
-                                type="email"
-                                placeholder="ihre@email.com"
-                                value={loginEmail}
-                                onChange={(e) => setLoginEmail(e.target.value)}
-                              />
-                            </div>
-
-                            <div>
-                              <FormLabel>Passwort</FormLabel>
-                              <Input
-                                type="password"
-                                placeholder="Ihr Passwort"
-                                value={loginPassword}
-                                onChange={(e) => setLoginPassword(e.target.value)}
-                              />
-                            </div>
-
-                            <Button
-                              type="button"
-                              onClick={handleLogin}
-                              disabled={isLoggingIn}
-                              className="w-full"
-                            >
-                              {isLoggingIn ? 'Wird angemeldet...' : 'Login'}
-                            </Button>
-
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              onClick={() => setShowLoginForm(false)}
-                              className="w-full"
-                            >
-                              Zurück zur Registrierung
-                            </Button>
+                      <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">
+                          Melden Sie sich mit Ihrem bestehenden Konto an
+                        </p>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <FormLabel>E-Mail</FormLabel>
+                            <Input
+                              type="email"
+                              placeholder="ihre@email.com"
+                              value={loginEmail}
+                              onChange={(e) => setLoginEmail(e.target.value)}
+                            />
                           </div>
+
+                          <div>
+                            <FormLabel>Passwort</FormLabel>
+                            <Input
+                              type="password"
+                              placeholder="Ihr Passwort"
+                              value={loginPassword}
+                              onChange={(e) => setLoginPassword(e.target.value)}
+                            />
+                          </div>
+
+                          <Button
+                            type="button"
+                            onClick={handleLogin}
+                            disabled={isLoggingIn}
+                            className="w-full"
+                          >
+                            {isLoggingIn ? 'Wird angemeldet...' : 'Anmelden'}
+                          </Button>
+
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setShowLoginForm(false)}
+                            className="w-full"
+                          >
+                            Zurück zur Registrierung
+                          </Button>
                         </div>
-                      </>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
               )}
 
+              {/* Project Details Step */}
+              {currentContent === 'project' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Projektdetails</CardTitle>
+                    <CardDescription>Beschreiben Sie Ihr Projekt</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Projekttitel *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="z.B. Badezimmer sanieren" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="category"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Kategorie *</FormLabel>
+                          <div className="space-y-3">
+                            <p className="text-sm text-muted-foreground">
+                              Wählen Sie die passende Kategorie für Ihr Projekt:
+                            </p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+                              {Object.values(majorCategories).map((majorCat) => {
+                                const Icon = majorCat.icon;
+                                const isSelected = field.value === majorCat.id;
+                                
+                                return (
+                                  <Card
+                                    key={majorCat.id}
+                                    className={cn(
+                                      "cursor-pointer transition-all hover:shadow-lg active:scale-95 min-h-[44px]",
+                                      isSelected && "ring-2 ring-brand-600 bg-brand-50 shadow-lg"
+                                    )}
+                                    onClick={() => field.onChange(majorCat.id)}
+                                  >
+                                    <CardContent className="p-3 sm:p-4 md:p-6 flex sm:flex-col items-center sm:text-center gap-3 sm:gap-0">
+                                      <div className={cn(
+                                        "w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-white sm:mx-auto sm:mb-3 transition-transform flex-shrink-0",
+                                        `bg-gradient-to-br ${majorCat.color}`,
+                                        isSelected ? 'scale-110' : ''
+                                      )}>
+                                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
+                                      </div>
+                                      <div className="flex-1 sm:flex-none">
+                                        <p className="text-xs sm:text-sm font-semibold leading-tight">
+                                          {majorCat.id === 'elektroinstallationen' ? (
+                                            <>
+                                              <span className="sm:hidden">Elektro</span>
+                                              <span className="hidden sm:inline">Elektro-<br />installationen</span>
+                                            </>
+                                          ) : (
+                                            majorCat.label
+                                          )}
+                                        </p>
+                                        {isSelected && (
+                                          <Badge className="mt-1 sm:mt-3 bg-brand-600 text-[10px] sm:text-xs">
+                                            <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+                                            Gewählt
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Projektbeschreibung (optional)</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Beschreiben Sie Ihr Projekt detailliert..."
+                              className="min-h-[100px]"
+                              {...field} 
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            Je detaillierter die Beschreibung, desto besser können Handwerker Ihr Projekt einschätzen.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* File Upload */}
+                    <div className="space-y-4">
+                      <div>
+                        <FormLabel>Bilder (optional)</FormLabel>
+                        <FormDescription className="mb-2">
+                          Laden Sie bis zu 2 Bilder hoch (max. 3MB pro Bild)
+                        </FormDescription>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => document.getElementById('file-upload')?.click()}
+                            disabled={isUploading || uploadedUrls.length >= 2}
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            {isUploading ? 'Wird hochgeladen...' : 'Bilder auswählen'}
+                          </Button>
+                          <Input
+                            id="file-upload"
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                            className="hidden"
+                            onChange={(e) => handleFileUpload(e.target.files)}
+                          />
+                          <span className="text-sm text-muted-foreground">
+                            {uploadedUrls.length}/2
+                          </span>
+                        </div>
+                      </div>
+
+                      {isUploading && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Upload läuft...</span>
+                            <span>{Math.round(uploadProgress)}%</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className="bg-primary h-2 rounded-full transition-all duration-300" 
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {uploadedUrls.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                          {uploadedUrls.map((url, index) => (
+                            <div 
+                              key={index} 
+                              className="relative group border rounded-lg overflow-hidden aspect-video"
+                            >
+                              {url.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? (
+                                <img 
+                                  src={url} 
+                                  alt={`Upload ${index + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center bg-muted">
+                                  <FileIcon className="h-8 w-8 text-muted-foreground" />
+                                </div>
+                              )}
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 min-h-[44px] min-w-[44px] h-8 w-8 sm:h-6 sm:w-6 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleRemoveFile(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Location Step (includes budget) */}
+              {currentContent === 'location' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Standort & Budget</CardTitle>
+                    <CardDescription>Wo soll das Projekt durchgeführt werden?</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="zip"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>PLZ *</FormLabel>
+                            <FormControl>
+                              <PostalCodeInput
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                onAddressSelect={(address) => {
+                                  if (address.city) {
+                                    form.setValue('city', address.city);
+                                  }
+                                  form.setValue('canton', address.canton as any);
+                                  if (address.latitude && address.longitude) {
+                                    setCoordinates({ lat: address.latitude, lng: address.longitude });
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Stadt</FormLabel>
+                            <FormControl>
+                              <Input placeholder="z.B. Zürich" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Adresse (optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Bahnhofstrasse 1" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            Die genaue Adresse wird nur mit ausgewählten Handwerkern geteilt.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="budgetPreset"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Geschätztes Budget (optional)</FormLabel>
+                          <Select 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              const preset = budgetPresets.find(p => p.value === value);
+                              if (preset) {
+                                form.setValue('budget_min', preset.min);
+                                form.setValue('budget_max', preset.max);
+                              }
+                            }} 
+                            value={field.value || 'unknown'}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Wählen Sie einen Budgetrahmen" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {budgetPresets.map((preset) => (
+                                <SelectItem key={preset.value} value={preset.value}>
+                                  {preset.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="urgency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dringlichkeit (optional)</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value || 'planning'}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Wählen Sie die Dringlichkeit" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {urgencyLevels.map((level) => (
+                                <SelectItem key={level.value} value={level.value}>
+                                  {level.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Navigation buttons */}
               <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-0">
                 {step > 1 && (
                   <Button type="button" variant="outline" onClick={prevStep} className="min-h-[44px] w-full sm:w-auto">
@@ -1166,12 +1109,29 @@ const SubmitLead = () => {
                   </Button>
                 )}
                 
-                {step < (isAuthenticated ? 3 : 4) ? (
+                {/* Step 1 for guests: Create account button */}
+                {currentContent === 'contact' && !showLoginForm && (
+                  <Button 
+                    type="button" 
+                    onClick={handleCreateAccountAndProceed}
+                    disabled={isCreatingAccount}
+                    className="ml-auto min-h-[44px] w-full sm:w-auto"
+                  >
+                    {isCreatingAccount ? 'Wird erstellt...' : 'Weiter'}
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                )}
+
+                {/* Normal next step */}
+                {currentContent !== 'contact' && step < totalSteps && (
                   <Button type="button" onClick={nextStep} className="ml-auto min-h-[44px] w-full sm:w-auto">
                     Weiter
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
-                ) : (
+                )}
+
+                {/* Final submit */}
+                {step === totalSteps && currentContent !== 'contact' && (
                   <Button type="submit" disabled={isSubmitting} className="ml-auto min-h-[44px] w-full sm:w-auto">
                     {isSubmitting ? 'Wird erstellt...' : 'Auftrag erstellen'}
                   </Button>
