@@ -85,86 +85,6 @@ function handwerkerMatchesCategory(handwerkerCategories: string[], leadCategory:
   return false;
 }
 
-// Canton to PLZ range mapping for Swiss cantons
-const cantonPLZRanges: Record<string, { min: number; max: number }[]> = {
-  'ZH': [{ min: 8000, max: 8999 }],
-  'BE': [{ min: 3000, max: 3999 }, { min: 2500, max: 2599 }],
-  'LU': [{ min: 6000, max: 6099 }, { min: 6100, max: 6199 }, { min: 6200, max: 6299 }, { min: 6300, max: 6399 }],
-  'UR': [{ min: 6400, max: 6499 }],
-  'SZ': [{ min: 6400, max: 6499 }, { min: 8800, max: 8899 }],
-  'OW': [{ min: 6000, max: 6099 }],
-  'NW': [{ min: 6300, max: 6399 }],
-  'GL': [{ min: 8750, max: 8799 }],
-  'ZG': [{ min: 6300, max: 6349 }],
-  'FR': [{ min: 1700, max: 1799 }],
-  'SO': [{ min: 4500, max: 4599 }, { min: 2540, max: 2549 }],
-  'BS': [{ min: 4000, max: 4059 }],
-  'BL': [{ min: 4100, max: 4499 }],
-  'SH': [{ min: 8200, max: 8299 }],
-  'AR': [{ min: 9000, max: 9099 }],
-  'AI': [{ min: 9050, max: 9099 }],
-  'SG': [{ min: 9000, max: 9499 }],
-  'GR': [{ min: 7000, max: 7599 }],
-  'AG': [{ min: 5000, max: 5699 }, { min: 8900, max: 8999 }],
-  'TG': [{ min: 8500, max: 8599 }, { min: 9200, max: 9399 }],
-  'TI': [{ min: 6500, max: 6999 }],
-  'VD': [{ min: 1000, max: 1399 }, { min: 1800, max: 1899 }],
-  'VS': [{ min: 1900, max: 1999 }, { min: 3900, max: 3999 }],
-  'NE': [{ min: 2000, max: 2399 }],
-  'GE': [{ min: 1200, max: 1299 }],
-  'JU': [{ min: 2800, max: 2999 }]
-};
-
-// Check if a PLZ falls within a canton
-function plzMatchesCanton(plz: number, canton: string): boolean {
-  const ranges = cantonPLZRanges[canton.toUpperCase()];
-  if (!ranges) return false;
-  return ranges.some(range => plz >= range.min && plz <= range.max);
-}
-
-// Check if handwerker service areas match lead location
-function handwerkerMatchesServiceArea(serviceAreas: string[], leadPLZ: number, leadCanton: string): boolean {
-  if (!serviceAreas || serviceAreas.length === 0) return false;
-  
-  for (const area of serviceAreas) {
-    const trimmedArea = area.trim().toUpperCase();
-    
-    // Check if area is a canton code (2 uppercase letters)
-    if (/^[A-Z]{2}$/.test(trimmedArea)) {
-      // Canton match - check if lead's canton matches
-      if (trimmedArea === leadCanton.toUpperCase()) {
-        return true;
-      }
-      // Or if lead's PLZ falls within this canton
-      if (plzMatchesCanton(leadPLZ, trimmedArea)) {
-        return true;
-      }
-      continue;
-    }
-    
-    // Check for PLZ range (e.g., "8000-8999")
-    if (area.includes('-')) {
-      const [start, end] = area.split('-').map(p => parseInt(p.trim()));
-      if (!isNaN(start) && !isNaN(end)) {
-        if (leadPLZ >= start && leadPLZ <= end) {
-          return true;
-        }
-      }
-      continue;
-    }
-    
-    // Check for exact PLZ match
-    const servicePLZ = parseInt(area.trim());
-    if (!isNaN(servicePLZ)) {
-      if (leadPLZ === servicePLZ) {
-        return true;
-      }
-    }
-  }
-  
-  return false;
-}
-
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
   if (corsResponse) return corsResponse;
@@ -191,7 +111,11 @@ serve(async (req) => {
       throw new Error(`Lead not found: ${leadError?.message}`);
     }
 
-    console.log(`[send-lead-notification] Lead details: category=${lead.category}, zip=${lead.zip}, canton=${lead.canton}, city=${lead.city}`);
+    // NORMALIZE PLZ - strip anything not a digit and parse as integer
+    const leadPLZ = parseInt((lead.zip?.toString() || '0').replace(/\D/g, ''));
+    const leadCanton = lead.canton || '';
+
+    console.log(`[send-lead-notification] Lead details: category=${lead.category}, PLZ=${leadPLZ}, canton=${leadCanton}, city=${lead.city}`);
 
     // Fetch owner profile
     const ownerProfile = await fetchClientProfile(supabase, lead.owner_id);
@@ -206,7 +130,7 @@ serve(async (req) => {
       clientEmail: ownerProfile?.email || 'Unbekannt',
       category: categoryLabel,
       city: lead.city || 'Nicht angegeben',
-      canton: lead.canton || '',
+      canton: leadCanton,
       description: lead.description,
       budgetMin: lead.budget_min,
       budgetMax: lead.budget_max,
@@ -223,7 +147,7 @@ serve(async (req) => {
 
     const adminResult = await sendEmail({
       to: 'info@bueeze.ch',
-      subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city}`,
+      subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city || `PLZ ${leadPLZ}`}`,
       htmlBody: adminEmailHtml,
     });
 
@@ -233,44 +157,112 @@ serve(async (req) => {
       console.error('[send-lead-notification] Admin email failed:', adminResult.error);
     }
 
-    // Send Handwerker Notifications - get ALL approved handwerkers first
-    const { data: handwerkers, error: handwerkersError } = await supabase
+    // BULLETPROOF MATCHING: Query handwerker_service_areas with PLZ range
+    console.log(`[send-lead-notification] Querying service areas for PLZ ${leadPLZ}...`);
+    
+    const { data: serviceAreaMatches, error: serviceAreaError } = await supabase
+      .from('handwerker_service_areas')
+      .select('handwerker_id')
+      .lte('start_plz', leadPLZ)
+      .gte('end_plz', leadPLZ);
+
+    if (serviceAreaError) {
+      console.error('[send-lead-notification] Error querying service areas:', serviceAreaError.message);
+    }
+
+    const matchedHandwerkerIds = new Set(
+      (serviceAreaMatches || []).map(sa => sa.handwerker_id)
+    );
+
+    console.log(`[send-lead-notification] Found ${matchedHandwerkerIds.size} handwerkers via service_areas table`);
+
+    // FALLBACK: Also check legacy service_areas column for backward compatibility
+    const { data: allHandwerkers, error: handwerkersError } = await supabase
       .from('handwerker_profiles')
-      .select('user_id, service_areas, categories, email, first_name, last_name, company_name')
+      .select('id, user_id, service_areas, categories, email, first_name, last_name, company_name')
       .eq('verification_status', 'approved');
 
     if (handwerkersError) {
       throw new Error(`Error fetching handwerkers: ${handwerkersError.message}`);
     }
 
-    console.log(`[send-lead-notification] Found ${handwerkers?.length || 0} approved handwerkers total`);
+    console.log(`[send-lead-notification] Found ${allHandwerkers?.length || 0} approved handwerkers total`);
 
-    const leadPLZ = parseInt(lead.zip?.toString() || '0');
-    const leadCanton = lead.canton || '';
-    
-    // Filter by category (with major category support)
-    const categoryMatches = handwerkers?.filter(hw => {
+    // Filter by category first
+    const categoryMatches = allHandwerkers?.filter(hw => {
       const matches = handwerkerMatchesCategory(hw.categories || [], lead.category);
-      if (matches) {
-        console.log(`[send-lead-notification] Category match: ${hw.company_name || hw.first_name} has ${hw.categories?.join(', ')}`);
-      }
       return matches;
     }) || [];
     
     console.log(`[send-lead-notification] ${categoryMatches.length} handwerkers match category ${lead.category}`);
 
-    // Filter by service area (with canton support)
+    // Filter by service area - use new table OR legacy column
     const matchingHandwerkers = categoryMatches.filter(hw => {
-      const matches = handwerkerMatchesServiceArea(hw.service_areas || [], leadPLZ, leadCanton);
-      if (matches) {
-        console.log(`[send-lead-notification] Service area match: ${hw.company_name || hw.first_name} covers ${hw.service_areas?.join(', ')}`);
-      } else {
-        console.log(`[send-lead-notification] Service area NO match: ${hw.company_name || hw.first_name} has ${hw.service_areas?.join(', ')}, lead PLZ=${leadPLZ}, canton=${leadCanton}`);
+      // Check new service_areas table first
+      if (matchedHandwerkerIds.has(hw.id)) {
+        console.log(`[send-lead-notification] ✓ ${hw.company_name || hw.first_name}: matched via service_areas table`);
+        return true;
       }
-      return matches;
+      
+      // Fallback: check legacy service_areas column
+      const serviceAreas = hw.service_areas || [];
+      for (const area of serviceAreas) {
+        const trimmedArea = area.trim().toUpperCase();
+        
+        // Check if area is a canton code (2 uppercase letters)
+        if (/^[A-Z]{2}$/.test(trimmedArea)) {
+          // Simple canton match by lead canton
+          if (trimmedArea === leadCanton.toUpperCase()) {
+            console.log(`[send-lead-notification] ✓ ${hw.company_name || hw.first_name}: canton match ${trimmedArea}`);
+            return true;
+          }
+          continue;
+        }
+        
+        // Check for PLZ range (e.g., "8000-8999")
+        if (area.includes('-')) {
+          const [start, end] = area.split('-').map(p => parseInt(p.trim()));
+          if (!isNaN(start) && !isNaN(end) && leadPLZ >= start && leadPLZ <= end) {
+            console.log(`[send-lead-notification] ✓ ${hw.company_name || hw.first_name}: PLZ range match ${area}`);
+            return true;
+          }
+          continue;
+        }
+        
+        // Check for exact PLZ match
+        const servicePLZ = parseInt(area.trim());
+        if (!isNaN(servicePLZ) && leadPLZ === servicePLZ) {
+          console.log(`[send-lead-notification] ✓ ${hw.company_name || hw.first_name}: exact PLZ match ${area}`);
+          return true;
+        }
+      }
+      
+      return false;
     });
 
     console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match both category AND service area`);
+
+    // ORPHAN LEAD FALLBACK: If no matches, create admin notification
+    if (matchingHandwerkers.length === 0) {
+      console.warn(`[send-lead-notification] ⚠️ ORPHAN LEAD: No handwerkers found for PLZ ${leadPLZ}, category ${lead.category}`);
+      
+      await supabase.from('admin_notifications').insert({
+        type: 'orphan_lead',
+        title: 'Auftrag ohne Handwerker-Match',
+        message: `Keine passenden Handwerker gefunden für PLZ ${leadPLZ}, Kategorie: ${categoryLabel}`,
+        related_id: leadId,
+        metadata: {
+          zip: leadPLZ,
+          canton: leadCanton,
+          city: lead.city,
+          category: lead.category,
+          categoryLabel: categoryLabel,
+          owner_email: ownerProfile?.email,
+        }
+      });
+      
+      console.log('[send-lead-notification] Orphan lead notification created for admin');
+    }
 
     let successCount = 0;
     let errorCount = 0;
@@ -301,7 +293,7 @@ serve(async (req) => {
 
         const emailHtml = newLeadNotificationTemplate({
           category: categoryLabel,
-          city: lead.city || 'Nicht angegeben',
+          city: lead.city || `PLZ ${leadPLZ}`,
           description: lead.description,
           budgetMin: lead.budget_min,
           budgetMax: lead.budget_max,
@@ -314,7 +306,7 @@ serve(async (req) => {
 
         const result = await sendEmail({
           to: hwProfile.email,
-          subject: `Neue Anfrage in ${categoryLabel} - ${lead.city}`,
+          subject: `Neue Anfrage in ${categoryLabel} - ${lead.city || `PLZ ${leadPLZ}`}`,
           htmlBody: emailHtml,
         });
 
@@ -339,6 +331,7 @@ serve(async (req) => {
       matchingHandwerkersCount: matchingHandwerkers.length,
       successCount,
       errorCount,
+      isOrphanLead: matchingHandwerkers.length === 0,
     });
   } catch (error) {
     console.error('[send-lead-notification] Error:', error);
