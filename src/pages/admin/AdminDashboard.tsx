@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { DashboardSkeleton } from '@/components/admin/AdminPageSkeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminGuard } from '@/hooks/useAuthGuard';
 import { 
-  Loader2, 
   Users, 
   UserCheck, 
   Clock, 
@@ -23,6 +23,7 @@ import {
   CreditCard,
   Settings,
   ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -161,34 +162,21 @@ const AdminDashboard = () => {
     }
   };
 
-  // Single auth loading check - no double spinner
+  // Show skeleton while checking auth - prevents layout jump
+  const isReady = !authLoading && isAuthorized && statsLoaded;
+
   if (authLoading) {
     return (
       <AdminLayout title="Dashboard" description="Übersicht und Schnellzugriff">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <DashboardSkeleton />
       </AdminLayout>
     );
   }
 
   if (!isAuthorized) return null;
 
-  // Skeleton component for stats cards
-  const StatCardSkeleton = () => (
-    <Card className="border-l-4 border-l-muted">
-      <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
-        <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-        <div className="h-8 w-12 bg-muted animate-pulse rounded mt-2" />
-      </CardHeader>
-      <CardContent className="p-2 sm:p-3 md:p-6 pt-0">
-        <div className="h-3 w-24 bg-muted animate-pulse rounded" />
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <AdminLayout title="Dashboard" description="Übersicht und Schnellzugriff">
+    <AdminLayout title="Dashboard" description="Übersicht und Schnellzugriff" isLoading={!isReady}>
       {/* Header Actions */}
       <div className="flex justify-end gap-2 mb-6">
         <AlertDialog>
@@ -232,15 +220,6 @@ const AdminDashboard = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6 md:mb-8">
-        {!statsLoaded ? (
-          <>
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-            <StatCardSkeleton />
-          </>
-        ) : (
-          <>
             <Card className="border-l-4 border-l-amber-500 cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/handwerkers')}>
               <CardHeader className="pb-0 sm:pb-1 md:pb-2 p-2 sm:p-3 md:p-6">
                 <CardDescription className="flex items-center gap-1 sm:gap-1.5 md:gap-2 text-[10px] sm:text-xs md:text-sm">
@@ -292,8 +271,6 @@ const AdminDashboard = () => {
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-muted-foreground truncate">Gesamtumsatz</p>
               </CardContent>
             </Card>
-          </>
-        )}
       </div>
 
       {/* Attention Needed */}

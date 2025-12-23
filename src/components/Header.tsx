@@ -22,7 +22,7 @@ export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { role, isAdmin, isHandwerker, userId } = useUserRole();
+  const { role, isAdmin, isHandwerker, userId, loading: roleLoading } = useUserRole();
   const isOnAdminPage = location.pathname.startsWith('/admin');
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -130,18 +130,18 @@ export const Header = () => {
           <div className="hidden lg:flex items-center gap-4">
               {userId ? (
               <div className="flex items-center gap-3">
-                {/* Role-specific notifications */}
-                {isAdmin && (
+                {/* Role-specific notifications - only show when role is loaded */}
+                {!roleLoading && isAdmin && (
                   <>
                     <AdminNotifications />
                     <AdminViewSwitcher currentView={getCurrentView()} />
                   </>
                 )}
-                {isHandwerker && !isAdmin && <HandwerkerNotifications />}
-                {!isAdmin && !isHandwerker && <ClientNotifications />}
+                {!roleLoading && isHandwerker && !isAdmin && <HandwerkerNotifications />}
+                {!roleLoading && !isAdmin && !isHandwerker && <ClientNotifications />}
                 
                 {/* Hide "Auftrag erstellen" for admins */}
-                {!isAdmin && (
+                {!roleLoading && !isAdmin && (
                   <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Auftrag erstellen
@@ -149,7 +149,7 @@ export const Header = () => {
                 )}
                 
                 {/* Minimal logout-only dropdown for admins, full UserDropdown for others */}
-                {isAdmin ? (
+                {!roleLoading && isAdmin ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="rounded-full">

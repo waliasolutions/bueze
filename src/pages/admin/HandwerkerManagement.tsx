@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { ManagementPageSkeleton } from '@/components/admin/AdminPageSkeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +17,6 @@ import { getCantonLabel } from '@/config/cantons';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import {
-  Loader2,
   Search,
   CheckCircle,
   XCircle,
@@ -31,6 +31,7 @@ import {
   Download,
   CheckCheck,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -470,12 +471,12 @@ export default function HandwerkerManagement() {
     rejected: handwerkers.filter((h) => h.verification_status === 'rejected').length,
   };
 
-  if (authLoading || loading) {
+  const isReady = !authLoading && isAuthorized && !loading;
+
+  if (authLoading) {
     return (
       <AdminLayout title="Handwerker" description="Verwalten Sie alle Handwerker-Profile">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <ManagementPageSkeleton />
       </AdminLayout>
     );
   }
@@ -483,7 +484,7 @@ export default function HandwerkerManagement() {
   if (!isAuthorized) return null;
 
   return (
-    <AdminLayout title="Handwerker" description="Verwalten Sie alle Handwerker-Profile">
+    <AdminLayout title="Handwerker" description="Verwalten Sie alle Handwerker-Profile" isLoading={!isReady}>
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card className="cursor-pointer hover:border-primary" onClick={() => setActiveTab('all')}>

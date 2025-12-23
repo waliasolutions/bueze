@@ -6,14 +6,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Shield, Menu } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
   title: string;
   description?: string;
+  /** Controls fade transition for content loading */
+  isLoading?: boolean;
 }
 
-export function AdminLayout({ children, title, description }: AdminLayoutProps) {
+export function AdminLayout({ children, title, description, isLoading = false }: AdminLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -52,7 +55,15 @@ export function AdminLayout({ children, title, description }: AdminLayoutProps) 
                 )}
               </div>
             </div>
-            {children}
+            {/* Content with fade transition */}
+            <div 
+              className={cn(
+                "transition-opacity duration-200",
+                isLoading ? "opacity-0" : "opacity-100 animate-fade-in"
+              )}
+            >
+              {children}
+            </div>
           </div>
         </main>
       </div>
