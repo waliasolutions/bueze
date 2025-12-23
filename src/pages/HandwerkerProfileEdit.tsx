@@ -859,624 +859,650 @@ const HandwerkerProfileEdit = () => {
                 }} />
               </div>
 
-          <Tabs defaultValue="profile" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="profile">Profil & Bio</TabsTrigger>
-              <TabsTrigger value="categories">Fachgebiete</TabsTrigger>
-              <TabsTrigger value="company">Firma & Kontakt</TabsTrigger>
-              <TabsTrigger value="banking">Banking & Versicherung</TabsTrigger>
-              <TabsTrigger value="documents">Dokumente und Bilder</TabsTrigger>
-            </TabsList>
+          <ResponsiveSections 
+            sections={[
+              {
+                id: 'profile',
+                label: 'Profil & Bio',
+                icon: User,
+                content: (
+                  <div className="space-y-6">
+                    {/* Bio Section */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Über mich</CardTitle>
+                        <CardDescription>
+                          Beschreiben Sie Ihre Erfahrung und Expertise
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <Label htmlFor="bio">Biografie</Label>
+                          <Textarea
+                            id="bio"
+                            value={bio}
+                            onChange={(e) => setBio(e.target.value)}
+                            placeholder="Erzählen Sie potentiellen Kunden über Ihre Erfahrung, Spezialisierungen und was Sie auszeichnet..."
+                            rows={6}
+                            maxLength={1000}
+                          />
+                          <p className="text-sm text-muted-foreground">
+                            {bio.length} / 1000 Zeichen
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-            <TabsContent value="profile" className="space-y-6">
-            {/* Bio Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Über mich</CardTitle>
-                <CardDescription>
-                  Beschreiben Sie Ihre Erfahrung und Expertise
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Biografie</Label>
-                  <Textarea
-                    id="bio"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="Erzählen Sie potentiellen Kunden über Ihre Erfahrung, Spezialisierungen und was Sie auszeichnet..."
-                    rows={6}
-                    maxLength={1000}
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    {bio.length} / 1000 Zeichen
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Rates Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Stundensätze</CardTitle>
-                <CardDescription>
-                  Geben Sie Ihre Preisspanne an (in CHF pro Stunde)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="hourly_rate_min">Minimaler Stundensatz (CHF)</Label>
-                    <Input
-                      id="hourly_rate_min"
-                      type="number"
-                      min="0"
-                      step="5"
-                      value={hourlyRateMin}
-                      onChange={(e) => setHourlyRateMin(e.target.value)}
-                      placeholder="z.B. 50"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hourly_rate_max">Maximaler Stundensatz (CHF)</Label>
-                    <Input
-                      id="hourly_rate_max"
-                      type="number"
-                      min="0"
-                      step="5"
-                      value={hourlyRateMax}
-                      onChange={(e) => setHourlyRateMax(e.target.value)}
-                      placeholder="z.B. 120"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Service Areas Section - Using shared component (SSOT with HandwerkerOnboarding) */}
-            <ServiceAreaSelector
-              businessPlz={serviceAreaPlz}
-              businessCity={serviceAreaCity}
-              businessCanton={serviceAreaCanton}
-              serviceRadius={serviceRadius}
-              customCantons={customCantons}
-              onBusinessPlzChange={(plz) => {
-                setServiceAreaPlz(plz);
-                if (plz.length < 4) {
-                  setServiceAreaCity('');
-                  setServiceAreaCanton('');
-                }
-              }}
-              onAddressSelect={(address) => {
-                setServiceAreaCity(address.city);
-                setServiceAreaCanton(address.canton);
-              }}
-              onRadiusChange={setServiceRadius}
-              onCustomCantonsChange={setCustomCantons}
-            />
-
-            {/* Website Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Website</CardTitle>
-                <CardDescription>
-                  Link zu Ihrer persönlichen oder Firmen-Website
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label htmlFor="website">Website URL</Label>
-                  <Input
-                    id="website"
-                    type="url"
-                    value={website}
-                    onChange={(e) => setWebsite(e.target.value)}
-                    placeholder="https://www.ihre-website.ch"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-            </TabsContent>
-
-            {/* Categories Tab - Using SSOT CategorySelector */}
-            <TabsContent value="categories" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                      <Briefcase className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle>Fachgebiete & Kategorien</CardTitle>
-                      <CardDescription>
-                        Wählen Sie Ihre Spezialisierungen für gezieltere Aufträge
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <CategorySelector
-                    mode="multi"
-                    selected={[...selectedMajorCategories, ...categories]}
-                    onSelect={(selected) => {
-                      const selectedArray = selected as string[];
-                      // Separate major categories and subcategories
-                      const majors = selectedArray.filter(id => majorCategories[id]);
-                      const subcats = selectedArray.filter(id => !majorCategories[id]);
-                      setSelectedMajorCategories(majors);
-                      setCategories(subcats);
-                    }}
-                    showSubcategories={true}
-                  />
-
-                  {/* Selected Categories Summary */}
-                  {categories.length > 0 && (
-                    <Card className="bg-blue-50 border-blue-200">
-                      <CardContent className="pt-6">
-                        <div className="flex items-start gap-3">
-                          <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-                          <div>
-                            <p className="font-semibold text-blue-900">
-                              {categories.length} Fachgebiet{categories.length !== 1 ? 'e' : ''} gewählt
-                            </p>
-                            <p className="text-sm text-blue-700 mt-1">
-                              Ihre Auswahl hilft uns, passende Aufträge für Sie zu finden
-                            </p>
+                    {/* Rates Section */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Stundensätze</CardTitle>
+                        <CardDescription>
+                          Geben Sie Ihre Preisspanne an (in CHF pro Stunde)
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="hourly_rate_min">Minimaler Stundensatz (CHF)</Label>
+                            <Input
+                              id="hourly_rate_min"
+                              type="number"
+                              min="0"
+                              step="5"
+                              value={hourlyRateMin}
+                              onChange={(e) => setHourlyRateMin(e.target.value)}
+                              placeholder="z.B. 50"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="hourly_rate_max">Maximaler Stundensatz (CHF)</Label>
+                            <Input
+                              id="hourly_rate_max"
+                              type="number"
+                              min="0"
+                              step="5"
+                              value={hourlyRateMax}
+                              onChange={(e) => setHourlyRateMax(e.target.value)}
+                              placeholder="z.B. 120"
+                            />
                           </div>
                         </div>
                       </CardContent>
                     </Card>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
 
-            <TabsContent value="company" className="space-y-6">
-              {/* Company Information */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-primary" />
-                    <CardTitle>Firmeninformationen</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">Firmenname</Label>
-                    <Input
-                      id="companyName"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                      placeholder="Muster Handwerk GmbH"
+                    {/* Service Areas Section - Using shared component (SSOT with HandwerkerOnboarding) */}
+                    <ServiceAreaSelector
+                      businessPlz={serviceAreaPlz}
+                      businessCity={serviceAreaCity}
+                      businessCanton={serviceAreaCanton}
+                      serviceRadius={serviceRadius}
+                      customCantons={customCantons}
+                      onBusinessPlzChange={(plz) => {
+                        setServiceAreaPlz(plz);
+                        if (plz.length < 4) {
+                          setServiceAreaCity('');
+                          setServiceAreaCanton('');
+                        }
+                      }}
+                      onAddressSelect={(address) => {
+                        setServiceAreaCity(address.city);
+                        setServiceAreaCanton(address.canton);
+                      }}
+                      onRadiusChange={setServiceRadius}
+                      onCustomCantonsChange={setCustomCantons}
                     />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="companyLegalForm">Rechtsform</Label>
-                    <Select value={companyLegalForm} onValueChange={setCompanyLegalForm}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Rechtsform wählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
-                        <SelectItem value="gmbh">GmbH</SelectItem>
-                        <SelectItem value="ag">AG</SelectItem>
-                        <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="uidNumber">UID-Nummer</Label>
-                      <Input
-                        id="uidNumber"
-                        value={uidNumber}
-                        onChange={(e) => setUidNumber(e.target.value)}
-                        placeholder="CHE-123.456.789"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="mwstNumber">MWST-Nummer</Label>
-                      <Input
-                        id="mwstNumber"
-                        value={mwstNumber}
-                        onChange={(e) => setMwstNumber(e.target.value)}
-                        placeholder="CHE-123.456.789 MWST"
-                      />
-                    </div>
+                    {/* Website Section */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Website</CardTitle>
+                        <CardDescription>
+                          Link zu Ihrer persönlichen oder Firmen-Website
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <Label htmlFor="website">Website URL</Label>
+                          <Input
+                            id="website"
+                            type="url"
+                            value={website}
+                            onChange={(e) => setWebsite(e.target.value)}
+                            placeholder="https://www.ihre-website.ch"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Personal Information */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <User className="h-5 w-5 text-primary" />
-                    <CardTitle>Persönliche Informationen</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Vorname</Label>
-                      <Input
-                        id="firstName"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="Max"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Nachname</Label>
-                      <Input
-                        id="lastName"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Muster"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">E-Mail-Adresse</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      disabled
-                      className="bg-muted"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      E-Mail kann nicht geändert werden. Kontaktieren Sie den Support bei Bedarf.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">Telefonnummer</Label>
-                    <Input
-                      id="phoneNumber"
-                      type="tel"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="+41 79 123 45 67"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="personalAddress">Adresse</Label>
-                    <Input
-                      id="personalAddress"
-                      value={personalAddress}
-                      onChange={(e) => setPersonalAddress(e.target.value)}
-                      placeholder="Musterstrasse 123"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="personalZip">PLZ</Label>
-                      <PostalCodeInput
-                        value={personalZip}
-                        onValueChange={setPersonalZip}
-                        onAddressSelect={(address) => {
-                          setPersonalCity(address.city);
-                          setPersonalCanton(address.canton);
-                        }}
-                        placeholder="8000"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="personalCity">Ort</Label>
-                      <Input
-                        id="personalCity"
-                        value={personalCity}
-                        onChange={(e) => setPersonalCity(e.target.value)}
-                        placeholder="Zürich"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="personalCanton">Kanton</Label>
-                    <Select value={personalCanton} onValueChange={setPersonalCanton}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Kanton wählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SWISS_CANTONS.map((canton) => (
-                          <SelectItem key={canton.value} value={canton.value}>
-                            {canton.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Business Address */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Geschäftsadresse</CardTitle>
-                  <CardDescription>
-                    Falls abweichend von der persönlichen Adresse
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="businessAddress">Geschäftsadresse</Label>
-                    <Input
-                      id="businessAddress"
-                      value={businessAddress}
-                      onChange={(e) => setBusinessAddress(e.target.value)}
-                      placeholder="Gewerbestrasse 456"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="businessZip">PLZ</Label>
-                      <PostalCodeInput
-                        value={businessZip}
-                        onValueChange={setBusinessZip}
-                        onAddressSelect={(address) => {
-                          setBusinessCity(address.city);
-                          setBusinessCanton(address.canton);
-                        }}
-                        placeholder="8000"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="businessCity">Ort</Label>
-                      <Input
-                        id="businessCity"
-                        value={businessCity}
-                        onChange={(e) => setBusinessCity(e.target.value)}
-                        placeholder="Zürich"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="businessCanton">Kanton</Label>
-                    <Select value={businessCanton} onValueChange={setBusinessCanton}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Kanton wählen" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SWISS_CANTONS.map((canton) => (
-                          <SelectItem key={canton.value} value={canton.value}>
-                            {canton.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="banking" className="space-y-6">
-              {/* Banking Information */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-primary" />
-                    <CardTitle>Bankinformationen</CardTitle>
-                  </div>
-                  <CardDescription>
-                    Für die Auszahlung von Einnahmen
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="iban">IBAN</Label>
-                    <Input
-                      id="iban"
-                      value={iban}
-                      onChange={(e) => setIban(e.target.value.toUpperCase())}
-                      placeholder="CH76 0000 0000 0000 0000 0"
-                      className="font-mono"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bankName">Bankname</Label>
-                    <Input
-                      id="bankName"
-                      value={bankName}
-                      onChange={(e) => setBankName(e.target.value)}
-                      placeholder="UBS Switzerland AG"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Insurance & Licenses */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-primary" />
-                    <CardTitle>Versicherung & Lizenzen</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="insuranceProvider">Versicherungsanbieter</Label>
-                    <Input
-                      id="insuranceProvider"
-                      value={liabilityInsuranceProvider}
-                      onChange={(e) => setLiabilityInsuranceProvider(e.target.value)}
-                      placeholder="Zurich Versicherung"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="policyNumber">Policennummer</Label>
-                    <Input
-                      id="policyNumber"
-                      value={policyNumber}
-                      onChange={(e) => setPolicyNumber(e.target.value)}
-                      placeholder="POL-123456789"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="insuranceValidUntil">Gültig bis</Label>
-                    <Input
-                      id="insuranceValidUntil"
-                      type="date"
-                      value={insuranceValidUntil}
-                      onChange={(e) => setInsuranceValidUntil(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="tradeLicenseNumber">Gewerbelizenz-Nummer</Label>
-                    <Input
-                      id="tradeLicenseNumber"
-                      value={tradeLicenseNumber}
-                      onChange={(e) => setTradeLicenseNumber(e.target.value)}
-                      placeholder="LIC-123456"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="documents" className="space-y-6">
-              {/* Logo Upload */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Firmen-Logo</CardTitle>
-                  <CardDescription>
-                    Laden Sie Ihr Firmenlogo hoch (max. 5MB)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {logoUrl ? (
-                      <div className="relative w-48 h-48 border-2 rounded-lg overflow-hidden">
-                        <img 
-                          src={logoUrl} 
-                          alt="Firmen-Logo" 
-                          className="w-full h-full object-contain bg-white"
+                )
+              },
+              {
+                id: 'categories',
+                label: 'Fachgebiete',
+                icon: Briefcase,
+                content: (
+                  <div className="space-y-6">
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
+                            <Briefcase className="h-6 w-6 text-white" />
+                          </div>
+                          <div>
+                            <CardTitle>Fachgebiete & Kategorien</CardTitle>
+                            <CardDescription>
+                              Wählen Sie Ihre Spezialisierungen für gezieltere Aufträge
+                            </CardDescription>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <CategorySelector
+                          mode="multi"
+                          selected={[...selectedMajorCategories, ...categories]}
+                          onSelect={(selected) => {
+                            const selectedArray = selected as string[];
+                            // Separate major categories and subcategories
+                            const majors = selectedArray.filter(id => majorCategories[id]);
+                            const subcats = selectedArray.filter(id => !majorCategories[id]);
+                            setSelectedMajorCategories(majors);
+                            setCategories(subcats);
+                          }}
+                          showSubcategories={true}
                         />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2"
-                          onClick={handleRemoveLogo}
-                          disabled={uploading}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
-                        <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Kein Logo hochgeladen
-                        </p>
-                        <Button
-                          variant="outline"
-                          onClick={() => document.getElementById('logoInput')?.click()}
-                          disabled={uploading}
-                        >
-                          {uploading ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Lädt hoch...
-                            </>
-                          ) : (
-                            'Logo hochladen'
-                          )}
-                        </Button>
-                        <input
-                          id="logoInput"
-                          type="file"
-                          accept="image/*"
-                          className="hidden"
-                          onChange={handleLogoUpload}
-                        />
-                      </div>
-                    )}
+
+                        {/* Selected Categories Summary */}
+                        {categories.length > 0 && (
+                          <Card className="bg-blue-50 border-blue-200">
+                            <CardContent className="pt-6">
+                              <div className="flex items-start gap-3">
+                                <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5" />
+                                <div>
+                                  <p className="font-semibold text-blue-900">
+                                    {categories.length} Fachgebiet{categories.length !== 1 ? 'e' : ''} gewählt
+                                  </p>
+                                  <p className="text-sm text-blue-700 mt-1">
+                                    Ihre Auswahl hilft uns, passende Aufträge für Sie zu finden
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
-                </CardContent>
-              </Card>
+                )
+              },
+              {
+                id: 'company',
+                label: 'Firma & Kontakt',
+                icon: Building2,
+                content: (
+                  <div className="space-y-6">
+                    {/* Company Information */}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-5 w-5 text-primary" />
+                          <CardTitle>Firmeninformationen</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="companyName">Firmenname</Label>
+                          <Input
+                            id="companyName"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            placeholder="Muster Handwerk GmbH"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="companyLegalForm">Rechtsform</Label>
+                          <Select value={companyLegalForm} onValueChange={setCompanyLegalForm}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Rechtsform wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
+                              <SelectItem value="gmbh">GmbH</SelectItem>
+                              <SelectItem value="ag">AG</SelectItem>
+                              <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-              {/* Document Expiry Management System */}
-              {profile && userId && (
-                <DocumentManagementSection 
-                  profileId={profile.id} 
-                  userId={userId} 
-                />
-              )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="uidNumber">UID-Nummer</Label>
+                            <Input
+                              id="uidNumber"
+                              value={uidNumber}
+                              onChange={(e) => setUidNumber(e.target.value)}
+                              placeholder="CHE-123.456.789"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="mwstNumber">MWST-Nummer</Label>
+                            <Input
+                              id="mwstNumber"
+                              value={mwstNumber}
+                              onChange={(e) => setMwstNumber(e.target.value)}
+                              placeholder="CHE-123.456.789 MWST"
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-              {/* Portfolio Images */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Portfolio-Bilder</CardTitle>
-                  <CardDescription>
-                    Zeigen Sie Ihre besten Arbeiten (max. 5MB pro Bild)
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="portfolio_upload" className="cursor-pointer">
-                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-brand-600 transition-colors">
-                          <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-sm text-muted-foreground mb-1">
-                            Klicken Sie hier, um Bilder hochzuladen
-                          </p>
+                    {/* Personal Information */}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center gap-2">
+                          <User className="h-5 w-5 text-primary" />
+                          <CardTitle>Persönliche Informationen</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="firstName">Vorname</Label>
+                            <Input
+                              id="firstName"
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                              placeholder="Max"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="lastName">Nachname</Label>
+                            <Input
+                              id="lastName"
+                              value={lastName}
+                              onChange={(e) => setLastName(e.target.value)}
+                              placeholder="Muster"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="email">E-Mail-Adresse</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={email}
+                            disabled
+                            className="bg-muted"
+                          />
                           <p className="text-xs text-muted-foreground">
-                            PNG, JPG, WEBP bis zu 5MB
+                            E-Mail kann nicht geändert werden. Kontaktieren Sie den Support bei Bedarf.
                           </p>
                         </div>
-                      </Label>
-                      <Input
-                        id="portfolio_upload"
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        disabled={uploading}
-                        className="hidden"
-                      />
-                    </div>
 
-                    {uploading && (
-                      <div className="flex items-center justify-center py-4">
-                        <Loader2 className="h-6 w-6 animate-spin text-brand-600 mr-2" />
-                        <span className="text-sm text-muted-foreground">
-                          Bilder werden hochgeladen...
-                        </span>
-                      </div>
-                    )}
+                        <div className="space-y-2">
+                          <Label htmlFor="phoneNumber">Telefonnummer</Label>
+                          <Input
+                            id="phoneNumber"
+                            type="tel"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            placeholder="+41 79 123 45 67"
+                          />
+                        </div>
 
-                    {portfolioUrls.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {portfolioUrls.map((url, idx) => (
-                          <div key={idx} className="relative group">
-                            <img
-                              src={url}
-                              alt={`Portfolio ${idx + 1}`}
-                              className="w-full h-48 object-cover rounded-lg"
+                        <div className="space-y-2">
+                          <Label htmlFor="personalAddress">Adresse</Label>
+                          <Input
+                            id="personalAddress"
+                            value={personalAddress}
+                            onChange={(e) => setPersonalAddress(e.target.value)}
+                            placeholder="Musterstrasse 123"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="personalZip">PLZ</Label>
+                            <PostalCodeInput
+                              value={personalZip}
+                              onValueChange={setPersonalZip}
+                              onAddressSelect={(address) => {
+                                setPersonalCity(address.city);
+                                setPersonalCanton(address.canton);
+                              }}
+                              placeholder="8000"
                             />
-                            <button
-                              onClick={() => handleRemoveImage(url)}
-                              className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <div className="space-y-2">
+                            <Label htmlFor="personalCity">Ort</Label>
+                            <Input
+                              id="personalCity"
+                              value={personalCity}
+                              onChange={(e) => setPersonalCity(e.target.value)}
+                              placeholder="Zürich"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="personalCanton">Kanton</Label>
+                          <Select value={personalCanton} onValueChange={setPersonalCanton}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Kanton wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SWISS_CANTONS.map((canton) => (
+                                <SelectItem key={canton.value} value={canton.value}>
+                                  {canton.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Business Address */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Geschäftsadresse</CardTitle>
+                        <CardDescription>
+                          Falls abweichend von der persönlichen Adresse
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="businessAddress">Geschäftsadresse</Label>
+                          <Input
+                            id="businessAddress"
+                            value={businessAddress}
+                            onChange={(e) => setBusinessAddress(e.target.value)}
+                            placeholder="Gewerbestrasse 456"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="businessZip">PLZ</Label>
+                            <PostalCodeInput
+                              value={businessZip}
+                              onValueChange={setBusinessZip}
+                              onAddressSelect={(address) => {
+                                setBusinessCity(address.city);
+                                setBusinessCanton(address.canton);
+                              }}
+                              placeholder="8000"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="businessCity">Ort</Label>
+                            <Input
+                              id="businessCity"
+                              value={businessCity}
+                              onChange={(e) => setBusinessCity(e.target.value)}
+                              placeholder="Zürich"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="businessCanton">Kanton</Label>
+                          <Select value={businessCanton} onValueChange={setBusinessCanton}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Kanton wählen" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SWISS_CANTONS.map((canton) => (
+                                <SelectItem key={canton.value} value={canton.value}>
+                                  {canton.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                )
+              },
+              {
+                id: 'banking',
+                label: 'Banking & Versicherung',
+                icon: Wallet,
+                content: (
+                  <div className="space-y-6">
+                    {/* Banking Information */}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center gap-2">
+                          <Wallet className="h-5 w-5 text-primary" />
+                          <CardTitle>Bankinformationen</CardTitle>
+                        </div>
+                        <CardDescription>
+                          Für die Auszahlung von Einnahmen
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="iban">IBAN</Label>
+                          <Input
+                            id="iban"
+                            value={iban}
+                            onChange={(e) => setIban(e.target.value.toUpperCase())}
+                            placeholder="CH76 0000 0000 0000 0000 0"
+                            className="font-mono"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="bankName">Bankname</Label>
+                          <Input
+                            id="bankName"
+                            value={bankName}
+                            onChange={(e) => setBankName(e.target.value)}
+                            placeholder="UBS Switzerland AG"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Insurance & Licenses */}
+                    <Card>
+                      <CardHeader>
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-primary" />
+                          <CardTitle>Versicherung & Lizenzen</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="insuranceProvider">Versicherungsanbieter</Label>
+                          <Input
+                            id="insuranceProvider"
+                            value={liabilityInsuranceProvider}
+                            onChange={(e) => setLiabilityInsuranceProvider(e.target.value)}
+                            placeholder="Zurich Versicherung"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="policyNumber">Policennummer</Label>
+                          <Input
+                            id="policyNumber"
+                            value={policyNumber}
+                            onChange={(e) => setPolicyNumber(e.target.value)}
+                            placeholder="POL-123456789"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="insuranceValidUntil">Gültig bis</Label>
+                          <Input
+                            id="insuranceValidUntil"
+                            type="date"
+                            value={insuranceValidUntil}
+                            onChange={(e) => setInsuranceValidUntil(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="tradeLicenseNumber">Gewerbelizenz-Nummer</Label>
+                          <Input
+                            id="tradeLicenseNumber"
+                            value={tradeLicenseNumber}
+                            onChange={(e) => setTradeLicenseNumber(e.target.value)}
+                            placeholder="LIC-123456"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )
+              },
+              {
+                id: 'documents',
+                label: 'Dokumente & Bilder',
+                icon: FileText,
+                content: (
+                  <div className="space-y-6">
+                    {/* Logo Upload */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Firmen-Logo</CardTitle>
+                        <CardDescription>
+                          Laden Sie Ihr Firmenlogo hoch (max. 5MB)
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {logoUrl ? (
+                            <div className="relative w-48 h-48 border-2 rounded-lg overflow-hidden">
+                              <img 
+                                src={logoUrl} 
+                                alt="Firmen-Logo" 
+                                className="w-full h-full object-contain bg-white"
+                              />
+                              <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2"
+                                onClick={handleRemoveLogo}
+                                disabled={uploading}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="border-2 border-dashed border-muted rounded-lg p-8 text-center">
+                              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                              <p className="text-sm text-muted-foreground mb-4">
+                                Kein Logo hochgeladen
+                              </p>
+                              <Button
+                                variant="outline"
+                                onClick={() => document.getElementById('logoInput')?.click()}
+                                disabled={uploading}
+                              >
+                                {uploading ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Lädt hoch...
+                                  </>
+                                ) : (
+                                  'Logo hochladen'
+                                )}
+                              </Button>
+                              <input
+                                id="logoInput"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleLogoUpload}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Document Expiry Management System */}
+                    {profile && userId && (
+                      <DocumentManagementSection 
+                        profileId={profile.id} 
+                        userId={userId} 
+                      />
+                    )}
+
+                    {/* Portfolio Images */}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Portfolio-Bilder</CardTitle>
+                        <CardDescription>
+                          Zeigen Sie Ihre besten Arbeiten (max. 5MB pro Bild)
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="portfolio_upload" className="cursor-pointer">
+                              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-brand-600 transition-colors">
+                                <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                                <p className="text-sm text-muted-foreground mb-1">
+                                  Klicken Sie hier, um Bilder hochzuladen
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  PNG, JPG, WEBP bis zu 5MB
+                                </p>
+                              </div>
+                            </Label>
+                            <Input
+                              id="portfolio_upload"
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleImageUpload}
+                              disabled={uploading}
+                              className="hidden"
+                            />
+                          </div>
+
+                          {uploading && (
+                            <div className="flex items-center justify-center py-4">
+                              <Loader2 className="h-6 w-6 animate-spin text-brand-600 mr-2" />
+                              <span className="text-sm text-muted-foreground">
+                                Bilder werden hochgeladen...
+                              </span>
+                            </div>
+                          )}
+
+                          {portfolioUrls.length > 0 && (
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                              {portfolioUrls.map((url, idx) => (
+                                <div key={idx} className="relative group">
+                                  <img
+                                    src={url}
+                                    alt={`Portfolio ${idx + 1}`}
+                                    className="w-full h-48 object-cover rounded-lg"
+                                  />
+                                  <button
+                                    onClick={() => handleRemoveImage(url)}
+                                    className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )
+              }
+            ]}
+            defaultSection="profile"
+            className="space-y-6"
+          />
             </>
           )}
 
