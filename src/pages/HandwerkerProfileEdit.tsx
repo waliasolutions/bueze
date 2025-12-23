@@ -21,6 +21,8 @@ import { ProfileCompletenessCard } from '@/components/ProfileCompletenessCard';
 import { HandwerkerStatusIndicator } from '@/components/HandwerkerStatusIndicator';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { CategorySelector } from '@/components/CategorySelector';
+import { ResponsiveSections, Section } from '@/components/ResponsiveSections';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
@@ -976,7 +978,7 @@ const HandwerkerProfileEdit = () => {
             </Card>
             </TabsContent>
 
-            {/* Categories Tab */}
+            {/* Categories Tab - Using SSOT CategorySelector */}
             <TabsContent value="categories" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -993,118 +995,19 @@ const HandwerkerProfileEdit = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Major Categories */}
-                  <div>
-                    <h4 className="text-lg font-semibold mb-4">Hauptkategorien</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {Object.values(majorCategories).map((majorCat) => {
-                        const Icon = majorCat.icon;
-                        const isSelected = selectedMajorCategories.includes(majorCat.id);
-                        
-                        return (
-                          <Card
-                            key={majorCat.id}
-                            className={cn(
-                              "cursor-pointer transition-all hover:shadow-lg hover-scale",
-                              isSelected && "ring-2 ring-brand-600 bg-brand-50 shadow-lg"
-                            )}
-                            onClick={() => {
-                              if (isSelected) {
-                                setSelectedMajorCategories(prev => 
-                                  prev.filter(id => id !== majorCat.id)
-                                );
-                                // Remove both major category ID and its subcategories
-                                setCategories(prev => 
-                                  prev.filter(cat => cat !== majorCat.id && !majorCat.subcategories.includes(cat))
-                                );
-                              } else {
-                                setSelectedMajorCategories(prev => [...prev, majorCat.id]);
-                                // Add major category ID to categories for lead matching
-                                setCategories(prev => [...prev, majorCat.id]);
-                              }
-                            }}
-                          >
-                            <CardContent className="p-6 text-center">
-                              <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white mx-auto mb-3 transition-transform ${isSelected ? 'scale-110' : ''}`}>
-                                <Icon className="w-8 h-8" />
-                              </div>
-                              <p className="text-sm font-semibold">{majorCat.label}</p>
-                              {isSelected && (
-                                <Badge className="mt-3 bg-brand-600">
-                                  <CheckCircle className="h-3 w-3 mr-1" />
-                                  Gewählt
-                                </Badge>
-                              )}
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Subcategories */}
-                  {selectedMajorCategories.length > 0 && (
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2">Fachgebiete</h4>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Wählen Sie spezifische Fachgebiete für gezieltere Aufträge
-                      </p>
-                      
-                      <div className="space-y-4">
-                        {selectedMajorCategories.map(majorCatId => {
-                          const majorCat = majorCategories[majorCatId];
-                          const subcats = majorCat.subcategories
-                            .map(subId => subcategoryLabels[subId])
-                            .filter(Boolean);
-                          
-                          return (
-                            <Accordion key={majorCatId} type="single" collapsible defaultValue={majorCatId}>
-                              <AccordionItem value={majorCatId} className="border-2 rounded-lg px-4">
-                                <AccordionTrigger className="text-base font-semibold hover:no-underline">
-                                  <div className="flex items-center gap-3">
-                                    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white`}>
-                                      <majorCat.icon className="w-5 h-5" />
-                                    </div>
-                                    <span className="text-lg">{majorCat.label}</span>
-                                    <Badge variant="secondary" className="ml-2">
-                                      {categories.filter(cat => majorCat.subcategories.includes(cat)).length} gewählt
-                                    </Badge>
-                                  </div>
-                                </AccordionTrigger>
-                                <AccordionContent>
-                                  <div className="flex flex-wrap gap-3 pt-4 pb-2">
-                                    {subcats.map(subcat => {
-                                      const isSelected = categories.includes(subcat.value);
-                                      
-                                      return (
-                                        <Badge
-                                          key={subcat.value}
-                                          variant={isSelected ? "default" : "outline"}
-                                          className="cursor-pointer px-4 py-2 text-sm hover-scale hover:bg-brand-100"
-                                          onClick={() => {
-                                            if (isSelected) {
-                                              setCategories(prev => 
-                                                prev.filter(id => id !== subcat.value)
-                                              );
-                                            } else {
-                                              setCategories(prev => [...prev, subcat.value]);
-                                            }
-                                          }}
-                                        >
-                                          {subcat.label}
-                                          {isSelected && <CheckCircle className="ml-2 h-3 w-3" />}
-                                        </Badge>
-                                      );
-                                    })}
-                                  </div>
-                                </AccordionContent>
-                              </AccordionItem>
-                            </Accordion>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                  <CategorySelector
+                    mode="multi"
+                    selected={[...selectedMajorCategories, ...categories]}
+                    onSelect={(selected) => {
+                      const selectedArray = selected as string[];
+                      // Separate major categories and subcategories
+                      const majors = selectedArray.filter(id => majorCategories[id]);
+                      const subcats = selectedArray.filter(id => !majorCategories[id]);
+                      setSelectedMajorCategories(majors);
+                      setCategories(subcats);
+                    }}
+                    showSubcategories={true}
+                  />
 
                   {/* Selected Categories Summary */}
                   {categories.length > 0 && (

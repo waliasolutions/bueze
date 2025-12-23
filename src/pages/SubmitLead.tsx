@@ -22,6 +22,7 @@ import { SWISS_CANTONS } from '@/config/cantons';
 import { PostalCodeInput } from '@/components/PostalCodeInput';
 import { cn } from '@/lib/utils';
 import { majorCategories } from '@/config/majorCategories';
+import { CategorySelector } from '@/components/CategorySelector';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { Badge } from '@/components/ui/badge';
 import { runAllSpamChecks, recordAttempt } from '@/lib/spamProtection';
@@ -814,56 +815,14 @@ const SubmitLead = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Kategorie *</FormLabel>
-                          <div className="space-y-3">
-                            <p className="text-sm text-muted-foreground">
-                              Wählen Sie die passende Kategorie für Ihr Projekt:
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-                              {Object.values(majorCategories).map((majorCat) => {
-                                const Icon = majorCat.icon;
-                                const isSelected = field.value === majorCat.id;
-                                
-                                return (
-                                  <Card
-                                    key={majorCat.id}
-                                    className={cn(
-                                      "cursor-pointer transition-all hover:shadow-lg active:scale-95 min-h-[44px]",
-                                      isSelected && "ring-2 ring-brand-600 bg-brand-50 shadow-lg"
-                                    )}
-                                    onClick={() => field.onChange(majorCat.id)}
-                                  >
-                                    <CardContent className="p-3 sm:p-4 md:p-6 flex sm:flex-col items-center sm:text-center gap-3 sm:gap-0">
-                                      <div className={cn(
-                                        "w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center text-white sm:mx-auto sm:mb-3 transition-transform flex-shrink-0",
-                                        `bg-gradient-to-br ${majorCat.color}`,
-                                        isSelected ? 'scale-110' : ''
-                                      )}>
-                                        <Icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8" />
-                                      </div>
-                                      <div className="flex-1 sm:flex-none">
-                                        <p className="text-xs sm:text-sm font-semibold leading-tight">
-                                          {majorCat.id === 'elektroinstallationen' ? (
-                                            <>
-                                              <span className="sm:hidden">Elektro</span>
-                                              <span className="hidden sm:inline">Elektro-<br />installationen</span>
-                                            </>
-                                          ) : (
-                                            majorCat.label
-                                          )}
-                                        </p>
-                                        {isSelected && (
-                                          <Badge className="mt-1 sm:mt-3 bg-brand-600 text-[10px] sm:text-xs">
-                                            <CheckCircle className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
-                                            Gewählt
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </CardContent>
-                                  </Card>
-                                );
-                              })}
-                            </div>
-                          </div>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Wählen Sie die passende Kategorie für Ihr Projekt:
+                          </p>
+                          <CategorySelector
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(value) => field.onChange(value as string)}
+                          />
                           <FormMessage />
                         </FormItem>
                       )}

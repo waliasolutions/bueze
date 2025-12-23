@@ -20,6 +20,7 @@ import { AlertCircle, Building2, Briefcase, X, CheckCircle, Clock, ChevronLeft, 
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
+import { CategorySelector } from "@/components/CategorySelector";
 import { cn } from "@/lib/utils";
 import { PostalCodeInput } from "@/components/PostalCodeInput";
 import { ServiceAreaSelector } from "@/components/ServiceAreaSelector";
@@ -902,94 +903,26 @@ const HandwerkerOnboarding = () => {
               </AlertDescription>
             </Alert>
 
-            {/* Category Selection */}
+            {/* Category Selection - Using SSOT CategorySelector */}
             <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-lg">Fachgebiete auswählen</CardTitle>
                 <CardDescription>Wählen Sie Ihre Haupt- und Unterkategorien</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  {Object.entries(majorCategories).map(([majorCatId, majorCat]) => {
-                    const isExpanded = selectedMajorCategories.includes(majorCatId);
-                    const selectedSubcatCount = formData.categories.filter(cat => 
-                      majorCat.subcategories.includes(cat)
-                    ).length;
-
-                    return (
-                      <Accordion
-                        key={majorCatId}
-                        type="single"
-                        collapsible
-                        value={isExpanded ? majorCatId : undefined}
-                        onValueChange={(value) => {
-                          if (value) {
-                            setSelectedMajorCategories(prev => 
-                              prev.includes(majorCatId) ? prev : [...prev, majorCatId]
-                            );
-                          }
-                        }}
-                      >
-                        <AccordionItem value={majorCatId} className="border rounded-lg">
-                          <AccordionTrigger className="px-4 hover:no-underline">
-                            <div className="flex items-center gap-3">
-                              <Checkbox
-                                checked={isExpanded}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setSelectedMajorCategories(prev => [...prev, majorCatId]);
-                                  } else {
-                                    setSelectedMajorCategories(prev => prev.filter(id => id !== majorCatId));
-                                    // Remove all subcategories of this major category
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      categories: prev.categories.filter(cat => 
-                                        !majorCat.subcategories.includes(cat)
-                                      )
-                                    }));
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <span className="font-medium">{majorCat.label}</span>
-                              {selectedSubcatCount > 0 && (
-                                <Badge variant="secondary" className="ml-2">
-                                  {selectedSubcatCount}
-                                </Badge>
-                              )}
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="px-4 pb-4">
-                            <div className="grid grid-cols-2 gap-2 pt-2">
-                              {majorCat.subcategories.map(subcatId => {
-                                const isSelected = formData.categories.includes(subcatId);
-                                return (
-                                  <div key={subcatId} className="flex items-center gap-2">
-                                    <Checkbox
-                                      id={subcatId}
-                                      checked={isSelected}
-                                      onCheckedChange={(checked) => {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          categories: checked
-                                            ? [...prev.categories, subcatId]
-                                            : prev.categories.filter(c => c !== subcatId)
-                                        }));
-                                      }}
-                                    />
-                                    <Label htmlFor={subcatId} className="text-sm cursor-pointer">
-                                      {subcategoryLabels[subcatId]?.label || subcatId}
-                                    </Label>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      </Accordion>
-                    );
-                  })}
-                </div>
+              <CardContent>
+                <CategorySelector
+                  mode="multi"
+                  selected={[...selectedMajorCategories, ...formData.categories]}
+                  onSelect={(selected) => {
+                    const selectedArray = selected as string[];
+                    // Separate major categories and subcategories
+                    const majors = selectedArray.filter(id => majorCategories[id]);
+                    const subcats = selectedArray.filter(id => !majorCategories[id]);
+                    setSelectedMajorCategories(majors);
+                    setFormData(prev => ({ ...prev, categories: subcats }));
+                  }}
+                  showSubcategories={true}
+                />
               </CardContent>
             </Card>
 
