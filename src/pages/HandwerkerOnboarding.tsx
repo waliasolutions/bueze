@@ -32,11 +32,13 @@ import {
   STORAGE_KEYS,
   STORAGE_VERSIONS 
 } from "@/lib/localStorageVersioning";
+import { useMultiStepForm } from "@/hooks/useMultiStepForm";
+
+type StepContent = 'contact' | 'services' | 'summary';
 
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
@@ -101,28 +103,34 @@ const HandwerkerOnboarding = () => {
   };
 
   // Step configuration - use startedAsGuest for consistent flow
-  // Guests: Step 1 = Contact+Company, Step 2 = Services, Step 3 = Summary
-  // Authenticated: Step 1 = Services, Step 2 = Summary (skip contact)
-  const getTotalSteps = () => startedAsGuest ? 3 : 2;
-  const totalSteps = getTotalSteps();
+  const stepConfig = startedAsGuest
+    ? { 1: 'contact' as StepContent, 2: 'services' as StepContent, 3: 'summary' as StepContent }
+    : { 1: 'services' as StepContent, 2: 'summary' as StepContent };
+  
+  const stepLabelsConfig = startedAsGuest
+    ? ['Kontakt & Firma', 'Services', 'Absenden']
+    : ['Services', 'Absenden'];
+  
+  const totalStepsConfig = startedAsGuest ? 3 : 2;
 
-  const getStepLabels = () => {
-    if (startedAsGuest) {
-      return ['Kontakt & Firma', 'Services', 'Absenden'];
-    }
-    return ['Services', 'Absenden'];
-  };
+  // Use SSOT multi-step form hook
+  const {
+    currentStep,
+    currentContent,
+    progress,
+    stepLabels,
+    isFirstStep,
+    isLastStep,
+    nextStep: goNextStep,
+    prevStep: goPrevStep,
+    setStep: setCurrentStep,
+  } = useMultiStepForm<StepContent>({
+    totalSteps: totalStepsConfig,
+    stepContent: stepConfig,
+    stepLabels: stepLabelsConfig,
+  });
 
-  const getStepContent = () => {
-    if (startedAsGuest) {
-      return { 1: 'contact', 2: 'services', 3: 'summary' };
-    }
-    return { 1: 'services', 2: 'summary' };
-  };
-
-  const stepContent = getStepContent();
-  const currentContent = stepContent[currentStep as keyof typeof stepContent];
-  const progress = ((currentStep - 1) / totalSteps) * 100;
+  const totalSteps = totalStepsConfig;
 
   // Update formData.serviceAreas based on radius selection using shared helper
   const updateServiceAreasFromRadius = (
@@ -296,7 +304,7 @@ const HandwerkerOnboarding = () => {
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
-    const content = stepContent[step as keyof typeof stepContent];
+    const content = stepConfig[step as keyof typeof stepConfig];
 
     if (content === 'contact') {
       // Step 1: Contact + Company validation
@@ -513,26 +521,19 @@ const HandwerkerOnboarding = () => {
   };
 
   const handleNext = async () => {
-    const content = stepContent[currentStep as keyof typeof stepContent];
-    
-    if (content === 'contact') {
+    if (currentContent === 'contact') {
       // For contact step, create account first (like SubmitLead)
       await handleCreateAccountAndProceed();
       return;
     }
     
-    // For other steps, just proceed and scroll after render
-    setCurrentStep(prev => Math.min(prev + 1, totalSteps));
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    // For other steps, use the hook's nextStep (auto-scrolls)
+    goNextStep();
   };
 
   const handleBack = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
-    requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    // Use the hook's prevStep (auto-scrolls)
+    goPrevStep();
   };
 
   const handleSubmit = async () => {
@@ -1244,8 +1245,6 @@ const HandwerkerOnboarding = () => {
       </div>
     );
   }
-
-  const stepLabels = getStepLabels();
 
   return (
     <div className="min-h-screen bg-background">
