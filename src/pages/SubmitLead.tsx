@@ -107,6 +107,8 @@ const SubmitLead = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  // Track if user started as guest - this determines step flow for the entire session
+  const [startedAsGuest, setStartedAsGuest] = useState<boolean | null>(null);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -144,11 +146,13 @@ const SubmitLead = () => {
     mode: 'onBlur',
   });
 
-  // Check authentication status on mount
+  // Check authentication status on mount and capture initial state
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
+      // Capture initial state ONCE - this determines step flow for the entire session
+      setStartedAsGuest(!user);
     };
     checkAuth();
   }, []);
@@ -518,28 +522,28 @@ const SubmitLead = () => {
     }
   };
 
-  // Step navigation
+  // Step navigation - use startedAsGuest for consistent flow throughout session
   // For guests: Step 1 = Contact, Step 2 = Project, Step 3 = Location
-  // For authenticated: Step 1 = Project, Step 2 = Location, Step 3 = Location (budget is in step 2)
+  // For authenticated: Step 1 = Project, Step 2 = Location
   const getStepContent = () => {
-    if (isAuthenticated) {
-      // Authenticated: 2 steps (Project, Location)
-      return {
-        1: 'project',
-        2: 'location',
-      };
-    } else {
-      // Guest: 3 steps (Contact, Project, Location)
+    if (startedAsGuest) {
+      // Started as guest: 3 steps (Contact, Project, Location) - consistent even after account creation
       return {
         1: 'contact',
         2: 'project',
         3: 'location',
       };
+    } else {
+      // Started authenticated: 2 steps (Project, Location)
+      return {
+        1: 'project',
+        2: 'location',
+      };
     }
   };
 
   const stepContent = getStepContent();
-  const totalSteps = isAuthenticated ? 2 : 3;
+  const totalSteps = startedAsGuest ? 3 : 2;
   const currentContent = stepContent[step as keyof typeof stepContent];
 
   const nextStep = async () => {
@@ -559,15 +563,34 @@ const SubmitLead = () => {
     if (step > 1) setStep(step - 1);
   };
 
-  // Step labels for progress indicator
+  // Step labels for progress indicator - use startedAsGuest for consistency
   const getStepLabels = () => {
-    if (isAuthenticated) {
-      return ['Projekt', 'Standort'];
-    } else {
+    if (startedAsGuest) {
       return ['Kontakt', 'Projekt', 'Standort'];
+    } else {
+      return ['Projekt', 'Standort'];
     }
   };
   const stepLabels = getStepLabels();
+
+  // Show loading state until initial auth check is complete
+  if (startedAsGuest === null) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 pt-24">
+          <div className="max-w-2xl mx-auto">
+            <div className="animate-pulse space-y-6">
+              <div className="h-8 bg-muted rounded w-1/2" />
+              <div className="h-4 bg-muted rounded w-3/4" />
+              <div className="h-2 bg-muted rounded-full" />
+              <div className="h-64 bg-muted rounded" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
