@@ -7,17 +7,16 @@ import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { SWISS_CANTONS } from "@/config/cantons";
-import { validateUID, validateMWST, validateIBAN, formatIBAN, formatUID } from "@/lib/swissValidation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AlertCircle, Building2, Wallet, Shield, Briefcase, X, Upload, FileText, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User, Info } from "lucide-react";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { AlertCircle, Building2, Briefcase, X, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User, FileText, Eye, EyeOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
@@ -28,7 +27,6 @@ import {
   cantonToPostalCodes, 
   calculatePostalCodeCount,
   formatCantonDisplay,
-  getCantonFromPostalCode 
 } from "@/lib/cantonPostalCodes";
 import { 
   saveVersionedData, 
@@ -43,23 +41,24 @@ const HandwerkerOnboarding = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAlreadyAuthenticated, setIsAlreadyAuthenticated] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // Track initial auth status - determines step flow for entire session
+  const [startedAsGuest, setStartedAsGuest] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Inline login state (like SubmitLead)
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [selectedCantons, setSelectedCantons] = useState<string[]>([]);
   const [manualPostalCodes, setManualPostalCodes] = useState<string[]>([]);
   const [tempPostalCode, setTempPostalCode] = useState('');
-  const [uploadedFiles, setUploadedFiles] = useState<{
-    insuranceDocument?: { name: string; uploadedAt: string; path: string };
-    tradeLicense?: { name: string; uploadedAt: string; path: string };
-    logo?: { name: string; uploadedAt: string; path: string };
-  }>({});
-  const [uploadProgress, setUploadProgress] = useState<{
-    insuranceDocument?: string;
-    tradeLicense?: string;
-    logo?: string;
-  }>({});
-  const [showUploadSection, setShowUploadSection] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [recoveryData, setRecoveryData] = useState<{
     progress: number;
@@ -69,40 +68,16 @@ const HandwerkerOnboarding = () => {
   } | null>(null);
 
   const [formData, setFormData] = useState({
-    // Personal Information
+    // Step 1: Contact + Company (required)
     firstName: "",
     lastName: "",
     email: "",
     phoneNumber: "",
-    personalAddress: "",
-    personalZip: "",
-    personalCity: "",
-    personalCanton: "",
-    
-    // Company Information
+    password: "",
     companyName: "",
     companyLegalForm: "einzelfirma",
-    uidNumber: "",
-    mwstNumber: "",
     
-    // Business Address
-    businessAddress: "",
-    businessZip: "",
-    businessCity: "",
-    businessCanton: "",
-    sameAsPersonal: false,
-    
-    // Banking
-    iban: "",
-    bankName: "",
-    
-    // Insurance & Licenses
-    liabilityInsuranceProvider: "",
-    policyNumber: "",
-    tradeLicenseNumber: "",
-    insuranceValidUntil: "",
-    
-    // Service Details (from existing handwerker_profiles)
+    // Step 2: Services (optional)
     categories: [] as string[],
     serviceAreas: [] as string[],
     hourlyRateMin: "",
@@ -118,12 +93,34 @@ const HandwerkerOnboarding = () => {
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
-  // Helper to check if an error should be shown (only if field is touched)
+  // Helper to check if an error should be shown
   const shouldShowError = (field: string) => {
     return touched[field] && errors[field];
   };
 
-  const totalSteps = 5;
+  // Step configuration - use startedAsGuest for consistent flow
+  // Guests: Step 1 = Contact+Company, Step 2 = Services, Step 3 = Summary
+  // Authenticated: Step 1 = Services, Step 2 = Summary (skip contact)
+  const getTotalSteps = () => startedAsGuest ? 3 : 2;
+  const totalSteps = getTotalSteps();
+
+  const getStepLabels = () => {
+    if (startedAsGuest) {
+      return ['Kontakt & Firma', 'Services', 'Absenden'];
+    }
+    return ['Services', 'Absenden'];
+  };
+
+  const getStepContent = () => {
+    if (startedAsGuest) {
+      return { 1: 'contact', 2: 'services', 3: 'summary' };
+    }
+    return { 1: 'services', 2: 'summary' };
+  };
+
+  const stepContent = getStepContent();
+  const currentContent = stepContent[currentStep as keyof typeof stepContent];
+  const progress = ((currentStep - 1) / totalSteps) * 100;
 
   // Helper function to update formData.serviceAreas from cantons + manual codes
   const updateFormDataServiceAreas = (cantons: string[], manualCodes: string[]) => {
@@ -140,7 +137,6 @@ const HandwerkerOnboarding = () => {
         : [...prev, canton];
       
       updateFormDataServiceAreas(newSelection, manualPostalCodes);
-      
       return newSelection;
     });
   };
@@ -150,7 +146,6 @@ const HandwerkerOnboarding = () => {
     setSelectedCantons(prev => {
       const newSelection = prev.filter(c => c !== canton);
       updateFormDataServiceAreas(newSelection, manualPostalCodes);
-      
       return newSelection;
     });
   };
@@ -201,23 +196,21 @@ const HandwerkerOnboarding = () => {
       return newCodes;
     });
   };
-  const progress = ((currentStep - 1) / totalSteps) * 100;
 
-  // Check if user is already logged in and handle accordingly
+  // Check authentication status on mount and capture initial state
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       
-      if (session?.user) {
-        // User is logged in
+      if (user) {
+        // Check if already has handwerker profile
         const { data: existingProfile } = await supabase
           .from('handwerker_profiles')
           .select('id, verification_status')
-          .eq('user_id', session.user.id)
+          .eq('user_id', user.id)
           .maybeSingle();
         
         if (existingProfile) {
-          // Already has profile - redirect to dashboard
           toast({
             title: "Profil bereits vorhanden",
             description: "Sie haben bereits ein Handwerker-Profil.",
@@ -226,28 +219,30 @@ const HandwerkerOnboarding = () => {
           return;
         }
         
-        // User is logged in but has no profile - pre-fill from profiles table
+        // Pre-fill from profiles table
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name, email, phone')
-          .eq('id', session.user.id)
+          .eq('id', user.id)
           .maybeSingle();
 
         const nameParts = (profile?.full_name || '').split(' ');
         setFormData(prev => ({
           ...prev,
-          email: session.user.email || profile?.email || '',
+          email: user.email || profile?.email || '',
           firstName: nameParts[0] || '',
           lastName: nameParts.slice(1).join(' ') || '',
           phoneNumber: profile?.phone || '',
         }));
         
-        // Set flag that user is already authenticated
-        setIsAlreadyAuthenticated(true);
+        setIsAuthenticated(true);
+        setStartedAsGuest(false);
+      } else {
+        setStartedAsGuest(true);
       }
     };
     
-    checkAuthStatus();
+    checkAuth();
   }, [navigate, toast]);
 
   // Parse serviceAreas into cantons and manual postal codes when data is loaded
@@ -257,7 +252,6 @@ const HandwerkerOnboarding = () => {
       const manualCodes: string[] = [];
       
       formData.serviceAreas.forEach(area => {
-        // Check if it's a 2-letter canton code (uppercase)
         if (area.length === 2 && area === area.toUpperCase() && /^[A-Z]{2}$/.test(area)) {
           cantons.push(area);
         } else {
@@ -272,35 +266,28 @@ const HandwerkerOnboarding = () => {
 
   // Helper function to check if form has meaningful progress
   const hasSignificantProgress = () => {
-    // If beyond step 1, there's progress
     if (currentStep > 1) return true;
     
-    // Check if any critical fields are filled
     const hasFilledFields = 
       formData.companyName.trim() !== "" ||
       formData.firstName.trim() !== "" ||
       formData.lastName.trim() !== "" ||
       formData.email.trim() !== "";
     
-    // Check if any categories selected
     const hasSelectedCategories = selectedMajorCategories.length > 0;
     
     return hasFilledFields || hasSelectedCategories;
   };
 
-  // Auto-save form data to localStorage with versioning
+  // Auto-save form data to localStorage
   useEffect(() => {
     const saveToLocalStorage = () => {
-      // Only save if there's meaningful progress
-      if (!hasSignificantProgress()) {
-        return;
-      }
+      if (!hasSignificantProgress()) return;
       
       const dataToSave = {
         currentStep,
-        formData,
+        formData: { ...formData, password: '' }, // Never save password
         selectedMajorCategories,
-        uploadedFiles,
       };
       saveVersionedData(
         STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT,
@@ -314,29 +301,25 @@ const HandwerkerOnboarding = () => {
     return () => clearTimeout(timeoutId);
   }, [currentStep, formData, selectedMajorCategories]);
 
-  // Load saved form data from localStorage on mount with versioning
+  // Load saved form data from localStorage on mount
   useEffect(() => {
     const loadFromLocalStorage = () => {
       const { data, wasRecovered, lastSaved: savedAt } = loadVersionedData<{
         currentStep: number;
         formData: typeof formData;
         selectedMajorCategories: string[];
-        uploadedFiles: typeof uploadedFiles;
       }>({
         key: STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT,
         currentVersion: STORAGE_VERSIONS.HANDWERKER_ONBOARDING_DRAFT,
-        ttlHours: 168, // 7 days
+        ttlHours: 168,
         migrations: {
-          // Migration from version 1 to 2: Handle any schema changes
-          2: (oldData: unknown) => oldData, // No schema changes yet
+          2: (oldData: unknown) => oldData,
         },
       });
 
       if (wasRecovered && data && savedAt) {
-        // Calculate progress
-        const savedProgress = Math.min(((data.currentStep - 1) / 5) * 100, 100);
+        const savedProgress = Math.min(((data.currentStep - 1) / 3) * 100, 100);
         
-        // Format last save time
         const now = new Date();
         const diffDays = Math.floor((now.getTime() - savedAt.getTime()) / (1000 * 60 * 60 * 24));
         
@@ -354,16 +337,14 @@ const HandwerkerOnboarding = () => {
           });
         }
         
-        // Set recovery data and show dialog
         setRecoveryData({
           progress: savedProgress,
           lastSaveTime: lastSaveTimeStr,
           currentStep: data.currentStep,
-          totalSteps: 5,
+          totalSteps: 3,
         });
         setShowRecoveryDialog(true);
         
-        // Store the parsed data temporarily (don't load yet)
         sessionStorage.setItem('pending-recovery-data', JSON.stringify(data));
       }
     };
@@ -373,19 +354,10 @@ const HandwerkerOnboarding = () => {
 
   const validateStep = (step: number): boolean => {
     const newErrors: Record<string, string> = {};
+    const content = stepContent[step as keyof typeof stepContent];
 
-    if (step === 1) {
-      // Company Information validation - minimal requirements
-      if (!formData.companyName.trim()) {
-        newErrors.companyName = "Firmenname ist erforderlich";
-      } else if (formData.companyName.trim().length < 2) {
-        newErrors.companyName = "Firmenname muss mindestens 2 Zeichen lang sein";
-      }
-      // UID and MWST are completely optional - no format validation
-      // Admins can verify and correct these during approval
-      // This allows franchises, subsidiaries, and partial entries
-    } else if (step === 2) {
-      // Personal Information validation - only name, email, phone required
+    if (content === 'contact') {
+      // Step 1: Contact + Company validation
       if (!formData.firstName.trim()) {
         newErrors.firstName = "Vorname ist erforderlich";
       } else if (formData.firstName.trim().length < 2) {
@@ -404,347 +376,241 @@ const HandwerkerOnboarding = () => {
       if (!formData.phoneNumber.trim()) {
         newErrors.phoneNumber = "Telefonnummer ist erforderlich";
       }
-      
-      // Personal address is now optional for all legal forms
-    } else if (step === 3) {
-      // Business address and banking are now completely optional
-      // Only validate format if provided
-      if (formData.iban && formData.iban.trim() && !validateIBAN(formData.iban)) {
-        newErrors.iban = "Ungültige IBAN. Format: CH## #### #### #### #### #";
+      if (!formData.password) {
+        newErrors.password = "Passwort ist erforderlich";
+      } else if (formData.password.length < 6) {
+        newErrors.password = "Passwort muss mindestens 6 Zeichen lang sein";
       }
-    } else if (step === 4) {
-      // Insurance is completely optional - no validation required
-    } else if (step === 5) {
-      // Categories and subcategories are completely optional
+      if (!formData.companyName.trim()) {
+        newErrors.companyName = "Firmenname ist erforderlich";
+      } else if (formData.companyName.trim().length < 2) {
+        newErrors.companyName = "Firmenname muss mindestens 2 Zeichen lang sein";
+      }
     }
+    // Services step has no required fields
+    // Summary step has no validation
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
-    // Mark all fields in current step as touched before validation
-    if (currentStep === 1) {
-      setTouched(prev => ({ ...prev, companyName: true, companyLegalForm: true, uidNumber: true, mwstNumber: true }));
-    } else if (currentStep === 2) {
-      setTouched(prev => ({ ...prev, firstName: true, lastName: true, email: true, phoneNumber: true, personalAddress: true, personalZip: true, personalCity: true, personalCanton: true }));
-    } else if (currentStep === 3) {
-      setTouched(prev => ({ ...prev, iban: true, bankName: true, businessAddress: true, businessZip: true, businessCity: true, businessCanton: true }));
+  // Handle login for existing users (inline login form)
+  const handleLogin = async () => {
+    if (!loginEmail || !loginPassword) {
+      toast({
+        title: "Fehler",
+        description: "Bitte geben Sie E-Mail und Passwort ein.",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, 6));
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    setIsLoggingIn(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.toLowerCase().trim(),
+        password: loginPassword,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        // Check if already has handwerker profile
+        const { data: existingProfile } = await supabase
+          .from('handwerker_profiles')
+          .select('id')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        if (existingProfile) {
+          toast({
+            title: "Profil vorhanden",
+            description: "Sie haben bereits ein Handwerker-Profil.",
+          });
+          navigate('/handwerker-dashboard');
+          return;
+        }
+
+        setIsAuthenticated(true);
+        setShowLoginForm(false);
+        
+        // Pre-fill data from profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, phone')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
+        const nameParts = (profile?.full_name || '').split(' ');
+        setFormData(prev => ({
+          ...prev,
+          email: data.user.email || '',
+          firstName: nameParts[0] || prev.firstName,
+          lastName: nameParts.slice(1).join(' ') || prev.lastName,
+          phoneNumber: profile?.phone || prev.phoneNumber,
+        }));
+
+        toast({
+          title: "Angemeldet",
+          description: "Fahren Sie mit der Registrierung fort.",
+        });
+        
+        // Proceed to next step
+        setCurrentStep(2);
+      }
+    } catch (error) {
+      toast({
+        title: "Anmeldung fehlgeschlagen",
+        description: error instanceof Error ? error.message : "Bitte überprüfen Sie Ihre Zugangsdaten.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
-  const handleBack = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  // Create account and proceed (like SubmitLead pattern)
+  const handleCreateAccountAndProceed = async () => {
+    // Validate all Step 1 fields
+    if (!validateStep(1)) {
+      // Mark all fields as touched to show errors
+      setTouched({
+        firstName: true,
+        lastName: true,
+        email: true,
+        phoneNumber: true,
+        password: true,
+        companyName: true,
+      });
+      return;
+    }
+
+    setIsCreatingAccount(true);
+
+    try {
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+        options: {
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            full_name: `${formData.firstName} ${formData.lastName}`,
+            phone: formData.phoneNumber,
+          },
+          emailRedirectTo: `${window.location.origin}/handwerker-dashboard`,
+        },
+      });
+
+      if (signUpError) {
+        if (signUpError.message.includes('already registered')) {
+          toast({
+            title: "E-Mail bereits registriert",
+            description: "Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.",
+            variant: "destructive",
+          });
+          setShowLoginForm(true);
+          setLoginEmail(formData.email);
+          return;
+        }
+        throw signUpError;
+      }
+
+      // Check if email confirmation is required
+      if (signUpData.user && !signUpData.session) {
+        toast({
+          title: "E-Mail-Bestätigung erforderlich",
+          description: "Bitte bestätigen Sie Ihre E-Mail-Adresse. Sie können sich danach hier anmelden.",
+          variant: "default",
+        });
+        setShowLoginForm(true);
+        setLoginEmail(formData.email);
+        return;
+      }
+
+      // User is signed in - refresh session
+      await supabase.auth.refreshSession();
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "E-Mail-Bestätigung erforderlich",
+          description: "Bitte bestätigen Sie Ihre E-Mail-Adresse und melden Sie sich dann an.",
+          variant: "default",
+        });
+        setShowLoginForm(true);
+        setLoginEmail(formData.email);
+        return;
+      }
+
+      // Success! User is now authenticated
+      setIsAuthenticated(true);
+      toast({
+        title: "Konto erstellt",
+        description: "Wählen Sie jetzt Ihre Dienstleistungen.",
+      });
+      
+      // Proceed to Step 2 (Services)
+      setCurrentStep(2);
+    } catch (error) {
+      toast({
+        title: "Fehler bei der Registrierung",
+        description: error instanceof Error ? error.message : "Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
+
+  const handleNext = async () => {
+    const content = stepContent[currentStep as keyof typeof stepContent];
+    
+    if (content === 'contact') {
+      // For contact step, create account first (like SubmitLead)
+      await handleCreateAccountAndProceed();
+      return;
+    }
+    
+    // For other steps, just proceed
+    setCurrentStep(prev => Math.min(prev + 1, totalSteps));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleFileUpload = async (file: File, type: 'insuranceDocument' | 'tradeLicense' | 'logo') => {
-    try {
-      // Validate file size (max 10MB for documents, 5MB for logos)
-      const MAX_FILE_SIZE = type === 'logo' ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
-      if (file.size > MAX_FILE_SIZE) {
-        toast({
-          title: "Datei zu groß",
-          description: type === 'logo' 
-            ? "Das Logo darf maximal 5MB groß sein."
-            : "Die Datei darf maximal 10MB groß sein.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate logo file type
-      if (type === 'logo' && !file.type.startsWith('image/')) {
-        toast({
-          title: "Ungültiger Dateityp",
-          description: "Bitte laden Sie eine Bilddatei hoch (JPG, PNG, SVG, WebP).",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Generate or reuse temporary ID for organizing uploads
-      let tempId = sessionStorage.getItem('handwerker-upload-temp-id');
-      if (!tempId) {
-        tempId = crypto.randomUUID();
-        sessionStorage.setItem('handwerker-upload-temp-id', tempId);
-      }
-
-      const fileExt = file.name.split('.').pop();
-      // Use logos folder for logo uploads
-      const folder = type === 'logo' ? 'logos' : 'pending';
-      const fileName = type === 'logo' 
-        ? `${folder}/pending/${type}-${Date.now()}.${fileExt}`
-        : `${folder}/${tempId}/${type}-${Date.now()}.${fileExt}`;
-      
-      setUploadProgress(prev => ({ ...prev, [type]: 'uploading' }));
-
-      const { error: uploadError } = await supabase.storage
-        .from('handwerker-documents')
-        .upload(fileName, file);
-
-      if (uploadError) {
-        if (import.meta.env.DEV) console.error('Upload error:', uploadError);
-        throw new Error(uploadError.message);
-      }
-
-      setUploadProgress(prev => ({ ...prev, [type]: 'success' }));
-      setUploadedFiles(prev => ({ 
-        ...prev, 
-        [type]: {
-          name: file.name,
-          uploadedAt: new Date().toISOString(),
-          path: fileName
-        }
-      }));
-
-      toast({
-        title: "Dokument hochgeladen",
-        description: `${file.name} wurde erfolgreich hochgeladen.`,
-      });
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Upload error:', error);
-      setUploadProgress(prev => ({ ...prev, [type]: 'error' }));
-      toast({
-        title: "Upload fehlgeschlagen",
-        description: error instanceof Error ? error.message : "Dokument konnte nicht hochgeladen werden.",
-        variant: "destructive",
-      });
-    }
+  const handleBack = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(currentStep)) return;
-
     setIsLoading(true);
     
-    if (import.meta.env.DEV) {
-      console.log('=== HANDWERKER REGISTRATION START ===');
-      console.log('Current timestamp:', new Date().toISOString());
-    }
-    
     try {
-      if (import.meta.env.DEV) console.log('Form data:', { categories: formData.categories, serviceAreas: formData.serviceAreas });
+      const { data: { user } } = await supabase.auth.getUser();
       
-      let userId: string;
-      let userEmail: string;
-      let tempPassword: string | null = null;
-      
-      if (isAlreadyAuthenticated) {
-        // User is already logged in - use their existing auth account
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-          throw new Error('Session expired. Please log in again.');
-        }
-        userId = session.user.id;
-        userEmail = session.user.email!;
-        
-        if (import.meta.env.DEV) console.log('Using existing auth account:', userId);
-      } else {
-        // NEW USER: Use edge function for registration with auto-confirm
-        if (import.meta.env.DEV) console.log('Using edge function for new user registration...');
-        
-        // Collect all uploaded files
-        const allUploads = {
-          insuranceDocument: uploadedFiles.insuranceDocument,
-          tradeLicense: uploadedFiles.tradeLicense,
-          logo: uploadedFiles.logo,
-        };
-
-        // Get file URLs
-        const verificationDocuments: string[] = [];
-        let logoUrl: string | null = null;
-        
-        for (const [type, fileMetadata] of Object.entries(allUploads)) {
-          if (fileMetadata && fileMetadata.path) {
-            const { data } = supabase.storage
-              .from('handwerker-documents')
-              .getPublicUrl(fileMetadata.path);
-            
-            if (data?.publicUrl) {
-              if (type === 'logo') {
-                logoUrl = data.publicUrl;
-              } else {
-                verificationDocuments.push(data.publicUrl);
-              }
-            }
-          }
-        }
-
-        // Use personal address for business if same address is selected
-        let businessAddress = formData.businessAddress;
-        let businessZip = formData.businessZip;
-        let businessCity = formData.businessCity;
-        let businessCanton = formData.businessCanton;
-
-        if (formData.sameAsPersonal) {
-          businessAddress = formData.personalAddress;
-          businessZip = formData.personalZip;
-          businessCity = formData.personalCity;
-          businessCanton = formData.personalCanton;
-        }
-
-        // Call edge function for registration with auto-confirm
-        const { data: regData, error: regError } = await supabase.functions.invoke(
-          'create-handwerker-self-registration',
-          {
-            body: {
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              email: formData.email.toLowerCase().trim(),
-              phoneNumber: formData.phoneNumber,
-              personalAddress: formData.personalAddress,
-              personalZip: formData.personalZip,
-              personalCity: formData.personalCity,
-              personalCanton: formData.personalCanton,
-              companyName: formData.companyName,
-              companyLegalForm: formData.companyLegalForm,
-              uidNumber: formData.uidNumber,
-              mwstNumber: formData.mwstNumber,
-              businessAddress: businessAddress,
-              businessZip: businessZip,
-              businessCity: businessCity,
-              businessCanton: businessCanton,
-              iban: formData.iban,
-              bankName: formData.bankName,
-              liabilityInsuranceProvider: formData.liabilityInsuranceProvider,
-              policyNumber: formData.policyNumber,
-              tradeLicenseNumber: formData.tradeLicenseNumber,
-              insuranceValidUntil: formData.insuranceValidUntil,
-              bio: formData.bio,
-              categories: formData.categories,
-              serviceAreas: formData.serviceAreas,
-              hourlyRateMin: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
-              hourlyRateMax: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
-              verificationDocuments: verificationDocuments,
-              logoUrl: logoUrl,
-            }
-          }
-        );
-
-        if (regError) {
-          if (import.meta.env.DEV) console.error('Edge function error:', regError);
-          throw new Error(regError.message || 'Registrierung fehlgeschlagen');
-        }
-
-        if (!regData?.success) {
-          const errorMessage = regData?.error || 'Registrierung fehlgeschlagen';
-          if (import.meta.env.DEV) console.error('Registration failed:', errorMessage);
-          
-          // Handle specific error messages
-          if (errorMessage.includes('bereits registriert')) {
-            toast({
-              title: 'E-Mail bereits registriert',
-              description: errorMessage,
-              variant: 'destructive',
-            });
-            setTimeout(() => navigate('/auth'), 2000);
-            return;
-          }
-          
-          throw new Error(errorMessage);
-        }
-
-        if (import.meta.env.DEV) console.log('Registration successful via edge function:', regData);
-
-        // Clear saved draft
-        clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
-        sessionStorage.removeItem('handwerker-upload-temp-id');
-
-        toast({
-          title: "Registrierung erfolgreich!",
-          description: "Ihre Zugangsdaten wurden per E-Mail versandt. Bitte überprüfen Sie Ihren Posteingang.",
-          duration: 8000,
-        });
-
-        setIsLoading(false);
-        navigate("/auth?registered=true");
-        return; // Exit early - edge function handles everything
+      if (!user) {
+        throw new Error('Nicht angemeldet. Bitte laden Sie die Seite neu.');
       }
 
-      // EXISTING AUTHENTICATED USER: Use the existing flow for profile creation
-      // Use personal address for business if same address is selected
-      let businessAddress = formData.businessAddress;
-      let businessZip = formData.businessZip;
-      let businessCity = formData.businessCity;
-      let businessCanton = formData.businessCanton;
-
-      if (formData.sameAsPersonal) {
-        businessAddress = formData.personalAddress;
-        businessZip = formData.personalZip;
-        businessCity = formData.personalCity;
-        businessCanton = formData.personalCanton;
-      }
-
-      // Collect all uploaded files
-      const allUploads = {
-        insuranceDocument: uploadedFiles.insuranceDocument,
-        tradeLicense: uploadedFiles.tradeLicense,
-        logo: uploadedFiles.logo,
-      };
-
-      // Upload files to Supabase storage and collect URLs
-      const verificationDocuments: string[] = [];
-      let logoUrl: string | null = null;
-      
-      for (const [type, fileMetadata] of Object.entries(allUploads)) {
-        if (fileMetadata && fileMetadata.path) {
-          const { data } = supabase.storage
-            .from('handwerker-documents')
-            .getPublicUrl(fileMetadata.path);
-          
-          if (data?.publicUrl) {
-            if (type === 'logo') {
-              logoUrl = data.publicUrl;
-            } else {
-              verificationDocuments.push(data.publicUrl);
-            }
-          }
-        }
-      }
-
-      // Prepare insert data
+      // Create handwerker profile
       const insertData = {
-        user_id: userId,
+        user_id: user.id,
         first_name: formData.firstName?.trim() || null,
         last_name: formData.lastName?.trim() || null,
         email: formData.email?.trim() || null,
         phone_number: formData.phoneNumber?.trim() || null,
-        personal_address: formData.personalAddress?.trim() || null,
-        personal_zip: formData.personalZip?.trim() || null,
-        personal_city: formData.personalCity?.trim() || null,
-        personal_canton: formData.personalCanton?.trim() || null,
         company_name: formData.companyName?.trim() || null,
         company_legal_form: formData.companyLegalForm?.trim() || null,
-        uid_number: formData.uidNumber?.trim() || null,
-        mwst_number: formData.mwstNumber?.trim() || null,
-        business_address: businessAddress?.trim() || null,
-        business_zip: businessZip?.trim() || null,
-        business_city: businessCity?.trim() || null,
-        business_canton: businessCanton?.trim() || null,
-        iban: formData.iban?.trim() ? formData.iban.replace(/\s/g, "") : null,
-        bank_name: formData.bankName?.trim() || null,
-        liability_insurance_provider: formData.liabilityInsuranceProvider?.trim() || null,
-        liability_insurance_policy_number: formData.policyNumber?.trim() || null,
-        trade_license_number: formData.tradeLicenseNumber?.trim() || null,
-        insurance_valid_until: formData.insuranceValidUntil?.trim() || null,
         bio: formData.bio?.trim() || null,
         categories: formData.categories?.length > 0 ? formData.categories : [] as any,
         service_areas: formData.serviceAreas?.length > 0 ? formData.serviceAreas : [],
         hourly_rate_min: formData.hourlyRateMin?.trim() ? parseInt(formData.hourlyRateMin) : null,
         hourly_rate_max: formData.hourlyRateMax?.trim() ? parseInt(formData.hourlyRateMax) : null,
-        verification_documents: verificationDocuments.length > 0 ? verificationDocuments : [],
         verification_status: 'pending',
         is_verified: false,
-        logo_url: logoUrl,
       };
 
-      // Insert handwerker_profile
       const { data: profileData, error } = await supabase
         .from("handwerker_profiles")
         .insert([insertData])
@@ -757,9 +623,6 @@ const HandwerkerOnboarding = () => {
             throw new Error('Diese E-Mail-Adresse ist bereits registriert.');
           }
           throw new Error('Ein Eintrag mit diesen Daten existiert bereits.');
-        }
-        if (error.message.includes('row-level security') || error.message.includes('policy')) {
-          throw new Error('Berechtigungsfehler: Profil konnte nicht erstellt werden.');
         }
         throw error;
       }
@@ -775,80 +638,39 @@ const HandwerkerOnboarding = () => {
 
       // Clear saved draft
       clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
-      sessionStorage.removeItem('handwerker-upload-temp-id');
 
-      // Non-blocking: assign handwerker role if not admin
+      // Assign handwerker role (non-blocking)
       supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .then(({ data: existingRoles }) => {
           const isAdmin = existingRoles?.some(r => r.role === 'admin' || r.role === 'super_admin');
           if (!isAdmin) {
             supabase
               .from('user_roles')
-              .upsert({ user_id: userId, role: 'handwerker' }, { onConflict: 'user_id,role' })
+              .upsert({ user_id: user.id, role: 'handwerker' }, { onConflict: 'user_id,role' })
               .then(() => {});
           }
         });
       
       toast({
         title: "Profil erstellt!",
-        description: "Ihr Handwerker-Profil wurde erfolgreich erstellt.",
+        description: "Ihr Handwerker-Profil wurde erfolgreich erstellt und wird geprüft.",
         duration: 5000,
       });
       
       navigate("/handwerker-dashboard");
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('=== REGISTRATION ERROR ===');
-        console.error('Error type:', error?.constructor?.name);
-        console.error('Error message:', error instanceof Error ? error.message : String(error));
-        console.error('Full error object:', error);
-      }
-      
       toast({
         title: "Fehler",
-        description: "Profil konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+        description: error instanceof Error ? error.message : "Profil konnte nicht gespeichert werden.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
-      if (import.meta.env.DEV) console.log('=== REGISTRATION PROCESS END ===');
     }
   };
-
-  // Helper components for summary page
-  interface SummaryItemProps {
-    label: string;
-    value: string;
-  }
-
-  const SummaryItem: React.FC<SummaryItemProps> = ({ label, value }) => (
-    <div className="flex justify-between items-start py-2 border-b last:border-0">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      <span className="text-sm font-semibold text-right max-w-[60%]">{value}</span>
-    </div>
-  );
-
-  interface DocumentStatusProps {
-    label: string;
-    file?: { name: string; uploadedAt: string };
-  }
-
-  const DocumentStatus: React.FC<DocumentStatusProps> = ({ label, file }) => (
-    <div className="flex justify-between items-center py-2 border-b last:border-0">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      {file ? (
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <span className="text-sm text-green-700 font-medium">{file.name}</span>
-        </div>
-      ) : (
-        <Badge variant="secondary" className="text-xs">Optional</Badge>
-      )}
-    </div>
-  );
 
   const legalFormLabels: Record<string, string> = {
     einzelfirma: "Einzelfirma",
@@ -861,210 +683,10 @@ const HandwerkerOnboarding = () => {
     stiftung: "Stiftung",
   };
 
+  // Render step content based on current step
   const renderStepContent = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <Building2 className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Firmeninformationen</h3>
-                <p className="text-base text-muted-foreground">Grundlegende Angaben zu Ihrem Betrieb</p>
-              </div>
-            </div>
-
-            <Alert className="border-brand-300 bg-brand-50 mb-6">
-              <AlertCircle className="h-5 w-5 text-brand-600" />
-              <AlertDescription className="text-base ml-2">
-                <span className="font-semibold text-brand-700">Hinweis:</span>
-                {" "}Felder mit <span className="text-brand-600">★</span> sind für die Aktivierung 
-                Ihres Kontos erforderlich, können aber später nachgereicht werden.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-5">
-              <div className="space-y-3">
-                <Label htmlFor="companyName" className="text-base font-medium">Firmenname *</Label>
-                <Input
-                  id="companyName"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                  onBlur={() => markTouched('companyName')}
-                  placeholder="z.B. Muster AG"
-                  className="h-12 text-base"
-                />
-                {shouldShowError('companyName') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.companyName}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="companyLegalForm" className="text-base font-medium">Rechtsform *</Label>
-                <Select
-                  value={formData.companyLegalForm}
-                  onValueChange={(value) => setFormData({ ...formData, companyLegalForm: value })}
-                >
-                  <SelectTrigger className="h-12 text-base">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
-                    <SelectItem value="gmbh">GmbH</SelectItem>
-                    <SelectItem value="ag">AG</SelectItem>
-                    <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
-                    <SelectItem value="kommanditgesellschaft">Kommanditgesellschaft</SelectItem>
-                    <SelectItem value="genossenschaft">Genossenschaft</SelectItem>
-                    <SelectItem value="verein">Verein</SelectItem>
-                    <SelectItem value="stiftung">Stiftung</SelectItem>
-                  </SelectContent>
-                </Select>
-                {shouldShowError('companyLegalForm') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.companyLegalForm}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="uidNumber" className="text-base font-medium">
-                  UID-Nummer
-                  <span className="text-muted-foreground text-sm ml-1">(optional)</span>
-                </Label>
-                <Input
-                  id="uidNumber"
-                  value={formData.uidNumber}
-                  onChange={(e) => setFormData({ ...formData, uidNumber: e.target.value })}
-                  onBlur={(e) => {
-                    const formatted = formatUID(e.target.value);
-                    setFormData({ ...formData, uidNumber: formatted });
-                    markTouched('uidNumber');
-                  }}
-                  placeholder="CHE-123.456.789"
-                  className="h-12 text-base font-mono"
-                />
-                {shouldShowError('uidNumber') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.uidNumber}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground">
-                  Falls vorhanden, kann später nachgereicht werden
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="mwstNumber" className="text-base font-medium">MWST-Nummer (optional)</Label>
-                <Input
-                  id="mwstNumber"
-                  value={formData.mwstNumber}
-                  onChange={(e) => setFormData({ ...formData, mwstNumber: e.target.value })}
-                  onBlur={(e) => {
-                    const formatted = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                    setFormData({ ...formData, mwstNumber: formatted });
-                    markTouched('mwstNumber');
-                  }}
-                  placeholder="CHE-123.456.789 MWST"
-                  className="h-12 text-base font-mono"
-                />
-                {shouldShowError('mwstNumber') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.mwstNumber}
-                  </p>
-                )}
-              </div>
-
-              {/* Logo Upload */}
-              <div className="space-y-3">
-                <Label htmlFor="logo" className="text-base font-medium">Firmenlogo (optional)</Label>
-                <p className="text-sm text-muted-foreground">
-                  Laden Sie Ihr Firmenlogo hoch. Dies hilft Kunden, Sie zu erkennen.
-                </p>
-                
-                <Input
-                  id="logo"
-                  type="file"
-                  accept=".jpg,.jpeg,.png,.svg,.webp"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file, 'logo');
-                  }}
-                  className="hidden"
-                />
-                
-                {uploadedFiles.logo ? (
-                  <div className="border-2 border-dashed border-brand-300 bg-brand-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {uploadedFiles.logo.path && (
-                          <img 
-                            src={supabase.storage.from('handwerker-documents').getPublicUrl(uploadedFiles.logo.path).data.publicUrl}
-                            alt="Logo Preview"
-                            className="h-16 w-16 object-contain rounded border bg-white"
-                          />
-                        )}
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-5 w-5 text-success-600" />
-                            <p className="font-medium text-success-700">Logo hochgeladen</p>
-                          </div>
-                          <p className="text-sm text-muted-foreground">{uploadedFiles.logo.name}</p>
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setUploadedFiles(prev => {
-                            const updated = { ...prev };
-                            delete updated.logo;
-                            return updated;
-                          });
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('logo')?.click()}
-                    className="w-full h-24 text-base border-2 border-dashed hover:border-brand-400 hover:bg-brand-50"
-                    disabled={uploadProgress.logo === 'uploading'}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      {uploadProgress.logo === 'uploading' ? (
-                        <>
-                          <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
-                          <span>Logo wird hochgeladen...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-6 w-6 text-brand-600" />
-                          <span>Logo hochladen (max. 5MB)</span>
-                          <span className="text-xs text-muted-foreground">JPG, PNG, SVG oder WebP</span>
-                        </>
-                      )}
-                    </div>
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 2:
+    switch (currentContent) {
+      case 'contact':
         return (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
@@ -1072,587 +694,242 @@ const HandwerkerOnboarding = () => {
                 <User className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">Persönliche Informationen</h3>
-                <p className="text-base text-muted-foreground">Ihre Kontaktdaten als Ansprechperson</p>
+                <h3 className="text-2xl font-bold">Kontakt & Firma</h3>
+                <p className="text-base text-muted-foreground">Ihre persönlichen Daten und Firmendaten</p>
               </div>
             </div>
 
-            <div className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <Label htmlFor="firstName" className="text-base font-medium">Vorname *</Label>
-                  <Input
-                    id="firstName"
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    onBlur={() => markTouched('firstName')}
-                    placeholder="Max"
-                    className="h-12 text-base"
-                  />
-                  {shouldShowError('firstName') && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.firstName}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="lastName" className="text-base font-medium">Nachname *</Label>
-                  <Input
-                    id="lastName"
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    onBlur={() => markTouched('lastName')}
-                    placeholder="Muster"
-                    className="h-12 text-base"
-                  />
-                  {shouldShowError('lastName') && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.lastName}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="email" className="text-base font-medium">E-Mail-Adresse *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
-                  onBlur={() => markTouched('email')}
-                  placeholder="max.muster@beispiel.ch"
-                  className="h-12 text-base"
-                  disabled={isAlreadyAuthenticated}
-                />
-                {isAlreadyAuthenticated && (
-                  <p className="text-xs text-muted-foreground">
-                    E-Mail kann nicht geändert werden (Sie sind bereits angemeldet)
-                  </p>
-                )}
-                {shouldShowError('email') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.email}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="phoneNumber" className="text-base font-medium">Telefonnummer *</Label>
-                <Input
-                  id="phoneNumber"
-                  type="tel"
-                  value={formData.phoneNumber}
-                  onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  onBlur={() => markTouched('phoneNumber')}
-                  placeholder="+41 79 123 45 67"
-                  className="h-12 text-base"
-                />
-                {shouldShowError('phoneNumber') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.phoneNumber}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground">Format: +41 79 123 45 67</p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="personalAddress" className="text-base font-medium">
-                  Adresse {formData.companyLegalForm === "einzelfirma" && "*"}
-                </Label>
-                <Input
-                  id="personalAddress"
-                  value={formData.personalAddress}
-                  onChange={(e) => setFormData({ ...formData, personalAddress: e.target.value })}
-                  onBlur={() => markTouched('personalAddress')}
-                  placeholder="Musterstrasse 123"
-                  className="h-12 text-base"
-                />
-                {shouldShowError('personalAddress') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.personalAddress}
-                  </p>
-                )}
-                {formData.companyLegalForm === "einzelfirma" ? (
-                  <p className="text-xs text-muted-foreground">
-                    Für Einzelfirma ist die persönliche Adresse erforderlich
-                  </p>
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    Optional - Die Geschäftsadresse wird in Schritt 3 abgefragt
-                  </p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <Label htmlFor="personalZip" className="text-base font-medium">
-                    PLZ {formData.companyLegalForm === "einzelfirma" && "*"}
-                  </Label>
-                  <PostalCodeInput
-                    value={formData.personalZip}
-                    onValueChange={(plz) => setFormData({ ...formData, personalZip: plz })}
-                    onAddressSelect={(address) => setFormData({ 
-                      ...formData, 
-                      personalCity: address.city,
-                      personalCanton: address.canton 
-                    })}
-                    onBlur={() => markTouched('personalZip')}
-                    placeholder="8000"
-                    className="h-12 text-base"
-                  />
-                  {shouldShowError('personalZip') && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.personalZip}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="personalCity" className="text-base font-medium">
-                    Ort {formData.companyLegalForm === "einzelfirma" && "*"}
-                  </Label>
-                  <Input
-                    id="personalCity"
-                    value={formData.personalCity}
-                    onChange={(e) => setFormData({ ...formData, personalCity: e.target.value })}
-                    onBlur={() => markTouched('personalCity')}
-                    placeholder="Zürich"
-                    className="h-12 text-base"
-                  />
-                  {shouldShowError('personalCity') && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.personalCity}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="personalCanton" className="text-base font-medium">
-                  Kanton (optional)
-                </Label>
-                <Select
-                  value={formData.personalCanton}
-                  onValueChange={(value) => setFormData({ ...formData, personalCanton: value })}
-                >
-                  <SelectTrigger className="h-12 text-base">
-                    <SelectValue placeholder="Kanton wählen" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SWISS_CANTONS.map((canton) => (
-                      <SelectItem key={canton.value} value={canton.value}>
-                        {canton.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {shouldShowError('personalCanton') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.personalCanton}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <Wallet className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Adresse & Banking</h3>
-                <p className="text-base text-muted-foreground">Geschäftsadresse und Bankverbindung</p>
-              </div>
-            </div>
-
-            {formData.companyLegalForm === "einzelfirma" ? (
-              <Alert className="border-brand-300 bg-brand-50">
-                <AlertCircle className="h-5 w-5 text-brand-600" />
-                <AlertDescription className="text-base ml-2">
-                  Für Einzelfirma ist die Geschäftsadresse optional. Sie können die persönliche Adresse aus Schritt 2 verwenden.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <Alert className="border-brand-300 bg-brand-50">
-                <AlertCircle className="h-5 w-5 text-brand-600" />
-                <AlertDescription className="text-base ml-2">
-                  Die Geschäftsadresse Ihrer Firma ist erforderlich.
-                </AlertDescription>
-              </Alert>
-            )}
-
-            <div className="flex items-center space-x-3 p-4 bg-muted/50 rounded-lg">
-              <Checkbox
-                id="sameAsPersonal"
-                checked={formData.sameAsPersonal}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setFormData({ 
-                      ...formData, 
-                      sameAsPersonal: true,
-                      businessAddress: formData.personalAddress,
-                      businessZip: formData.personalZip,
-                      businessCity: formData.personalCity,
-                      businessCanton: formData.personalCanton,
-                    });
-                  } else {
-                    setFormData({ ...formData, sameAsPersonal: false });
-                  }
-                }}
-              />
-              <Label htmlFor="sameAsPersonal" className="cursor-pointer text-base font-medium">
-                Gleich wie persönliche Adresse
-              </Label>
-            </div>
-
-            {!formData.sameAsPersonal && (
-              <div className="space-y-5">
-                <div className="space-y-3">
-                  <Label htmlFor="businessAddress" className="text-base font-medium">Geschäftsadresse *</Label>
-                  <Input
-                    id="businessAddress"
-                    value={formData.businessAddress}
-                    onChange={(e) => setFormData({ ...formData, businessAddress: e.target.value })}
-                    onBlur={() => markTouched('businessAddress')}
-                    placeholder="Strasse & Hausnummer"
-                    className="h-12 text-base"
-                  />
-                  {shouldShowError('businessAddress') && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.businessAddress}
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <Label htmlFor="businessZip" className="text-base font-medium">PLZ *</Label>
-                    <PostalCodeInput
-                      value={formData.businessZip}
-                      onValueChange={(plz) => setFormData({ ...formData, businessZip: plz })}
-                      onAddressSelect={(address) => setFormData({ 
-                        ...formData, 
-                        businessCity: address.city,
-                        businessCanton: address.canton 
-                      })}
-                      onBlur={() => markTouched('businessZip')}
-                      placeholder="8000"
-                      className="h-12 text-base"
-                    />
-                    {shouldShowError('businessZip') && (
-                      <p className="text-sm text-destructive flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4" />
-                        {errors.businessZip}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label htmlFor="businessCity" className="text-base font-medium">Ort *</Label>
+            {/* Inline Login Form (shown when email exists) */}
+            {showLoginForm && (
+              <Card className="border-amber-200 bg-amber-50 mb-6">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-amber-600" />
+                    E-Mail bereits registriert
+                  </CardTitle>
+                  <CardDescription>
+                    Melden Sie sich an, um fortzufahren.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="loginEmail">E-Mail</Label>
                     <Input
-                      id="businessCity"
-                      value={formData.businessCity}
-                      onChange={(e) => setFormData({ ...formData, businessCity: e.target.value })}
-                      onBlur={() => markTouched('businessCity')}
-                      placeholder="Zürich"
-                      className="h-12 text-base"
+                      id="loginEmail"
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="h-12"
                     />
-                    {shouldShowError('businessCity') && (
-                      <p className="text-sm text-destructive flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4" />
-                        {errors.businessCity}
-                      </p>
-                    )}
                   </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="businessCanton" className="text-base font-medium">Kanton (optional)</Label>
-                  <Select
-                    value={formData.businessCanton}
-                    onValueChange={(value) => setFormData({ ...formData, businessCanton: value })}
+                  <div className="space-y-2">
+                    <Label htmlFor="loginPassword">Passwort</Label>
+                    <Input
+                      id="loginPassword"
+                      type="password"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="h-12"
+                      onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleLogin} 
+                    className="w-full h-12"
+                    disabled={isLoggingIn}
                   >
-                    <SelectTrigger className="h-12 text-base">
-                      <SelectValue placeholder="Kanton wählen" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SWISS_CANTONS.map((canton) => (
-                        <SelectItem key={canton.value} value={canton.value}>
-                          {canton.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {shouldShowError('businessCanton') && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.businessCanton}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <Card className="border-2 mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Bankinformationen</CardTitle>
-                <CardDescription>Optional - Für Auszahlungen erforderlich</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5">
-                <div className="space-y-3">
-                  <Label htmlFor="iban" className="text-base font-medium">IBAN (optional)</Label>
-                  <Input
-                    id="iban"
-                    value={formData.iban}
-                    onChange={(e) => {
-                      let value = e.target.value.toUpperCase();
-                      // Remove all spaces for length check
-                      const cleanValue = value.replace(/\s/g, '');
-                      
-                      // Swiss IBAN: CH + 19 digits = 21 characters max (without spaces)
-                      if (cleanValue.length <= 21) {
-                        setFormData({ ...formData, iban: value });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const formatted = formatIBAN(e.target.value);
-                      setFormData({ ...formData, iban: formatted });
-                      markTouched('iban');
-                    }}
-                    placeholder="CH76 0000 0000 0000 0000 0"
-                    maxLength={26}
-                    className="h-12 text-base font-mono"
-                  />
-                  {shouldShowError('iban') && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.iban}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="bankName" className="text-base font-medium">Bankname (optional)</Label>
-                  <Input
-                    id="bankName"
-                    value={formData.bankName}
-                    onChange={(e) => setFormData({ ...formData, bankName: e.target.value })}
-                    onBlur={() => markTouched('bankName')}
-                    placeholder="z.B. UBS, Credit Suisse, PostFinance"
-                    className="h-12 text-base"
-                  />
-                  {shouldShowError('bankName') && (
-                    <p className="text-sm text-destructive flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4" />
-                      {errors.bankName}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <Shield className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Versicherung & Lizenzen</h3>
-                <p className="text-base text-muted-foreground">Haftpflicht und Bewilligungen</p>
-              </div>
-            </div>
-
-            <Alert className="border-brand-300 bg-brand-50 mb-6">
-              <AlertCircle className="h-5 w-5 text-brand-600" />
-              <AlertDescription className="text-base ml-2">
-                <span className="font-semibold text-brand-700">Hinweis:</span>
-                {" "}Versicherungsinformationen mit <span className="text-brand-600">★</span> sind für 
-                die Aktivierung erforderlich, können aber später ergänzt werden.
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-5">
-              <div className="space-y-3">
-                <Label htmlFor="liabilityInsuranceProvider" className="text-base font-medium">
-                  Haftpflichtversicherung
-                  <span className="text-brand-600 ml-1" title="Für Aktivierung erforderlich">★</span>
-                </Label>
-                <Input
-                  id="liabilityInsuranceProvider"
-                  value={formData.liabilityInsuranceProvider}
-                  onChange={(e) =>
-                    setFormData({ ...formData, liabilityInsuranceProvider: e.target.value })
-                  }
-                  placeholder="z.B. Zürich Versicherung, AXA, Mobiliar"
-                  className="h-12 text-base"
-                />
-                {shouldShowError('liabilityInsuranceProvider') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.liabilityInsuranceProvider}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <span className="text-brand-600">★</span>
-                  Für die Aktivierung Ihres Kontos benötigt
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="policyNumber" className="text-base font-medium">Policennummer (optional)</Label>
-                <Input
-                  id="policyNumber"
-                  value={formData.policyNumber}
-                  onChange={(e) => setFormData({ ...formData, policyNumber: e.target.value })}
-                  placeholder="123456789"
-                  className="h-12 text-base"
-                />
-              </div>
-
-              {/* Removed misleading document upload warning - sessionStorage temp ID exists for unrelated reasons */}
-
-              <div className="space-y-3">
-                <Label htmlFor="insuranceValidUntil" className="text-base font-medium">
-                  Gültig bis
-                  <span className="text-brand-600 ml-1" title="Für Aktivierung erforderlich">★</span>
-                </Label>
-                <Input
-                  id="insuranceValidUntil"
-                  type="date"
-                  value={formData.insuranceValidUntil}
-                  onChange={(e) => setFormData({ ...formData, insuranceValidUntil: e.target.value })}
-                  className="h-12 text-base"
-                />
-                {shouldShowError('insuranceValidUntil') && (
-                  <p className="text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4" />
-                    {errors.insuranceValidUntil}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <span className="text-brand-600">★</span>
-                  Für die Aktivierung Ihres Kontos benötigt
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="tradeLicenseNumber" className="text-base font-medium">Gewerbebewilligung (optional)</Label>
-                <Input
-                  id="tradeLicenseNumber"
-                  value={formData.tradeLicenseNumber}
-                  onChange={(e) => setFormData({ ...formData, tradeLicenseNumber: e.target.value })}
-                  placeholder="Falls erforderlich"
-                  className="h-12 text-base"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Abhängig von Branche und Kanton
-                </p>
-              </div>
-            </div>
-
-            <Card className="border-2 border-dashed mt-6">
-              <CardHeader>
-                <CardTitle className="text-lg">Versicherungsdokumente</CardTitle>
-                <CardDescription>Nachweis hochladen</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="insuranceDocument" className="text-base font-medium">Haftpflichtversicherung</Label>
-                  
-                  <div className="space-y-3">
-                      <Input
-                        id="insuranceDocument"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFileUpload(file, 'insuranceDocument');
-                        }}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => document.getElementById('insuranceDocument')?.click()}
-                        className="w-full h-12 text-base"
-                        disabled={uploadProgress.insuranceDocument === 'uploading'}
-                      >
-                      {uploadProgress.insuranceDocument === 'uploading' ? (
-                        <>Wird hochgeladen...</>
-                      ) : uploadedFiles.insuranceDocument ? (
-                        <>
-                          <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-                          {uploadedFiles.insuranceDocument.name}
-                        </>
-                      ) : (
-                          <>
-                            <FileText className="mr-2 h-5 w-5" />
-                            Versicherungspolice hochladen
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label htmlFor="tradeLicense" className="text-base font-medium">Gewerbebewilligung (optional)</Label>
-                  <Input
-                    id="tradeLicense"
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file, 'tradeLicense');
-                    }}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('tradeLicense')?.click()}
-                    className="w-full h-12 text-base"
-                    disabled={uploadProgress.tradeLicense === 'uploading'}
-                  >
-                    {uploadProgress.tradeLicense === 'uploading' ? (
-                      <>Wird hochgeladen...</>
-                    ) : uploadedFiles.tradeLicense ? (
+                    {isLoggingIn ? (
                       <>
-                        <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-                        {uploadedFiles.tradeLicense.name}
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Anmelden...
                       </>
                     ) : (
-                      <>
-                        <FileText className="mr-2 h-5 w-5" />
-                        Gewerbebewilligung hochladen
-                      </>
+                      'Anmelden'
                     )}
                   </Button>
+                  <div className="flex items-center justify-between text-sm">
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginForm(false)}
+                      className="text-muted-foreground hover:text-primary"
+                    >
+                      Andere E-Mail verwenden
+                    </button>
+                    <a href="/auth?mode=reset" className="text-primary hover:underline">
+                      Passwort vergessen?
+                    </a>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {!showLoginForm && (
+              <div className="space-y-5">
+                {/* Personal Information */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-base font-medium">Vorname *</Label>
+                    <Input
+                      id="firstName"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      onBlur={() => markTouched('firstName')}
+                      placeholder="Max"
+                      className="h-12 text-base"
+                    />
+                    {shouldShowError('firstName') && (
+                      <p className="text-sm text-destructive flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.firstName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-base font-medium">Nachname *</Label>
+                    <Input
+                      id="lastName"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      onBlur={() => markTouched('lastName')}
+                      placeholder="Muster"
+                      className="h-12 text-base"
+                    />
+                    {shouldShowError('lastName') && (
+                      <p className="text-sm text-destructive flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4" />
+                        {errors.lastName}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-base font-medium">E-Mail *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onBlur={() => markTouched('email')}
+                    placeholder="max@muster.ch"
+                    className="h-12 text-base"
+                  />
+                  {shouldShowError('email') && (
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber" className="text-base font-medium">Telefon *</Label>
+                  <Input
+                    id="phoneNumber"
+                    type="tel"
+                    value={formData.phoneNumber}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    onBlur={() => markTouched('phoneNumber')}
+                    placeholder="+41 79 123 45 67"
+                    className="h-12 text-base"
+                  />
+                  {shouldShowError('phoneNumber') && (
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.phoneNumber}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-base font-medium">Passwort *</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      onBlur={() => markTouched('password')}
+                      placeholder="Mindestens 6 Zeichen"
+                      className="h-12 text-base pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                  {shouldShowError('password') && (
+                    <p className="text-sm text-destructive flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {errors.password}
+                    </p>
+                  )}
+                </div>
+
+                {/* Company Information */}
+                <div className="border-t pt-6 mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Building2 className="h-5 w-5 text-primary" />
+                    <h4 className="text-lg font-semibold">Firmendaten</h4>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="companyName" className="text-base font-medium">Firmenname *</Label>
+                      <Input
+                        id="companyName"
+                        value={formData.companyName}
+                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                        onBlur={() => markTouched('companyName')}
+                        placeholder="z.B. Muster Handwerk GmbH"
+                        className="h-12 text-base"
+                      />
+                      {shouldShowError('companyName') && (
+                        <p className="text-sm text-destructive flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          {errors.companyName}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="companyLegalForm" className="text-base font-medium">Rechtsform</Label>
+                      <Select
+                        value={formData.companyLegalForm}
+                        onValueChange={(value) => setFormData({ ...formData, companyLegalForm: value })}
+                      >
+                        <SelectTrigger className="h-12 text-base">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
+                          <SelectItem value="gmbh">GmbH</SelectItem>
+                          <SelectItem value="ag">AG</SelectItem>
+                          <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
+                          <SelectItem value="kommanditgesellschaft">Kommanditgesellschaft</SelectItem>
+                          <SelectItem value="genossenschaft">Genossenschaft</SelectItem>
+                          <SelectItem value="verein">Verein</SelectItem>
+                          <SelectItem value="stiftung">Stiftung</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground">
+                  Mit der Registrierung erstellen wir Ihr Konto. Sie können weitere Details wie 
+                  Versicherung, UID-Nummer und Bankdaten später in Ihrem Profil ergänzen.
+                </p>
+              </div>
+            )}
           </div>
         );
 
-      case 5:
+      case 'services':
         return (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
@@ -1660,142 +937,97 @@ const HandwerkerOnboarding = () => {
                 <Briefcase className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-bold">Fachgebiete wählen</h3>
-                <p className="text-base text-muted-foreground">Ihre Spezialisierungen (optional)</p>
+                <h3 className="text-2xl font-bold">Dienstleistungen</h3>
+                <p className="text-base text-muted-foreground">Kategorien und Einsatzgebiete (optional)</p>
               </div>
             </div>
 
-            {shouldShowError('categories') && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.categories}</AlertDescription>
-              </Alert>
-            )}
-
-            <Alert className="bg-blue-50 border-blue-200">
-              <Info className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800">
-                Sie können diese Angaben auch später in Ihrem Profil ergänzen.
+            <Alert className="border-brand-300 bg-brand-50 mb-6">
+              <AlertCircle className="h-5 w-5 text-brand-600" />
+              <AlertDescription className="text-base ml-2">
+                Diese Angaben sind optional und können jederzeit in Ihrem Profil ergänzt werden.
               </AlertDescription>
             </Alert>
 
-            {/* Major Categories */}
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Hauptkategorien <span className="text-base font-normal text-muted-foreground">(optional)</span></h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {Object.values(majorCategories).map((majorCat) => {
-                  const Icon = majorCat.icon;
-                  const isSelected = selectedMajorCategories.includes(majorCat.id);
-                  
-                  return (
-                    <Card
-                      key={majorCat.id}
-                      className={cn(
-                        "cursor-pointer transition-all hover:shadow-lg hover-scale",
-                        isSelected && "ring-2 ring-brand-600 bg-brand-50 shadow-lg"
-                      )}
-                      onClick={() => {
-                        if (isSelected) {
-                          setSelectedMajorCategories(prev => 
-                            prev.filter(id => id !== majorCat.id)
-                          );
-                          setFormData(prev => ({
-                            ...prev,
-                            categories: prev.categories.filter(
-                              cat => !majorCat.subcategories.includes(cat)
-                            )
-                          }));
-                        } else {
-                          setSelectedMajorCategories(prev => [...prev, majorCat.id]);
-                        }
-                      }}
-                    >
-                      <CardContent className="p-6 text-center">
-                        <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white mx-auto mb-3 transition-transform ${isSelected ? 'scale-110' : ''}`}>
-                          <Icon className="w-8 h-8" />
-                        </div>
-                              <p className="text-sm font-semibold leading-tight">
-                                {majorCat.id === 'elektroinstallationen' ? (
-                                  <>
-                                    Elektro-
-                                    <br />
-                                    installationen
-                                  </>
-                                ) : (
-                                  majorCat.label
-                                )}
-                              </p>
-                        {isSelected && (
-                          <Badge className="mt-3 bg-brand-600">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Gewählt
-                          </Badge>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Category Selection */}
+            <Card className="border-2">
+              <CardHeader>
+                <CardTitle className="text-lg">Fachgebiete auswählen</CardTitle>
+                <CardDescription>Wählen Sie Ihre Haupt- und Unterkategorien</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {Object.entries(majorCategories).map(([majorCatId, majorCat]) => {
+                    const isExpanded = selectedMajorCategories.includes(majorCatId);
+                    const selectedSubcatCount = formData.categories.filter(cat => 
+                      majorCat.subcategories.includes(cat)
+                    ).length;
 
-            {/* Subcategories */}
-            {selectedMajorCategories.length > 0 && (
-              <div>
-                <h4 className="text-lg font-semibold mb-2">
-                  Fachgebiete <span className="text-base font-normal text-muted-foreground">(optional)</span>
-                </h4>
-                <p className="text-base text-muted-foreground mb-4">
-                  Wählen Sie spezifische Fachgebiete für gezieltere Aufträge
-                </p>
-                
-                <div className="space-y-4">
-                  {selectedMajorCategories.map(majorCatId => {
-                    const majorCat = majorCategories[majorCatId];
-                    const subcats = majorCat.subcategories
-                      .map(subId => subcategoryLabels[subId])
-                      .filter(Boolean);
-                    
                     return (
-                      <Accordion key={majorCatId} type="single" collapsible defaultValue={majorCatId}>
-                        <AccordionItem value={majorCatId} className="border-2 rounded-lg px-4">
-                          <AccordionTrigger className="text-base font-semibold hover:no-underline">
+                      <Accordion
+                        key={majorCatId}
+                        type="single"
+                        collapsible
+                        value={isExpanded ? majorCatId : undefined}
+                        onValueChange={(value) => {
+                          if (value) {
+                            setSelectedMajorCategories(prev => 
+                              prev.includes(majorCatId) ? prev : [...prev, majorCatId]
+                            );
+                          }
+                        }}
+                      >
+                        <AccordionItem value={majorCatId} className="border rounded-lg">
+                          <AccordionTrigger className="px-4 hover:no-underline">
                             <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${majorCat.color} flex items-center justify-center text-white`}>
-                                <majorCat.icon className="w-5 h-5" />
-                              </div>
-                              <span className="text-lg">{majorCat.label}</span>
-                              <Badge variant="secondary" className="ml-2">
-                                {formData.categories.filter(cat => majorCat.subcategories.includes(cat)).length} gewählt
-                              </Badge>
+                              <Checkbox
+                                checked={isExpanded}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedMajorCategories(prev => [...prev, majorCatId]);
+                                  } else {
+                                    setSelectedMajorCategories(prev => prev.filter(id => id !== majorCatId));
+                                    // Remove all subcategories of this major category
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      categories: prev.categories.filter(cat => 
+                                        !majorCat.subcategories.includes(cat)
+                                      )
+                                    }));
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <span className="font-medium">{majorCat.label}</span>
+                              {selectedSubcatCount > 0 && (
+                                <Badge variant="secondary" className="ml-2">
+                                  {selectedSubcatCount}
+                                </Badge>
+                              )}
                             </div>
                           </AccordionTrigger>
-                          <AccordionContent>
-                            <div className="flex flex-wrap gap-3 pt-4 pb-2">
-                              {subcats.map(subcat => {
-                                const isSelected = formData.categories.includes(subcat.value);
-                                
+                          <AccordionContent className="px-4 pb-4">
+                            <div className="grid grid-cols-2 gap-2 pt-2">
+                              {majorCat.subcategories.map(subcatId => {
+                                const isSelected = formData.categories.includes(subcatId);
                                 return (
-                                  <Badge
-                                    key={subcat.value}
-                                    variant={isSelected ? "default" : "outline"}
-                                    className="cursor-pointer px-4 py-2 text-sm hover-scale hover:bg-brand-100"
-                                    onClick={() => {
-                                      if (isSelected) {
+                                  <div key={subcatId} className="flex items-center gap-2">
+                                    <Checkbox
+                                      id={subcatId}
+                                      checked={isSelected}
+                                      onCheckedChange={(checked) => {
                                         setFormData(prev => ({
                                           ...prev,
-                                          categories: prev.categories.filter(id => id !== subcat.value)
+                                          categories: checked
+                                            ? [...prev.categories, subcatId]
+                                            : prev.categories.filter(c => c !== subcatId)
                                         }));
-                                      } else {
-                                        setFormData(prev => ({
-                                          ...prev,
-                                          categories: [...prev.categories, subcat.value]
-                                        }));
-                                      }
-                                    }}
-                                  >
-                                    {subcat.label}
-                                    {isSelected && <CheckCircle className="ml-2 h-3 w-3" />}
-                                  </Badge>
+                                      }}
+                                    />
+                                    <Label htmlFor={subcatId} className="text-sm cursor-pointer">
+                                      {subcategoryLabels[subcatId]?.label || subcatId}
+                                    </Label>
+                                  </div>
                                 );
                               })}
                             </div>
@@ -1805,42 +1037,26 @@ const HandwerkerOnboarding = () => {
                     );
                   })}
                 </div>
-              </div>
-            )}
+              </CardContent>
+            </Card>
 
-            {/* Service Areas - Enhanced with Canton Selection */}
-            <Card className="border-2 mt-6">
+            {/* Service Areas */}
+            <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-lg">Servicegebiet Auswahl</CardTitle>
                 <CardDescription>
-                  Wählen Sie Kantone oder spezifische Postleitzahlen (optional)
+                  Wählen Sie Kantone oder spezifische Postleitzahlen
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {shouldShowError('serviceAreas') && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>{errors.serviceAreas}</AlertDescription>
-                  </Alert>
-                )}
-
-                {/* Tabbed Selection Interface */}
-                <Tabs defaultValue="postal-codes" className="w-full">
+                <Tabs defaultValue="cantons" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="cantons">Nach Kantonen</TabsTrigger>
                     <TabsTrigger value="postal-codes">Nach PLZ</TabsTrigger>
                   </TabsList>
                   
-                  {/* Canton Selection Tab */}
                   <TabsContent value="cantons" className="space-y-4">
-                    <div className="space-y-3">
-                      <Label className="text-base font-medium">Kantone auswählen</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Wählen Sie ganze Kantone für eine breite Abdeckung
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-4">
                       {SWISS_CANTONS.map(canton => (
                         <Badge
                           key={canton.value}
@@ -1866,134 +1082,73 @@ const HandwerkerOnboarding = () => {
                     )}
                   </TabsContent>
                   
-                  {/* Postal Code Selection Tab */}
                   <TabsContent value="postal-codes" className="space-y-4">
-                    <div className="space-y-3">
-                      <Label className="text-base font-medium">Einzelne PLZ hinzufügen</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Suchen Sie nach spezifischen Postleitzahlen
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
+                    <div className="space-y-2 mt-4">
                       <PostalCodeInput
                         value={tempPostalCode}
                         onValueChange={setTempPostalCode}
-                        onAddressSelect={(address) => {
+                        onAddressSelect={() => {
                           if (tempPostalCode && tempPostalCode.length === 4) {
                             addManualPostalCode(tempPostalCode);
                           }
                         }}
-                        placeholder="z.B. 8000 (Zürich eingeben und auswählen)"
+                        placeholder="z.B. 8000"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Suchen Sie nach einer Postleitzahl und wählen Sie diese aus
-                      </p>
                     </div>
 
                     {manualPostalCodes.length > 0 && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">
-                          Hinzugefügte PLZ ({manualPostalCodes.length})
-                        </Label>
-                        <div className="flex flex-wrap gap-2 p-4 bg-muted/50 rounded-lg min-h-[60px]">
-                          {manualPostalCodes.map((code, idx) => (
-                            <Badge key={idx} variant="secondary" className="gap-1.5 pr-1.5 pl-3 py-1.5">
-                              <span>{code}</span>
-                              <X 
-                                className="h-3.5 w-3.5 cursor-pointer hover:text-destructive transition-colors" 
-                                onClick={() => removeManualPostalCode(code)}
-                              />
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {manualPostalCodes.length === 0 && (
-                      <div className="text-sm text-muted-foreground border border-dashed rounded-md p-4 text-center">
-                        Noch keine PLZ hinzugefügt
+                      <div className="flex flex-wrap gap-2 p-4 bg-muted/50 rounded-lg">
+                        {manualPostalCodes.map((code, idx) => (
+                          <Badge key={idx} variant="secondary" className="gap-1.5 pr-1.5 pl-3 py-1.5">
+                            <span>{code}</span>
+                            <X 
+                              className="h-3.5 w-3.5 cursor-pointer hover:text-destructive" 
+                              onClick={() => removeManualPostalCode(code)}
+                            />
+                          </Badge>
+                        ))}
                       </div>
                     )}
                   </TabsContent>
                 </Tabs>
 
-                {/* Unified Display - Show All Selected Areas */}
+                {/* Selected Areas Summary */}
                 {(selectedCantons.length > 0 || manualPostalCodes.length > 0) && (
                   <div className="space-y-3 pt-4 border-t">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-base font-medium">Ihre Servicegebiete</Label>
-                      <Badge variant="outline" className="text-xs">
-                        {selectedCantons.length + manualPostalCodes.length} Einträge
-                      </Badge>
-                    </div>
-
+                    <Label className="text-base font-medium">Ihre Servicegebiete</Label>
                     <div className="flex flex-wrap gap-2">
-                      {/* Display selected cantons */}
                       {selectedCantons.map(canton => (
-                        <Badge 
-                          key={canton} 
-                          variant="default" 
-                          className="gap-1.5 pr-1.5 pl-3 py-2"
-                        >
+                        <Badge key={canton} variant="default" className="gap-1.5 pr-1.5 pl-3 py-2">
                           <span className="font-semibold">{formatCantonDisplay(canton)}</span>
                           <X 
-                            className="h-3.5 w-3.5 cursor-pointer hover:text-destructive-foreground transition-colors" 
+                            className="h-3.5 w-3.5 cursor-pointer hover:text-destructive-foreground" 
                             onClick={() => removeCanton(canton)}
                           />
                         </Badge>
                       ))}
-
-                      {/* Display manual postal codes */}
                       {manualPostalCodes.map(code => (
-                        <Badge 
-                          key={code} 
-                          variant="secondary" 
-                          className="gap-1.5 pr-1.5 pl-3 py-2"
-                        >
+                        <Badge key={code} variant="secondary" className="gap-1.5 pr-1.5 pl-3 py-2">
                           <span>{code}</span>
                           <X 
-                            className="h-3.5 w-3.5 cursor-pointer hover:text-destructive transition-colors" 
+                            className="h-3.5 w-3.5 cursor-pointer hover:text-destructive" 
                             onClick={() => removeManualPostalCode(code)}
                           />
                         </Badge>
                       ))}
                     </div>
-
-                    {/* Summary Card */}
-                    <Card className="bg-muted/30">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Geschätzte Abdeckung:</span>
-                          <span className="font-semibold">
-                            {selectedCantons.length > 0 
-                              ? `~${calculatePostalCodeCount(selectedCantons)} PLZ` 
-                              : `${manualPostalCodes.length} PLZ`}
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                )}
-
-                {/* Empty State */}
-                {selectedCantons.length === 0 && manualPostalCodes.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
-                    <p className="text-sm">Noch keine Servicegebiete ausgewählt</p>
-                    <p className="text-xs mt-1">Wählen Sie Kantone oder fügen Sie PLZ hinzu</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Optional fields */}
-            <Card className="border-2 mt-6">
+            {/* Optional Additional Info */}
+            <Card className="border-2">
               <CardHeader>
                 <CardTitle className="text-lg">Zusätzliche Angaben</CardTitle>
                 <CardDescription>Optional - hilft bei der Vermittlung</CardDescription>
               </CardHeader>
               <CardContent className="space-y-5">
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Label htmlFor="bio" className="text-base font-medium">Kurze Beschreibung</Label>
                   <Textarea
                     id="bio"
@@ -2006,7 +1161,7 @@ const HandwerkerOnboarding = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <Label htmlFor="hourlyRateMin" className="text-base font-medium">Stundensatz von (CHF)</Label>
                     <Input
                       id="hourlyRateMin"
@@ -2018,7 +1173,7 @@ const HandwerkerOnboarding = () => {
                     />
                   </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <Label htmlFor="hourlyRateMax" className="text-base font-medium">Stundensatz bis (CHF)</Label>
                     <Input
                       id="hourlyRateMax"
@@ -2032,14 +1187,12 @@ const HandwerkerOnboarding = () => {
                 </div>
               </CardContent>
             </Card>
-
           </div>
         );
 
-      case 6:
+      case 'summary':
         return (
           <div className="space-y-6 animate-fade-in">
-            {/* Header */}
             <div className="flex items-center gap-3 mb-6">
               <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
                 <FileText className="h-7 w-7 text-white" />
@@ -2052,121 +1205,51 @@ const HandwerkerOnboarding = () => {
               </div>
             </div>
 
-            {/* Summary Cards */}
             <div className="space-y-4">
-              
-              {/* 1. Company Information */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">Firmeninformationen</CardTitle>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCurrentStep(1)}
-                    >
-                      Bearbeiten
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <SummaryItem label="Firmenname" value={formData.companyName} />
-                  <SummaryItem label="Rechtsform" value={legalFormLabels[formData.companyLegalForm] || formData.companyLegalForm} />
-                  <SummaryItem label="UID-Nummer" value={formData.uidNumber} />
-                  {formData.mwstNumber && (
-                    <SummaryItem label="MWST-Nummer" value={formData.mwstNumber} />
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* 2. Personal Information */}
+              {/* Contact & Company Summary */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <User className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">Persönliche Informationen</CardTitle>
+                      <CardTitle className="text-lg">Kontakt & Firma</CardTitle>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCurrentStep(2)}
-                    >
-                      Bearbeiten
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <SummaryItem label="Name" value={`${formData.firstName} ${formData.lastName}`} />
-                  <SummaryItem label="E-Mail" value={formData.email} />
-                  <SummaryItem label="Telefon" value={formData.phoneNumber} />
-                  {formData.personalAddress && (
-                    <SummaryItem 
-                      label="Adresse" 
-                      value={`${formData.personalAddress}, ${formData.personalZip} ${formData.personalCity}, ${formData.personalCanton}`} 
-                    />
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* 3. Banking Information - only show if filled */}
-              {(formData.iban || formData.bankName) && (
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Wallet className="h-5 w-5 text-primary" />
-                        <CardTitle className="text-lg">Zahlungsinformationen</CardTitle>
-                      </div>
+                    {startedAsGuest && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setCurrentStep(3)}
+                        onClick={() => setCurrentStep(1)}
                       >
                         Bearbeiten
                       </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {formData.iban && <SummaryItem label="IBAN" value={formData.iban} />}
-                    {formData.bankName && <SummaryItem label="Bank" value={formData.bankName} />}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* 4. Insurance & Licenses */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">Versicherung & Lizenzen</CardTitle>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setCurrentStep(4)}
-                    >
-                      Bearbeiten
-                    </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <SummaryItem label="Versicherungsanbieter" value={formData.liabilityInsuranceProvider} />
-                  <SummaryItem label="Gültig bis" value={formData.insuranceValidUntil} />
-                  {formData.policyNumber && (
-                    <SummaryItem label="Policennummer" value={formData.policyNumber} />
-                  )}
-                  {formData.tradeLicenseNumber && (
-                    <SummaryItem label="Gewerbelizenz" value={formData.tradeLicenseNumber} />
-                  )}
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-sm text-muted-foreground">Name</span>
+                    <span className="text-sm font-medium">{formData.firstName} {formData.lastName}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-sm text-muted-foreground">E-Mail</span>
+                    <span className="text-sm font-medium">{formData.email}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-sm text-muted-foreground">Telefon</span>
+                    <span className="text-sm font-medium">{formData.phoneNumber}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b">
+                    <span className="text-sm text-muted-foreground">Firma</span>
+                    <span className="text-sm font-medium">{formData.companyName}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-sm text-muted-foreground">Rechtsform</span>
+                    <span className="text-sm font-medium">{legalFormLabels[formData.companyLegalForm] || formData.companyLegalForm}</span>
+                  </div>
                 </CardContent>
               </Card>
 
-              {/* 5. Service Details */}
+              {/* Services Summary */}
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -2177,7 +1260,7 @@ const HandwerkerOnboarding = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCurrentStep(5)}
+                      onClick={() => setCurrentStep(startedAsGuest ? 2 : 1)}
                     >
                       Bearbeiten
                     </Button>
@@ -2186,7 +1269,7 @@ const HandwerkerOnboarding = () => {
                 <CardContent className="space-y-3">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground mb-2">Kategorien</p>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {selectedMajorCategories.length > 0 ? (
                         selectedMajorCategories.map((majorCatId) => {
                           const majorCat = majorCategories[majorCatId];
@@ -2195,35 +1278,18 @@ const HandwerkerOnboarding = () => {
                           );
                           
                           return (
-                            <div key={majorCatId} className="space-y-2">
-                              {/* Major Category Badge */}
-                              <Badge 
-                                variant="default" 
-                                className="bg-brand-600 hover:bg-brand-700 text-white font-medium"
-                              >
+                            <div key={majorCatId} className="space-y-1">
+                              <Badge variant="default" className="bg-brand-600">
                                 {majorCat.label}
                               </Badge>
-                              
-                              {/* Subcategories if any selected */}
                               {selectedSubcats.length > 0 && (
-                                <div className="flex flex-wrap gap-2 ml-4 pl-2 border-l-2 border-brand-200">
+                                <div className="flex flex-wrap gap-1 ml-4 pl-2 border-l-2 border-brand-200">
                                   {selectedSubcats.map((cat) => (
-                                    <Badge 
-                                      key={cat} 
-                                      variant="secondary"
-                                      className="text-xs"
-                                    >
+                                    <Badge key={cat} variant="secondary" className="text-xs">
                                       {subcategoryLabels[cat]?.label || cat}
                                     </Badge>
                                   ))}
                                 </div>
-                              )}
-                              
-                              {/* Message when no subcategories selected for this major category */}
-                              {selectedSubcats.length === 0 && (
-                                <p className="text-xs text-muted-foreground ml-4 pl-2 border-l-2 border-brand-200 italic">
-                                  Keine spezifischen Fachgebiete ausgewählt
-                                </p>
                               )}
                             </div>
                           );
@@ -2238,13 +1304,11 @@ const HandwerkerOnboarding = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-2">Einsatzgebiete</p>
                       <div className="flex flex-wrap gap-2">
-                        {/* Show cantons with formatting */}
                         {selectedCantons.map((canton) => (
                           <Badge key={canton} variant="default">
                             {formatCantonDisplay(canton)}
                           </Badge>
                         ))}
-                        {/* Show manual postal codes */}
                         {manualPostalCodes.map((code) => (
                           <Badge key={code} variant="secondary">
                             {code}
@@ -2255,48 +1319,29 @@ const HandwerkerOnboarding = () => {
                   )}
 
                   {(formData.hourlyRateMin || formData.hourlyRateMax) && (
-                    <SummaryItem 
-                      label="Stundenansatz" 
-                      value={`CHF ${formData.hourlyRateMin || '?'} - ${formData.hourlyRateMax || '?'}`} 
-                    />
+                    <div className="flex justify-between py-2 border-t">
+                      <span className="text-sm text-muted-foreground">Stundenansatz</span>
+                      <span className="text-sm font-medium">
+                        CHF {formData.hourlyRateMin || '?'} - {formData.hourlyRateMax || '?'}
+                      </span>
+                    </div>
                   )}
 
                   {formData.bio && (
-                    <div>
+                    <div className="pt-2 border-t">
                       <p className="text-sm font-medium text-muted-foreground mb-1">Beschreibung</p>
                       <p className="text-sm">{formData.bio}</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
-
-              {/* 6. Uploaded Documents */}
-              <Card>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">Hochgeladene Dokumente</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <DocumentStatus 
-                    label="Versicherungsnachweis" 
-                    file={uploadedFiles.insuranceDocument}
-                  />
-                  <DocumentStatus 
-                    label="Gewerbelizenz" 
-                    file={uploadedFiles.tradeLicense}
-                  />
-                </CardContent>
-              </Card>
             </div>
 
-            {/* Confirmation Alert */}
             <Alert className="border-2 border-primary/20 bg-primary/5">
               <CheckCircle className="h-5 w-5 text-primary" />
               <AlertDescription className="text-base ml-2">
-                Bitte überprüfen Sie alle Angaben sorgfältig. Nach dem Absenden 
-                wird Ihr Profil innerhalb von 1-2 Werktagen durch unser Team geprüft.
+                Nach dem Absenden wird Ihr Profil innerhalb von 1-2 Werktagen durch unser Team geprüft.
+                Sie können weitere Details wie Versicherung und Dokumente später ergänzen.
               </AlertDescription>
             </Alert>
           </div>
@@ -2307,291 +1352,293 @@ const HandwerkerOnboarding = () => {
     }
   };
 
+  // Show loading until initial auth check completes
+  if (startedAsGuest === null) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 pt-24">
+          <div className="max-w-2xl mx-auto">
+            <div className="animate-pulse space-y-6">
+              <div className="h-8 bg-muted rounded w-1/2" />
+              <div className="h-4 bg-muted rounded w-3/4" />
+              <div className="h-2 bg-muted rounded-full" />
+              <div className="h-64 bg-muted rounded" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  const stepLabels = getStepLabels();
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="pt-24 pb-12">
         <div className="container max-w-3xl mx-auto px-4">
-        {/* Mobile Sticky Progress Bar */}
-        <div className="sm:hidden sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b py-3 -mx-4 px-4 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Schritt {currentStep} von 6</span>
-            <span className="text-sm font-bold text-brand-600">{Math.round(progress)}%</span>
+          {/* Mobile Sticky Progress Bar */}
+          <div className="sm:hidden sticky top-16 z-40 bg-background/95 backdrop-blur-sm border-b py-3 -mx-4 px-4 mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Schritt {currentStep} von {totalSteps}</span>
+              <span className="text-sm font-bold text-brand-600">{Math.round(progress)}%</span>
+            </div>
+            <Progress value={progress} className="h-2" />
+            <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+              {stepLabels.map((label, idx) => (
+                <span key={idx} className={cn(
+                  idx + 1 === currentStep && "text-brand-600 font-bold",
+                  idx + 1 < currentStep && "text-primary"
+                )}>{label}</span>
+              ))}
+            </div>
           </div>
-          <Progress value={progress} className="h-2" />
-          <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
-            {['Firma', 'Person', 'Adresse', 'Vers.', 'Fach', 'Prüf.'].map((label, idx) => (
-              <span key={idx} className={cn(
-                idx + 1 === currentStep && "text-brand-600 font-bold",
-                idx + 1 < currentStep && "text-primary"
-              )}>{label}</span>
-            ))}
-          </div>
-        </div>
 
-        {/* Desktop Visual Progress Indicator */}
-        <div className="mb-8 hidden sm:block">
-          <div className="flex items-center justify-between mb-4">
-              {[1, 2, 3, 4, 5, 6].map((step) => {
-                const isCompleted = step < currentStep;
-                const isCurrent = step === currentStep;
-                const stepLabels = ['Firma', 'Person', 'Adresse', 'Versicherung', 'Fachgebiete', 'Prüfung'];
+          {/* Desktop Visual Progress Indicator */}
+          <div className="mb-8 hidden sm:block">
+            <div className="flex items-center justify-between mb-4">
+              {stepLabels.map((label, idx) => {
+                const stepNum = idx + 1;
+                const isCompleted = stepNum < currentStep;
+                const isCurrent = stepNum === currentStep;
               
-              return (
-                <div key={step} className="flex flex-col items-center flex-1">
-                  <div className={cn(
-                    "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-base md:text-lg transition-all duration-300",
-                    isCompleted && "bg-primary text-primary-foreground shadow-lg scale-110",
-                    isCurrent && "bg-brand-500 text-white shadow-xl scale-125 ring-4 ring-brand-200",
-                    !isCompleted && !isCurrent && "bg-muted text-muted-foreground"
-                  )}>
-                    {isCompleted ? <CheckCircle className="h-5 w-5 md:h-6 md:w-6" /> : step}
+                return (
+                  <div key={stepNum} className="flex flex-col items-center flex-1">
+                    <div className={cn(
+                      "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-bold text-base md:text-lg transition-all duration-300",
+                      isCompleted && "bg-primary text-primary-foreground shadow-lg scale-110",
+                      isCurrent && "bg-brand-500 text-white shadow-xl scale-125 ring-4 ring-brand-200",
+                      !isCompleted && !isCurrent && "bg-muted text-muted-foreground"
+                    )}>
+                      {isCompleted ? <CheckCircle className="h-5 w-5 md:h-6 md:w-6" /> : stepNum}
+                    </div>
+                    <p className={cn(
+                      "text-[10px] md:text-xs mt-2 font-medium text-center",
+                      isCurrent && "text-brand-600 font-bold",
+                      isCompleted && "text-primary",
+                      !isCompleted && !isCurrent && "text-muted-foreground"
+                    )}>
+                      {label}
+                    </p>
                   </div>
-                  <p className={cn(
-                    "text-[10px] md:text-xs mt-2 font-medium text-center",
-                    isCurrent && "text-brand-600 font-bold",
-                    isCompleted && "text-primary",
-                    !isCompleted && !isCurrent && "text-muted-foreground"
-                  )}>
-                    {stepLabels[step - 1]}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        <Card className="shadow-xl">
-          <CardHeader className="pb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">Handwerkerprofil erstellen</CardTitle>
-                <CardDescription className="text-base mt-1">
-                  Schritt {currentStep} von 6
-                </CardDescription>
+          <Card className="shadow-xl">
+            <CardHeader className="pb-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl">Handwerkerprofil erstellen</CardTitle>
+                  <CardDescription className="text-base mt-1">
+                    Schritt {currentStep} von {totalSteps}
+                  </CardDescription>
+                </div>
+                {lastSaved && (
+                  <p className="text-xs text-muted-foreground">
+                    Zuletzt gespeichert: {lastSaved.toLocaleTimeString('de-CH')}
+                  </p>
+                )}
               </div>
-              {lastSaved && (
-                <p className="text-xs text-muted-foreground">
-                  Zuletzt gespeichert: {lastSaved.toLocaleTimeString('de-CH')}
-                </p>
+              {localStorage.getItem(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
+                    toast({
+                      title: "Entwurf gelöscht",
+                      description: "Ihre gespeicherten Daten wurden entfernt.",
+                    });
+                    window.location.reload();
+                  }}
+                  className="text-xs text-muted-foreground hover:text-destructive mt-2"
+                >
+                  Entwurf löschen
+                </Button>
               )}
-            </div>
-            {localStorage.getItem(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
-                  toast({
-                    title: "Entwurf gelöscht",
-                    description: "Ihre gespeicherten Daten wurden entfernt.",
-                  });
-                  window.location.reload();
-                }}
-                className="text-xs text-muted-foreground hover:text-destructive mt-2"
-              >
-                Entwurf löschen
-              </Button>
-            )}
-            <div className="flex items-center justify-between mt-4">
-              <Badge variant="secondary" className="text-sm px-3 py-1">
-                {Math.round(progress)}% fertig
-              </Badge>
-            </div>
-            <Progress value={progress} className="mt-4 h-2" />
-          </CardHeader>
+              <div className="flex items-center justify-between mt-4">
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                  {Math.round(progress)}% fertig
+                </Badge>
+              </div>
+              <Progress value={progress} className="mt-4 h-2" />
+            </CardHeader>
 
-          <CardContent className="pt-6">
-            {renderStepContent()}
-          </CardContent>
+            <CardContent className="pt-6">
+              {renderStepContent()}
+            </CardContent>
 
-          <CardFooter className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t">
-            {currentStep > 1 && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                className="h-12 px-6 text-base w-full sm:flex-1 min-h-[44px]"
-                disabled={isLoading}
-              >
-                <ChevronLeft className="h-5 w-5 mr-2" />
-                Zurück
-              </Button>
-            )}
-            
-              {currentStep < 6 && (
+            <CardFooter className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6 border-t">
+              {currentStep > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  className="h-12 px-6 text-base w-full sm:flex-1 min-h-[44px]"
+                  disabled={isLoading || isCreatingAccount}
+                >
+                  <ChevronLeft className="h-5 w-5 mr-2" />
+                  Zurück
+                </Button>
+              )}
+              
+              {currentContent !== 'summary' && (
                 <Button
                   type="button"
                   onClick={handleNext}
                   className="h-12 px-6 text-base w-full sm:flex-1 min-h-[44px]"
-                  disabled={isLoading}
+                  disabled={isLoading || isCreatingAccount || (currentContent === 'contact' && showLoginForm)}
                 >
-                  {currentStep === 5 ? "Zur Zusammenfassung" : "Weiter"}
-                  <ChevronRight className="h-5 w-5 ml-2" />
+                  {isCreatingAccount ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Konto wird erstellt...
+                    </>
+                  ) : (
+                    <>
+                      {currentContent === 'contact' ? 'Konto erstellen & Weiter' : 'Weiter'}
+                      <ChevronRight className="h-5 w-5 ml-2" />
+                    </>
+                  )}
                 </Button>
               )}
               
-              {currentStep === 6 && (
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className="h-12 px-6 text-base w-full sm:flex-1 bg-brand-600 hover:bg-brand-700 min-h-[44px]"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Wird eingereicht...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    <span className="hidden sm:inline">Bestätigen & Profil einreichen</span>
-                    <span className="sm:hidden">Einreichen</span>
-                  </>
-                )}
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
+              {currentContent === 'summary' && (
+                <Button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className="h-12 px-6 text-base w-full sm:flex-1 bg-brand-600 hover:bg-brand-700 min-h-[44px]"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Wird eingereicht...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-5 w-5 mr-2" />
+                      <span className="hidden sm:inline">Profil einreichen</span>
+                      <span className="sm:hidden">Einreichen</span>
+                    </>
+                  )}
+                </Button>
+              )}
+            </CardFooter>
+          </Card>
 
-        {/* Recovery Dialog */}
-        <AlertDialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
-          <AlertDialogContent className="max-w-md">
-            <AlertDialogHeader>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-brand-600" />
-                </div>
-                <div>
-                  <AlertDialogTitle className="text-xl">Willkommen zurück!</AlertDialogTitle>
-                  <AlertDialogDescription className="text-base mt-1">
-                    Wir haben Ihren Fortschritt gespeichert
-                  </AlertDialogDescription>
-                </div>
-              </div>
-            </AlertDialogHeader>
-
-            {recoveryData && (
-              <div className="space-y-4 py-4">
-                {/* Progress Bar */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-muted-foreground">Fortschritt</p>
-                    <p className="text-sm font-bold text-brand-600">{Math.round(recoveryData.progress)}%</p>
+          {/* Recovery Dialog */}
+          <AlertDialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
+            <AlertDialogContent className="max-w-md">
+              <AlertDialogHeader>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-brand-600" />
                   </div>
-                  <Progress value={recoveryData.progress} className="h-2" />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Schritt {Math.min(recoveryData.currentStep, recoveryData.totalSteps)} von {recoveryData.totalSteps}
-                  </p>
-                </div>
-
-                {/* Last Save Time */}
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Zuletzt bearbeitet</p>
-                    <p className="text-sm font-medium">{recoveryData.lastSaveTime}</p>
+                    <AlertDialogTitle className="text-xl">Willkommen zurück!</AlertDialogTitle>
+                    <AlertDialogDescription className="text-base mt-1">
+                      Wir haben Ihren Fortschritt gespeichert
+                    </AlertDialogDescription>
                   </div>
                 </div>
+              </AlertDialogHeader>
 
-                {/* Info */}
-                <Alert className="border-brand-300 bg-brand-50">
-                  <CheckCircle className="h-4 w-4 text-brand-600" />
-                  <AlertDescription className="text-sm ml-2">
-                    Ihre Daten werden automatisch gespeichert und bleiben 7 Tage verfügbar.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
+              {recoveryData && (
+                <div className="space-y-4 py-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-muted-foreground">Fortschritt</p>
+                      <p className="text-sm font-bold text-brand-600">{Math.round(recoveryData.progress)}%</p>
+                    </div>
+                    <Progress value={recoveryData.progress} className="h-2" />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Schritt {Math.min(recoveryData.currentStep, recoveryData.totalSteps)} von {recoveryData.totalSteps}
+                    </p>
+                  </div>
 
-            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-              <Button
-                onClick={() => {
-                  // Start fresh - clear everything
-                  clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
-                  sessionStorage.removeItem('pending-recovery-data');
-                  sessionStorage.removeItem('handwerker-upload-temp-id');
-                  
-                  // Reset all state to initial values
-                  setCurrentStep(1);
-                  setFormData({
-                    firstName: "",
-                    lastName: "",
-                    email: "",
-                    phoneNumber: "",
-                    personalAddress: "",
-                    personalZip: "",
-                    personalCity: "",
-                    personalCanton: "",
-                    companyName: "",
-                    companyLegalForm: "einzelfirma",
-                    uidNumber: "",
-                    mwstNumber: "",
-                    businessAddress: "",
-                    businessZip: "",
-                    businessCity: "",
-                    businessCanton: "",
-                    sameAsPersonal: false,
-                    iban: "",
-                    bankName: "",
-                    liabilityInsuranceProvider: "",
-                    policyNumber: "",
-                    tradeLicenseNumber: "",
-                    insuranceValidUntil: "",
-                    categories: [] as string[],
-                    serviceAreas: [] as string[],
-                    hourlyRateMin: "",
-                    hourlyRateMax: "",
-                    bio: "",
-                  });
-                  setSelectedMajorCategories([]);
-                  setSelectedCantons([]);
-                  setManualPostalCodes([]);
-                  setTempPostalCode('');
-                  setUploadedFiles({});
-                  setErrors({});
-                  setTouched({});
-                  
-                  setShowRecoveryDialog(false);
-                  toast({
-                    title: "Neu gestartet",
-                    description: "Das Formular wurde zurückgesetzt.",
-                  });
-                }}
-                variant="outline"
-                className="w-full sm:w-auto"
-              >
-                Neu beginnen
-              </Button>
-              <Button
-                onClick={() => {
-                  // Load the saved data
-                  const pendingData = sessionStorage.getItem('pending-recovery-data');
-                  if (pendingData) {
-                    const parsed = JSON.parse(pendingData);
-                    setCurrentStep(parsed.currentStep || 1);
-                    setFormData(parsed.formData || formData);
-                    setSelectedMajorCategories(parsed.selectedMajorCategories || []);
-                    setErrors({}); // Clear any stale validation errors
-                    setTouched({}); // Clear touched state for fresh start
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Zuletzt bearbeitet</p>
+                      <p className="text-sm font-medium">{recoveryData.lastSaveTime}</p>
+                    </div>
+                  </div>
+
+                  <Alert className="border-brand-300 bg-brand-50">
+                    <CheckCircle className="h-4 w-4 text-brand-600" />
+                    <AlertDescription className="text-sm ml-2">
+                      Ihre Daten werden automatisch gespeichert und bleiben 7 Tage verfügbar.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+
+              <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={() => {
+                    clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
                     sessionStorage.removeItem('pending-recovery-data');
-                  }
-                  setShowRecoveryDialog(false);
-                  toast({
-                    title: "Fortschritt wiederhergestellt",
-                    description: `Sie befinden sich jetzt bei Schritt ${recoveryData?.currentStep}.`,
-                    duration: 3000,
-                  });
-                }}
-                className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700"
-              >
-                Fortfahren
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+                    
+                    setCurrentStep(1);
+                    setFormData({
+                      firstName: "",
+                      lastName: "",
+                      email: "",
+                      phoneNumber: "",
+                      password: "",
+                      companyName: "",
+                      companyLegalForm: "einzelfirma",
+                      categories: [],
+                      serviceAreas: [],
+                      hourlyRateMin: "",
+                      hourlyRateMax: "",
+                      bio: "",
+                    });
+                    setSelectedMajorCategories([]);
+                    setSelectedCantons([]);
+                    setManualPostalCodes([]);
+                    setErrors({});
+                    setTouched({});
+                    
+                    setShowRecoveryDialog(false);
+                    toast({
+                      title: "Neu gestartet",
+                      description: "Das Formular wurde zurückgesetzt.",
+                    });
+                  }}
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                >
+                  Neu beginnen
+                </Button>
+                <Button
+                  onClick={() => {
+                    const pendingData = sessionStorage.getItem('pending-recovery-data');
+                    if (pendingData) {
+                      const parsed = JSON.parse(pendingData);
+                      setCurrentStep(parsed.currentStep || 1);
+                      setFormData({ ...formData, ...parsed.formData });
+                      setSelectedMajorCategories(parsed.selectedMajorCategories || []);
+                    }
+                    sessionStorage.removeItem('pending-recovery-data');
+                    setShowRecoveryDialog(false);
+                    toast({
+                      title: "Fortschritt wiederhergestellt",
+                      description: "Ihre gespeicherten Daten wurden geladen.",
+                    });
+                  }}
+                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700"
+                >
+                  Fortsetzen
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </main>
       <Footer />
     </div>
