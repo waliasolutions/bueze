@@ -570,7 +570,10 @@ const SubmitLead = () => {
       // Description is now optional, don't require it
       if (!titleValid || !catValid) return;
     } else if (step === 2) {
-      // Budget and urgency are now optional - just proceed
+      // Budget and urgency are now optional - no blocking validation needed
+      // Just proceed to next step
+    } else if (step === 3) {
+      // Validate PLZ on Step 3 (Location step)
       const zipValid = await form.trigger('zip');
       if (!zipValid) return;
     }
@@ -832,46 +835,47 @@ const SubmitLead = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Budget & Dringlichkeit</CardTitle>
-                    <CardDescription>Geben Sie Ihr Budget und die Dringlichkeit an</CardDescription>
+                    <CardDescription>Diese Angaben sind optional und helfen Handwerkern bei der Einschätzung</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="budget_min"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Budget von (CHF)</FormLabel>
+                    <FormField
+                      control={form.control}
+                      name="budgetPreset"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Geschätztes Budget</FormLabel>
+                          <Select 
+                            onValueChange={(value) => {
+                              field.onChange(value);
+                              // Auto-set budget_min/max based on preset
+                              const preset = budgetPresets.find(p => p.value === value);
+                              if (preset) {
+                                form.setValue('budget_min', preset.min);
+                                form.setValue('budget_max', preset.max);
+                              }
+                            }} 
+                            value={field.value || 'unknown'}
+                          >
                             <FormControl>
-                              <Input 
-                                type="number" 
-                                {...field} 
-                                onChange={(e) => field.onChange(Number(e.target.value))}
-                              />
+                              <SelectTrigger>
+                                <SelectValue placeholder="Wählen Sie einen Budgetrahmen" />
+                              </SelectTrigger>
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="budget_max"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Budget bis (CHF)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                {...field} 
-                                onChange={(e) => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                            <SelectContent>
+                              {budgetPresets.map((preset) => (
+                                <SelectItem key={preset.value} value={preset.value}>
+                                  {preset.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            Falls Sie das Budget noch nicht kennen, wählen Sie "Noch unklar"
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
                     <FormField
                       control={form.control}
@@ -879,7 +883,7 @@ const SubmitLead = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Dringlichkeit</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} value={field.value || 'planning'}>
                             <FormControl>
                               <SelectTrigger>
                                 <SelectValue placeholder="Wann soll das Projekt starten?" />
