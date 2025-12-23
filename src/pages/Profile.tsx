@@ -344,18 +344,12 @@ const Profile = () => {
 
   // Subscription handlers
   const handleUpgradePlan = (planId: string) => {
-    toast({
-      title: "Upgrade wird vorbereitet",
-      description: "Sie werden zur Zahlungsseite weitergeleitet...",
-    });
-    // In real implementation, redirect to payment flow
+    navigate(`/checkout?plan=${planId}`);
   };
 
   const handleCancelSubscription = () => {
-    toast({
-      title: "Kündigung wird bearbeitet",
-      description: "Ihr Abonnement wird zum Ende der Laufzeit gekündigt.",
-    });
+    // TODO: Implement proper cancellation flow
+    navigate('/profile?tab=subscription');
   };
 
   if (loading) {
