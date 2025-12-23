@@ -820,6 +820,48 @@ export type Database = {
         }
         Relationships: []
       }
+      handwerker_service_areas: {
+        Row: {
+          created_at: string | null
+          end_plz: number
+          handwerker_id: string
+          id: string
+          label: string | null
+          start_plz: number
+        }
+        Insert: {
+          created_at?: string | null
+          end_plz: number
+          handwerker_id: string
+          id?: string
+          label?: string | null
+          start_plz: number
+        }
+        Update: {
+          created_at?: string | null
+          end_plz?: number
+          handwerker_id?: string
+          id?: string
+          label?: string | null
+          start_plz?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handwerker_service_areas_handwerker_id_fkey"
+            columns: ["handwerker_id"]
+            isOneToOne: false
+            referencedRelation: "handwerker_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handwerker_service_areas_handwerker_id_fkey"
+            columns: ["handwerker_id"]
+            isOneToOne: false
+            referencedRelation: "handwerker_profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       handwerker_subscriptions: {
         Row: {
           created_at: string

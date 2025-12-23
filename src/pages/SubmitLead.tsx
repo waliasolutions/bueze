@@ -30,14 +30,17 @@ import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 
 const leadSchema = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
-  description: z.string().min(20, 'Beschreibung muss mindestens 20 Zeichen haben'),
+  description: z.string().optional().or(z.literal('')), // Made optional for faster submission
   category: z.string().min(1, 'Bitte wählen Sie eine Kategorie'),
-  budget_min: z.number().min(100, 'Mindestbudget muss über 100 CHF sein'),
-  budget_max: z.number().min(100, 'Maximalbudget muss über 100 CHF sein'),
-  urgency: z.string().min(1, 'Bitte wählen Sie die Dringlichkeit'),
-  canton: z.string().min(1, 'Bitte wählen Sie einen Kanton'),
-  zip: z.string().min(4, 'PLZ muss mindestens 4 Zeichen haben'),
-  city: z.string().min(2, 'Stadt muss mindestens 2 Zeichen haben'),
+  // Budget is now optional with presets
+  budgetPreset: z.string().optional(),
+  budget_min: z.number().optional().nullable(),
+  budget_max: z.number().optional().nullable(),
+  urgency: z.string().optional().default('planning'),
+  // PLZ-only location - canton is auto-derived, city is display-only
+  zip: z.string().regex(/^\d{4}$/, 'PLZ muss genau 4 Ziffern haben'),
+  city: z.string().optional().or(z.literal('')), // Display only, optional
+  canton: z.string().optional().or(z.literal('')), // Auto-derived from PLZ
   address: z.string().optional(),
   contactEmail: z.string().email('Gültige E-Mail erforderlich').optional().or(z.literal('')),
   contactPhone: z.string().optional().or(z.literal('')),
@@ -47,8 +50,11 @@ const leadSchema = z.object({
   // Honeypot field - must remain empty (bots fill hidden fields)
   website: z.string().max(0, 'Spam erkannt').optional().default(''),
 }).refine((data) => {
-  // Budget validation: max should be greater than min
-  return data.budget_max >= data.budget_min;
+  // Budget validation: if both set, max should be >= min
+  if (data.budget_min && data.budget_max) {
+    return data.budget_max >= data.budget_min;
+  }
+  return true;
 }, {
   message: 'Maximalbudget muss größer oder gleich dem Mindestbudget sein',
   path: ['budget_max'],
@@ -85,6 +91,15 @@ const urgencyLevels = [
   { value: 'planning', label: 'Planung (nächste Monate)' },
 ];
 
+// Budget presets for simpler selection
+const budgetPresets = [
+  { value: 'unknown', label: 'Noch unklar', min: null, max: null },
+  { value: 'small', label: 'Unter 1\'000 CHF', min: 0, max: 1000 },
+  { value: 'medium', label: '1\'000 - 5\'000 CHF', min: 1000, max: 5000 },
+  { value: 'large', label: '5\'000 - 20\'000 CHF', min: 5000, max: 20000 },
+  { value: 'xlarge', label: 'Über 20\'000 CHF', min: 20000, max: 100000 },
+];
+
 const SubmitLead = () => {
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,9 +126,10 @@ const SubmitLead = () => {
       title: '',
       description: '',
       category: preselectedCategory || '',
-      budget_min: 500,
-      budget_max: 2000,
-      urgency: '',
+      budgetPreset: 'unknown',
+      budget_min: null,
+      budget_max: null,
+      urgency: 'planning',
       canton: '',
       zip: '',
       city: '',
@@ -484,7 +500,10 @@ const SubmitLead = () => {
         description: "Ihr Auftrag wurde erfolgreich erstellt und ist jetzt sichtbar für Handwerker.",
       });
 
-      navigate('/dashboard');
+      // Redirect to thank you page with lead title for GTM tracking
+      navigate('/auftrag-erfolgreich', { 
+        state: { leadTitle: data.title } 
+      });
     } catch (error) {
       captureException(error as Error, { 
         context: 'submitLead',
@@ -547,19 +566,13 @@ const SubmitLead = () => {
     // Validate current step before proceeding
     if (step === 1) {
       const titleValid = await form.trigger('title');
-      const descValid = await form.trigger('description');
       const catValid = await form.trigger('category');
-      if (!titleValid || !descValid || !catValid) return;
+      // Description is now optional, don't require it
+      if (!titleValid || !catValid) return;
     } else if (step === 2) {
-      const budgetMinValid = await form.trigger('budget_min');
-      const budgetMaxValid = await form.trigger('budget_max');
-      const urgencyValid = await form.trigger('urgency');
-      if (!budgetMinValid || !budgetMaxValid || !urgencyValid) return;
-    } else if (step === 3) {
-      const cantonValid = await form.trigger('canton');
+      // Budget and urgency are now optional - just proceed
       const zipValid = await form.trigger('zip');
-      const cityValid = await form.trigger('city');
-      if (!cantonValid || !zipValid || !cityValid) return;
+      if (!zipValid) return;
     }
     
     if (step < maxStep) setStep(step + 1);

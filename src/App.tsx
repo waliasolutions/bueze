@@ -40,6 +40,8 @@ const ProposalsManagement = lazy(() => import("./pages/ProposalsManagement"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Sitemap = lazy(() => import("./pages/Sitemap"));
 const HandwerkerVerzeichnis = lazy(() => import("./pages/HandwerkerVerzeichnis"));
+const LeadSubmissionSuccess = lazy(() => import("./pages/LeadSubmissionSuccess"));
+const HandwerkerRegistrationSuccess = lazy(() => import("./pages/HandwerkerRegistrationSuccess"));
 
 // Admin routes - rarely accessed, loaded separately
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -181,6 +183,10 @@ const App = () => {
                 <Route path="/test-dashboard" element={<TestDashboard />} />
                 <Route path="/magic" element={<MagicLinkHandler />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
+                
+                {/* Thank you pages (noindex for conversion tracking) */}
+                <Route path="/auftrag-erfolgreich" element={<LeadSubmissionSuccess />} />
+                <Route path="/handwerker-registrierung-erfolgreich" element={<HandwerkerRegistrationSuccess />} />
                 
                 {/* Admin routes */}
                 <Route path="/admin" element={<AdminDashboard />} />
