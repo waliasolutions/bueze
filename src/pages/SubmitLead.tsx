@@ -389,6 +389,22 @@ const SubmitLead = () => {
 
         clearRequestId('create-account');
 
+        // Check if email confirmation is required (user exists but no session)
+        if (signUpData.user && !signUpData.session) {
+          // Email confirmation is required
+          toast({
+            title: "E-Mail-Bestätigung erforderlich",
+            description: "Bitte bestätigen Sie Ihre E-Mail-Adresse und versuchen Sie es dann erneut, oder melden Sie sich an wenn Sie bereits ein Konto haben.",
+            variant: "default",
+          });
+          setShowLoginForm(true);
+          setLoginEmail(data.contactEmail);
+          setStep(4);
+          setIsSubmitting(false);
+          clearTimeout(timeoutId);
+          return;
+        }
+
         // User is already signed in after signUp, just refresh the session
         await supabase.auth.refreshSession();
 
@@ -398,7 +414,18 @@ const SubmitLead = () => {
         // Verify session is available
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          throw new Error('Session not available after signup. Please try logging in.');
+          // Session not available - likely email confirmation required
+          toast({
+            title: "E-Mail-Bestätigung erforderlich",
+            description: "Bitte bestätigen Sie Ihre E-Mail-Adresse und melden Sie sich dann an.",
+            variant: "default",
+          });
+          setShowLoginForm(true);
+          setLoginEmail(data.contactEmail);
+          setStep(4);
+          setIsSubmitting(false);
+          clearTimeout(timeoutId);
+          return;
         }
 
         user = signUpData.user;
