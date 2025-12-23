@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus, LogOut, LayoutDashboard, MessageSquare, User, FileText } from 'lucide-react';
+import { Menu, X, Plus, LogOut, LayoutDashboard } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import logo from '@/assets/bueze-logo.png';
+import { roleNavigation } from '@/config/navigation';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -297,71 +298,17 @@ export const Header = () => {
                   )}
 
                   {/* Role-specific navigation items */}
-                  {isHandwerker && !isAdmin && (
-                    <>
-                      <Link
-                        to="/handwerker-dashboard"
-                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <LayoutDashboard className="h-5 w-5" />
-                        Dashboard
-                      </Link>
-                      <Link
-                        to="/conversations"
-                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <MessageSquare className="h-5 w-5" />
-                        Nachrichten
-                      </Link>
-                      <Link
-                        to="/profile"
-                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <User className="h-5 w-5" />
-                        Profil
-                      </Link>
-                    </>
-                  )}
-
-                  {!isHandwerker && !isAdmin && (
-                    <>
-                      <Link
-                        to="/dashboard"
-                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <FileText className="h-5 w-5" />
-                        Meine Aufträge
-                      </Link>
-                      <Link
-                        to="/submit-lead"
-                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <Plus className="h-5 w-5" />
-                        Auftrag erstellen
-                      </Link>
-                      <Link
-                        to="/conversations"
-                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <MessageSquare className="h-5 w-5" />
-                        Nachrichten
-                      </Link>
-                      <Link
-                        to="/profile"
-                        className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        <User className="h-5 w-5" />
-                        Profil
-                      </Link>
-                    </>
-                  )}
+                  {!isAdmin && (isHandwerker ? roleNavigation.handwerker : roleNavigation.client).map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      className="flex items-center gap-3 py-3 px-4 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                  ))}
 
                   {isAdmin && (
                     <Link
