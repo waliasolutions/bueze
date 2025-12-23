@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -42,7 +42,7 @@ interface DeletionAuditRecord {
 }
 
 export default function DeletionAudit() {
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<DeletionAuditRecord[]>([]);
   const [filteredRecords, setFilteredRecords] = useState<DeletionAuditRecord[]>([]);
@@ -53,10 +53,10 @@ export default function DeletionAudit() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    if (isAuthorized) {
+    if (hasChecked && isAuthorized) {
       loadRecords();
     }
-  }, [isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
   useEffect(() => {
     let filtered = records;
@@ -153,7 +153,7 @@ export default function DeletionAudit() {
     setIsDetailOpen(true);
   };
 
-  if (authLoading || !isAuthorized) {
+  if ((isChecking && !hasChecked) || !isAuthorized) {
     return <PageSkeleton />;
   }
 

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { checkUserIsAdmin, upsertUserRole } from '@/lib/roleHelpers';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getCantonLabel } from '@/config/cantons';
@@ -82,7 +82,7 @@ interface Subscription {
 export default function HandwerkerManagement() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [loading, setLoading] = useState(true);
   const [handwerkers, setHandwerkers] = useState<Handwerker[]>([]);
   const [subscriptions, setSubscriptions] = useState<Map<string, Subscription>>(new Map());
@@ -96,11 +96,11 @@ export default function HandwerkerManagement() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && isAuthorized) {
+    if (hasChecked && isAuthorized) {
       fetchHandwerkers();
       fetchSubscriptions();
     }
-  }, [authLoading, isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
   const fetchHandwerkers = async () => {
     setLoading(true);
@@ -471,9 +471,9 @@ export default function HandwerkerManagement() {
     rejected: handwerkers.filter((h) => h.verification_status === 'rejected').length,
   };
 
-  const isReady = !authLoading && isAuthorized && !loading;
+  const isReady = hasChecked && isAuthorized && !loading;
 
-  if (authLoading) {
+  if (isChecking && !hasChecked) {
     return (
       <AdminLayout title="Handwerker" description="Verwalten Sie alle Handwerker-Profile">
         <ManagementPageSkeleton />

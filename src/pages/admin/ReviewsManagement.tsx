@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { Star, Eye, EyeOff, Trash2, Search, ArrowLeft, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -25,7 +25,7 @@ const ReviewsManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [reviews, setReviews] = useState<ReviewForAdmin[]>([]);
   const [filteredReviews, setFilteredReviews] = useState<ReviewForAdmin[]>([]);
@@ -34,10 +34,10 @@ const ReviewsManagement = () => {
   const [filterVisibility, setFilterVisibility] = useState<string>('all');
 
   useEffect(() => {
-    if (!authLoading && isAuthorized) {
+    if (hasChecked && isAuthorized) {
       loadReviews();
     }
-  }, [authLoading, isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
   useEffect(() => {
     applyFilters();
@@ -197,9 +197,9 @@ const ReviewsManagement = () => {
   const hiddenCount = reviews.filter(r => !r.is_public).length;
   const withResponse = reviews.filter(r => r.handwerker_response).length;
 
-  const isReady = !authLoading && isAuthorized && !isLoading;
+  const isReady = hasChecked && isAuthorized && !isLoading;
 
-  if (authLoading) {
+  if (isChecking && !hasChecked) {
     return (
       <AdminLayout title="Bewertungen verwalten" description="Übersicht und Moderation aller Plattform-Bewertungen">
         <ManagementPageSkeleton />

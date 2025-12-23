@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { 
   Users, 
   UserCheck, 
@@ -39,7 +39,7 @@ interface DashboardStats {
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [statsLoaded, setStatsLoaded] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
@@ -54,10 +54,10 @@ const AdminDashboard = () => {
   const [attentionItems, setAttentionItems] = useState<{ type: string; count: number; link: string }[]>([]);
 
   useEffect(() => {
-    if (!authLoading && isAuthorized) {
+    if (hasChecked && isAuthorized) {
       loadDashboardData();
     }
-  }, [authLoading, isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
   const loadDashboardData = async () => {
     try {
@@ -162,10 +162,10 @@ const AdminDashboard = () => {
     }
   };
 
-  // Show skeleton while checking auth - prevents layout jump
-  const isReady = !authLoading && isAuthorized && statsLoaded;
+  // Show skeleton only on first check, not on navigation
+  const isReady = hasChecked && isAuthorized && statsLoaded;
 
-  if (authLoading) {
+  if (isChecking && !hasChecked) {
     return (
       <AdminLayout title="Dashboard" description="Übersicht und Schnellzugriff">
         <DashboardSkeleton />

@@ -9,6 +9,8 @@ import { GlobalScriptManager } from "@/components/GlobalScriptManager";
 import { CookieBanner } from "@/components/CookieBanner";
 import RouteErrorBoundary from "@/components/RouteErrorBoundary";
 import PageLoader from "@/components/PageLoader";
+import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import { AdminSuspenseFallback } from "@/components/admin/AdminPageSkeleton";
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
@@ -188,21 +190,30 @@ const App = () => {
                 <Route path="/auftrag-erfolgreich" element={<LeadSubmissionSuccess />} />
                 <Route path="/handwerker-registrierung-erfolgreich" element={<HandwerkerRegistrationSuccess />} />
                 
-                {/* Admin routes */}
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/handwerkers" element={<HandwerkerManagement />} />
-                <Route path="/admin/clients" element={<ClientManagement />} />
-                <Route path="/admin/leads" element={<AdminLeadsManagement />} />
-                <Route path="/admin/approvals" element={<HandwerkerApprovals />} />
-                <Route path="/admin/users" element={<UserManagement />} />
-                <Route path="/admin/content" element={<ContentManagement />} />
-                <Route path="/admin/content/edit/:pageKey" element={<ContentEditor />} />
-                <Route path="/admin/seo" element={<SEOTools />} />
-                <Route path="/admin/seo/bulk-meta" element={<BulkMetaManager />} />
-                <Route path="/admin/gtm" element={<GTMConfiguration />} />
-                <Route path="/admin/reviews" element={<ReviewsManagement />} />
-                <Route path="/admin/payments" element={<AdminPayments />} />
+                {/* Admin routes - wrapped with AdminAuthProvider for single auth check */}
+                <Route path="/admin/*" element={
+                  <AdminAuthProvider>
+                    <Suspense fallback={<AdminSuspenseFallback />}>
+                      <Routes>
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route path="handwerkers" element={<HandwerkerManagement />} />
+                        <Route path="clients" element={<ClientManagement />} />
+                        <Route path="leads" element={<AdminLeadsManagement />} />
+                        <Route path="approvals" element={<HandwerkerApprovals />} />
+                        <Route path="users" element={<UserManagement />} />
+                        <Route path="content" element={<ContentManagement />} />
+                        <Route path="content/edit/:pageKey" element={<ContentEditor />} />
+                        <Route path="seo" element={<SEOTools />} />
+                        <Route path="seo/bulk-meta" element={<BulkMetaManager />} />
+                        <Route path="gtm" element={<GTMConfiguration />} />
+                        <Route path="reviews" element={<ReviewsManagement />} />
+                        <Route path="payments" element={<AdminPayments />} />
+                        <Route path="deletion-audit" element={<DeletionAudit />} />
+                      </Routes>
+                    </Suspense>
+                  </AdminAuthProvider>
+                } />
                 
                 {/* Legal routes */}
                 <Route path="/legal/agb" element={<AGB />} />

@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -62,16 +62,13 @@ export default function UserManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading: authLoading, isAuthorized } = useAuthGuard({
-    requiredRoles: ['super_admin'],
-    unauthorizedRedirect: '/dashboard',
-  });
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
 
   useEffect(() => {
-    if (isAuthorized) {
+    if (hasChecked && isAuthorized) {
       loadUsers();
     }
-  }, [isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
   useEffect(() => {
     // Filter users based on search query
@@ -329,7 +326,7 @@ export default function UserManagement() {
     setIsEditDialogOpen(true);
   };
 
-  if (authLoading) return <PageSkeleton />;
+  if (isChecking && !hasChecked) return <PageSkeleton />;
   if (!isAuthorized) return null;
 
   if (loading) {

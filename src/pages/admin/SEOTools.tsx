@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,7 +13,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 export default function SEOTools() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [robotsTxt, setRobotsTxt] = useState('');
   const [lastGenerated, setLastGenerated] = useState<string | null>(null);
   const [sitemapUrl, setSitemapUrl] = useState<string | null>(null);
@@ -22,12 +22,12 @@ export default function SEOTools() {
   const [settingsId, setSettingsId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthorized) {
+    if (hasChecked && isAuthorized) {
       fetchSEOSettings();
     }
-  }, [isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
-  if (authLoading) return <PageSkeleton />;
+  if (isChecking && !hasChecked) return <PageSkeleton />;
   if (!isAuthorized) return null;
 
   const fetchSEOSettings = async () => {
