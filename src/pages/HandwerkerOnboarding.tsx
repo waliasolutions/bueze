@@ -546,85 +546,128 @@ const HandwerkerOnboarding = () => {
         
         if (import.meta.env.DEV) console.log('Using existing auth account:', userId);
       } else {
-        // Normalize email before checking and signup
-        const normalizedEmail = formData.email.toLowerCase().trim();
+        // NEW USER: Use edge function for registration with auto-confirm
+        if (import.meta.env.DEV) console.log('Using edge function for new user registration...');
         
-        // Check if email already exists in profiles table before attempting signup
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', normalizedEmail)
-          .maybeSingle();
-        
-        if (existingProfile) {
-          toast({
-            title: 'E-Mail bereits registriert',
-            description: 'Ein Konto mit dieser E-Mail existiert bereits. Bitte melden Sie sich an.',
-            variant: 'destructive',
-          });
-          setTimeout(() => navigate('/auth'), 2000);
-          return;
-        }
-        
-        // Create new auth account
-        tempPassword = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10).toUpperCase() + '!';
-        if (import.meta.env.DEV) console.log('Generated temporary password');
+        // Collect all uploaded files
+        const allUploads = {
+          insuranceDocument: uploadedFiles.insuranceDocument,
+          tradeLicense: uploadedFiles.tradeLicense,
+          logo: uploadedFiles.logo,
+        };
 
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: normalizedEmail,
-          password: tempPassword,
-          options: {
-            data: {
-              first_name: formData.firstName,
-              last_name: formData.lastName,
-              full_name: `${formData.firstName} ${formData.lastName}`,
-              role: 'handwerker',
-            },
-            emailRedirectTo: `${window.location.origin}/handwerker-dashboard`,
+        // Get file URLs
+        const verificationDocuments: string[] = [];
+        let logoUrl: string | null = null;
+        
+        for (const [type, fileMetadata] of Object.entries(allUploads)) {
+          if (fileMetadata && fileMetadata.path) {
+            const { data } = supabase.storage
+              .from('handwerker-documents')
+              .getPublicUrl(fileMetadata.path);
+            
+            if (data?.publicUrl) {
+              if (type === 'logo') {
+                logoUrl = data.publicUrl;
+              } else {
+                verificationDocuments.push(data.publicUrl);
+              }
+            }
           }
-        });
+        }
 
-        if (authError) {
-          if (import.meta.env.DEV) console.error('Auth account creation error:', authError);
+        // Use personal address for business if same address is selected
+        let businessAddress = formData.businessAddress;
+        let businessZip = formData.businessZip;
+        let businessCity = formData.businessCity;
+        let businessCanton = formData.businessCanton;
+
+        if (formData.sameAsPersonal) {
+          businessAddress = formData.personalAddress;
+          businessZip = formData.personalZip;
+          businessCity = formData.personalCity;
+          businessCanton = formData.personalCanton;
+        }
+
+        // Call edge function for registration with auto-confirm
+        const { data: regData, error: regError } = await supabase.functions.invoke(
+          'create-handwerker-self-registration',
+          {
+            body: {
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              email: formData.email.toLowerCase().trim(),
+              phoneNumber: formData.phoneNumber,
+              personalAddress: formData.personalAddress,
+              personalZip: formData.personalZip,
+              personalCity: formData.personalCity,
+              personalCanton: formData.personalCanton,
+              companyName: formData.companyName,
+              companyLegalForm: formData.companyLegalForm,
+              uidNumber: formData.uidNumber,
+              mwstNumber: formData.mwstNumber,
+              businessAddress: businessAddress,
+              businessZip: businessZip,
+              businessCity: businessCity,
+              businessCanton: businessCanton,
+              iban: formData.iban,
+              bankName: formData.bankName,
+              liabilityInsuranceProvider: formData.liabilityInsuranceProvider,
+              policyNumber: formData.policyNumber,
+              tradeLicenseNumber: formData.tradeLicenseNumber,
+              insuranceValidUntil: formData.insuranceValidUntil,
+              bio: formData.bio,
+              categories: formData.categories,
+              serviceAreas: formData.serviceAreas,
+              hourlyRateMin: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
+              hourlyRateMax: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
+              verificationDocuments: verificationDocuments,
+              logoUrl: logoUrl,
+            }
+          }
+        );
+
+        if (regError) {
+          if (import.meta.env.DEV) console.error('Edge function error:', regError);
+          throw new Error(regError.message || 'Registrierung fehlgeschlagen');
+        }
+
+        if (!regData?.success) {
+          const errorMessage = regData?.error || 'Registrierung fehlgeschlagen';
+          if (import.meta.env.DEV) console.error('Registration failed:', errorMessage);
           
-          // Handle user already exists error
-          if (authError.message.includes('already registered') || authError.message.includes('User already registered')) {
+          // Handle specific error messages
+          if (errorMessage.includes('bereits registriert')) {
             toast({
               title: 'E-Mail bereits registriert',
-              description: 'Ein Konto mit dieser E-Mail existiert bereits. Bitte melden Sie sich an.',
+              description: errorMessage,
               variant: 'destructive',
             });
             setTimeout(() => navigate('/auth'), 2000);
             return;
           }
           
-          throw new Error(`Konto konnte nicht erstellt werden: ${authError.message}`);
+          throw new Error(errorMessage);
         }
 
-        if (!authData.user) {
-          throw new Error('Konto wurde erstellt, aber keine Benutzer-ID erhalten');
-        }
+        if (import.meta.env.DEV) console.log('Registration successful via edge function:', regData);
 
-        userId = authData.user.id;
-        userEmail = formData.email;
-        
-        if (import.meta.env.DEV) console.log('Auth account created successfully:', userId);
+        // Clear saved draft
+        clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
+        sessionStorage.removeItem('handwerker-upload-temp-id');
 
-        // Explicitly sign in to ensure session is established for RLS
-        if (import.meta.env.DEV) console.log('Signing in to establish session...');
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: tempPassword,
+        toast({
+          title: "Registrierung erfolgreich!",
+          description: "Ihre Zugangsdaten wurden per E-Mail versandt. Bitte überprüfen Sie Ihren Posteingang.",
+          duration: 8000,
         });
 
-        if (signInError) {
-          if (import.meta.env.DEV) console.error('SignIn error after signup:', signInError);
-          throw new Error('Anmeldung nach Registrierung fehlgeschlagen');
-        }
-
-        if (import.meta.env.DEV) console.log('User signed in successfully');
+        setIsLoading(false);
+        navigate("/auth?registered=true");
+        return; // Exit early - edge function handles everything
       }
 
+      // EXISTING AUTHENTICATED USER: Use the existing flow for profile creation
       // Use personal address for business if same address is selected
       let businessAddress = formData.businessAddress;
       let businessZip = formData.businessZip;
@@ -651,7 +694,6 @@ const HandwerkerOnboarding = () => {
       
       for (const [type, fileMetadata] of Object.entries(allUploads)) {
         if (fileMetadata && fileMetadata.path) {
-          // File was already uploaded, just get the public URL
           const { data } = supabase.storage
             .from('handwerker-documents')
             .getPublicUrl(fileMetadata.path);
@@ -666,10 +708,9 @@ const HandwerkerOnboarding = () => {
         }
       }
 
-      // Prepare insert data with safe defaults and null handling
+      // Prepare insert data
       const insertData = {
-        user_id: userId, // Link to auth user (existing or new)
-        // Personal Information - trim and convert empty to null
+        user_id: userId,
         first_name: formData.firstName?.trim() || null,
         last_name: formData.lastName?.trim() || null,
         email: formData.email?.trim() || null,
@@ -678,211 +719,86 @@ const HandwerkerOnboarding = () => {
         personal_zip: formData.personalZip?.trim() || null,
         personal_city: formData.personalCity?.trim() || null,
         personal_canton: formData.personalCanton?.trim() || null,
-        // Company Information
         company_name: formData.companyName?.trim() || null,
         company_legal_form: formData.companyLegalForm?.trim() || null,
         uid_number: formData.uidNumber?.trim() || null,
         mwst_number: formData.mwstNumber?.trim() || null,
-        // Business Address
         business_address: businessAddress?.trim() || null,
         business_zip: businessZip?.trim() || null,
         business_city: businessCity?.trim() || null,
         business_canton: businessCanton?.trim() || null,
-        // Banking (optional)
         iban: formData.iban?.trim() ? formData.iban.replace(/\s/g, "") : null,
         bank_name: formData.bankName?.trim() || null,
-        // Insurance & Licenses
         liability_insurance_provider: formData.liabilityInsuranceProvider?.trim() || null,
         liability_insurance_policy_number: formData.policyNumber?.trim() || null,
         trade_license_number: formData.tradeLicenseNumber?.trim() || null,
         insurance_valid_until: formData.insuranceValidUntil?.trim() || null,
-        // Service Details
         bio: formData.bio?.trim() || null,
-        // Fix: Ensure categories array is properly handled with safe default
-        categories: (Array.isArray(formData.categories) && formData.categories.length > 0) 
-          ? formData.categories 
-          : [] as any,
-        // Ensure service_areas has safe default empty array
-        service_areas: (Array.isArray(formData.serviceAreas) && formData.serviceAreas.length > 0) 
-          ? formData.serviceAreas 
-          : [],
+        categories: formData.categories?.length > 0 ? formData.categories : [] as any,
+        service_areas: formData.serviceAreas?.length > 0 ? formData.serviceAreas : [],
         hourly_rate_min: formData.hourlyRateMin?.trim() ? parseInt(formData.hourlyRateMin) : null,
         hourly_rate_max: formData.hourlyRateMax?.trim() ? parseInt(formData.hourlyRateMax) : null,
-        // Verification - ensure array defaults
         verification_documents: verificationDocuments.length > 0 ? verificationDocuments : [],
         verification_status: 'pending',
         is_verified: false,
         logo_url: logoUrl,
       };
 
-      if (import.meta.env.DEV) {
-        console.log('Insert data prepared:', {
-          user_id: insertData.user_id,
-          email: insertData.email,
-          categories: insertData.categories,
-          service_areas: insertData.service_areas,
-          verification_status: insertData.verification_status
-        });
-      }
-
-      // Insert handwerker_profile with user_id
-      if (import.meta.env.DEV) {
-        console.log('Attempting database insert...');
-        console.log('Insert data:', JSON.stringify(insertData, null, 2));
-      }
-      
-      const insertPromise = supabase
+      // Insert handwerker_profile
+      const { data: profileData, error } = await supabase
         .from("handwerker_profiles")
         .insert([insertData])
         .select()
         .single();
 
-      // Add timeout to detect hanging requests
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database insert timeout after 15 seconds')), 15000)
-      );
-
-      const { data: profileData, error } = await Promise.race([
-        insertPromise,
-        timeoutPromise
-      ]).catch(err => {
-        if (import.meta.env.DEV) console.error('Insert promise failed:', err);
-        return { data: null, error: err };
-      }) as any;
-
-      if (import.meta.env.DEV) {
-        console.log('Insert result - error:', error);
-        console.log('Insert result - data:', profileData);
-      }
-
       if (error) {
-        if (import.meta.env.DEV) {
-          console.error('=== DATABASE INSERT ERROR ===');
-          console.error('Error code:', error.code);
-          console.error('Error message:', error.message);
-          console.error('Error details:', error.details);
-          console.error('Error hint:', error.hint);
-        }
-        
-        // More specific and user-friendly error messages
-        if (error.code === '23505') { // Unique constraint violation
+        if (error.code === '23505') {
           if (error.message.includes('email') || error.details?.includes('email')) {
-            throw new Error('Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.');
+            throw new Error('Diese E-Mail-Adresse ist bereits registriert.');
           }
-          // Generic unique constraint (shouldn't happen after UID constraint removal)
-          throw new Error('Ein Eintrag mit diesen Daten existiert bereits. Bitte überprüfen Sie Ihre Eingaben.');
+          throw new Error('Ein Eintrag mit diesen Daten existiert bereits.');
         }
         if (error.message.includes('row-level security') || error.message.includes('policy')) {
-          throw new Error('Berechtigungsfehler: Profil konnte nicht erstellt werden. Bitte kontaktieren Sie den Support.');
-        }
-        if (error.code === '23503') { // Foreign key violation
-          throw new Error('Verknüpfungsfehler: Bitte versuchen Sie es erneut.');
+          throw new Error('Berechtigungsfehler: Profil konnte nicht erstellt werden.');
         }
         throw error;
       }
+
       if (!profileData) {
-        if (import.meta.env.DEV) console.error('=== PROFILE DATA IS NULL ===');
         throw new Error('Failed to create profile');
       }
 
-      if (import.meta.env.DEV) {
-        console.log('=== PROFILE CREATED SUCCESSFULLY ===');
-        console.log('Profile ID:', profileData.id);
-      }
-
-      // Non-blocking: Send emails in parallel (fire-and-forget for faster UX)
-      if (tempPassword) {
-        if (import.meta.env.DEV) console.log('Sending credentials email (non-blocking)...');
-        supabase.functions.invoke('send-handwerker-credentials', {
-          body: { 
-            email: userEmail,
-            password: tempPassword,
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            companyName: formData.companyName
-          }
-        }).catch(credErr => {
-          if (import.meta.env.DEV) console.error('Credentials email error (non-critical):', credErr);
-        });
-      }
-
-      // Non-blocking: Trigger admin notification email (fire-and-forget)
-      if (import.meta.env.DEV) console.log('Sending admin notification (non-blocking)...');
+      // Trigger admin notification (non-blocking)
       supabase.functions.invoke('send-admin-registration-notification', {
         body: { profileId: profileData.id }
-      }).catch(notifyErr => {
-        if (import.meta.env.DEV) console.error('Admin notification error (non-critical):', notifyErr);
-      });
+      }).catch(() => {});
 
       // Clear saved draft
       clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
       sessionStorage.removeItem('handwerker-upload-temp-id');
 
-      // If user was already logged in, just navigate without signing out
-      if (isAlreadyAuthenticated) {
-        // Non-blocking: Check if user is admin before upserting handwerker role
-        // Admins should NOT get handwerker role added (causes duplicate role issues)
-        if (import.meta.env.DEV) console.log('Checking existing roles before role assignment:', userId);
-        supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId)
-          .then(({ data: existingRoles, error: rolesError }) => {
-            if (rolesError) {
-              if (import.meta.env.DEV) console.error('Failed to check existing roles:', rolesError);
-              return;
-            }
-            
-            // Skip role upsert if user is admin or super_admin
-            const isCurrentlyAdmin = existingRoles?.some(r => 
-              r.role === 'admin' || r.role === 'super_admin'
-            );
-            
-            if (isCurrentlyAdmin) {
-              if (import.meta.env.DEV) console.log('User is admin, skipping handwerker role upsert');
-              return;
-            }
-            
-            // Non-admin user: assign handwerker role
-            if (import.meta.env.DEV) console.log('Upserting handwerker role for user (non-blocking):', userId);
+      // Non-blocking: assign handwerker role if not admin
+      supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .then(({ data: existingRoles }) => {
+          const isAdmin = existingRoles?.some(r => r.role === 'admin' || r.role === 'super_admin');
+          if (!isAdmin) {
             supabase
               .from('user_roles')
-              .upsert(
-                { user_id: userId, role: 'handwerker' },
-                { onConflict: 'user_id,role' }
-              )
-              .then(({ error: roleError }) => {
-                if (roleError) {
-                  if (import.meta.env.DEV) console.error('Failed to assign handwerker role:', roleError);
-                } else {
-                  if (import.meta.env.DEV) console.log('Handwerker role assigned successfully');
-                }
-              });
-          });
-        
-        toast({
-          title: "Profil erstellt!",
-          description: "Ihr Handwerker-Profil wurde erfolgreich erstellt.",
-          duration: 5000,
+              .upsert({ user_id: userId, role: 'handwerker' }, { onConflict: 'user_id,role' })
+              .then(() => {});
+          }
         });
-        if (import.meta.env.DEV) console.log('=== PROFILE CREATION COMPLETE ===');
-        navigate("/handwerker-dashboard");
-      } else {
-        // Sign out the newly created user
-        await supabase.auth.signOut();
-
-        toast({
-          title: "Registrierung erfolgreich!",
-          description: "Ihre Zugangsdaten wurden per E-Mail versandt.",
-          duration: 8000,
-        });
-
-        if (import.meta.env.DEV) {
-          console.log('=== REGISTRATION COMPLETE ===');
-          console.log('Navigating to auth page...');
-        }
-        navigate("/auth?registered=true");
-      }
+      
+      toast({
+        title: "Profil erstellt!",
+        description: "Ihr Handwerker-Profil wurde erfolgreich erstellt.",
+        duration: 5000,
+      });
+      
+      navigate("/handwerker-dashboard");
     } catch (error) {
       if (import.meta.env.DEV) {
         console.error('=== REGISTRATION ERROR ===');
@@ -1019,7 +935,7 @@ const HandwerkerOnboarding = () => {
               <div className="space-y-3">
                 <Label htmlFor="uidNumber" className="text-base font-medium">
                   UID-Nummer
-                  <span className="text-brand-600 ml-1" title="Für Aktivierung erforderlich">★</span>
+                  <span className="text-muted-foreground text-sm ml-1">(optional)</span>
                 </Label>
                 <Input
                   id="uidNumber"
@@ -1039,9 +955,8 @@ const HandwerkerOnboarding = () => {
                     {errors.uidNumber}
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  <span className="text-brand-600">★</span>
-                  Für die Aktivierung Ihres Kontos benötigt
+                <p className="text-sm text-muted-foreground">
+                  Falls vorhanden, kann später nachgereicht werden
                 </p>
               </div>
 

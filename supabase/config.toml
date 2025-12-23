@@ -86,3 +86,6 @@ verify_jwt = false
 
 [functions.validate-magic-token]
 verify_jwt = false
+
+[functions.create-handwerker-self-registration]
+verify_jwt = false
