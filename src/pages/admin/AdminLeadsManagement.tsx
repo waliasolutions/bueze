@@ -266,8 +266,26 @@ export default function AdminLeadsManagement() {
     return formatBudget(lead.budget_min, lead.budget_max, lead.budget_type as any);
   };
 
+  const isReady = !authLoading && isAuthorized && !loading;
+
+  if (authLoading || !isAuthorized) {
+    if (authLoading) {
+      return (
+        <AdminLayout title="Lead-Verwaltung" description="Alle Aufträge und Offerten im Überblick">
+          <div className="space-y-6">
+            <div className="flex justify-end mb-6">
+              <div className="h-10 w-32 bg-muted animate-pulse rounded" />
+            </div>
+            <TableSkeleton rows={5} columns={6} />
+          </div>
+        </AdminLayout>
+      );
+    }
+    return null;
+  }
+
   return (
-    <AdminLayout title="Lead-Verwaltung" description="Alle Aufträge und Offerten im Überblick">
+    <AdminLayout title="Lead-Verwaltung" description="Alle Aufträge und Offerten im Überblick" isLoading={!isReady}>
       <div className="flex justify-end mb-6">
         <Button onClick={fetchLeads} disabled={loading} className="shrink-0">
           <RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />

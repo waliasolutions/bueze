@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { ManagementPageSkeleton } from '@/components/admin/AdminPageSkeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAdminGuard } from '@/hooks/useAuthGuard';
 import {
-  Loader2,
   Search,
   Mail,
   Phone,
@@ -21,6 +21,7 @@ import {
   ChevronUp,
   Eye,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -242,12 +243,12 @@ export default function ClientManagement() {
   const totalLeads = clients.reduce((sum, c) => sum + c.leads_count, 0);
   const activeClients = clients.filter((c) => c.leads_count > 0).length;
 
-  if (authLoading || loading) {
+  const isReady = !authLoading && isAuthorized && !loading;
+
+  if (authLoading) {
     return (
       <AdminLayout title="Kunden" description="Verwalten Sie alle Kunden-Konten">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <ManagementPageSkeleton />
       </AdminLayout>
     );
   }
@@ -255,7 +256,7 @@ export default function ClientManagement() {
   if (!isAuthorized) return null;
 
   return (
-    <AdminLayout title="Kunden" description="Verwalten Sie alle Kunden-Konten">
+    <AdminLayout title="Kunden" description="Verwalten Sie alle Kunden-Konten" isLoading={!isReady}>
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
