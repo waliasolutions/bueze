@@ -61,19 +61,13 @@ function getMajorCategoryForSubcategory(subcategory: string): string | null {
 
 // Check if handwerker categories match lead category (including major category matching)
 function handwerkerMatchesCategory(handwerkerCategories: string[], leadCategory: string): boolean {
-  // Direct match
-  if (handwerkerCategories.includes(leadCategory)) {
-    return true;
-  }
+  if (handwerkerCategories.includes(leadCategory)) return true;
   
-  // Check if lead category is a major category
   const majorSubs = majorCategorySubcategories[leadCategory];
   if (majorSubs) {
-    // Lead is a major category - match if handwerker has any subcategory of this major
     return handwerkerCategories.some(cat => majorSubs.includes(cat));
   }
   
-  // Lead is a subcategory - check if handwerker has same major category
   const leadMajor = getMajorCategoryForSubcategory(leadCategory);
   if (leadMajor) {
     const majorSubcats = majorCategorySubcategories[leadMajor];
@@ -83,6 +77,90 @@ function handwerkerMatchesCategory(handwerkerCategories: string[], leadCategory:
   }
   
   return false;
+}
+
+// Match levels for elastic matching
+type MatchLevel = 1 | 2 | 3 | 4 | 5;
+
+interface MatchResult {
+  handwerkerIds: string[];
+  matchLevel: MatchLevel;
+  matchDescription: string;
+}
+
+// 5-Layer Elastic Matching - Single query, layered filtering
+async function findHandwerkersWithElasticMatching(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  leadPLZ: number
+): Promise<MatchResult> {
+  // Single broad query - fetch all service areas in the same regional range (8xxx)
+  const firstDigit = Math.floor(leadPLZ / 1000);
+  const broadRangeStart = firstDigit * 1000;
+  const broadRangeEnd = broadRangeStart + 999;
+  
+  const { data: allAreas, error } = await supabase
+    .from('handwerker_service_areas')
+    .select('handwerker_id, start_plz, end_plz')
+    .lte('start_plz', broadRangeEnd)
+    .gte('end_plz', broadRangeStart);
+  
+  if (error) {
+    console.error('[elastic-matching] Query error:', error.message);
+    return { handwerkerIds: [], matchLevel: 5, matchDescription: 'Datenbankfehler' };
+  }
+
+  const areas = allAreas || [];
+  console.log(`[elastic-matching] Fetched ${areas.length} service areas in ${broadRangeStart}-${broadRangeEnd} range`);
+
+  // Layer 1: Exact PLZ match
+  const exactMatches = areas.filter(sa => leadPLZ >= sa.start_plz && leadPLZ <= sa.end_plz);
+  if (exactMatches.length > 0) {
+    return {
+      handwerkerIds: [...new Set(exactMatches.map(m => m.handwerker_id))],
+      matchLevel: 1,
+      matchDescription: 'Exakte PLZ-Übereinstimmung'
+    };
+  }
+
+  // Layer 2: District (first 3 digits, e.g., 804x)
+  const districtStart = Math.floor(leadPLZ / 10) * 10;
+  const districtEnd = districtStart + 9;
+  const districtMatches = areas.filter(sa => !(sa.end_plz < districtStart || sa.start_plz > districtEnd));
+  if (districtMatches.length > 0) {
+    return {
+      handwerkerIds: [...new Set(districtMatches.map(m => m.handwerker_id))],
+      matchLevel: 2,
+      matchDescription: 'Bezirk-Übereinstimmung'
+    };
+  }
+
+  // Layer 3: Regional (first 2 digits, e.g., 80xx)
+  const regionalStart = Math.floor(leadPLZ / 100) * 100;
+  const regionalEnd = regionalStart + 99;
+  const regionalMatches = areas.filter(sa => !(sa.end_plz < regionalStart || sa.start_plz > regionalEnd));
+  if (regionalMatches.length > 0) {
+    return {
+      handwerkerIds: [...new Set(regionalMatches.map(m => m.handwerker_id))],
+      matchLevel: 3,
+      matchDescription: 'Regionale Übereinstimmung'
+    };
+  }
+
+  // Layer 4: Broad region fallback (all in 8xxx range)
+  if (areas.length > 0) {
+    return {
+      handwerkerIds: [...new Set(areas.map(m => m.handwerker_id))],
+      matchLevel: 4,
+      matchDescription: 'Erweiterte Region'
+    };
+  }
+
+  // Layer 5: Orphan - no matches
+  return {
+    handwerkerIds: [],
+    matchLevel: 5,
+    matchDescription: 'Keine Übereinstimmung - Admin benachrichtigt'
+  };
 }
 
 serve(async (req) => {
@@ -111,15 +189,12 @@ serve(async (req) => {
       throw new Error(`Lead not found: ${leadError?.message}`);
     }
 
-    // NORMALIZE PLZ - strip anything not a digit and parse as integer
     const leadPLZ = parseInt((lead.zip?.toString() || '0').replace(/\D/g, ''));
     const leadCanton = lead.canton || '';
 
     console.log(`[send-lead-notification] Lead details: category=${lead.category}, PLZ=${leadPLZ}, canton=${leadCanton}, city=${lead.city}`);
 
-    // Fetch owner profile
     const ownerProfile = await fetchClientProfile(supabase, lead.owner_id);
-
     const categoryLabel = getCategoryLabel(lead.category);
 
     // Send Admin Notification Email
@@ -157,99 +232,44 @@ serve(async (req) => {
       console.error('[send-lead-notification] Admin email failed:', adminResult.error);
     }
 
-    // BULLETPROOF MATCHING: Query handwerker_service_areas with PLZ range
-    console.log(`[send-lead-notification] Querying service areas for PLZ ${leadPLZ}...`);
-    
-    const { data: serviceAreaMatches, error: serviceAreaError } = await supabase
-      .from('handwerker_service_areas')
-      .select('handwerker_id')
-      .lte('start_plz', leadPLZ)
-      .gte('end_plz', leadPLZ);
+    // ELASTIC MATCHING: 5-layer fallback system
+    console.log(`[send-lead-notification] Running elastic matching for PLZ ${leadPLZ}...`);
+    const matchResult = await findHandwerkersWithElasticMatching(supabase, leadPLZ);
+    console.log(`[send-lead-notification] Match result: Level ${matchResult.matchLevel} - ${matchResult.matchDescription} (${matchResult.handwerkerIds.length} handwerkers)`);
 
-    if (serviceAreaError) {
-      console.error('[send-lead-notification] Error querying service areas:', serviceAreaError.message);
-    }
-
-    const matchedHandwerkerIds = new Set(
-      (serviceAreaMatches || []).map(sa => sa.handwerker_id)
-    );
-
-    console.log(`[send-lead-notification] Found ${matchedHandwerkerIds.size} handwerkers via service_areas table`);
-
-    // FALLBACK: Also check legacy service_areas column for backward compatibility
+    // Fetch all approved handwerkers to filter by category
     const { data: allHandwerkers, error: handwerkersError } = await supabase
       .from('handwerker_profiles')
-      .select('id, user_id, service_areas, categories, email, first_name, last_name, company_name')
+      .select('id, user_id, categories, email, first_name, last_name, company_name')
       .eq('verification_status', 'approved');
 
     if (handwerkersError) {
       throw new Error(`Error fetching handwerkers: ${handwerkersError.message}`);
     }
 
-    console.log(`[send-lead-notification] Found ${allHandwerkers?.length || 0} approved handwerkers total`);
+    // Filter matched handwerkers by category
+    const matchingHandwerkers = (allHandwerkers || []).filter(hw => 
+      matchResult.handwerkerIds.includes(hw.id) && 
+      handwerkerMatchesCategory(hw.categories || [], lead.category)
+    );
 
-    // Filter by category first
-    const categoryMatches = allHandwerkers?.filter(hw => {
-      const matches = handwerkerMatchesCategory(hw.categories || [], lead.category);
-      return matches;
-    }) || [];
-    
-    console.log(`[send-lead-notification] ${categoryMatches.length} handwerkers match category ${lead.category}`);
+    console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match both location AND category`);
 
-    // Filter by service area - use new table OR legacy column
-    const matchingHandwerkers = categoryMatches.filter(hw => {
-      // Check new service_areas table first
-      if (matchedHandwerkerIds.has(hw.id)) {
-        console.log(`[send-lead-notification] ✓ ${hw.company_name || hw.first_name}: matched via service_areas table`);
-        return true;
-      }
-      
-      // Fallback: check legacy service_areas column
-      const serviceAreas = hw.service_areas || [];
-      for (const area of serviceAreas) {
-        const trimmedArea = area.trim().toUpperCase();
-        
-        // Check if area is a canton code (2 uppercase letters)
-        if (/^[A-Z]{2}$/.test(trimmedArea)) {
-          // Simple canton match by lead canton
-          if (trimmedArea === leadCanton.toUpperCase()) {
-            console.log(`[send-lead-notification] ✓ ${hw.company_name || hw.first_name}: canton match ${trimmedArea}`);
-            return true;
-          }
-          continue;
-        }
-        
-        // Check for PLZ range (e.g., "8000-8999")
-        if (area.includes('-')) {
-          const [start, end] = area.split('-').map(p => parseInt(p.trim()));
-          if (!isNaN(start) && !isNaN(end) && leadPLZ >= start && leadPLZ <= end) {
-            console.log(`[send-lead-notification] ✓ ${hw.company_name || hw.first_name}: PLZ range match ${area}`);
-            return true;
-          }
-          continue;
-        }
-        
-        // Check for exact PLZ match
-        const servicePLZ = parseInt(area.trim());
-        if (!isNaN(servicePLZ) && leadPLZ === servicePLZ) {
-          console.log(`[send-lead-notification] ✓ ${hw.company_name || hw.first_name}: exact PLZ match ${area}`);
-          return true;
-        }
-      }
-      
-      return false;
-    });
+    // Determine final match level (may need to escalate if category filtering reduces matches)
+    let finalMatchLevel = matchResult.matchLevel;
+    if (matchingHandwerkers.length === 0 && matchResult.handwerkerIds.length > 0) {
+      // Had location matches but no category matches
+      finalMatchLevel = 5;
+    }
 
-    console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match both category AND service area`);
-
-    // ORPHAN LEAD FALLBACK: If no matches, create admin notification
+    // ORPHAN LEAD: Create admin notification if no matches
     if (matchingHandwerkers.length === 0) {
       console.warn(`[send-lead-notification] ⚠️ ORPHAN LEAD: No handwerkers found for PLZ ${leadPLZ}, category ${lead.category}`);
       
       await supabase.from('admin_notifications').insert({
         type: 'orphan_lead',
         title: 'Auftrag ohne Handwerker-Match',
-        message: `Keine passenden Handwerker gefunden für PLZ ${leadPLZ}, Kategorie: ${categoryLabel}`,
+        message: `Keine passenden Handwerker gefunden für PLZ ${leadPLZ}, Kategorie: ${categoryLabel}. Match-Level: ${matchResult.matchLevel}`,
         related_id: leadId,
         metadata: {
           zip: leadPLZ,
@@ -258,6 +278,8 @@ serve(async (req) => {
           category: lead.category,
           categoryLabel: categoryLabel,
           owner_email: ownerProfile?.email,
+          matchLevel: matchResult.matchLevel,
+          matchDescription: matchResult.matchDescription,
         }
       });
       
@@ -277,7 +299,6 @@ serve(async (req) => {
           continue;
         }
 
-        // Generate magic token
         const tokenResult = await createMagicToken(supabase, {
           userId: hw.user_id,
           resourceType: 'lead',
@@ -329,6 +350,8 @@ serve(async (req) => {
       success: true, 
       message: `Admin notified, ${successCount} handwerkers notified`,
       matchingHandwerkersCount: matchingHandwerkers.length,
+      matchLevel: finalMatchLevel,
+      matchDescription: matchResult.matchDescription,
       successCount,
       errorCount,
       isOrphanLead: matchingHandwerkers.length === 0,

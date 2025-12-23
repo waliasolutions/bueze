@@ -5,7 +5,7 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
-import { CheckCircle, MessageSquare, Clock, ArrowRight } from 'lucide-react';
+import { CheckCircle, MessageSquare, Clock, ArrowRight, Users, Search } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -13,10 +13,22 @@ declare global {
   }
 }
 
+// Match level messaging - SSOT for all match level text
+const matchLevelConfig: Record<number, { message: string; icon: typeof Users }> = {
+  1: { message: 'Handwerker in Ihrer direkten Umgebung wurden benachrichtigt.', icon: Users },
+  2: { message: 'Handwerker in Ihrem Bezirk wurden benachrichtigt.', icon: Users },
+  3: { message: 'Handwerker in Ihrer Region wurden benachrichtigt.', icon: Users },
+  4: { message: 'Handwerker im erweiterten Gebiet wurden benachrichtigt.', icon: Search },
+  5: { message: 'Wir suchen manuell nach dem passenden Handwerker für Sie.', icon: Search },
+};
+
 const LeadSubmissionSuccess = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const leadTitle = location.state?.leadTitle;
+  const matchLevel = (location.state?.matchLevel as number) || 1;
+
+  const matchConfig = matchLevelConfig[matchLevel] || matchLevelConfig[1];
 
   // Push GTM conversion event on mount
   useEffect(() => {
@@ -25,20 +37,10 @@ const LeadSubmissionSuccess = () => {
         event: 'conversion',
         conversionType: 'lead_submission',
         leadTitle: leadTitle || undefined,
+        matchLevel,
       });
     }
-  }, [leadTitle]);
-
-  // Redirect if accessed directly without state
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!location.state) {
-        // Still show the page but note it was accessed directly
-        console.log('[LeadSubmissionSuccess] Page accessed directly without state');
-      }
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [location.state]);
+  }, [leadTitle, matchLevel]);
 
   const steps = [
     {
@@ -79,9 +81,11 @@ const LeadSubmissionSuccess = () => {
               Vielen Dank für Ihren Auftrag!
             </h1>
             
-            <p className="text-muted-foreground text-lg">
-              Ihr Auftrag ist jetzt aktiv und sichtbar für qualifizierte Handwerker in Ihrer Region.
-            </p>
+            {/* Dynamic match level message */}
+            <div className="flex items-center justify-center gap-2 text-muted-foreground text-lg">
+              <matchConfig.icon className="w-5 h-5 text-primary" />
+              <p>{matchConfig.message}</p>
+            </div>
           </div>
 
           {/* What's Next */}
