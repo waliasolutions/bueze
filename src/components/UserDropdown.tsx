@@ -9,20 +9,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  User, 
-  Settings, 
-  LogOut, 
-  LayoutDashboard, 
-  MessageSquare, 
-  Plus,
-  ClipboardList
-} from 'lucide-react';
+import { User, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { clearVersionedData, STORAGE_KEYS } from '@/lib/localStorageVersioning';
 import { useUserRole } from '@/hooks/useUserRole';
+import { roleNavigation } from '@/config/navigation';
 import type { UserProfileBasic } from '@/types/entities';
 
 export const UserDropdown = () => {
@@ -113,6 +106,9 @@ export const UserDropdown = () => {
     );
   }
 
+  // Get navigation items based on role
+  const navItems = isHandwerker ? roleNavigation.handwerker : roleNavigation.client;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -151,40 +147,16 @@ export const UserDropdown = () => {
         
         <DropdownMenuSeparator className="bg-line-200" />
         
-        {isHandwerker ? (
-          <>
-            <DropdownMenuItem onClick={() => navigate('/handwerker-dashboard')} className="cursor-pointer">
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/conversations')} className="cursor-pointer">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              <span>Nachrichten</span>
-            </DropdownMenuItem>
-          </>
-        ) : (
-          <>
-            <DropdownMenuItem onClick={() => navigate('/dashboard')} className="cursor-pointer">
-              <ClipboardList className="mr-2 h-4 w-4" />
-              <span>Meine Aufträge</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/submit-lead')} className="cursor-pointer">
-              <Plus className="mr-2 h-4 w-4" />
-              <span>Auftrag erstellen</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/conversations')} className="cursor-pointer">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              <span>Nachrichten</span>
-            </DropdownMenuItem>
-          </>
-        )}
-        
-        <DropdownMenuSeparator className="bg-line-200" />
-        
-        <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Profil</span>
-        </DropdownMenuItem>
+        {navItems.map((item) => (
+          <DropdownMenuItem 
+            key={item.href} 
+            onClick={() => navigate(item.href)} 
+            className="cursor-pointer"
+          >
+            <item.icon className="mr-2 h-4 w-4" />
+            <span>{item.label}</span>
+          </DropdownMenuItem>
+        ))}
         
         <DropdownMenuSeparator className="bg-line-200" />
         
