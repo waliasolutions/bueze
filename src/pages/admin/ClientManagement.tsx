@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
   Search,
   Mail,
@@ -62,7 +62,7 @@ interface Lead {
 export default function ClientManagement() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -72,10 +72,10 @@ export default function ClientManagement() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && isAuthorized) {
+    if (hasChecked && isAuthorized) {
       fetchClients();
     }
-  }, [authLoading, isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -243,9 +243,9 @@ export default function ClientManagement() {
   const totalLeads = clients.reduce((sum, c) => sum + c.leads_count, 0);
   const activeClients = clients.filter((c) => c.leads_count > 0).length;
 
-  const isReady = !authLoading && isAuthorized && !loading;
+  const isReady = hasChecked && isAuthorized && !loading;
 
-  if (authLoading) {
+  if (isChecking && !hasChecked) {
     return (
       <AdminLayout title="Kunden" description="Verwalten Sie alle Kunden-Konten">
         <ManagementPageSkeleton />

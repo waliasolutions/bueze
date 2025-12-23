@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -41,7 +41,7 @@ interface PageMeta {
 }
 
 export default function BulkMetaManager() {
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const { contents, loading, refetch } = useAllPageContent();
   const { settings: siteSettings, updateSettings } = useSiteSettings();
   const [search, setSearch] = useState('');
@@ -137,7 +137,7 @@ export default function BulkMetaManager() {
     return <Badge variant="destructive">Critical</Badge>;
   };
 
-  if (authLoading || !isAuthorized) {
+  if ((isChecking && !hasChecked) || !isAuthorized) {
     return <PageSkeleton />;
   }
 

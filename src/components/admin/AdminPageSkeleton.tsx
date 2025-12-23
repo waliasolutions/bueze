@@ -120,3 +120,28 @@ export function TablePageSkeleton() {
 export function ManagementPageSkeleton() {
   return <AdminPageSkeleton showStats statsCount={3} showTable tableRows={6} showCards={false} />;
 }
+
+// Suspense fallback for lazy-loaded admin routes
+export function AdminSuspenseFallback() {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="flex">
+        {/* Sidebar skeleton */}
+        <div className="hidden lg:block w-64 border-r bg-muted/30 p-4 space-y-4">
+          <Skeleton className="h-8 w-32 mb-8" />
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+        {/* Main content skeleton */}
+        <div className="flex-1 p-4 lg:p-6">
+          <div className="mb-6">
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+          <ManagementPageSkeleton />
+        </div>
+      </div>
+    </div>
+  );
+}

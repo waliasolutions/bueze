@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
-import { useAdminGuard } from "@/hooks/useAuthGuard";
+import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2 } from "lucide-react";
 import { majorCategories } from "@/config/majorCategories";
 import { SWISS_CANTONS, getCantonLabel } from "@/config/cantons";
@@ -49,7 +49,7 @@ import type { LeadWithOwnerContact, AdminProposal } from "@/types/entities";
 
 export default function AdminLeadsManagement() {
   const navigate = useNavigate();
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [leads, setLeads] = useState<LeadWithOwnerContact[]>([]);
   const [proposals, setProposals] = useState<Record<string, AdminProposal[]>>({});
   const [loading, setLoading] = useState(true);
@@ -66,10 +66,10 @@ export default function AdminLeadsManagement() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    if (!authLoading && isAuthorized) {
+    if (hasChecked && isAuthorized) {
       fetchLeads();
     }
-  }, [authLoading, isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -266,23 +266,22 @@ export default function AdminLeadsManagement() {
     return formatBudget(lead.budget_min, lead.budget_max, lead.budget_type as any);
   };
 
-  const isReady = !authLoading && isAuthorized && !loading;
+  const isReady = hasChecked && isAuthorized && !loading;
 
-  if (authLoading || !isAuthorized) {
-    if (authLoading) {
-      return (
-        <AdminLayout title="Lead-Verwaltung" description="Alle Aufträge und Offerten im Überblick">
-          <div className="space-y-6">
-            <div className="flex justify-end mb-6">
-              <div className="h-10 w-32 bg-muted animate-pulse rounded" />
-            </div>
-            <TableSkeleton rows={5} columns={6} />
+  if (isChecking && !hasChecked) {
+    return (
+      <AdminLayout title="Lead-Verwaltung" description="Alle Aufträge und Offerten im Überblick">
+        <div className="space-y-6">
+          <div className="flex justify-end mb-6">
+            <div className="h-10 w-32 bg-muted animate-pulse rounded" />
           </div>
-        </AdminLayout>
-      );
-    }
-    return null;
+          <TableSkeleton rows={5} columns={6} />
+        </div>
+      </AdminLayout>
+    );
   }
+  
+  if (!isAuthorized) return null;
 
   return (
     <AdminLayout title="Lead-Verwaltung" description="Alle Aufträge und Offerten im Überblick" isLoading={!isReady}>

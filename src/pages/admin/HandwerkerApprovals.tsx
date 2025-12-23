@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { checkUserIsAdmin, upsertUserRole } from '@/lib/roleHelpers';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Loader2, CheckCircle, XCircle, Clock, Mail, Phone, MapPin, Briefcase, FileText, User, Building2, CreditCard, Shield, Download, AlertTriangle, Search, Filter, History, Trash2, Pencil } from 'lucide-react';
@@ -81,7 +81,7 @@ interface ApprovalHistoryEntry {
 const HandwerkerApprovals = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [pendingHandwerkers, setPendingHandwerkers] = useState<PendingHandwerker[]>([]);
   const [filteredHandwerkers, setFilteredHandwerkers] = useState<PendingHandwerker[]>([]);
@@ -96,14 +96,14 @@ const HandwerkerApprovals = () => {
   const [editFormData, setEditFormData] = useState<Partial<PendingHandwerker>>({});
 
   useEffect(() => {
-    if (isAuthorized) {
+    if (hasChecked && isAuthorized) {
       fetchPendingHandwerkers();
       fetchApprovalHistory();
       setIsLoading(false);
     }
-  }, [isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
-  if (authLoading) return <PageSkeleton />;
+  if (isChecking && !hasChecked) return <PageSkeleton />;
   if (!isAuthorized) return null;
 
   useEffect(() => {

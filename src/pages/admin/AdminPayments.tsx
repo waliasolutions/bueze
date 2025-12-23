@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useToast } from '@/hooks/use-toast';
-import { useAdminGuard } from '@/hooks/useAuthGuard';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { 
   ArrowLeft, 
@@ -99,7 +99,7 @@ const PLAN_COLORS: Record<string, string> = {
 const AdminPayments = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { loading: authLoading, isAuthorized } = useAdminGuard();
+  const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -112,13 +112,13 @@ const AdminPayments = () => {
   const [planBreakdown, setPlanBreakdown] = useState<PlanBreakdown[]>([]);
 
   useEffect(() => {
-    if (isAuthorized) {
+    if (hasChecked && isAuthorized) {
       loadData();
       setIsLoading(false);
     }
-  }, [isAuthorized]);
+  }, [hasChecked, isAuthorized]);
 
-  if (authLoading) return <PageSkeleton />;
+  if (isChecking && !hasChecked) return <PageSkeleton />;
   if (!isAuthorized) return null;
 
   const loadData = async () => {
