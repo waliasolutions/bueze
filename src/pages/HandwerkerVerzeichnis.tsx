@@ -203,6 +203,7 @@ export default function HandwerkerVerzeichnis() {
       <DynamicHelmet
         title="Handwerker-Verzeichnis | Geprüfte Fachbetriebe in der Schweiz"
         description="Finden Sie geprüfte Handwerker in Ihrer Region. Durchsuchen Sie unser Verzeichnis nach Kategorie, Kanton und Bewertungen. Kostenlos und unverbindlich."
+        robotsMeta="noindex,nofollow"
       />
 
       <div className="min-h-screen flex flex-col bg-background">
