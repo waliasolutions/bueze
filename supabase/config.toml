@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.create-handwerker-self-registration]
 verify_jwt = false
+
+[functions.submit-to-indexing]
+verify_jwt = true

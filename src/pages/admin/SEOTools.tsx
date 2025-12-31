@@ -5,10 +5,12 @@ import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Globe, Loader2 } from 'lucide-react';
+import { FileText, Globe, Loader2, Search, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function SEOTools() {
   const navigate = useNavigate();
@@ -19,7 +21,16 @@ export default function SEOTools() {
   const [sitemapUrl, setSitemapUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmittingToIndex, setIsSubmittingToIndex] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [indexableUrls, setIndexableUrls] = useState<string[]>([]);
+  const [indexingResults, setIndexingResults] = useState<{
+    success: boolean;
+    successCount?: number;
+    failCount?: number;
+    message?: string;
+    error?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -86,7 +97,6 @@ export default function SEOTools() {
 
       if (error) throw error;
 
-      // The edge function now returns JSON with url and timestamp
       if (data?.url) {
         setSitemapUrl(data.url);
       }
@@ -95,12 +105,15 @@ export default function SEOTools() {
         setLastGenerated(data.timestamp);
       }
 
+      if (data?.indexableUrls) {
+        setIndexableUrls(data.indexableUrls);
+      }
+
       toast({
         title: 'Sitemap generiert',
-        description: 'Die Sitemap wurde erfolgreich erstellt und ist verfügbar',
+        description: `${data?.urlCount || 0} URLs in der Sitemap`,
       });
 
-      // Refresh settings to get updated timestamp
       fetchSEOSettings();
     } catch (error) {
       console.error('Error generating sitemap:', error);
@@ -111,6 +124,62 @@ export default function SEOTools() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSubmitToIndexing = async () => {
+    setIsSubmittingToIndex(true);
+    setIndexingResults(null);
+
+    try {
+      // First generate sitemap to get all URLs
+      let urlsToSubmit = indexableUrls;
+      
+      if (urlsToSubmit.length === 0) {
+        const { data: sitemapData, error: sitemapError } = await supabase.functions.invoke('generate-sitemap');
+        if (sitemapError) throw sitemapError;
+        urlsToSubmit = sitemapData?.indexableUrls || [];
+        setIndexableUrls(urlsToSubmit);
+      }
+
+      if (urlsToSubmit.length === 0) {
+        throw new Error('Keine URLs zum Indexieren gefunden');
+      }
+
+      // Submit to Google Indexing API
+      const { data, error } = await supabase.functions.invoke('submit-to-indexing', {
+        body: { urls: urlsToSubmit }
+      });
+
+      if (error) throw error;
+
+      setIndexingResults(data);
+
+      if (data?.success) {
+        toast({
+          title: 'Indexierung gestartet',
+          description: `${data.successCount} URLs erfolgreich an Google gesendet`,
+        });
+      } else {
+        toast({
+          title: 'Fehler bei Indexierung',
+          description: data?.error || 'Unbekannter Fehler',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error submitting to indexing:', error);
+      setIndexingResults({
+        success: false,
+        error: error.message || 'Fehler bei der Indexierung'
+      });
+      toast({
+        title: 'Fehler',
+        description: error.message || 'URLs konnten nicht zur Indexierung gesendet werden',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingToIndex(false);
     }
   };
 
@@ -184,6 +253,80 @@ export default function SEOTools() {
                   </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Google Indexing API */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Google Indexing API
+              </CardTitle>
+              <CardDescription>
+                URLs zur sofortigen Indexierung an Google Search Console senden
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Voraussetzungen</AlertTitle>
+                <AlertDescription className="text-sm">
+                  Für die Nutzung der Google Indexing API benötigen Sie:
+                  <ul className="list-disc ml-4 mt-2 space-y-1">
+                    <li>Ein Google Cloud Projekt mit aktivierter Indexing API</li>
+                    <li>Ein Service Account mit den richtigen Berechtigungen</li>
+                    <li>Den Service Account als Inhaber in der Search Console hinzugefügt</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button 
+                  onClick={handleSubmitToIndexing} 
+                  disabled={isSubmittingToIndex}
+                  className="flex-1"
+                >
+                  {isSubmittingToIndex && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Alle öffentlichen Seiten indexieren
+                </Button>
+                
+                {indexableUrls.length > 0 && (
+                  <Badge variant="secondary" className="self-center">
+                    {indexableUrls.length} URLs verfügbar
+                  </Badge>
+                )}
+              </div>
+
+              {/* Indexing Results */}
+              {indexingResults && (
+                <div className={`p-4 rounded-lg border ${indexingResults.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    {indexingResults.success ? (
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-red-600" />
+                    )}
+                    <span className={`font-medium ${indexingResults.success ? 'text-green-800' : 'text-red-800'}`}>
+                      {indexingResults.success ? 'Indexierung erfolgreich' : 'Fehler bei Indexierung'}
+                    </span>
+                  </div>
+                  {indexingResults.success ? (
+                    <p className="text-sm text-green-700">
+                      {indexingResults.successCount} URLs erfolgreich gesendet, {indexingResults.failCount} fehlgeschlagen
+                    </p>
+                  ) : (
+                    <p className="text-sm text-red-700">
+                      {indexingResults.error || indexingResults.message}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <p className="text-sm text-muted-foreground">
+                Die Google Indexing API hat ein Tageslimit von 200 Anfragen. URLs werden priorisiert gecrawlt, 
+                aber die sofortige Indexierung ist nicht garantiert.
+              </p>
             </CardContent>
           </Card>
 

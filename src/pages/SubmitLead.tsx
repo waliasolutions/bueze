@@ -594,8 +594,7 @@ const SubmitLead = () => {
       <DynamicHelmet
         title="Auftrag erstellen - Kostenlos Handwerker finden | Büeze.ch"
         description="Erstellen Sie kostenlos einen Auftrag und erhalten Sie Offerten von geprüften Handwerkern in Ihrer Region. Schnell, einfach und unverbindlich."
-        canonical="https://bueeze.ch/submit-lead"
-        robotsMeta="index,follow"
+        robotsMeta="noindex,nofollow"
       />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
