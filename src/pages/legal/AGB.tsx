@@ -2,10 +2,17 @@ import React from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DynamicHelmet } from '@/components/DynamicHelmet';
 
 const AGB = () => {
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHelmet
+        title="Allgemeine Geschäftsbedingungen (AGB) | Büeze.ch"
+        description="Die Allgemeinen Geschäftsbedingungen für die Nutzung der Handwerker-Vermittlungsplattform Büeze.ch in der Schweiz."
+        canonical="https://bueeze.ch/legal/agb"
+        robotsMeta="index,follow"
+      />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">

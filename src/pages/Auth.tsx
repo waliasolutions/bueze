@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getUserRoles } from '@/lib/roleHelpers';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { Loader2, ArrowLeft } from 'lucide-react';
-
+import { DynamicHelmet } from '@/components/DynamicHelmet';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -223,6 +223,11 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 pt-20">
+      <DynamicHelmet
+        title="Anmelden | Büeze.ch"
+        description="Melden Sie sich bei Büeze.ch an, um Handwerker zu finden oder als Handwerker Aufträge zu erhalten."
+        robotsMeta="noindex,nofollow"
+      />
       <div className="w-full max-w-md space-y-6">
         <div className="flex items-center gap-4 mb-6">
           <Button

@@ -2,10 +2,17 @@ import React from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DynamicHelmet } from '@/components/DynamicHelmet';
 
 const Datenschutz = () => {
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHelmet
+        title="Datenschutzerklärung | Büeze.ch"
+        description="Datenschutzerklärung der Büeze GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten."
+        canonical="https://bueeze.ch/datenschutz"
+        robotsMeta="index,follow"
+      />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">

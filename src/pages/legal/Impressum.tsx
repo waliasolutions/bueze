@@ -3,10 +3,17 @@ import { Link } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DynamicHelmet } from '@/components/DynamicHelmet';
 
 const Impressum = () => {
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHelmet
+        title="Impressum | Büeze.ch"
+        description="Impressum und rechtliche Informationen zur Büeze GmbH, dem Betreiber der Handwerker-Vermittlungsplattform Büeze.ch."
+        canonical="https://bueeze.ch/impressum"
+        robotsMeta="index,follow"
+      />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-4xl mx-auto">
