@@ -1,16 +1,16 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { categoryContent } from '@/config/categoryContent';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { HowItWorks } from '@/components/HowItWorks';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { ArrowRight } from 'lucide-react';
 import { getMajorCategoryBySubcategory } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { DynamicHelmet } from '@/components/DynamicHelmet';
 import NotFound from './NotFound';
 
 const CategoryLanding = () => {
@@ -37,8 +37,23 @@ const CategoryLanding = () => {
     navigate(`/submit-lead?category=${majorCategoryId || 'bau_renovation'}`);
   };
 
+  // SEO data
+  const seoData = {
+    title: `${content.title} | Büeze.ch`,
+    description: content.description.length > 160 
+      ? content.description.substring(0, 157) + '...' 
+      : content.description,
+    canonical: `https://bueeze.ch/category/${categorySlug}`
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHelmet
+        title={seoData.title}
+        description={seoData.description}
+        canonical={seoData.canonical}
+        robotsMeta="index,follow"
+      />
       <Header />
       
       {/* Breadcrumbs */}

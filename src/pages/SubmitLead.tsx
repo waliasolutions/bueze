@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -590,6 +591,12 @@ const SubmitLead = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <DynamicHelmet
+        title="Auftrag erstellen - Kostenlos Handwerker finden | Büeze.ch"
+        description="Erstellen Sie kostenlos einen Auftrag und erhalten Sie Offerten von geprüften Handwerkern in Ihrer Region. Schnell, einfach und unverbindlich."
+        canonical="https://bueeze.ch/submit-lead"
+        robotsMeta="index,follow"
+      />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-2xl mx-auto">
