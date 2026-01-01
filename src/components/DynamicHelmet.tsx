@@ -1,5 +1,8 @@
 import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+
+const CANONICAL_DOMAIN = 'https://bueeze.ch';
 
 interface DynamicHelmetProps {
   title?: string;
@@ -19,6 +22,8 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
   schemaMarkup,
 }) => {
   const { settings } = useSiteSettings();
+  const location = useLocation();
+  
   useEffect(() => {
     // Update title with fallback to default
     const finalTitle = title || settings?.default_meta_title || 'Büeze.ch - Geprüfte Handwerker in der Schweiz finden';
@@ -64,18 +69,24 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
       updateMetaTag('robots', robotsMeta);
     }
 
-    // Update canonical link
-    if (canonical) {
-      let linkElement = document.querySelector('link[rel="canonical"]');
-      
-      if (!linkElement) {
-        linkElement = document.createElement('link');
-        linkElement.setAttribute('rel', 'canonical');
-        document.head.appendChild(linkElement);
-      }
-      
-      linkElement.setAttribute('href', canonical);
+    // Auto-generate canonical URL if not provided
+    const currentPath = location.pathname;
+    const cleanPath = currentPath.endsWith('/') && currentPath !== '/' 
+      ? currentPath.slice(0, -1) 
+      : currentPath;
+    const finalCanonical = canonical || `${CANONICAL_DOMAIN}${cleanPath}`;
+
+    // Always set canonical link
+    let linkElement = document.querySelector('link[rel="canonical"]');
+    if (!linkElement) {
+      linkElement = document.createElement('link');
+      linkElement.setAttribute('rel', 'canonical');
+      document.head.appendChild(linkElement);
     }
+    linkElement.setAttribute('href', finalCanonical);
+
+    // Also set og:url for social sharing
+    updateMetaTag('og:url', finalCanonical, true);
 
     // Inject schema markup if provided
     if (schemaMarkup) {
@@ -95,7 +106,7 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
       const defaultTitle = settings?.default_meta_title || 'Büeze.ch - Geprüfte Handwerker in der Schweiz finden';
       document.title = defaultTitle;
     };
-  }, [title, description, canonical, ogImage, robotsMeta, schemaMarkup, settings]);
+  }, [title, description, canonical, ogImage, robotsMeta, schemaMarkup, settings, location.pathname]);
 
   return null;
 };
