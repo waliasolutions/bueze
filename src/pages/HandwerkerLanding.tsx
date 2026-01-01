@@ -13,29 +13,6 @@ const HandwerkerLanding = () => {
   const navigate = useNavigate();
   const { content } = usePageContent('handwerker-landing');
 
-  const schemaMarkup = JSON.stringify({
-    "@context": "https://schema.org",
-    "@type": "Service",
-    "name": "Handwerker Aufträge finden",
-    "description": "Handwerker finden sofort – erhalten Sie Aufträge für Handwerker und vergleichen Sie Handwerker Angebote",
-    "provider": {
-      "@type": "Organization",
-      "name": "Büeze.ch",
-      "url": "https://bueeze.ch"
-    },
-    "serviceType": "Handwerker Vermittlung",
-    "areaServed": {
-      "@type": "Country",
-      "name": "Schweiz"
-    },
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "CHF",
-      "description": "Kostenlose Registrierung für Handwerker – Zugang zu unbegrenzten Aufträgen"
-    }
-  });
-
   const seoData = content?.seo || {
     title: "Als Handwerker neue Aufträge finden | Büeze.ch",
     description: "Sie möchten als Handwerker mehr Aufträge gewinnen? Registrieren Sie sich kostenlos auf Büeze.ch und erhalten Sie passende Projektanfragen aus Ihrer Region – ohne Kosten pro Kontakt.",
@@ -105,6 +82,47 @@ const HandwerkerLanding = () => {
       answer: 'Nein. Sie entscheiden selbst, welche Projekte für Sie interessant sind – es gibt keine Verpflichtung, auf jede Anfrage zu antworten. Beachten Sie jedoch: Wenn Sie nicht zeitnah reagieren, kann Ihre Anfrage je nach Dringlichkeit des Auftrags innerhalb weniger Stunden oder Tage an weitere Anbieter weitergeleitet werden. Im Dashboard sehen Sie auch die Dringlichkeit der einzelnen Aufträge, damit Sie selbst einschätzen können, welche Projekte Sie bevorzugt bearbeiten möchten. So behalten Sie volle Flexibilität, ohne Chancen zu verpassen.'
     }
   ];
+
+  // Generate FAQPage schema from faqItems
+  const faqSchemaItems = faqItems.map(item => ({
+    "@type": "Question",
+    "name": item.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": item.answer
+    }
+  }));
+
+  const schemaMarkup = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Service",
+        "name": "Handwerker Aufträge finden",
+        "description": "Handwerker finden sofort – erhalten Sie Aufträge für Handwerker und vergleichen Sie Handwerker Angebote",
+        "provider": {
+          "@type": "Organization",
+          "name": "Büeze.ch",
+          "url": "https://bueeze.ch"
+        },
+        "serviceType": "Handwerker Vermittlung",
+        "areaServed": {
+          "@type": "Country",
+          "name": "Schweiz"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "CHF",
+          "description": "Kostenlose Registrierung für Handwerker – Zugang zu unbegrenzten Aufträgen"
+        }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": faqSchemaItems
+      }
+    ]
+  });
 
   return (
     <div className="min-h-screen bg-background">

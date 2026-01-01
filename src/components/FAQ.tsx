@@ -1,7 +1,7 @@
 import React from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-const faqData = [
+export const faqData = [
   {
     category: 'Anfrage erstellen',
     questions: [

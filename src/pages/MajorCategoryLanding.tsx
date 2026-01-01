@@ -109,21 +109,51 @@ const MajorCategoryLanding = () => {
 
   const seoData = content?.seo || getFallbackSEOData();
   const introText = content?.fields?.intro || seoData.intro;
+
+  // Generate FAQPage schema
+  const faqSchemaItems = majorCategory.faq.map(item => ({
+    "@type": "Question",
+    "name": item.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": item.answer
+    }
+  }));
+
+  // Generate BreadcrumbList schema
+  const breadcrumbSchema = {
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bueeze.ch/" },
+      { "@type": "ListItem", "position": 2, "name": "Kategorien", "item": "https://bueeze.ch/kategorien" },
+      { "@type": "ListItem", "position": 3, "name": majorCategory.label }
+    ]
+  };
+
   const schemaMarkup = JSON.stringify({
     "@context": "https://schema.org",
-    "@type": "Service",
-    "name": majorCategory.label,
-    "description": introText,
-    "provider": {
-      "@type": "Organization",
-      "name": "Büeze.ch",
-      "url": "https://bueeze.ch"
-    },
-    "serviceType": majorCategory.label,
-    "areaServed": {
-      "@type": "Country",
-      "name": "Schweiz"
-    }
+    "@graph": [
+      {
+        "@type": "Service",
+        "name": majorCategory.label,
+        "description": introText,
+        "provider": {
+          "@type": "Organization",
+          "name": "Büeze.ch",
+          "url": "https://bueeze.ch"
+        },
+        "serviceType": majorCategory.label,
+        "areaServed": {
+          "@type": "Country",
+          "name": "Schweiz"
+        }
+      },
+      breadcrumbSchema,
+      {
+        "@type": "FAQPage",
+        "mainEntity": faqSchemaItems
+      }
+    ]
   });
   
   return (
@@ -197,23 +227,24 @@ const MajorCategoryLanding = () => {
               const SubIcon = Icon;
               
               return (
-                <div
+                <a
                   key={subcat.value} 
+                  href={`/category/${subcat.slug}`}
                   id={subcat.value}
-                  className="flex items-center gap-4 p-4 rounded-lg border border-border bg-white scroll-mt-24"
+                  className="flex items-center gap-4 p-4 rounded-lg border border-border bg-white scroll-mt-24 hover:border-brand-500 hover:shadow-md transition-all duration-200 group"
                 >
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0`}>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0 group-hover:scale-105 transition-transform`}>
                     <SubIcon className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-ink-900 text-base">
+                    <h3 className="font-semibold text-ink-900 text-base group-hover:text-brand-600 transition-colors">
                       {subcat.label}
                     </h3>
                     <p className="text-sm text-ink-600 mt-0.5 line-clamp-1">
                       {subcat.shortDescription || 'Professionelle Dienstleistung'}
                     </p>
                   </div>
-                </div>
+                </a>
               );
             })}
           </div>

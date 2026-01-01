@@ -16,6 +16,38 @@ const PricingPage = () => {
     description: "Einfache und faire Preise für Handwerksbetriebe. Starten Sie kostenlos mit 5 Offerten pro Monat oder wählen Sie ein Abo für unbegrenzte Projektanfragen.",
     canonical: "https://bueeze.ch/pricing"
   };
+
+  // Pricing FAQ items
+  const pricingFaqItems = [
+    { question: 'Was bedeutet "Offerten pro Monat"?', answer: 'Das ist die Anzahl Offerten, die Sie pro Monat einreichen können. Free-Nutzer: 5 Offerten/Monat. Abo-Nutzer: Unbegrenzte Offerten. Am 1. des Monats wird das Kontingent zurückgesetzt.' },
+    { question: 'Wie erhalte ich die Kontaktdaten?', answer: 'Nur wenn der Kunde Ihre Offerte akzeptiert. Dann erhalten beide Seiten gleichzeitig die vollständigen Kontaktdaten (Name, Telefon, E-Mail, Adresse) – ohne Zusatzkosten.' },
+    { question: 'Was passiert nach 10 Tagen?', answer: 'Jede Anfrage hat eine 10-Tage-Frist für Offerten. Nach Ablauf können keine neuen Offerten mehr eingereicht werden. Der Kunde kann aber weiterhin bereits eingereichte Offerten prüfen und annehmen.' },
+    { question: 'Sieht der Kunde meine Kontaktdaten vor der Annahme?', answer: 'Nein. Vor der Annahme sieht der Kunde nur Ihre Stadt, Ihre Bewertungen und Ihre Offerte (Preis, Zeitrahmen, Nachricht). Erst nach Annahme werden die vollständigen Kontaktdaten beider Seiten ausgetauscht.' },
+    { question: 'Kann ich mein Abo jederzeit wechseln?', answer: 'Ja, Sie können jederzeit upgraden. Bei einem Downgrade gilt die Änderung ab der nächsten Abrechnungsperiode.' },
+    { question: 'Gibt es versteckte Kosten?', answer: 'Nein. Alle Preise sind transparent. Sie zahlen nur für das gewählte Abo, nicht pro Kontakt oder Offerte.' },
+    { question: 'Wie funktioniert die Zahlung?', answer: 'Zahlungen erfolgen sicher per Kreditkarte. Ihr Abo wird automatisch verlängert, Sie können aber jederzeit kündigen.' }
+  ];
+
+  // Generate FAQPage schema
+  const faqSchemaItems = pricingFaqItems.map(item => ({
+    "@type": "Question",
+    "name": item.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": item.answer
+    }
+  }));
+
+  const schemaMarkup = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "FAQPage",
+        "mainEntity": faqSchemaItems
+      }
+    ]
+  });
+
   const plans = [
     SUBSCRIPTION_PLANS.free,
     SUBSCRIPTION_PLANS.monthly,
@@ -31,6 +63,7 @@ const PricingPage = () => {
         canonical={seoData.canonical}
         robotsMeta={seoData.robots}
         ogImage={seoData.og_image}
+        schemaMarkup={schemaMarkup}
       />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">

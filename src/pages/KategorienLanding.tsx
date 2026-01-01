@@ -21,6 +21,37 @@ const KategorienLanding = () => {
     canonical: "https://bueeze.ch/kategorien"
   };
 
+  // FAQ items for this page
+  const kategorienFaqItems = [
+    { question: 'Ist die Nutzung von Büeze.ch wirklich kostenlos?', answer: 'Ja, für Auftraggeber ist die Nutzung völlig kostenlos und unverbindlich. Sie erstellen Ihre Anfrage ohne Kosten und erhalten mehrere Offerten. Sie bezahlen nur den Handwerker für die ausgeführten Arbeiten – direkt mit ihm abgerechnet.' },
+    { question: 'Wie schnell erhalte ich Offerten?', answer: 'In der Regel melden sich die ersten Handwerker innert 24 Stunden nach Ihrer Anfrage. Je nach Kategorie, Dringlichkeit und Region kann es manchmal schneller gehen. Bei dringenden Projekten empfehlen wir, dies in der Anfrage zu vermerken.' },
+    { question: 'Sind die Handwerker geprüft?', answer: 'Ja, alle registrierten Handwerker durchlaufen unseren Prüfungsprozess. Wir prüfen Gewerbeberechtigung, Qualifikationen und in vielen Fällen auch Referenzen. Nur geprüfte Handwerker können auf der Plattform aktiv werden.' },
+    { question: 'Muss ich alle Offerten annehmen?', answer: 'Nein, Sie entscheiden völlig frei, mit welchem Handwerker Sie zusammenarbeiten möchten. Es gibt keine Verpflichtung, eine Offerte anzunehmen. Vergleichen Sie in Ruhe und wählen Sie den Anbieter, der am besten zu Ihrem Projekt passt.' },
+    { question: 'Was passiert nach meiner Anfrage?', answer: 'Nach dem Absenden Ihrer Anfrage wird diese an qualifizierte Handwerker in Ihrer Region weitergeleitet. Interessierte Handwerker kontaktieren Sie direkt über die Plattform. Sie können dann Details besprechen, Fragen klären und konkrete Offerten einholen.' },
+    { question: 'Kann ich auch für dringende Projekte Handwerker finden?', answer: 'Ja, geben Sie bei Ihrer Anfrage die Dringlichkeit an. Viele Handwerker auf unserer Plattform bieten auch Notfall-Services und Express-Termine an. Bei sehr dringenden Anfragen werden priorisiert Handwerker benachrichtigt, die kurzfristig verfügbar sind.' },
+    { question: 'In welchen Regionen ist Büeze.ch aktiv?', answer: 'Büeze.ch vermittelt Handwerker schweizweit und baut das Netzwerk in allen Kantonen stetig aus. Ob in Zürich, Basel, Bern, Luzern oder ländlichen Regionen – geben Sie Ihre Anfrage ein, und Sie sehen sofort verfügbare Handwerker in Ihrer Nähe. Je nach Region kann die Anzahl verfügbarer Fachbetriebe variieren.' }
+  ];
+
+  // Generate FAQPage schema
+  const faqSchemaItems = kategorienFaqItems.map(item => ({
+    "@type": "Question",
+    "name": item.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": item.answer
+    }
+  }));
+
+  const schemaMarkup = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "FAQPage",
+        "mainEntity": faqSchemaItems
+      }
+    ]
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
@@ -29,6 +60,7 @@ const KategorienLanding = () => {
         canonical={seoData.canonical}
         robotsMeta={seoData.robots}
         ogImage={seoData.og_image}
+        schemaMarkup={schemaMarkup}
       />
       <Header />
       
