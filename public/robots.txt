@@ -44,10 +44,11 @@ Disallow: /api/
 # Allow public pages
 Allow: /
 Allow: /handwerker
-Allow: /kategorie/
-Allow: /agb
+Allow: /kategorien/
+Allow: /category/
+Allow: /legal/agb
 Allow: /impressum
 Allow: /datenschutz
-Allow: /preise
+Allow: /pricing
 
 Sitemap: https://bueeze.ch/sitemap.xml

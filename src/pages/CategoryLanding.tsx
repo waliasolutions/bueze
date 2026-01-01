@@ -46,6 +46,38 @@ const CategoryLanding = () => {
     canonical: `https://bueeze.ch/category/${categorySlug}`
   };
 
+  // Generate FAQPage schema
+  const faqSchemaItems = content.faq.map(item => ({
+    "@type": "Question",
+    "name": item.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": item.answer
+    }
+  }));
+
+  // Generate BreadcrumbList schema
+  const breadcrumbSchema = {
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bueeze.ch/" },
+      { "@type": "ListItem", "position": 2, "name": "Kategorien", "item": "https://bueeze.ch/kategorien" },
+      ...(majorCategory ? [{ "@type": "ListItem", "position": 3, "name": majorCategory.label, "item": `https://bueeze.ch/kategorien/${majorCategory.slug}` }] : []),
+      { "@type": "ListItem", "position": majorCategory ? 4 : 3, "name": subcategoryInfo?.label || content.title }
+    ]
+  };
+
+  const schemaMarkup = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      breadcrumbSchema,
+      {
+        "@type": "FAQPage",
+        "mainEntity": faqSchemaItems
+      }
+    ]
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
@@ -53,6 +85,7 @@ const CategoryLanding = () => {
         description={seoData.description}
         canonical={seoData.canonical}
         robotsMeta="index,follow"
+        schemaMarkup={schemaMarkup}
       />
       <Header />
       

@@ -2,7 +2,7 @@ import React from 'react';
 import { Header } from '@/components/Header';
 import { Hero } from '@/components/Hero';
 import { HowItWorks } from '@/components/HowItWorks';
-import { FAQ } from '@/components/FAQ';
+import { FAQ, faqData } from '@/components/FAQ';
 import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { usePageContent } from '@/hooks/usePageContent';
@@ -11,6 +11,19 @@ import { MobileStickyFooter } from '@/components/MobileStickyFooter';
 const Index = () => {
   const { content } = usePageContent('homepage');
   const { content: heroContent, loading: heroLoading } = usePageContent('homepage_hero');
+  
+  // Generate FAQPage schema from FAQ data
+  const faqSchemaItems = faqData.flatMap(category => 
+    category.questions.map(item => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.a
+      }
+    }))
+  );
+
   const schemaMarkup = JSON.stringify({
     "@context": "https://schema.org",
     "@graph": [
@@ -33,8 +46,22 @@ const Index = () => {
         "description": "Handwerker Portal für die Schweiz – verbindet Auftraggeber mit geprüften Handwerkern",
         "address": {
           "@type": "PostalAddress",
-          "addressCountry": "CH"
+          "addressCountry": "CH",
+          "addressLocality": "Schweiz"
+        },
+        "areaServed": {
+          "@type": "Country",
+          "name": "Switzerland"
+        },
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer service",
+          "availableLanguage": "German"
         }
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": faqSchemaItems
       }
     ]
   });
