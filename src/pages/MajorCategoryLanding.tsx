@@ -5,15 +5,14 @@ import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { usePageContent } from '@/hooks/usePageContent';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
-import { categoryContent } from '@/config/categoryContent';
 import { HowItWorks } from '@/components/HowItWorks';
 import NotFound from './NotFound';
+import { generateFAQSchema, generateBreadcrumbSchema, generateServiceSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const MajorCategoryLanding = () => {
   const { majorCategorySlug } = useParams();
@@ -110,51 +109,16 @@ const MajorCategoryLanding = () => {
   const seoData = content?.seo || getFallbackSEOData();
   const introText = content?.fields?.intro || seoData.intro;
 
-  // Generate FAQPage schema
-  const faqSchemaItems = majorCategory.faq.map(item => ({
-    "@type": "Question",
-    "name": item.question,
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": item.answer
-    }
-  }));
-
-  // Generate BreadcrumbList schema
-  const breadcrumbSchema = {
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://bueeze.ch/" },
-      { "@type": "ListItem", "position": 2, "name": "Kategorien", "item": "https://bueeze.ch/kategorien" },
-      { "@type": "ListItem", "position": 3, "name": majorCategory.label }
-    ]
-  };
-
-  const schemaMarkup = JSON.stringify({
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Service",
-        "name": majorCategory.label,
-        "description": introText,
-        "provider": {
-          "@type": "Organization",
-          "name": "Büeze.ch",
-          "url": "https://bueeze.ch"
-        },
-        "serviceType": majorCategory.label,
-        "areaServed": {
-          "@type": "Country",
-          "name": "Schweiz"
-        }
-      },
-      breadcrumbSchema,
-      {
-        "@type": "FAQPage",
-        "mainEntity": faqSchemaItems
-      }
-    ]
-  });
+  // Generate schema markup using helpers
+  const schemaMarkup = wrapInGraph(
+    generateServiceSchema(majorCategory.label, introText),
+    generateBreadcrumbSchema([
+      { name: "Home", url: "https://bueeze.ch/" },
+      { name: "Kategorien", url: "https://bueeze.ch/kategorien" },
+      { name: majorCategory.label }
+    ]),
+    generateFAQSchema(majorCategory.faq)
+  );
   
   return (
     <div className="min-h-screen bg-background">
@@ -227,24 +191,23 @@ const MajorCategoryLanding = () => {
               const SubIcon = Icon;
               
               return (
-                <a
+                <div
                   key={subcat.value} 
-                  href={`/category/${subcat.slug}`}
                   id={subcat.value}
-                  className="flex items-center gap-4 p-4 rounded-lg border border-border bg-white scroll-mt-24 hover:border-brand-500 hover:shadow-md transition-all duration-200 group"
+                  className="flex items-center gap-4 p-4 rounded-lg border border-border bg-white scroll-mt-24"
                 >
-                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                  <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${majorCategory.color} flex items-center justify-center text-white flex-shrink-0`}>
                     <SubIcon className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-ink-900 text-base group-hover:text-brand-600 transition-colors">
+                    <h3 className="font-semibold text-ink-900 text-base">
                       {subcat.label}
                     </h3>
                     <p className="text-sm text-ink-600 mt-0.5 line-clamp-1">
                       {subcat.shortDescription || 'Professionelle Dienstleistung'}
                     </p>
                   </div>
-                </a>
+                </div>
               );
             })}
           </div>

@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
+import { generateFAQSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const PricingPage = () => {
   const { content } = usePageContent('pricing');
@@ -28,25 +29,8 @@ const PricingPage = () => {
     { question: 'Wie funktioniert die Zahlung?', answer: 'Zahlungen erfolgen sicher per Kreditkarte. Ihr Abo wird automatisch verlängert, Sie können aber jederzeit kündigen.' }
   ];
 
-  // Generate FAQPage schema
-  const faqSchemaItems = pricingFaqItems.map(item => ({
-    "@type": "Question",
-    "name": item.question,
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": item.answer
-    }
-  }));
-
-  const schemaMarkup = JSON.stringify({
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "FAQPage",
-        "mainEntity": faqSchemaItems
-      }
-    ]
-  });
+  // Generate schema markup using helper
+  const schemaMarkup = wrapInGraph(generateFAQSchema(pricingFaqItems));
 
   const plans = [
     SUBSCRIPTION_PLANS.free,

@@ -10,6 +10,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { ArrowRight, CheckCircle, Clipboard, Users, Shield, Clock, Award, MapPin } from 'lucide-react';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { generateFAQSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const KategorienLanding = () => {
   const navigate = useNavigate();
@@ -32,25 +33,8 @@ const KategorienLanding = () => {
     { question: 'In welchen Regionen ist Büeze.ch aktiv?', answer: 'Büeze.ch vermittelt Handwerker schweizweit und baut das Netzwerk in allen Kantonen stetig aus. Ob in Zürich, Basel, Bern, Luzern oder ländlichen Regionen – geben Sie Ihre Anfrage ein, und Sie sehen sofort verfügbare Handwerker in Ihrer Nähe. Je nach Region kann die Anzahl verfügbarer Fachbetriebe variieren.' }
   ];
 
-  // Generate FAQPage schema
-  const faqSchemaItems = kategorienFaqItems.map(item => ({
-    "@type": "Question",
-    "name": item.question,
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": item.answer
-    }
-  }));
-
-  const schemaMarkup = JSON.stringify({
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "FAQPage",
-        "mainEntity": faqSchemaItems
-      }
-    ]
-  });
+  // Generate schema markup using helper
+  const schemaMarkup = wrapInGraph(generateFAQSchema(kategorienFaqItems));
 
   return (
     <div className="min-h-screen bg-background">

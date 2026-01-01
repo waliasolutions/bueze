@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Target, Coins, LayoutDashboard, ShieldCheck, UserPlus, ClipboardCheck, Briefcase, ArrowRight } from 'lucide-react';
+import { generateFAQSchema, generateServiceSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const HandwerkerLanding = () => {
   const navigate = useNavigate();
@@ -83,46 +84,11 @@ const HandwerkerLanding = () => {
     }
   ];
 
-  // Generate FAQPage schema from faqItems
-  const faqSchemaItems = faqItems.map(item => ({
-    "@type": "Question",
-    "name": item.question,
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": item.answer
-    }
-  }));
-
-  const schemaMarkup = JSON.stringify({
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Service",
-        "name": "Handwerker Aufträge finden",
-        "description": "Handwerker finden sofort – erhalten Sie Aufträge für Handwerker und vergleichen Sie Handwerker Angebote",
-        "provider": {
-          "@type": "Organization",
-          "name": "Büeze.ch",
-          "url": "https://bueeze.ch"
-        },
-        "serviceType": "Handwerker Vermittlung",
-        "areaServed": {
-          "@type": "Country",
-          "name": "Schweiz"
-        },
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "CHF",
-          "description": "Kostenlose Registrierung für Handwerker – Zugang zu unbegrenzten Aufträgen"
-        }
-      },
-      {
-        "@type": "FAQPage",
-        "mainEntity": faqSchemaItems
-      }
-    ]
-  });
+  // Generate schema markup using helpers
+  const schemaMarkup = wrapInGraph(
+    generateServiceSchema("Handwerker Aufträge finden", "Handwerker finden sofort – erhalten Sie Aufträge für Handwerker und vergleichen Sie Handwerker Angebote"),
+    generateFAQSchema(faqItems)
+  );
 
   return (
     <div className="min-h-screen bg-background">

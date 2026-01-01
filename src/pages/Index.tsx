@@ -7,64 +7,25 @@ import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { usePageContent } from '@/hooks/usePageContent';
 import { MobileStickyFooter } from '@/components/MobileStickyFooter';
+import { generateFAQSchema, generateOrganizationSchema, generateWebsiteSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const Index = () => {
   const { content } = usePageContent('homepage');
   const { content: heroContent, loading: heroLoading } = usePageContent('homepage_hero');
   
-  // Generate FAQPage schema from FAQ data
-  const faqSchemaItems = faqData.flatMap(category => 
+  // Transform FAQ data to schema format
+  const faqItems = faqData.flatMap(category => 
     category.questions.map(item => ({
-      "@type": "Question",
-      "name": item.q,
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": item.a
-      }
+      question: item.q,
+      answer: item.a
     }))
   );
 
-  const schemaMarkup = JSON.stringify({
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebSite",
-        "name": "Büeze.ch",
-        "url": "https://bueeze.ch",
-        "description": "Handwerker Marktplatz Schweiz – Finden Sie lokale Handwerker für alle Projekte",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://bueeze.ch/kategorien?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      },
-      {
-        "@type": "Organization",
-        "name": "Büeze.ch",
-        "url": "https://bueeze.ch",
-        "logo": "https://bueeze.ch/favicon.png",
-        "description": "Handwerker Portal für die Schweiz – verbindet Auftraggeber mit geprüften Handwerkern",
-        "address": {
-          "@type": "PostalAddress",
-          "addressCountry": "CH",
-          "addressLocality": "Schweiz"
-        },
-        "areaServed": {
-          "@type": "Country",
-          "name": "Switzerland"
-        },
-        "contactPoint": {
-          "@type": "ContactPoint",
-          "contactType": "customer service",
-          "availableLanguage": "German"
-        }
-      },
-      {
-        "@type": "FAQPage",
-        "mainEntity": faqSchemaItems
-      }
-    ]
-  });
+  const schemaMarkup = wrapInGraph(
+    generateWebsiteSchema(),
+    generateOrganizationSchema(),
+    generateFAQSchema(faqItems)
+  );
 
   const seoData = content?.seo || {
     title: "Handwerker in Ihrer Nähe finden | Büeze.ch",
