@@ -209,102 +209,53 @@ const KategorienLanding = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 max-w-4xl">
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4 max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4 text-center">
-            Häufig gestellte Fragen zur Handwerker-Vermittlung
+            Häufig gestellte Fragen
           </h2>
           <p className="text-xl text-ink-700 text-center mb-12">
-            Alles Wichtige zu Büeze.ch auf einen Blick
+            Alles, was Sie wissen müssen
           </p>
           
           <Accordion type="single" collapsible className="space-y-4">
-            <AccordionItem value="item-1" className="border border-border rounded-lg px-6 bg-pastel-grey-50">
-              <AccordionTrigger className="text-left text-ink-900 font-semibold hover:text-brand-600">
-                Ist die Nutzung von Büeze.ch wirklich kostenlos?
-              </AccordionTrigger>
-              <AccordionContent className="text-ink-700 leading-relaxed">
-                Ja, für Auftraggeber ist die Nutzung völlig kostenlos und unverbindlich. Sie erstellen Ihre Anfrage ohne Kosten und erhalten mehrere Offerten. Sie bezahlen nur den Handwerker für die ausgeführten Arbeiten – direkt mit ihm abgerechnet.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-2" className="border border-border rounded-lg px-6 bg-pastel-grey-50">
-              <AccordionTrigger className="text-left text-ink-900 font-semibold hover:text-brand-600">
-                Wie schnell erhalte ich Offerten?
-              </AccordionTrigger>
-              <AccordionContent className="text-ink-700 leading-relaxed">
-                In der Regel melden sich die ersten Handwerker innert 24 Stunden nach Ihrer Anfrage. Je nach Kategorie, Dringlichkeit und Region kann es manchmal schneller gehen. Bei dringenden Projekten empfehlen wir, dies in der Anfrage zu vermerken.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-3" className="border border-border rounded-lg px-6 bg-pastel-grey-50">
-              <AccordionTrigger className="text-left text-ink-900 font-semibold hover:text-brand-600">
-                Sind die Handwerker geprüft?
-              </AccordionTrigger>
-              <AccordionContent className="text-ink-700 leading-relaxed">
-                Ja, alle registrierten Handwerker durchlaufen unseren Prüfungsprozess. Wir prüfen Gewerbeberechtigung, Qualifikationen und in vielen Fällen auch Referenzen. Nur geprüfte Handwerker können auf der Plattform aktiv werden.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-4" className="border border-border rounded-lg px-6 bg-pastel-grey-50">
-              <AccordionTrigger className="text-left text-ink-900 font-semibold hover:text-brand-600">
-                Muss ich alle Offerten annehmen?
-              </AccordionTrigger>
-              <AccordionContent className="text-ink-700 leading-relaxed">
-                Nein, Sie entscheiden völlig frei, mit welchem Handwerker Sie zusammenarbeiten möchten. Es gibt keine Verpflichtung, eine Offerte anzunehmen. Vergleichen Sie in Ruhe und wählen Sie den Anbieter, der am besten zu Ihrem Projekt passt.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-5" className="border border-border rounded-lg px-6 bg-pastel-grey-50">
-              <AccordionTrigger className="text-left text-ink-900 font-semibold hover:text-brand-600">
-                Was passiert nach meiner Anfrage?
-              </AccordionTrigger>
-              <AccordionContent className="text-ink-700 leading-relaxed">
-                Nach dem Absenden Ihrer Anfrage wird diese an qualifizierte Handwerker in Ihrer Region weitergeleitet. Interessierte Handwerker kontaktieren Sie direkt über die Plattform. Sie können dann Details besprechen, Fragen klären und konkrete Offerten einholen.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-6" className="border border-border rounded-lg px-6 bg-pastel-grey-50">
-              <AccordionTrigger className="text-left text-ink-900 font-semibold hover:text-brand-600">
-                Kann ich auch für dringende Projekte Handwerker finden?
-              </AccordionTrigger>
-              <AccordionContent className="text-ink-700 leading-relaxed">
-                Ja, geben Sie bei Ihrer Anfrage die Dringlichkeit an. Viele Handwerker auf unserer Plattform bieten auch Notfall-Services und Express-Termine an. Bei sehr dringenden Anfragen werden priorisiert Handwerker benachrichtigt, die kurzfristig verfügbar sind.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-7" className="border border-border rounded-lg px-6 bg-pastel-grey-50">
-              <AccordionTrigger className="text-left text-ink-900 font-semibold hover:text-brand-600">
-                In welchen Regionen ist Büeze.ch aktiv?
-              </AccordionTrigger>
-              <AccordionContent className="text-ink-700 leading-relaxed">
-                Büeze.ch vermittelt Handwerker schweizweit und baut das Netzwerk in allen Kantonen stetig aus. Ob in Zürich, Basel, Bern, Luzern oder ländlichen Regionen – geben Sie Ihre Anfrage ein, und Sie sehen sofort verfügbare Handwerker in Ihrer Nähe. Je nach Region kann die Anzahl verfügbarer Fachbetriebe variieren.
-              </AccordionContent>
-            </AccordionItem>
+            {kategorienFaqItems.map((item, index) => (
+              <AccordionItem
+                key={index}
+                value={`item-${index}`}
+                className="bg-white rounded-lg shadow-sm border border-border px-6"
+              >
+                <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-ink-700 leading-relaxed pb-5">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
           </Accordion>
         </div>
       </section>
 
       {/* Final CTA Section */}
-      <section className="py-20 bg-gradient-to-b from-pastel-blue-50 to-pastel-grey-50">
-        <div className="container mx-auto px-4 max-w-4xl text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-6">
-            Jetzt Ihren Handwerker-Auftrag erstellen
+      <section className="py-20 bg-gradient-to-br from-brand-50 to-pastel-blue-100">
+        <div className="container mx-auto px-4 text-center space-y-6 max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-ink-900">
+            Vergleichen Sie Offerten und sparen Sie Zeit
           </h2>
-          <p className="text-xl text-ink-700 mb-8 leading-relaxed max-w-2xl mx-auto">
-            Beschreiben Sie Ihr Projekt in wenigen Minuten und erhalten Sie kostenlos mehrere Offerten von qualifizierten Handwerkern aus Ihrer Region.
+          <p className="text-xl text-ink-700">
+            Beschreiben Sie Ihr Projekt in 3 Minuten. Erhalten Sie bis zu 5 passende Offerten von geprüften Fachbetrieben aus Ihrer Region.
           </p>
-          <Button 
-            size="lg"
-            onClick={() => navigate('/submit-lead')}
-            className="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white px-10 py-6 text-lg shadow-lg hover:shadow-xl transition-all"
-          >
-            Kostenlos Anfrage erstellen
-            <ArrowRight className="ml-2 w-5 h-5" />
-          </Button>
-          <p className="text-sm text-ink-600 mt-6">
-            ✓ Kostenlos & unverbindlich  ✓ Geprüfte Handwerker schweizweit  ✓ Innert 24h Rückmeldung
-          </p>
+          <div className="pt-4">
+            <Button
+              onClick={() => navigate('/submit-lead')}
+              size="lg"
+              className="h-14 px-10 text-lg rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
+            >
+              Kostenlose Anfrage erstellen
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </div>
         </div>
       </section>
 

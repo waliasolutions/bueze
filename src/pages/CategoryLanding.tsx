@@ -159,16 +159,14 @@ const CategoryLanding = () => {
       <HowItWorks />
 
       {/* Category-Specific FAQ */}
-      <section className="py-24 bg-white">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
-              Häufige Fragen
-            </h2>
-            <p className="text-lg text-ink-700">
-              Alles, was Sie wissen müssen
-            </p>
-          </div>
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4 text-center">
+            Häufig gestellte Fragen
+          </h2>
+          <p className="text-xl text-ink-700 text-center mb-12">
+            Alles, was Sie wissen müssen
+          </p>
           
           <Accordion type="single" collapsible className="space-y-4">
             {content.faq.map((item, idx) => (
@@ -177,10 +175,10 @@ const CategoryLanding = () => {
                 value={`item-${idx}`}
                 className="bg-white rounded-lg shadow-sm border border-border px-6"
               >
-                <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600">
+                <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
                   {item.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-ink-700 leading-relaxed">
+                <AccordionContent className="text-ink-700 leading-relaxed pb-5">
                   {item.answer}
                 </AccordionContent>
               </AccordionItem>
