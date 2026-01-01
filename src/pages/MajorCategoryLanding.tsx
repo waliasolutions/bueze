@@ -218,22 +218,26 @@ const MajorCategoryLanding = () => {
       <HowItWorks />
       
       {/* FAQ Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 max-w-3xl">
-          <h2 className="text-3xl font-bold text-center mb-4 text-ink-900">
+          <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4 text-center">
             Häufig gestellte Fragen
           </h2>
-          <p className="text-center text-ink-700 mb-12">
-            Antworten zu {majorCategory.label}
+          <p className="text-xl text-ink-700 text-center mb-12">
+            Alles, was Sie wissen müssen
           </p>
           
-          <Accordion type="single" collapsible className="w-full">
+          <Accordion type="single" collapsible className="space-y-4">
             {majorCategory.faq.map((faqItem, index) => (
-              <AccordionItem key={index} value={`item-${index}`}>
-                <AccordionTrigger className="text-left text-ink-900">
+              <AccordionItem
+                key={index}
+                value={`item-${index}`}
+                className="bg-white rounded-lg shadow-sm border border-border px-6"
+              >
+                <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
                   {faqItem.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-ink-700">
+                <AccordionContent className="text-ink-700 leading-relaxed pb-5">
                   {faqItem.answer}
                 </AccordionContent>
               </AccordionItem>

@@ -223,33 +223,51 @@ const HandwerkerLanding = () => {
 
       {/* FAQ Section */}
       <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
-              Häufig gestellte Fragen
-            </h2>
-            <p className="text-xl text-ink-700">
-              Alles, was Sie wissen müssen
-            </p>
-          </div>
+        <div className="container mx-auto px-4 max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4 text-center">
+            Häufig gestellte Fragen
+          </h2>
+          <p className="text-xl text-ink-700 text-center mb-12">
+            Alles, was Sie wissen müssen
+          </p>
           
-          <div className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="space-y-4">
-              {faqItems.map((item, index) => (
-                <AccordionItem
-                  key={index}
-                  value={`item-${index}`}
-                  className="bg-white rounded-lg shadow-sm border border-border px-6"
-                >
-                  <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
-                    {item.question}
-                  </AccordionTrigger>
-                  <AccordionContent className="text-ink-700 leading-relaxed pb-5">
-                    {item.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
+          <Accordion type="single" collapsible className="space-y-4">
+            {faqItems.map((item, index) => (
+              <AccordionItem
+                key={index}
+                value={`item-${index}`}
+                className="bg-white rounded-lg shadow-sm border border-border px-6"
+              >
+                <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-ink-700 leading-relaxed pb-5">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* Final CTA Section */}
+      <section className="py-20 bg-gradient-to-br from-brand-50 to-pastel-blue-100">
+        <div className="container mx-auto px-4 text-center space-y-6 max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-ink-900">
+            Bereit für neue Aufträge?
+          </h2>
+          <p className="text-xl text-ink-700">
+            Registrieren Sie sich jetzt kostenlos und erhalten Sie passende Projektanfragen aus Ihrer Region.
+          </p>
+          <div className="pt-4">
+            <Button
+              onClick={() => navigate('/handwerker-onboarding')}
+              size="lg"
+              className="h-14 px-10 text-lg rounded-full bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-[0_0_20px_rgba(79,70,229,0.3)] hover:shadow-[0_0_30px_rgba(79,70,229,0.5)] ring-2 ring-brand-400/50 hover:ring-brand-500 transition-all duration-300"
+            >
+              Jetzt kostenlos registrieren
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
           </div>
         </div>
       </section>

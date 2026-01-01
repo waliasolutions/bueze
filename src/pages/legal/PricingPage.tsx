@@ -5,6 +5,7 @@ import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { usePageContent } from '@/hooks/usePageContent';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Check } from 'lucide-react';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 import { generateFAQSchema, wrapInGraph } from '@/lib/schemaHelpers';
@@ -130,73 +131,35 @@ const PricingPage = () => {
             ))}
           </div>
 
-          <Card className="mb-12">
-            <CardHeader>
-              <CardTitle>Häufig gestellte Fragen zu den Preisen</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Was bedeutet "Offerten pro Monat"?</h3>
-                <p className="text-ink-700">
-                  Das ist die Anzahl Offerten, die Sie pro Monat einreichen können. 
-                  Free-Nutzer: 5 Offerten/Monat. Abo-Nutzer: Unbegrenzte Offerten. 
-                  Am 1. des Monats wird das Kontingent zurückgesetzt.
-                </p>
-              </div>
+          {/* FAQ Section */}
+          <section className="py-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4 text-center">
+              Häufig gestellte Fragen
+            </h2>
+            <p className="text-xl text-ink-700 text-center mb-12">
+              Alles, was Sie wissen müssen
+            </p>
+            
+            <Accordion type="single" collapsible className="space-y-4">
+              {pricingFaqItems.map((item, index) => (
+                <AccordionItem
+                  key={index}
+                  value={`item-${index}`}
+                  className="bg-white rounded-lg shadow-sm border border-border px-6"
+                >
+                  <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-ink-700 leading-relaxed pb-5">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </section>
 
-              <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Wie erhalte ich die Kontaktdaten?</h3>
-                <p className="text-ink-700">
-                  Nur wenn der Kunde Ihre Offerte akzeptiert. Dann erhalten beide Seiten 
-                  gleichzeitig die vollständigen Kontaktdaten (Name, Telefon, E-Mail, Adresse) 
-                  – ohne Zusatzkosten.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Was passiert nach 10 Tagen?</h3>
-                <p className="text-ink-700">
-                  Jede Anfrage hat eine 10-Tage-Frist für Offerten. Nach Ablauf können keine 
-                  neuen Offerten mehr eingereicht werden. Der Kunde kann aber weiterhin bereits 
-                  eingereichte Offerten prüfen und annehmen.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Sieht der Kunde meine Kontaktdaten vor der Annahme?</h3>
-                <p className="text-ink-700">
-                  Nein. Vor der Annahme sieht der Kunde nur Ihre Stadt, Ihre Bewertungen und 
-                  Ihre Offerte (Preis, Zeitrahmen, Nachricht). Erst nach Annahme werden die 
-                  vollständigen Kontaktdaten beider Seiten ausgetauscht.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Kann ich mein Abo jederzeit wechseln?</h3>
-                <p className="text-ink-700">
-                  Ja, Sie können jederzeit upgraden. Bei einem Downgrade gilt die Änderung ab der nächsten Abrechnungsperiode.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Gibt es versteckte Kosten?</h3>
-                <p className="text-ink-700">
-                  Nein. Alle Preise sind transparent. Sie zahlen nur für das gewählte Abo, 
-                  nicht pro Kontakt oder Offerte.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-ink-900 mb-2">Wie funktioniert die Zahlung?</h3>
-                <p className="text-ink-700">
-                  Zahlungen erfolgen sicher per Kreditkarte. Ihr Abo wird automatisch verlängert, Sie können aber jederzeit kündigen.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="text-center">
-            <p className="text-ink-700 mb-4">
+          <div className="text-center py-8">
+            <p className="text-ink-700">
               Haben Sie weitere Fragen? Kontaktieren Sie uns gerne.
             </p>
           </div>
