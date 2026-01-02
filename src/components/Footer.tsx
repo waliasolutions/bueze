@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Facebook, Instagram } from 'lucide-react';
-import logo from '@/assets/bueze-logo.png';
+import logo from '@/assets/bueze-logo.webp';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 
@@ -38,7 +38,7 @@ export const Footer = () => {
           {/* Company Info - 3 columns on desktop */}
           <div className="lg:col-span-3 space-y-6">
             <div className="flex items-center">
-              <img src={logo} alt="Bueeze-Logo" className="h-20 w-auto" />
+              <img src={logo} alt="Bueeze-Logo" className="h-20 w-auto" loading="lazy" decoding="async" />
             </div>
             
             <p className="text-ink-300 leading-relaxed text-sm">

@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import logo from '@/assets/bueze-logo.webp';
 
 export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(false);
@@ -181,9 +182,11 @@ export default function ResetPassword() {
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 relative mb-2">
               <img 
-                src="/src/assets/bueze-logo.webp" 
+                src={logo} 
                 alt="Büeze.ch Logo" 
                 className="w-full h-full object-contain"
+                loading="eager"
+                decoding="async"
               />
             </div>
             <CardTitle className="text-2xl">Neues Passwort erstellen</CardTitle>
