@@ -20,7 +20,8 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     force: true,
-    include: ['react', 'react-dom'],
+    include: ['react', 'react-dom', 'react-router-dom'],
+    exclude: [],
   },
   build: {
     target: 'es2020',

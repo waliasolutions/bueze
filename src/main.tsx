@@ -3,8 +3,11 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Force Vite cache invalidation - React 18.3.1
-const root = createRoot(document.getElementById("root")!);
+// Cache invalidation timestamp: 2026-01-02T09:43:00
+const container = document.getElementById("root");
+if (!container) throw new Error("Root element not found");
+
+const root = createRoot(container);
 root.render(
   <React.StrictMode>
     <App />
