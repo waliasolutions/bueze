@@ -79,88 +79,48 @@ function handwerkerMatchesCategory(handwerkerCategories: string[], leadCategory:
   return false;
 }
 
-// Match levels for elastic matching
-type MatchLevel = 1 | 2 | 3 | 4 | 5;
+// Swiss canton codes
+const SWISS_CANTONS = ['AG', 'AI', 'AR', 'BE', 'BL', 'BS', 'FR', 'GE', 'GL', 'GR', 'JU', 'LU', 'NE', 'NW', 'OW', 'SG', 'SH', 'SO', 'SZ', 'TG', 'TI', 'UR', 'VD', 'VS', 'ZG', 'ZH'];
 
-interface MatchResult {
-  handwerkerIds: string[];
-  matchLevel: MatchLevel;
-  matchDescription: string;
+interface HandwerkerMatch {
+  id: string;
+  user_id: string;
+  categories: string[];
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  company_name: string | null;
+  service_areas: string[];
+  matchType: 'canton' | 'plz' | 'nationwide';
 }
 
-// 5-Layer Elastic Matching - Single query, layered filtering
-async function findHandwerkersWithElasticMatching(
-  supabase: ReturnType<typeof createSupabaseAdmin>,
-  leadPLZ: number
-): Promise<MatchResult> {
-  // Single broad query - fetch all service areas in the same regional range (8xxx)
-  const firstDigit = Math.floor(leadPLZ / 1000);
-  const broadRangeStart = firstDigit * 1000;
-  const broadRangeEnd = broadRangeStart + 999;
-  
-  const { data: allAreas, error } = await supabase
-    .from('handwerker_service_areas')
-    .select('handwerker_id, start_plz, end_plz')
-    .lte('start_plz', broadRangeEnd)
-    .gte('end_plz', broadRangeStart);
-  
-  if (error) {
-    console.error('[elastic-matching] Query error:', error.message);
-    return { handwerkerIds: [], matchLevel: 5, matchDescription: 'Datenbankfehler' };
+// Match handwerkers based on service_areas column (canton codes or PLZ codes)
+function matchHandwerkerByServiceArea(
+  serviceAreas: string[],
+  leadCanton: string,
+  leadPLZ: string
+): { matches: boolean; matchType: 'canton' | 'plz' | 'nationwide' | null } {
+  if (!serviceAreas || serviceAreas.length === 0) {
+    return { matches: false, matchType: null };
   }
 
-  const areas = allAreas || [];
-  console.log(`[elastic-matching] Fetched ${areas.length} service areas in ${broadRangeStart}-${broadRangeEnd} range`);
-
-  // Layer 1: Exact PLZ match
-  const exactMatches = areas.filter(sa => leadPLZ >= sa.start_plz && leadPLZ <= sa.end_plz);
-  if (exactMatches.length > 0) {
-    return {
-      handwerkerIds: [...new Set(exactMatches.map(m => m.handwerker_id))],
-      matchLevel: 1,
-      matchDescription: 'Exakte PLZ-Übereinstimmung'
-    };
+  // Check for nationwide coverage (all 26 cantons)
+  const cantonCount = serviceAreas.filter(area => SWISS_CANTONS.includes(area)).length;
+  if (cantonCount >= 26) {
+    return { matches: true, matchType: 'nationwide' };
   }
 
-  // Layer 2: District (first 3 digits, e.g., 804x)
-  const districtStart = Math.floor(leadPLZ / 10) * 10;
-  const districtEnd = districtStart + 9;
-  const districtMatches = areas.filter(sa => !(sa.end_plz < districtStart || sa.start_plz > districtEnd));
-  if (districtMatches.length > 0) {
-    return {
-      handwerkerIds: [...new Set(districtMatches.map(m => m.handwerker_id))],
-      matchLevel: 2,
-      matchDescription: 'Bezirk-Übereinstimmung'
-    };
+  // Check for canton match
+  if (serviceAreas.includes(leadCanton)) {
+    return { matches: true, matchType: 'canton' };
   }
 
-  // Layer 3: Regional (first 2 digits, e.g., 80xx)
-  const regionalStart = Math.floor(leadPLZ / 100) * 100;
-  const regionalEnd = regionalStart + 99;
-  const regionalMatches = areas.filter(sa => !(sa.end_plz < regionalStart || sa.start_plz > regionalEnd));
-  if (regionalMatches.length > 0) {
-    return {
-      handwerkerIds: [...new Set(regionalMatches.map(m => m.handwerker_id))],
-      matchLevel: 3,
-      matchDescription: 'Regionale Übereinstimmung'
-    };
+  // Check for exact PLZ match
+  if (serviceAreas.includes(leadPLZ)) {
+    return { matches: true, matchType: 'plz' };
   }
 
-  // Layer 4: Broad region fallback (all in 8xxx range)
-  if (areas.length > 0) {
-    return {
-      handwerkerIds: [...new Set(areas.map(m => m.handwerker_id))],
-      matchLevel: 4,
-      matchDescription: 'Erweiterte Region'
-    };
-  }
-
-  // Layer 5: Orphan - no matches
-  return {
-    handwerkerIds: [],
-    matchLevel: 5,
-    matchDescription: 'Keine Übereinstimmung - Admin benachrichtigt'
-  };
+  return { matches: false, matchType: null };
 }
 
 serve(async (req) => {
@@ -232,54 +192,69 @@ serve(async (req) => {
       console.error('[send-lead-notification] Admin email failed:', adminResult.error);
     }
 
-    // ELASTIC MATCHING: 5-layer fallback system
-    console.log(`[send-lead-notification] Running elastic matching for PLZ ${leadPLZ}...`);
-    const matchResult = await findHandwerkersWithElasticMatching(supabase, leadPLZ);
-    console.log(`[send-lead-notification] Match result: Level ${matchResult.matchLevel} - ${matchResult.matchDescription} (${matchResult.handwerkerIds.length} handwerkers)`);
+    // SERVICE AREA MATCHING: Match based on handwerker_profiles.service_areas
+    console.log(`[send-lead-notification] Finding handwerkers for canton=${leadCanton}, PLZ=${lead.zip}...`);
 
-    // Fetch all approved handwerkers to filter by category
+    // Fetch all approved handwerkers with their service_areas
     const { data: allHandwerkers, error: handwerkersError } = await supabase
       .from('handwerker_profiles')
-      .select('id, user_id, categories, email, first_name, last_name, company_name')
+      .select('id, user_id, categories, email, first_name, last_name, company_name, service_areas')
       .eq('verification_status', 'approved');
 
     if (handwerkersError) {
       throw new Error(`Error fetching handwerkers: ${handwerkersError.message}`);
     }
 
-    // Filter matched handwerkers by category
-    const matchingHandwerkers = (allHandwerkers || []).filter(hw => 
-      matchResult.handwerkerIds.includes(hw.id) && 
-      handwerkerMatchesCategory(hw.categories || [], lead.category)
-    );
+    console.log(`[send-lead-notification] Found ${allHandwerkers?.length || 0} approved handwerkers`);
 
-    console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match both location AND category`);
-
-    // Determine final match level (may need to escalate if category filtering reduces matches)
-    let finalMatchLevel = matchResult.matchLevel;
-    if (matchingHandwerkers.length === 0 && matchResult.handwerkerIds.length > 0) {
-      // Had location matches but no category matches
-      finalMatchLevel = 5;
+    // Filter handwerkers by service area AND category
+    const matchingHandwerkers: HandwerkerMatch[] = [];
+    
+    for (const hw of allHandwerkers || []) {
+      // Check service area match
+      const areaMatch = matchHandwerkerByServiceArea(
+        hw.service_areas || [],
+        leadCanton,
+        lead.zip?.toString() || ''
+      );
+      
+      if (!areaMatch.matches) continue;
+      
+      // Check category match
+      if (!handwerkerMatchesCategory(hw.categories || [], lead.category)) continue;
+      
+      matchingHandwerkers.push({
+        ...hw,
+        matchType: areaMatch.matchType!
+      });
     }
+
+    console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match both service area AND category`);
+
+    // Log match types for debugging
+    const matchTypeCounts = matchingHandwerkers.reduce((acc, hw) => {
+      acc[hw.matchType] = (acc[hw.matchType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    console.log(`[send-lead-notification] Match types:`, matchTypeCounts);
 
     // ORPHAN LEAD: Create admin notification if no matches
     if (matchingHandwerkers.length === 0) {
-      console.warn(`[send-lead-notification] ⚠️ ORPHAN LEAD: No handwerkers found for PLZ ${leadPLZ}, category ${lead.category}`);
+      console.warn(`[send-lead-notification] ⚠️ ORPHAN LEAD: No handwerkers found for canton=${leadCanton}, PLZ=${lead.zip}, category=${lead.category}`);
       
       await supabase.from('admin_notifications').insert({
         type: 'orphan_lead',
         title: 'Auftrag ohne Handwerker-Match',
-        message: `Keine passenden Handwerker gefunden für PLZ ${leadPLZ}, Kategorie: ${categoryLabel}. Match-Level: ${matchResult.matchLevel}`,
+        message: `Keine passenden Handwerker gefunden für ${lead.city} (${leadCanton}), Kategorie: ${categoryLabel}`,
         related_id: leadId,
         metadata: {
-          zip: leadPLZ,
+          zip: lead.zip,
           canton: leadCanton,
           city: lead.city,
           category: lead.category,
           categoryLabel: categoryLabel,
           owner_email: ownerProfile?.email,
-          matchLevel: matchResult.matchLevel,
-          matchDescription: matchResult.matchDescription,
+          totalApprovedHandwerkers: allHandwerkers?.length || 0,
         }
       });
       
@@ -314,7 +289,7 @@ serve(async (req) => {
 
         const emailHtml = newLeadNotificationTemplate({
           category: categoryLabel,
-          city: lead.city || `PLZ ${leadPLZ}`,
+          city: lead.city || `PLZ ${lead.zip}`,
           description: lead.description,
           budgetMin: lead.budget_min,
           budgetMax: lead.budget_max,
@@ -323,11 +298,11 @@ serve(async (req) => {
           handwerkerName: hwProfile.fullName || hw.first_name || 'Handwerker',
         });
 
-        console.log(`[send-lead-notification] Sending email to ${hwProfile.email}...`);
+        console.log(`[send-lead-notification] Sending email to ${hwProfile.email} (match: ${hw.matchType})...`);
 
         const result = await sendEmail({
           to: hwProfile.email,
-          subject: `Neue Anfrage in ${categoryLabel} - ${lead.city || `PLZ ${leadPLZ}`}`,
+          subject: `Neue Anfrage in ${categoryLabel} - ${lead.city || `PLZ ${lead.zip}`}`,
           htmlBody: emailHtml,
         });
 
@@ -350,8 +325,6 @@ serve(async (req) => {
       success: true, 
       message: `Admin notified, ${successCount} handwerkers notified`,
       matchingHandwerkersCount: matchingHandwerkers.length,
-      matchLevel: finalMatchLevel,
-      matchDescription: matchResult.matchDescription,
       successCount,
       errorCount,
       isOrphanLead: matchingHandwerkers.length === 0,
