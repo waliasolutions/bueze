@@ -7,7 +7,7 @@ import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { usePageContent } from '@/hooks/usePageContent';
 import { MobileStickyFooter } from '@/components/MobileStickyFooter';
-import { generateFAQSchema, generateOrganizationSchema, generateWebsiteSchema, wrapInGraph } from '@/lib/schemaHelpers';
+import { generateFAQSchema, generateOrganizationSchema, generateWebsiteSchema, generateLocalBusinessSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const Index = () => {
   const { content } = usePageContent('homepage');
@@ -24,6 +24,7 @@ const Index = () => {
   const schemaMarkup = wrapInGraph(
     generateWebsiteSchema(),
     generateOrganizationSchema(),
+    generateLocalBusinessSchema(),
     generateFAQSchema(faqItems)
   );
 

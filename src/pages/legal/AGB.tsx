@@ -3,8 +3,17 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
+import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const AGB = () => {
+  const schemaMarkup = wrapInGraph(
+    generateWebPageSchema(
+      "Allgemeine Geschäftsbedingungen (AGB)",
+      "Die Allgemeinen Geschäftsbedingungen für die Nutzung der Handwerker-Vermittlungsplattform Büeze.ch in der Schweiz.",
+      "https://bueeze.ch/legal/agb"
+    )
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
@@ -12,6 +21,7 @@ const AGB = () => {
         description="Die Allgemeinen Geschäftsbedingungen für die Nutzung der Handwerker-Vermittlungsplattform Büeze.ch in der Schweiz."
         canonical="https://bueeze.ch/legal/agb"
         robotsMeta="index,follow"
+        schemaMarkup={schemaMarkup}
       />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
