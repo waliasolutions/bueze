@@ -20,11 +20,18 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     force: true,
-    include: ['react', 'react-dom', 'react-router-dom'],
-    exclude: [],
+    include: ['react', 'react-dom'],
   },
   build: {
     target: 'es2020',
-    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip'],
+          'vendor-query': ['@tanstack/react-query'],
+        },
+      },
+    },
   },
 }));
