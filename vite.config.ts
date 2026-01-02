@@ -22,4 +22,16 @@ export default defineConfig(({ mode }) => ({
     force: true,
     include: ['react', 'react-dom'],
   },
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tooltip'],
+          'vendor-query': ['@tanstack/react-query'],
+        },
+      },
+    },
+  },
 }));

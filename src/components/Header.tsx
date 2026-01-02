@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import logo from '@/assets/bueze-logo.png';
+import logo from '@/assets/bueze-logo.webp';
 import { roleNavigation } from '@/config/navigation';
 
 export const Header = () => {
@@ -95,7 +95,7 @@ export const Header = () => {
           <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src={logo} alt="Bueeze-Logo" className="h-16 sm:h-20 lg:h-24 w-auto" />
+            <img src={logo} alt="Bueeze-Logo" className="h-16 sm:h-20 lg:h-24 w-auto" loading="eager" decoding="async" fetchPriority="high" />
           </div>
 
           {/* Desktop Navigation */}

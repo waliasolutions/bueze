@@ -169,6 +169,8 @@ All colors MUST be HSL.
 
   html {
     @apply bg-background text-foreground;
+    /* System font fallback for immediate text rendering */
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   body {
