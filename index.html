@@ -2,6 +2,19 @@
 <html lang="de-CH">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Critical inline CSS for fastest first paint -->
+    <style>
+      *,*::before,*::after{box-sizing:border-box;border:0 solid}
+      html{line-height:1.5;-webkit-text-size-adjust:100%}
+      body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:#ffffff;color:#1f2937;-webkit-font-smoothing:antialiased}
+      #root{min-height:100vh;display:flex;flex-direction:column}
+      .min-h-screen{min-height:100vh}
+      header{position:fixed;top:0;left:0;right:0;z-index:50;background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);border-bottom:1px solid #e5e7eb}
+      .container{width:100%;max-width:1280px;margin:0 auto;padding:0 1rem}
+      img{max-width:100%;height:auto;display:block}
+    </style>
     
     <!-- Resource Hints for faster connections -->
     <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
@@ -11,7 +24,7 @@
     <!-- Preload critical above-fold assets -->
     <link rel="preload" href="/src/assets/bueze-logo.webp" as="image" type="image/webp" />
     <link rel="modulepreload" href="/src/main.tsx" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
     <title>Büeze.ch – Geprüfte Handwerker in der Schweiz finden</title>
     <meta name="description" content="Finden Sie schnell und einfach geprüfte Handwerker in der Schweiz. Kostenlos für Auftraggeber. Geprüfte und verifizierte Fachbetriebe in der Schweiz." />
     <meta name="author" content="Büeze GmbH" />
