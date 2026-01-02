@@ -40,8 +40,11 @@ export const generateOrganizationSchema = () => ({
   "description": "Handwerker Portal für die Schweiz – verbindet Auftraggeber mit geprüften Handwerkern",
   "address": {
     "@type": "PostalAddress",
-    "addressCountry": "CH",
-    "addressLocality": "Schweiz"
+    "streetAddress": "Gotthardstrasse 37",
+    "addressLocality": "Goldau",
+    "postalCode": "6410",
+    "addressRegion": "SZ",
+    "addressCountry": "CH"
   },
   "areaServed": {
     "@type": "Country",
@@ -49,9 +52,15 @@ export const generateOrganizationSchema = () => ({
   },
   "contactPoint": {
     "@type": "ContactPoint",
+    "telephone": "+41 41 558 22 33",
+    "email": "info@bueeze.ch",
     "contactType": "customer service",
     "availableLanguage": "German"
-  }
+  },
+  "sameAs": [
+    "https://m.facebook.com/profile.php?id=61582960604117",
+    "https://www.instagram.com/bueeze.ch/"
+  ]
 });
 
 export const generateWebsiteSchema = () => ({
@@ -59,11 +68,50 @@ export const generateWebsiteSchema = () => ({
   "name": "Büeze.ch",
   "url": "https://bueeze.ch",
   "description": "Handwerker Marktplatz Schweiz – Finden Sie lokale Handwerker für alle Projekte",
+  "inLanguage": "de-CH",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://bueeze.ch/kategorien?q={search_term_string}",
-    "query-input": "required name=search_term_string"
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://bueeze.ch/kategorien?q={search_term_string}"
+    },
+    "query-input": {
+      "@type": "PropertyValueSpecification",
+      "valueName": "search_term_string",
+      "valueRequired": true
+    }
   }
+});
+
+export const generateLocalBusinessSchema = () => ({
+  "@type": "LocalBusiness",
+  "@id": "https://bueeze.ch/#organization",
+  "name": "Büeze.ch",
+  "image": "https://bueeze.ch/favicon.png",
+  "url": "https://bueeze.ch",
+  "telephone": "+41 41 558 22 33",
+  "email": "info@bueeze.ch",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Gotthardstrasse 37",
+    "addressLocality": "Goldau",
+    "postalCode": "6410",
+    "addressRegion": "Schwyz",
+    "addressCountry": "CH"
+  },
+  "priceRange": "CHF",
+  "areaServed": {
+    "@type": "Country",
+    "name": "Switzerland"
+  }
+});
+
+export const generateWebPageSchema = (name: string, description: string, url: string) => ({
+  "@type": "WebPage",
+  "name": name,
+  "description": description,
+  "url": url,
+  "inLanguage": "de-CH"
 });
 
 export const generateServiceSchema = (name: string, description: string) => ({

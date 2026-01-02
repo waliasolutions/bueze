@@ -61,9 +61,17 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
       updateMetaTag('og:image', finalOgImage, true);
     }
 
-    // Add site name
+    // Add site name and locale
     updateMetaTag('og:site_name', siteName, true);
     updateMetaTag('og:type', 'website', true);
+    updateMetaTag('og:locale', 'de_CH', true);
+
+    // Add Twitter card tags dynamically
+    updateMetaTag('twitter:card', 'summary_large_image');
+    updateMetaTag('twitter:title', finalTitle);
+    if (finalDescription) {
+      updateMetaTag('twitter:description', finalDescription);
+    }
 
     if (robotsMeta) {
       updateMetaTag('robots', robotsMeta);
@@ -87,6 +95,26 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
 
     // Also set og:url for social sharing
     updateMetaTag('og:url', finalCanonical, true);
+
+    // Add hreflang link for Swiss German
+    let hreflangElement = document.querySelector('link[rel="alternate"][hreflang="de-CH"]') as HTMLLinkElement | null;
+    if (!hreflangElement) {
+      hreflangElement = document.createElement('link');
+      hreflangElement.setAttribute('rel', 'alternate');
+      hreflangElement.setAttribute('hreflang', 'de-CH');
+      document.head.appendChild(hreflangElement);
+    }
+    hreflangElement.setAttribute('href', finalCanonical);
+
+    // Add x-default for international targeting
+    let xdefaultElement = document.querySelector('link[rel="alternate"][hreflang="x-default"]') as HTMLLinkElement | null;
+    if (!xdefaultElement) {
+      xdefaultElement = document.createElement('link');
+      xdefaultElement.setAttribute('rel', 'alternate');
+      xdefaultElement.setAttribute('hreflang', 'x-default');
+      document.head.appendChild(xdefaultElement);
+    }
+    xdefaultElement.setAttribute('href', finalCanonical);
 
     // Inject schema markup if provided
     if (schemaMarkup) {

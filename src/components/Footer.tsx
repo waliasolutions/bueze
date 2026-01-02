@@ -156,7 +156,7 @@ export const Footer = () => {
           {/* Copyright */}
           <div className="text-center">
             <p className="text-sm text-ink-300">
-              © 2025 Büeze GmbH. Alle Rechte vorbehalten.
+              © {new Date().getFullYear()} Büeze GmbH. Alle Rechte vorbehalten.
             </p>
           </div>
         </div>

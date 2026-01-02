@@ -4,8 +4,17 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
+import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const Impressum = () => {
+  const schemaMarkup = wrapInGraph(
+    generateWebPageSchema(
+      "Impressum",
+      "Impressum und rechtliche Informationen zur Büeze GmbH, dem Betreiber der Handwerker-Vermittlungsplattform Büeze.ch.",
+      "https://bueeze.ch/impressum"
+    )
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
@@ -13,6 +22,7 @@ const Impressum = () => {
         description="Impressum und rechtliche Informationen zur Büeze GmbH, dem Betreiber der Handwerker-Vermittlungsplattform Büeze.ch."
         canonical="https://bueeze.ch/impressum"
         robotsMeta="index,follow"
+        schemaMarkup={schemaMarkup}
       />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">

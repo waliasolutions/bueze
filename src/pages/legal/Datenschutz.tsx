@@ -3,8 +3,17 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
+import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const Datenschutz = () => {
+  const schemaMarkup = wrapInGraph(
+    generateWebPageSchema(
+      "Datenschutzerklärung",
+      "Datenschutzerklärung der Büeze GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten.",
+      "https://bueeze.ch/datenschutz"
+    )
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
@@ -12,6 +21,7 @@ const Datenschutz = () => {
         description="Datenschutzerklärung der Büeze GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten."
         canonical="https://bueeze.ch/datenschutz"
         robotsMeta="index,follow"
+        schemaMarkup={schemaMarkup}
       />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
