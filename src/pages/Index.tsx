@@ -8,6 +8,7 @@ import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { usePageContent } from '@/hooks/usePageContent';
 import { MobileStickyFooter } from '@/components/MobileStickyFooter';
 import { generateFAQSchema, generateOrganizationSchema, generateWebsiteSchema, generateLocalBusinessSchema, wrapInGraph } from '@/lib/schemaHelpers';
+import { homepageSeoDefaults } from '@/config/contentDefaults';
 
 const Index = () => {
   const { content } = usePageContent('homepage');
@@ -28,11 +29,7 @@ const Index = () => {
     generateFAQSchema(faqItems)
   );
 
-  const seoData = content?.seo || {
-    title: "Handwerker finden in der Schweiz | Kostenlose Offerten | Büeze.ch",
-    description: "Ihr Schweizer Marktplatz für geprüfte Handwerker. Beschreiben Sie Ihr Projekt und erhalten Sie kostenlos bis zu 3 Offerten von Fachbetrieben aus Ihrer Region. Jetzt starten!",
-    canonical: "https://bueeze.ch/"
-  };
+  const seoData = content?.seo || homepageSeoDefaults;
 
   return (
     <div className="min-h-screen bg-background">
