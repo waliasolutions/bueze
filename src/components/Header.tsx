@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, Plus, LogOut, LayoutDashboard, LogIn } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
@@ -338,20 +338,37 @@ export const Header = () => {
                 </div>
                 )
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4 px-4 py-4 bg-muted/30 rounded-lg">
+                  {/* Welcome message */}
+                  <div className="text-center">
+                    <p className="font-semibold text-foreground">Willkommen bei Büeze.ch</p>
+                    <p className="text-sm text-muted-foreground">Melden Sie sich an oder erstellen Sie einen Auftrag</p>
+                  </div>
+                  
+                  {/* Primary: Login button */}
                   <Button 
-                    variant="outline" 
-                    className="justify-start gap-2 w-full" 
+                    variant="default" 
+                    className="w-full gap-2"
                     onClick={() => {
                       navigate('/auth');
                       setIsMenuOpen(false);
                     }}
                   >
-                    Login
+                    <LogIn className="h-4 w-4" />
+                    Anmelden
                   </Button>
+                  
+                  {/* Divider */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-border" />
+                    <span className="text-xs text-muted-foreground uppercase tracking-wide">oder</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+                  
+                  {/* Secondary: Create lead button */}
                   <Button 
-                    variant="default" 
-                    className="justify-start gap-2 w-full" 
+                    variant="outline" 
+                    className="w-full gap-2"
                     onClick={() => {
                       navigate('/submit-lead');
                       setIsMenuOpen(false);
