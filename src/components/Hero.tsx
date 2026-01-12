@@ -37,7 +37,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
           {/* Headlines */}
           <div className="space-y-6">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
-              {content?.fields?.title || 'Handwerker finden. Projekte realisieren.'}
+              {content?.fields?.title || 'Handwerker in der Schweiz finden und Offerten vergleichen'}
             </h1>
             <p className="text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto">
               {content?.fields?.subtitle || 'Ihr lokaler Handwerker-Marktplatz für die ganze Schweiz'}
@@ -71,10 +71,11 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
                 <button
                   key={category.id}
                   onClick={() => handleCategoryClick(category.slug)}
+                  aria-label={`${category.label} - Handwerker in der Schweiz finden`}
                   className="flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl hover:bg-surface/80 active:bg-surface/60 transition-all duration-200 group min-w-[80px] sm:min-w-[110px] min-h-[44px]"
                 >
                   <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br ${category.color} flex items-center justify-center text-white group-hover:scale-110 active:scale-95 transition-transform duration-200 shadow-md`}>
-                    <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6" aria-hidden="true" />
                   </div>
                   <span className="text-[10px] sm:text-xs font-medium text-ink-800 text-center leading-tight">
                     {category.label}
@@ -92,7 +93,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
               size="lg"
               className="text-brand-600 border-brand-600 hover:bg-brand-50 border-2 min-h-[44px]"
             >
-              Alle Kategorien ansehen
+              Alle Handwerker-Kategorien für Renovationen ansehen
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

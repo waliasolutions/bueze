@@ -38,7 +38,7 @@ export const Footer = () => {
           {/* Company Info - 3 columns on desktop */}
           <div className="lg:col-span-3 space-y-6">
             <div className="flex items-center">
-              <img src={logo} alt="Bueeze-Logo" className="h-20 w-auto" loading="lazy" decoding="async" width="80" height="80" />
+              <img src={logo} alt="Büeze.ch - Geprüfte Handwerker in der Schweiz finden" className="h-20 w-auto" loading="lazy" decoding="async" width="80" height="80" />
             </div>
             
             <p className="text-ink-300 leading-relaxed text-sm">
