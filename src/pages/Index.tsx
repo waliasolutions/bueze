@@ -29,8 +29,8 @@ const Index = () => {
   );
 
   const seoData = content?.seo || {
-    title: "Handwerker in Ihrer Nähe finden | Büeze.ch",
-    description: "Sie suchen einen zuverlässigen Handwerker? Auf Büeze.ch finden Sie geprüfte Fachbetriebe aus Ihrer Region. Beschreiben Sie Ihr Projekt und vergleichen Sie kostenlos mehrere Offerten.",
+    title: "Handwerker finden in der Schweiz | Kostenlose Offerten | Büeze.ch",
+    description: "Ihr Schweizer Marktplatz für geprüfte Handwerker. Beschreiben Sie Ihr Projekt und erhalten Sie kostenlos bis zu 3 Offerten von Fachbetrieben aus Ihrer Region. Jetzt starten!",
     canonical: "https://bueeze.ch/"
   };
 

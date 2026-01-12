@@ -161,7 +161,7 @@ export const ProposalComparisonDialog: React.FC<ProposalComparisonDialogProps> =
                     {proposal.logoUrl ? (
                       <img 
                         src={proposal.logoUrl} 
-                        alt="" 
+                        alt={`Firmenlogo von ${proposal.companyName || proposal.handwerkerName}`}
                         className="h-10 w-10 rounded-full object-cover"
                       />
                     ) : (
@@ -230,7 +230,7 @@ export const ProposalComparisonDialog: React.FC<ProposalComparisonDialogProps> =
                           {proposal.logoUrl ? (
                             <img 
                               src={proposal.logoUrl} 
-                              alt="" 
+                              alt={`Firmenlogo von ${proposal.companyName || proposal.handwerkerName}`}
                               className="h-12 w-12 rounded-full object-cover"
                             />
                           ) : (
