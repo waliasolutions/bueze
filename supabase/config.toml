@@ -92,3 +92,9 @@ verify_jwt = false
 
 [functions.submit-to-indexing]
 verify_jwt = true
+
+[functions.create-payrexx-gateway]
+verify_jwt = false
+
+[functions.payrexx-webhook]
+verify_jwt = false
