@@ -1989,6 +1989,7 @@ export type Database = {
         Args: { handwerker_user_id: string }
         Returns: boolean
       }
+      check_lead_expiry: { Args: never; Returns: undefined }
       delete_expired_contact_requests: { Args: never; Returns: undefined }
       delete_expired_magic_tokens: { Args: never; Returns: undefined }
       get_user_role: {
@@ -2153,6 +2154,7 @@ export type Database = {
         | "paused"
         | "completed"
         | "deleted"
+        | "expired"
       proposal_status: "pending" | "accepted" | "rejected" | "withdrawn"
       subscription_plan:
         | "starter"
@@ -2451,6 +2453,7 @@ export const Constants = {
         "paused",
         "completed",
         "deleted",
+        "expired",
       ],
       proposal_status: ["pending", "accepted", "rejected", "withdrawn"],
       subscription_plan: [

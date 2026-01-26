@@ -66,6 +66,8 @@ function getStatusSuccessMessage(status: LeadStatusType): string {
       return 'Auftrag reaktiviert. Handwerker können ihn wieder finden.';
     case 'completed':
       return 'Auftrag als erledigt markiert. Vielen Dank!';
+    case 'expired':
+      return 'Auftrag abgelaufen. Die Angebotsfrist ist verstrichen.';
     case 'deleted':
       return 'Auftrag gelöscht.';
     default:
