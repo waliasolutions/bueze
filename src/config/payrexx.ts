@@ -31,8 +31,8 @@ export const PAYREXX_PAYMENT_METHODS = [
   { id: 'mastercard', name: 'Mastercard', icon: '💳' },
 ] as const;
 
-// Payment provider types
-export type PaymentProvider = 'payrexx' | 'stripe';
+// Payment provider type (Payrexx only - Stripe removed)
+export type PaymentProvider = 'payrexx';
 
 /**
  * Get the amount in Rappen for a plan
