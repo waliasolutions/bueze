@@ -1,269 +1,261 @@
 
-# Deep QA Report & Implementation Plan
 
-## Executive Summary
-This comprehensive audit covers all functional areas against the provided checklist. The application is **production-ready** for most core features, with several **minor gaps** that should be addressed before launch.
+# Pending Plan Selection with Approval-First Workflow
 
----
+## Overview
+The user wants a workflow where:
+1. A handwerker can select a **paid plan** during registration or from the pricing page
+2. They must still be **approved first** before paying
+3. After approval, they receive an **email with a payment link** for their selected plan
+4. They should be able to **cancel/downgrade to free** if they change their mind before paying
 
-## QA Status by Category
-
-### 1. CORE FUNCTIONS (Anfrage-Flow)
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| Up to 5 Handwerker/Anfrage (Hard Limit) | ✅ DONE | `leads.max_purchases` defaults to 5, enforced at database level |
-| Kontaktdaten Kunde bleiben verborgen | ✅ DONE | Privacy gate enforced: client contact visible only after proposal acceptance |
-| Offerten klar sichtbar + vergleichbar | ✅ DONE | `ProposalComparisonDialog` enables side-by-side comparison |
-| Status pro Anfrage (offen/Offerten/ausgewählt/abgeschlossen) | ✅ DONE | Lead statuses: `active`, `paused`, `completed`, `deleted` with `proposals_count` tracking |
+Currently, selecting a paid plan immediately redirects to payment without checking approval status, and there's no mechanism to store the "desired plan" preference.
 
 ---
 
-### 2. BEWERTUNGEN / VERTRAUEN
+## Implementation Plan
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| Sterne 1-5 | ✅ DONE | `StarRating` component with interactive mode |
-| Textbewertung | ✅ DONE | Optional comments in `RatingForm` |
-| Verifizierte Bewertung (nur nach Auftrag) | ✅ DONE | `is_verified: true` only set when proposal was accepted |
-| Bewertung + Anzahl im Profil | ✅ DONE | `handwerker_rating_stats` view displays average + count |
+### Phase 1: Database Schema Update
 
----
+#### Add `pending_plan` Column to `handwerker_subscriptions`
+A new nullable column to store the user's desired plan selection before payment:
 
-### 3. HANDWERKER-PROFIL
+```sql
+ALTER TABLE handwerker_subscriptions
+ADD COLUMN pending_plan text DEFAULT NULL;
+```
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| Profil vollständig (Logo/Firma/Telefon/Beschreibung) | ✅ DONE | `profileCompleteness.ts` tracks 11 fields (5 required, 6 optional) |
-| Kategorien/Leistungen + Region/PLZ | ✅ DONE | `categories` and `service_areas` arrays in profile |
-| Referenzen/Projektbilder | ✅ DONE | `handwerker-portfolio` storage bucket with RLS policies |
-| "Geprüft/Verifiziert"-Badge | ✅ DONE | `is_verified` + `verification_status: 'approved'` displayed as badge |
+This stores the plan the user selected (e.g., `monthly`, `6_month`, `annual`) before approval. Once they pay, it clears.
 
 ---
 
-### 4. KOMMUNIKATION / BENACHRICHTIGUNGEN
+### Phase 2: Frontend Changes
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| E-Mail: Anfrage erstellt | ✅ DONE | `send-lead-notification` triggers on new leads |
-| E-Mail: Offerte eingegangen | ✅ DONE | `send-proposal-notification` notifies client |
-| E-Mail: Auswahl (Annahme) | ✅ DONE | `send-acceptance-emails` sends contact details to both parties |
-| E-Mail: Abschluss → Bewertung anfordern | ⚠️ PARTIAL | Edge function exists, but **pg_cron job NOT configured** |
+#### 2.1 Update Checkout Page (`src/pages/Checkout.tsx`)
 
-**Issue:** The `send-rating-reminder` edge function is deployed but the scheduled cron job to trigger it daily at 09:00 Swiss time is not set up.
+**Add approval status check** before allowing payment:
 
----
+1. Check if user has `handwerker_profiles.verification_status = 'approved'`
+2. If **approved**: proceed with current payment flow
+3. If **pending**: 
+   - Save selected plan to `handwerker_subscriptions.pending_plan`
+   - Show message: "Ihr Profil wird noch geprüft. Nach der Freischaltung erhalten Sie einen Zahlungslink per E-Mail."
+   - Provide button to **downgrade to free** (clear pending_plan)
+4. If **not a handwerker**: redirect to onboarding
 
-### 5. PAYREXX / ABO
+**New UI States:**
+- Pending approval: Show info message, save plan button, cancel button
+- Approved without pending plan: Normal checkout flow
+- Approved with pending plan: Auto-redirect to payment
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| Payrexx Test & Live sauber | ✅ DONE | `create-payrexx-gateway` + `payrexx-webhook` deployed, instance: `wsolutions` |
-| Abo-Pakete greifen korrekt | ✅ DONE | Free (5/month), Monthly (CHF 90), 6-Month (CHF 510), Annual (CHF 960) |
-| Zahlung erfolgreich → Abo aktiv | ✅ DONE | Webhook updates subscription status |
-| Zahlung abgelehnt → kein Zugriff | ✅ DONE | Failed payments revert to free tier |
-| Rechnungs-/Payment-Status im Admin | ✅ DONE | `/admin/payments` shows revenue overview, recent payments, plan breakdown chart |
+#### 2.2 Update Pricing Page (`src/pages/legal/PricingPage.tsx`)
 
----
+Update `handleSelectPlan` to check approval status:
+- If approved handwerker → `/checkout?plan={planId}` (current behavior)
+- If pending handwerker → save to pending_plan, show confirmation message
+- If no handwerker profile → `/handwerker-onboarding?plan={planId}` (pass selected plan)
 
-### 6. ADMIN / KONTROLLE
+#### 2.3 Update Handwerker Onboarding (`src/pages/HandwerkerOnboarding.tsx`)
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| Admin kann Anfragen sehen | ✅ DONE | `AdminLeadsManagement` with full lead details + proposal history |
-| Admin kann User sperren | ✅ DONE | `delete-user` edge function for hard delete; soft delete via status |
-| Admin kann Fake-Anfragen löschen | ✅ DONE | Lead deletion with confirmation dialogs |
-| Spam-Schutz Formular | ⚠️ PARTIAL | Honeypot, rate limiting, time-check implemented; **No CAPTCHA** |
-| Logs/Übersicht: wer hat was wann | ⚠️ PARTIAL | Deletion audit + approval history exist; **No global activity log** |
+- Read `?plan=` query parameter if present
+- Store in form data to be saved as `pending_plan` after registration
+- Display selected plan in summary step
 
----
+#### 2.4 Add Pending Plan UI Component
 
-### 7. TECHNIK / GO-LIVE
-
-| Feature | Status | Details |
-|---------|--------|---------|
-| Mobile (iPhone) überall ok | ✅ DONE | Responsive design with mobile-first approach; documented in memory |
-| Formulare senden zuverlässig | ✅ DONE | Spam protection, validation, error handling implemented |
-| 404/Redirects ok | ✅ DONE | `NotFound.tsx` with proper routing |
-| Datenschutz/Impressum sichtbar | ✅ DONE | `/legal/datenschutz`, `/legal/impressum`, `/legal/agb` pages exist |
+Create `src/components/PendingPlanCard.tsx`:
+- Shows the selected pending plan
+- "Abonnement stornieren" button to clear pending_plan and stay on free
+- Displayed in Profile page subscription tab when pending_plan exists
 
 ---
 
-### 8. PRICING PAGE - MISSING CTA BUTTONS
+### Phase 3: Admin Approval Flow Update
 
-| Feature | Status | Details |
-|---------|--------|---------|
-| Subscribe buttons on Pricing | ❌ MISSING | Plan cards display features but **no action buttons** to subscribe |
+#### 3.1 Update `send-approval-email` Edge Function
 
-This is the issue you mentioned earlier - users cannot subscribe directly from the pricing page.
+Modify to include payment link if `pending_plan` exists:
+
+```typescript
+// After approval, check for pending plan
+const { data: subscription } = await supabase
+  .from('handwerker_subscriptions')
+  .select('pending_plan')
+  .eq('user_id', userId)
+  .single();
+
+if (subscription?.pending_plan) {
+  // Generate payment link and include in email
+  const paymentUrl = `https://bueeze.ch/checkout?plan=${subscription.pending_plan}`;
+  // Use template with payment CTA
+} else {
+  // Standard approval email without payment CTA
+}
+```
+
+**Updated Email Template** when `pending_plan` exists:
+- Subject: "🎉 Profil freigeschaltet - Jetzt Abo aktivieren"
+- Body includes:
+  - Confirmation of approval
+  - Selected plan details (name, price)
+  - Prominent "Jetzt bezahlen" button linking to `/checkout?plan={pending_plan}`
+  - Option to "Kostenlos starten" linking to `/profile?tab=subscription&cancel_pending=true`
+
+#### 3.2 Update HandwerkerApprovals.tsx
+
+Display pending_plan info in admin view so admins can see what the handwerker intends to subscribe to.
 
 ---
 
-## ISSUES TO FIX
+### Phase 4: Cancellation/Downgrade Flow
 
-### Priority 1: CRITICAL
+#### 4.1 Add Cancel Pending Plan Functionality
 
-#### 1.1 Pricing Page Missing Subscription Buttons
-**File:** `src/pages/legal/PricingPage.tsx`
+**Profile Page** (`src/pages/Profile.tsx`):
+- Read `?cancel_pending=true` query param
+- Clear `pending_plan` from subscription
+- Show toast: "Ihr geplantes Abo wurde storniert. Sie bleiben auf dem kostenlosen Plan."
 
-**Problem:** The pricing page displays all 4 plans with features but has no buttons for users to subscribe or start.
+**PendingPlanCard Component**:
+- "Plan stornieren" button
+- Clears `pending_plan` in database
+- Refreshes subscription state
 
-**Solution:** Add CTA buttons to each plan card:
-- Free plan: "Kostenlos starten" → `/handwerker-onboarding`
-- Paid plans: "Jetzt abonnieren" → `/checkout?plan={planId}`
+#### 4.2 Update SubscriptionManagement Component
 
-**Changes Required:**
+Add section to display pending plan with cancel option:
+
+```tsx
+{currentSubscription?.pendingPlan && (
+  <Card>
+    <CardHeader>
+      <CardTitle>Geplantes Upgrade</CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p>Sie haben {pendingPlanName} ausgewählt.</p>
+      <p>Nach der Zahlung wird Ihr Abo aktiviert.</p>
+      <div className="flex gap-2">
+        <Button onClick={handlePayNow}>Jetzt bezahlen</Button>
+        <Button variant="outline" onClick={handleCancelPending}>
+          Stornieren (kostenlos bleiben)
+        </Button>
+      </div>
+    </CardContent>
+  </Card>
+)}
+```
+
+---
+
+### Phase 5: Backend Updates
+
+#### 5.1 Update useSubscription Hook
+
+Add `pendingPlan` to returned subscription data.
+
+#### 5.2 Update Webhook Handlers
+
+After successful payment, clear `pending_plan`:
+
+```typescript
+// In payrexx-webhook and stripe-webhook
+.upsert({
+  // ... existing fields
+  pending_plan: null, // Clear pending plan after payment
+})
+```
+
+---
+
+## Technical Summary
+
+| File | Action | Purpose |
+|------|--------|---------|
+| DB Migration | Create | Add `pending_plan` column to subscriptions |
+| `src/pages/Checkout.tsx` | Modify | Check approval status, save pending plan |
+| `src/pages/legal/PricingPage.tsx` | Modify | Route based on approval status |
+| `src/pages/HandwerkerOnboarding.tsx` | Modify | Accept plan param, save as pending |
+| `src/components/PendingPlanCard.tsx` | Create | Display pending plan with cancel option |
+| `src/components/SubscriptionManagement.tsx` | Modify | Show pending plan section |
+| `src/pages/Profile.tsx` | Modify | Handle cancel_pending query param |
+| `src/hooks/useSubscription.ts` | Modify | Include pendingPlan in return |
+| `supabase/functions/send-approval-email/index.ts` | Modify | Include payment link if pending_plan |
+| `supabase/functions/payrexx-webhook/index.ts` | Modify | Clear pending_plan after payment |
+| `supabase/functions/stripe-webhook/index.ts` | Modify | Clear pending_plan after payment |
+| `src/pages/admin/HandwerkerApprovals.tsx` | Modify | Display pending_plan in admin view |
+
+---
+
+## User Flow Diagrams
+
+### New User Selects Paid Plan
+
 ```text
-1. Import Button, useNavigate
-2. Add handleSelectPlan function
-3. Add Button inside each CardContent after features
+User visits /pricing
+      │
+      ├── Clicks "Jetzt abonnieren" on paid plan
+      │
+      ▼
+Is user logged in?
+      │
+      ├── No → /auth → redirect back
+      │
+      ▼
+Is user an approved handwerker?
+      │
+      ├── Yes → /checkout?plan={planId} → Payment
+      │
+      ├── No (pending) → Save pending_plan
+      │                   Show "Wir prüfen Ihr Profil"
+      │                   Email sent after approval with payment link
+      │
+      └── No (no profile) → /handwerker-onboarding?plan={planId}
+```
+
+### After Approval with Pending Plan
+
+```text
+Admin approves handwerker
+      │
+      ▼
+Check pending_plan in subscription
+      │
+      ├── pending_plan exists → Send email with payment CTA
+      │
+      └── No pending_plan → Standard approval email
+      
+User receives email
+      │
+      ├── Click "Jetzt bezahlen" → /checkout?plan={pending_plan}
+      │                            Payment completes
+      │                            pending_plan cleared
+      │
+      └── Click "Kostenlos starten" → /profile?cancel_pending=true
+                                       pending_plan cleared
+                                       Stays on free tier
+```
+
+### Cancel Pending Plan
+
+```text
+User in /profile (subscription tab)
+      │
+      ▼
+Sees "Geplantes Upgrade" card
+      │
+      ├── Click "Stornieren" → pending_plan = null
+      │                         Toast: "Sie bleiben kostenlos"
+      │
+      └── Click "Jetzt bezahlen" → /checkout (proceeds with payment)
 ```
 
 ---
 
-#### 1.2 Rating Reminder Cron Job Not Configured
-**Problem:** The `send-rating-reminder` edge function exists but is not scheduled to run automatically.
+## Key Benefits
 
-**Solution:** Configure pg_cron job in Supabase SQL editor:
-```sql
-SELECT cron.schedule(
-  'send-rating-reminder',
-  '0 9 * * *',  -- 09:00 daily
-  $$SELECT net.http_post(
-    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-rating-reminder',
-    headers := '{"Authorization": "Bearer <anon_key>"}'::jsonb
-  )$$
-);
-```
+1. **No premature payments**: Users don't pay until approved
+2. **Clear intent tracking**: Admins see what plan users want
+3. **Flexible cancellation**: Users can change their mind at any point
+4. **Email-driven conversion**: Payment link in approval email drives subscription activation
+5. **Consistent with SSOT**: Uses existing subscription table with minimal schema change
 
-This requires `pg_cron` extension to be enabled.
-
----
-
-### Priority 2: RECOMMENDED
-
-#### 2.1 Add CAPTCHA to Lead Submission Form
-**Current State:** Spam protection relies on honeypot, rate limiting, and time checks.
-
-**Recommendation:** Add Google reCAPTCHA v3 for invisible bot protection on:
-- Lead submission form (`SubmitLead.tsx`)
-- Handwerker registration form (`HandwerkerOnboarding.tsx`)
-- Contact forms
-
----
-
-#### 2.2 Global Admin Activity Log
-**Current State:** Specialized audit trails exist (deletion_audit, handwerker_approval_history, payment_history).
-
-**Recommendation:** Create unified `admin_activity_log` table for tracking:
-- Lead modifications (pause/delete/reactivate)
-- User role changes
-- Content edits
-- All admin actions with user_id, action_type, target_entity, timestamp
-
----
-
-#### 2.3 Payrexx Webhook Registration
-**Action Required:** Register webhook URL in Payrexx dashboard:
-```
-https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/payrexx-webhook
-```
-
----
-
-## IMPLEMENTATION PLAN
-
-### Phase 1: Critical Fixes (Immediate)
-
-| Task | File(s) | Effort |
-|------|---------|--------|
-| Add subscription buttons to Pricing Page | `src/pages/legal/PricingPage.tsx` | 15 min |
-| Configure rating reminder cron job | Supabase SQL Editor | 10 min |
-| Register Payrexx webhook | Payrexx Dashboard | 5 min |
-
-### Phase 2: Recommended Improvements
-
-| Task | Effort |
-|------|--------|
-| Add reCAPTCHA to forms | 2-3 hours |
-| Create admin activity log table + logging | 3-4 hours |
-| End-to-end mobile QA pass | 2 hours |
-
----
-
-## Technical Details for Phase 1 Implementation
-
-### 1. Pricing Page Button Addition
-
-**Location:** `src/pages/legal/PricingPage.tsx`
-
-**Add imports:**
-```typescript
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-```
-
-**Add navigation hook inside component:**
-```typescript
-const navigate = useNavigate();
-
-const handleSelectPlan = (planId: string) => {
-  if (planId === 'free') {
-    navigate('/handwerker-onboarding');
-  } else {
-    navigate(`/checkout?plan=${planId}`);
-  }
-};
-```
-
-**Add Button inside each CardContent (after features div, around line 128):**
-```typescript
-<Button 
-  onClick={() => handleSelectPlan(plan.id)}
-  variant={plan.id === 'monthly' ? 'default' : 'outline'}
-  className="w-full mt-4"
->
-  {plan.id === 'free' ? 'Kostenlos starten' : 'Jetzt abonnieren'}
-</Button>
-```
-
-### 2. Rating Reminder Cron SQL
-
-Execute in Supabase SQL Editor:
-```sql
--- Enable pg_cron extension if not already enabled
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- Schedule daily rating reminder at 09:00 Swiss time
-SELECT cron.schedule(
-  'daily-rating-reminder',
-  '0 9 * * *',
-  $$
-  SELECT net.http_post(
-    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-rating-reminder',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0dGhoZGxodWh0d2FhZW5uZmlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNDg2NzYsImV4cCI6MjA2NDYyNDY3Nn0.4_aty-J0w_eHsP9sTid0yID7ZNJhd1HGvLf8OJY1A8A'
-    ),
-    body := '{}'::jsonb
-  )
-  $$
-);
-```
-
----
-
-## Summary Scores
-
-| Category | Score | Status |
-|----------|-------|--------|
-| Core Functions | 100% | ✅ Complete |
-| Bewertungen/Vertrauen | 100% | ✅ Complete |
-| Handwerker-Profil | 100% | ✅ Complete |
-| Kommunikation | 90% | ⚠️ Cron job missing |
-| Payrexx/Abo | 95% | ⚠️ Webhook registration pending |
-| Admin/Kontrolle | 85% | ⚠️ No CAPTCHA, partial logging |
-| Technik/Go-Live | 100% | ✅ Complete |
-| **Pricing Page UX** | 0% | ❌ No subscription buttons |
-
-**Overall Readiness: 90%** - Ready for launch after Phase 1 fixes.
