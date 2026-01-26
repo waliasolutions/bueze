@@ -24,6 +24,7 @@ export interface SubscriptionData {
   isActive: boolean;
   isLow: boolean;
   isDepleted: boolean;
+  pendingPlan: SubscriptionPlanType | null;
 }
 
 interface UseSubscriptionOptions {
@@ -105,6 +106,7 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
           isActive: subscriptionData.status === 'active',
           isLow: !isUnlimited && remainingProposals <= 2 && remainingProposals > 0,
           isDepleted: !isUnlimited && remainingProposals <= 0,
+          pendingPlan: (subscriptionData as any).pending_plan as SubscriptionPlanType | null,
         });
       } else {
         setSubscription(null);

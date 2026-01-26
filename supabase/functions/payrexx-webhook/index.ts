@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
           proposals_used_this_period: 0,
           current_period_start: now.toISOString(),
           current_period_end: periodEnd.toISOString(),
+          pending_plan: null, // Clear pending plan after successful payment
           updated_at: now.toISOString(),
         }, {
           onConflict: 'user_id',

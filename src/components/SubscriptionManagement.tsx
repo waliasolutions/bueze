@@ -5,8 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Crown, Calendar, AlertTriangle, Infinity as InfinityIcon } from 'lucide-react';
 import { formatDate } from '@/lib/swissTime';
+import { PendingPlanCard } from '@/components/PendingPlanCard';
 import { 
   SUBSCRIPTION_PLAN_LIST,
+  SUBSCRIPTION_PLANS,
   type SubscriptionPlan,
   type SubscriptionPlanType,
   formatPrice,
@@ -20,6 +22,9 @@ interface CurrentSubscription {
   currentPeriodEnd: string;
   usedProposals: number;
   hasPaymentMethod: boolean;
+  pendingPlan?: SubscriptionPlanType | null;
+  userId?: string;
+  isApproved?: boolean;
 }
 
 interface SubscriptionManagementProps {
@@ -27,6 +32,7 @@ interface SubscriptionManagementProps {
   availablePlans?: SubscriptionPlan[];
   onUpgradePlan: (planId: SubscriptionPlanType) => void;
   onCancelSubscription: () => void;
+  onPendingPlanCancelled?: () => void;
   loading?: boolean;
 }
 
@@ -34,6 +40,7 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
   currentSubscription,
   onUpgradePlan,
   onCancelSubscription,
+  onPendingPlanCancelled,
   loading = false
 }) => {
   const getUsagePercentage = () => {
@@ -118,6 +125,16 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Pending Plan Card */}
+      {currentSubscription.pendingPlan && currentSubscription.userId && (
+        <PendingPlanCard
+          pendingPlan={currentSubscription.pendingPlan}
+          isApproved={currentSubscription.isApproved ?? false}
+          userId={currentSubscription.userId}
+          onPlanCancelled={onPendingPlanCancelled || (() => {})}
+        />
+      )}
+
       {/* Current Subscription */}
       <Card>
         <CardHeader>

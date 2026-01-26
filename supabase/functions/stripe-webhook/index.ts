@@ -99,6 +99,7 @@ serve(async (req: Request) => {
             current_period_end: periodEnd.toISOString(),
             stripe_customer_id: session.customer as string,
             stripe_subscription_id: session.subscription as string,
+            pending_plan: null, // Clear pending plan after successful payment
           }, {
             onConflict: 'user_id'
           });

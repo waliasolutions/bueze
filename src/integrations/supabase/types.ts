@@ -868,6 +868,7 @@ export type Database = {
           current_period_end: string
           current_period_start: string
           id: string
+          pending_plan: string | null
           plan_type: string
           proposals_limit: number
           proposals_used_this_period: number
@@ -882,6 +883,7 @@ export type Database = {
           current_period_end?: string
           current_period_start?: string
           id?: string
+          pending_plan?: string | null
           plan_type?: string
           proposals_limit?: number
           proposals_used_this_period?: number
@@ -896,6 +898,7 @@ export type Database = {
           current_period_end?: string
           current_period_start?: string
           id?: string
+          pending_plan?: string | null
           plan_type?: string
           proposals_limit?: number
           proposals_used_this_period?: number
