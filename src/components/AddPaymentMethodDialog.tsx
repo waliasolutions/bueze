@@ -57,7 +57,7 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Simulate API call - In real implementation, this would integrate with Stripe
+      // Simulate API call - In production, this integrates with Payrexx for payment method management
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       const cardType = detectCardType(formData.cardNumber);
