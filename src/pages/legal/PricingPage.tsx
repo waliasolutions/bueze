@@ -1,17 +1,28 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { usePageContent } from '@/hooks/usePageContent';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Check } from 'lucide-react';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 import { generateFAQSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const PricingPage = () => {
+  const navigate = useNavigate();
   const { content } = usePageContent('pricing');
+
+  const handleSelectPlan = (planId: string) => {
+    if (planId === 'free') {
+      navigate('/handwerker-onboarding');
+    } else {
+      navigate(`/checkout?plan=${planId}`);
+    }
+  };
 
   const seoData = content?.seo || {
     title: "Preise für Handwerker | Büeze.ch",
@@ -126,6 +137,13 @@ const PricingPage = () => {
                       </div>
                     ))}
                   </div>
+                  <Button 
+                    onClick={() => handleSelectPlan(plan.id)}
+                    variant={plan.id === 'monthly' ? 'default' : 'outline'}
+                    className="w-full mt-4"
+                  >
+                    {plan.id === 'free' ? 'Kostenlos starten' : 'Jetzt abonnieren'}
+                  </Button>
                 </CardContent>
               </Card>
             ))}
