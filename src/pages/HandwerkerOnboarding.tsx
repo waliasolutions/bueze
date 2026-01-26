@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/Header";
@@ -39,6 +39,8 @@ type StepContent = 'contact' | 'services' | 'summary';
 
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const selectedPlanParam = searchParams.get("plan") as string | null;
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
@@ -593,20 +595,38 @@ const HandwerkerOnboarding = () => {
       // Clear saved draft
       clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
 
-      // Assign handwerker role (non-blocking)
-      supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .then(({ data: existingRoles }) => {
+      // Assign handwerker role and save pending plan (non-blocking)
+      (async () => {
+        try {
+          // Check if user is admin
+          const { data: existingRoles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id);
+          
           const isAdmin = existingRoles?.some(r => r.role === 'admin' || r.role === 'super_admin');
           if (!isAdmin) {
-            supabase
+            await supabase
               .from('user_roles')
-              .upsert({ user_id: user.id, role: 'handwerker' }, { onConflict: 'user_id,role' })
-              .then(() => {});
+              .upsert({ user_id: user.id, role: 'handwerker' }, { onConflict: 'user_id,role' });
           }
-        });
+
+          // Save pending plan if user selected one from query params
+          if (selectedPlanParam && selectedPlanParam !== 'free') {
+            await supabase
+              .from('handwerker_subscriptions')
+              .upsert({
+                user_id: user.id,
+                pending_plan: selectedPlanParam,
+                plan_type: 'free',
+                proposals_limit: 5,
+                proposals_used_this_period: 0,
+              }, { onConflict: 'user_id' });
+          }
+        } catch (err) {
+          console.error('Non-critical error in post-registration:', err);
+        }
+      })();
       
       toast({
         title: "Profil erstellt!",
