@@ -76,7 +76,7 @@ const Datenschutz = () => {
                     Tätigkeitsbereiche, Servicezonen, Erfahrung, Zertifikate, Portfolio-Bilder</li>
                     <li><strong>Auftragsdaten:</strong> Projektbeschreibung, Budget, gewünschte Ausführungszeit, Fotos</li>
                     <li><strong>Kommunikationsdaten:</strong> Nachrichten zwischen Nutzern, Offerten, Kontaktdaten nach Annahme</li>
-                    <li><strong>Zahlungsdaten:</strong> Über Stripe und Payrexx verarbeitete Zahlungsinformationen (Kreditkartendaten werden 
+                    <li><strong>Zahlungsdaten:</strong> Über Payrexx verarbeitete Zahlungsinformationen (Kreditkartendaten werden 
                     nicht bei uns gespeichert)</li>
                   </ul>
                 </div>
@@ -156,17 +156,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.2 Stripe (Zahlungsabwicklung)</h3>
-                    <ul className="list-disc pl-6 space-y-1">
-                      <li><strong>Zweck:</strong> Verarbeitung von Abonnement-Zahlungen</li>
-                      <li><strong>Standort:</strong> USA (mit EU-Standardvertragsklauseln)</li>
-                      <li><strong>Datenverarbeitung:</strong> Stripe ist eigenständiger Datenverantwortlicher für Zahlungsdaten</li>
-                      <li><strong>Datenschutz:</strong> <a href="https://stripe.com/ch/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:text-brand-600">https://stripe.com/ch/privacy</a></li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-2">5.3 Payrexx (Zahlungsabwicklung Schweiz)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.2 Payrexx (Zahlungsabwicklung Schweiz)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li><strong>Zweck:</strong> Verarbeitung von Zahlungen über Schweizer Zahlungsmethoden</li>
                       <li><strong>Standort:</strong> Schweiz</li>

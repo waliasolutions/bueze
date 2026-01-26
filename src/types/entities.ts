@@ -325,8 +325,7 @@ export interface HandwerkerSubscription {
   proposals_used_this_period: number;
   current_period_start: string;
   current_period_end: string;
-  stripe_customer_id?: string | null;
-  stripe_subscription_id?: string | null;
+  pending_plan?: string | null;
   created_at: string;
   updated_at: string;
 }

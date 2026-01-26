@@ -9,9 +9,6 @@ verify_jwt = true
 [functions.document-expiry-reminder]
 verify_jwt = false
 
-[functions.create-checkout-session]
-verify_jwt = true
-
 [functions.create-handwerker-account]
 verify_jwt = false
 
@@ -81,9 +78,6 @@ verify_jwt = false
 [functions.send-subscription-confirmation]
 verify_jwt = false
 
-[functions.stripe-webhook]
-verify_jwt = false
-
 [functions.validate-magic-token]
 verify_jwt = false
 
@@ -97,4 +91,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.payrexx-webhook]
+verify_jwt = false
+
+[functions.lead-expiry-check]
 verify_jwt = false
