@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ArrowLeft, Loader2, CreditCard } from "lucide-react";
+import { Check, ArrowLeft, Loader2, CreditCard, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -9,11 +9,13 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentMethodSelector } from "@/components/checkout/PaymentMethodSelector";
 import { 
   SUBSCRIPTION_PLANS, 
   SubscriptionPlanType,
   formatPrice,
 } from "@/config/subscriptionPlans";
+import { PaymentProvider } from "@/config/payrexx";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ export default function Checkout() {
   const planParam = searchParams.get("plan") as SubscriptionPlanType || "monthly";
   
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanType>(planParam);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentProvider>('payrexx');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -34,7 +37,6 @@ export default function Checkout() {
   const checkAuth = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      // Silent redirect - the redirect URL itself indicates the intent
       navigate("/auth?redirect=/checkout?plan=" + selectedPlan);
       return;
     }
@@ -43,7 +45,6 @@ export default function Checkout() {
 
   const handleCheckout = async () => {
     if (plan.price === 0) {
-      // Free plan - just navigate to profile
       navigate("/profile?tab=subscription");
       return;
     }
@@ -51,21 +52,43 @@ export default function Checkout() {
     setIsProcessing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: {
-          planType: selectedPlan,
-          successUrl: `${window.location.origin}/profile?tab=subscription&success=true`,
-          cancelUrl: `${window.location.origin}/checkout?plan=${selectedPlan}`,
-        },
-      });
+      const successUrl = `${window.location.origin}/profile?tab=subscription&success=true`;
+      const cancelUrl = `${window.location.origin}/checkout?plan=${selectedPlan}`;
 
-      if (error) throw error;
+      if (paymentMethod === 'payrexx') {
+        // Use Payrexx for Swiss payment methods
+        const { data, error } = await supabase.functions.invoke('create-payrexx-gateway', {
+          body: {
+            planType: selectedPlan,
+            successUrl,
+            cancelUrl,
+          },
+        });
 
-      if (data?.url) {
-        // Redirect to Stripe Checkout
-        window.location.href = data.url;
+        if (error) throw error;
+
+        if (data?.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error("Keine Checkout-URL erhalten");
+        }
       } else {
-        throw new Error("Keine Checkout-URL erhalten");
+        // Use Stripe for international cards
+        const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+          body: {
+            planType: selectedPlan,
+            successUrl,
+            cancelUrl,
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error("Keine Checkout-URL erhalten");
+        }
       }
     } catch (error: any) {
       console.error("Checkout error:", error);
@@ -106,7 +129,7 @@ export default function Checkout() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Plan Selection */}
+          {/* Left Column - Plan & Payment Selection */}
           <div className="lg:col-span-2 space-y-6">
             {/* Plan Selection */}
             <Card>
@@ -177,31 +200,90 @@ export default function Checkout() {
               </CardContent>
             </Card>
 
-            {/* Payment Info */}
+            {/* Payment Method Selection */}
             {plan.price > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
-                    2. Sichere Zahlung
+                    2. Zahlungsmethode wählen
                   </CardTitle>
                   <CardDescription>
-                    Sie werden zu unserem sicheren Zahlungspartner Stripe weitergeleitet
+                    Wählen Sie Ihre bevorzugte Zahlungsmethode
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <PaymentMethodSelector 
+                    value={paymentMethod} 
+                    onChange={setPaymentMethod} 
+                  />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Payment Security Info */}
+            {plan.price > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    3. Sichere Zahlung
+                  </CardTitle>
+                  <CardDescription>
+                    {paymentMethod === 'payrexx' 
+                      ? 'Sie werden zu Payrexx weitergeleitet – dem führenden Schweizer Zahlungsanbieter'
+                      : 'Sie werden zu Stripe weitergeleitet – unserem sicheren internationalen Zahlungspartner'
+                    }
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="bg-muted p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      Wir akzeptieren alle gängigen Zahlungsmethoden:
-                    </p>
-                    <div className="flex items-center gap-4 mt-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <CreditCard className="h-4 w-4" />
-                        Kreditkarte (Visa, Mastercard)
-                      </div>
-                    </div>
+                    {paymentMethod === 'payrexx' ? (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Verfügbare Schweizer Zahlungsmethoden:
+                        </p>
+                        <div className="flex flex-wrap items-center gap-4">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Smartphone className="h-4 w-4" />
+                            TWINT
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <CreditCard className="h-4 w-4" />
+                            PostFinance Card
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <CreditCard className="h-4 w-4" />
+                            PostFinance E-Finance
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <CreditCard className="h-4 w-4" />
+                            Visa / Mastercard
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Akzeptierte Kreditkarten:
+                        </p>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2 text-sm">
+                            <CreditCard className="h-4 w-4" />
+                            Visa
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <CreditCard className="h-4 w-4" />
+                            Mastercard
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <CreditCard className="h-4 w-4" />
+                            American Express
+                          </div>
+                        </div>
+                      </>
+                    )}
                     <p className="text-xs text-muted-foreground mt-3">
-                      Ihre Zahlungsdaten werden sicher von Stripe verarbeitet und niemals auf unseren Servern gespeichert.
+                      Ihre Zahlungsdaten werden sicher verarbeitet und niemals auf unseren Servern gespeichert.
                     </p>
                   </div>
                 </CardContent>
@@ -281,6 +363,15 @@ export default function Checkout() {
                   <p className="text-xs text-muted-foreground text-center">
                     Entspricht {formatPrice(plan.pricePerMonth)} pro Monat
                   </p>
+                )}
+
+                {/* Payment method indicator */}
+                {plan.price > 0 && (
+                  <div className="bg-muted/50 rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">
+                      Zahlung via {paymentMethod === 'payrexx' ? 'Payrexx (CH)' : 'Stripe'}
+                    </p>
+                  </div>
                 )}
               </CardContent>
 
