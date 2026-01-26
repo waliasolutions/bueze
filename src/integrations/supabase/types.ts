@@ -1370,6 +1370,8 @@ export type Database = {
           id: string
           invoice_pdf_url: string | null
           payment_date: string
+          payment_provider: string | null
+          payrexx_transaction_id: string | null
           plan_type: string
           status: string
           stripe_invoice_id: string | null
@@ -1384,6 +1386,8 @@ export type Database = {
           id?: string
           invoice_pdf_url?: string | null
           payment_date?: string
+          payment_provider?: string | null
+          payrexx_transaction_id?: string | null
           plan_type: string
           status?: string
           stripe_invoice_id?: string | null
@@ -1398,6 +1402,8 @@ export type Database = {
           id?: string
           invoice_pdf_url?: string | null
           payment_date?: string
+          payment_provider?: string | null
+          payrexx_transaction_id?: string | null
           plan_type?: string
           status?: string
           stripe_invoice_id?: string | null
