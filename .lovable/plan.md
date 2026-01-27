@@ -1,319 +1,187 @@
 
+# Password Reset Fix Plan
 
-# Deep QA Report: B2B Lead Portal (Büeze.ch)
-## Comprehensive Production Readiness Audit
-
----
-
-## Executive Summary
-
-**Overall Readiness: 92%** - Ready for production with minor fixes
-
-The application has a **strong foundational architecture** with proper SSOT compliance, Swiss timezone handling, and well-structured state machines. Critical improvements from Phase 1-2 have been implemented (Stripe removal, lead expiry system, pending plan workflow).
+## Problem Summary
+The password reset functionality is failing because:
+1. **Token Detection Race Condition**: The `ResetPassword.tsx` component only listens for the `PASSWORD_RECOVERY` auth event, but this event may fire before the component mounts (or during hydration), causing the token to be missed
+2. **Missing Redirect URLs in Supabase**: The production and preview URLs are likely not whitelisted in Supabase's URL Configuration, causing the recovery tokens to be rejected
 
 ---
 
-## Abschlussprüfung (Checklist Confirmation)
+## Solution Overview
 
-| Category | Status | Score | Notes |
-|----------|--------|-------|-------|
-| **Core-Funktionen** | ✅ READY | 100% | Max 5 proposals/lead enforced, contact masking working, proposal comparison implemented |
-| **Bewertungen & Vertrauen** | ✅ READY | 100% | 1-5 stars, text reviews, verified only post-acceptance, rating stats in profile |
-| **Handwerker-Profile** | ✅ READY | 100% | Complete profile system with logo, categories, regions, verified badge |
-| **Kommunikation** | ⚠️ 95% | 95% | All email triggers configured, pg_cron jobs need manual SQL execution |
-| **Payrexx & Abos** | ⚠️ 90% | 90% | Payrexx-only, 3 minor Stripe remnants to clean |
-| **Admin & Kontrolle** | ⚠️ 90% | 90% | Full admin capabilities, 12 RLS policies need hardening |
-| **Technik & Go-Live** | ✅ READY | 100% | Mobile responsive, German 404 page, legal pages accessible |
+### Part 1: Supabase URL Configuration (Manual Step)
 
----
+You need to add the following URLs to the **Redirect URLs** list in your Supabase Dashboard:
 
-## Detailed QA Results
+**Navigate to:** `Authentication` → `URL Configuration` → `Redirect URLs`
 
-### 1. CORE-FUNKTIONEN ✅ READY
+Add these URLs:
+| URL | Purpose |
+|-----|---------|
+| `https://bueeze.ch/reset-password` | Production |
+| `https://*.lovableproject.com/reset-password` | Preview environments (wildcard) |
+| `https://bueze.lovable.app/reset-password` | Published Lovable subdomain |
 
-**Max 5 Handwerker pro Anfrage (Hard Limit)**
-- ✅ Enforced via `leads.max_purchases` column (default: 5)
-- ✅ Validated in `can_submit_proposal` RPC function
-- ✅ UI shows limit badge in `ProposalLimitBadge.tsx`
-
-**Kundendaten verborgen bis Freigabe**
-- ✅ `OpportunityView.tsx` excludes owner contact data in query (lines 51-56)
-- ✅ Privacy notice displayed: "Kontaktdaten nach Annahme Ihrer Offerte" (line 386-389)
-- ✅ `ReceivedProposals.tsx` shows contact only when `status === 'accepted'` (lines 480-595)
-- ✅ Database trigger `trigger_send_acceptance_emails` only fires on status change to 'accepted'
-
-**Offerten klar sichtbar + vergleichbar**
-- ✅ `ProposalComparisonDialog.tsx` enables side-by-side comparison
-- ✅ `ReceivedProposals.tsx` supports multi-select for batch comparison
-- ✅ Sorting by date/price, filtering by status
-
-**Lead Status State Machine**
-- ✅ Full lifecycle: `draft` → `active` → `paused`/`completed`/`expired`/`deleted`
-- ✅ SSOT in `src/config/leadStatuses.ts` with `canView`, `canPurchase` flags
-- ✅ Expiry automation via `lead-expiry-check` edge function
+**Direct Link:** https://supabase.com/dashboard/project/ztthhdlhuhtwaaennfia/auth/url-configuration
 
 ---
 
-### 2. BEWERTUNGEN & VERTRAUEN ✅ READY
+### Part 2: Code Changes to ResetPassword.tsx
 
-| Feature | Status | Evidence |
-|---------|--------|----------|
-| Sterne 1-5 | ✅ | `StarRating` component with interactive mode |
-| Textbewertung | ✅ | Optional comments in `RatingForm` |
-| Nur verifizierte | ✅ | `is_verified: true` only after proposal acceptance |
-| Schnitt + Anzahl im Profil | ✅ | `handwerker_rating_stats` database view |
-| Rating Reminder | ✅ | `send-rating-reminder` edge function (needs pg_cron) |
+#### Issue Analysis
+The current implementation relies on catching the `PASSWORD_RECOVERY` event via `onAuthStateChange`. However:
+- When Supabase detects recovery tokens in the URL hash, it automatically exchanges them for a session
+- The `PASSWORD_RECOVERY` event fires immediately when this happens
+- If the React component hasn't mounted yet, the listener misses the event
 
----
+#### Fix Strategy
+1. Add a loading state to prevent flashing "Invalid token" immediately
+2. Parse URL hash directly on mount to detect `type=recovery` before relying on events
+3. Use `getSession()` to check if Supabase already established a recovery session
+4. Add proper timeout before declaring token invalid
+5. Follow the deferred async pattern for auth callbacks
 
-### 3. HANDWERKER-PROFIL ✅ READY
+#### Changes to `src/pages/ResetPassword.tsx`:
 
-**Profile Completeness Tracking**
-- ✅ `profileCompleteness.ts` tracks 11 fields (5 required, 6 optional)
-- ✅ Visual progress bar in `ProfileCompletenessCard.tsx`
-- ✅ Missing fields listed to guide completion
+```typescript
+export default function ResetPassword() {
+  const [isLoading, setIsLoading] = useState(true); // Start with loading state
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isValidToken, setIsValidToken] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
-**Required Fields:**
-1. ✅ Vor- und Nachname
-2. ✅ E-Mail-Adresse
-3. ✅ Telefonnummer
-4. ✅ Profilbeschreibung (min 50 chars)
-5. ✅ Servicegebiete
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    // Check if URL hash contains recovery token indicators
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hasRecoveryParams = hashParams.has('access_token') || 
+                              hashParams.has('type') && hashParams.get('type') === 'recovery';
+    
+    // Listen for PASSWORD_RECOVERY event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Defer async operations per Supabase best practices
+      setTimeout(() => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsValidToken(true);
+          setIsLoading(false);
+        } else if (event === 'SIGNED_IN' && session) {
+          // Recovery flow sometimes emits SIGNED_IN instead of PASSWORD_RECOVERY
+          setIsValidToken(true);
+          setIsLoading(false);
+        }
+      }, 0);
+    });
 
-**Optional Fields:**
-- Logo, Stundensätze, Firmenname, Portfolio, UID-Nummer, IBAN
+    // Check for existing session (handles case where event already fired)
+    const checkExistingSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          setIsValidToken(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        // If URL had recovery params but no session yet, wait a bit for Supabase to process
+        if (hasRecoveryParams) {
+          // Give Supabase time to process the token exchange
+          timeoutId = setTimeout(() => {
+            // Final check before declaring invalid
+            supabase.auth.getSession().then(({ data: { session: finalSession } }) => {
+              if (finalSession?.user) {
+                setIsValidToken(true);
+              } else {
+                setIsValidToken(false);
+                toast({
+                  title: 'Ungültiger oder abgelaufener Link',
+                  description: 'Bitte fordern Sie einen neuen Link zum Zurücksetzen des Passworts an.',
+                  variant: 'destructive',
+                });
+                setTimeout(() => navigate('/auth'), 3000);
+              }
+              setIsLoading(false);
+            });
+          }, 2000);
+        } else {
+          // No recovery params in URL and no session - invalid access
+          setIsValidToken(false);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        setIsLoading(false);
+        setIsValidToken(false);
+      }
+    };
 
-**Verified Badge**
-- ✅ Displayed when `is_verified = true` AND `verification_status = 'approved'`
-- ✅ Visible in `HandwerkerStatusIndicator.tsx` and profile cards
+    // Start session check
+    checkExistingSession();
 
----
+    return () => {
+      subscription.unsubscribe();
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [navigate, toast]);
 
-### 4. KOMMUNIKATION & BENACHRICHTIGUNGEN ⚠️ 95%
+  // Show loading state while checking token
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <CardTitle className="mt-4">Link wird überprüft...</CardTitle>
+            <CardDescription>
+              Bitte warten Sie einen Moment.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
-**Email Notification Matrix (All Configured)**
-
-| Email Type | Trigger | Status |
-|------------|---------|--------|
-| Anfrage erstellt | `trigger_send_lead_notification` (DB trigger) | ✅ DONE |
-| Offerte eingegangen | `trigger_send_proposal_notification` (DB trigger) | ✅ DONE |
-| Auswahl durch Kunde | `trigger_send_acceptance_emails` (DB trigger) | ✅ DONE |
-| Offerte abgelehnt | `proposalHelpers.ts` → `send-proposal-rejection-email` | ✅ DONE |
-| Handwerker freigeschaltet | Admin → `send-approval-email` (with pending plan CTA) | ✅ DONE |
-| Rating Reminder | `send-rating-reminder` (needs pg_cron) | ⚠️ NEEDS MANUAL SQL |
-| Lead Expiry | `lead-expiry-check` (needs pg_cron) | ⚠️ NEEDS MANUAL SQL |
-
-**Action Required:** Execute pg_cron SQL in Supabase SQL Editor:
-```sql
--- Enable cron extensions
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- Daily rating reminder at 09:00 Swiss time (08:00 UTC summer, 09:00 UTC winter)
-SELECT cron.schedule(
-  'daily-rating-reminder',
-  '0 8 * * *',
-  $$SELECT net.http_post(
-    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-rating-reminder',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}'::jsonb,
-    body := '{}'::jsonb
-  )$$
-);
-
--- Daily lead expiry check at 00:05 Swiss time
-SELECT cron.schedule(
-  'lead-expiry-check',
-  '5 23 * * *',
-  $$SELECT net.http_post(
-    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/lead-expiry-check',
-    headers := '{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."}'::jsonb,
-    body := '{}'::jsonb
-  )$$
-);
+  // ... rest of component unchanged
+}
 ```
 
----
-
-### 5. PAYREXX & ABOS ⚠️ 90%
-
-**Payrexx Integration**
-- ✅ `create-payrexx-gateway` edge function deployed
-- ✅ `payrexx-webhook` handles success/failure/refund
-- ✅ Instance: `wsolutions` (from secrets)
-- ✅ Plan configs: Free (5/mo), Monthly (CHF 90), 6-Month (CHF 510), Annual (CHF 960)
-
-**Pending Plan Workflow (NEW)**
-- ✅ `pending_plan` column added to `handwerker_subscriptions`
-- ✅ `PendingPlanCard.tsx` shows pending selection with cancel option
-- ✅ `send-approval-email` includes payment CTA when pending_plan exists
-- ✅ Checkout page blocks payment until profile approved
-
-**Stripe Remnants (3 Minor Items)**
-| Location | Issue | Fix |
-|----------|-------|-----|
-| `src/config/payrexx.ts:35` | `PaymentProvider = 'payrexx' \| 'stripe'` | Remove `'stripe'` from type |
-| `src/components/AddPaymentMethodDialog.tsx:60` | Comment mentions Stripe | Update comment |
-| DB columns | `stripe_customer_id`, `stripe_invoice_id` | Keep for backward compat, mark deprecated |
-
-**Admin Payment Visibility**
-- ✅ `/admin/payments` shows revenue stats, plan breakdown chart, recent payments
+#### Key Changes Explained:
+1. **Loading State**: Start with `isLoading: true` to show a spinner instead of immediately showing "Invalid token"
+2. **Hash Detection**: Check `window.location.hash` for `access_token` or `type=recovery` parameters
+3. **Deferred Auth Callbacks**: Use `setTimeout(0)` in auth change handlers per project conventions
+4. **Fallback Session Check**: Call `getSession()` to catch cases where the token was already processed
+5. **Graceful Timeout**: Wait 2 seconds before declaring the token invalid if recovery params were present
 
 ---
 
-### 6. ADMIN & KONTROLLE ⚠️ 90%
+## Implementation Steps
 
-**Admin Capabilities**
-- ✅ View all leads: `AdminLeadsManagement.tsx` with full details + proposal history
-- ✅ Approve/reject handwerkers: `HandwerkerApprovals.tsx` with approval history logging
-- ✅ Delete users: `delete-user` edge function (hard delete with audit trail)
-- ✅ View payments: `AdminPayments.tsx` with revenue metrics
+1. **Add Supabase Redirect URLs** (manual)
+   - Go to Supabase Dashboard → Authentication → URL Configuration
+   - Add the three URLs listed above
 
-**Spam Protection**
-- ✅ Honeypot fields in `spamProtection.ts`
-- ✅ Rate limiting (3 attempts per minute)
-- ✅ Time-based validation (min 5 seconds to submit)
-- ✅ Content validation (spam patterns, profanity)
-- ❌ No CAPTCHA (recommended for Phase 3)
+2. **Update ResetPassword.tsx**
+   - Add loading state with spinner
+   - Add URL hash parsing logic
+   - Update useEffect with deferred pattern and session checks
+   - Add timeout handling for token validation
 
-**RLS Policy Hardening Needed**
-- ⚠️ 12 RLS policies with `USING (true)` or `WITH CHECK (true)`
-- Affected tables: `admin_notifications`, `client_notifications`, `handwerker_notifications`, `deletion_audit`, `contact_requests`, `form_submissions`
-- **Recommendation:** Tighten INSERT policies to require service role or specific user conditions
+3. **Test the Flow**
+   - Request password reset from /auth
+   - Check email and click link
+   - Verify page shows loading spinner briefly, then password form
+   - Submit new password and confirm success
 
 ---
 
-### 7. TECHNIK & GO-LIVE ✅ READY
+## Technical Notes
 
-**Mobile Responsiveness**
-- ✅ Mobile-first design with responsive breakpoints
-- ✅ `use-mobile.tsx` hook for conditional rendering
-- ✅ `MobileStickyFooter.tsx` for key actions
-
-**404 Page (German)**
-- ✅ Translated to German: "Seite nicht gefunden"
-- ✅ Recovery links: Home, Browse Leads, Back button
-- ✅ GTM 404 tracking implemented
-- ✅ Contact link to `info@bueeze.ch`
-
-**Routing (Zero 404)**
-- ✅ 53 routes defined in `App.tsx`
-- ✅ Catch-all: `<Route path="*" element={<NotFound />} />`
-- ✅ Auth redirects work correctly
-
-**Legal Pages**
-- ✅ `/legal/agb` - AGB
-- ✅ `/impressum` - Impressum
-- ✅ `/datenschutz` - Datenschutz (updated to remove Stripe mentions)
-
-**Swiss Timezone (Europe/Zurich)**
-- ✅ SSOT in `src/lib/swissTime.ts`
-- ✅ DST-safe using `date-fns-tz` with `toZonedTime()`/`fromZonedTime()`
-- ✅ All display functions use German locale
-
----
-
-## Contact Detail Access Rules ✅ VERIFIED
-
-### Before Acceptance (Masked)
-| Data Point | Visible to Seller? | Evidence |
-|------------|-------------------|----------|
-| Full name | ❌ NO | Not in `OpportunityView` query |
-| Email | ❌ NO | Not in query |
-| Phone | ❌ NO | Not in query |
-| Exact address | ❌ NO | Only city/canton shown |
-
-### After Acceptance (Unmasked)
-| Data Point | Visible to Winner? | Evidence |
-|------------|-------------------|----------|
-| Full name | ✅ YES | `ReceivedProposals.tsx` lines 496-509 |
-| Email | ✅ YES | Lines 525-534 |
-| Phone | ✅ YES | Lines 512-522 |
-| Full address | ✅ YES | Lines 538-549 |
-
----
-
-## Lead Lifecycle States ✅ COMPLETE
-
-| Status | DB Enum | canView | canPurchase | Transitions To |
-|--------|---------|---------|-------------|----------------|
-| draft | ✅ | ❌ | ❌ | active |
-| active | ✅ | ✅ | ✅ | paused, completed, expired, deleted |
-| paused | ✅ | ❌ | ❌ | active |
-| completed | ✅ | ❌ | ❌ | (final) |
-| expired | ✅ | ❌ | ❌ | (final) |
-| deleted | ✅ | ❌ | ❌ | (final) |
-
----
-
-## Proposal States ✅ COMPLETE
-
-| Status | DB Enum | Description |
-|--------|---------|-------------|
-| pending | ✅ | Awaiting client decision |
-| accepted | ✅ | Client accepted, contact unlocked |
-| rejected | ✅ | Client declined |
-| withdrawn | ✅ | Handwerker cancelled |
-
----
-
-## Database Statistics (Current State)
-
-| Metric | Count |
-|--------|-------|
-| Total Leads | 15 |
-| Active Leads | 12 |
-| Completed Leads | 3 |
-| Total Proposals | 6 |
-| Pending Proposals | 2 |
-| Accepted Proposals | 3 |
-| Free Subscriptions | 6 |
-| Paid Subscriptions | 0 |
-
----
-
-## Implementation Plan
-
-### Immediate Actions (Before Go-Live)
-
-| Task | Effort | Priority |
-|------|--------|----------|
-| Execute pg_cron SQL for rating reminder | 5 min | P0 |
-| Execute pg_cron SQL for lead expiry | 5 min | P0 |
-| Remove `'stripe'` from PaymentProvider type | 2 min | P1 |
-| Update AddPaymentMethodDialog comment | 2 min | P2 |
-
-### Post-Launch Improvements (Phase 3)
-
-| Task | Effort | Priority |
-|------|--------|----------|
-| Add reCAPTCHA to lead submission | 2-3 hours | P2 |
-| Tighten RLS INSERT policies | 2 hours | P2 |
-| Create unified admin activity log | 4 hours | P3 |
-| Server-side idempotency for proposals | 3 hours | P3 |
-
----
-
-## Final Confirmation
-
-| Requirement | Status |
-|-------------|--------|
-| Payrexx only | ✅ (3 minor remnants to clean) |
-| Zurich timezone | ✅ DST-safe |
-| SSOT compliance | ✅ Centralized configs |
-| DRY principle | ✅ Shared helpers |
-| No contact leakage | ✅ Verified |
-| Idempotent flows | ⚠️ Client-side only |
-| No friction UX | ✅ Clear CTAs |
-| Autonomous operation | ✅ (after pg_cron setup) |
-
----
-
-## Go-Live Readiness
-
-**Ready for Production: YES** (after executing pg_cron SQL)
-
-The application is production-ready with a robust architecture. The only blocking items are:
-1. Execute pg_cron jobs for automated email reminders
-2. Register Payrexx webhook URL in Payrexx dashboard (if not already done)
-
-All core business logic is implemented, tested, and follows SSOT + DRY principles.
-
+- The `PASSWORD_RECOVERY` event only fires once when Supabase processes the token from the URL hash
+- React's lazy loading means the component might mount after this event fires
+- The deferred async pattern (`setTimeout(0)`) is required per project memory to prevent auth deadlocks
+- The 2-second timeout gives Supabase enough time to exchange tokens even on slower connections
