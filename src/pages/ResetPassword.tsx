@@ -11,7 +11,8 @@ import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import logo from '@/assets/bueze-logo.webp';
 
 export default function ResetPassword() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isValidToken, setIsValidToken] = useState(false);
@@ -20,32 +21,78 @@ export default function ResetPassword() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Listen for PASSWORD_RECOVERY event - this is the correct way
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    // Check if URL hash contains recovery token indicators
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const hasRecoveryParams = hashParams.has('access_token') || 
+                              (hashParams.has('type') && hashParams.get('type') === 'recovery');
+    
+    // Listen for PASSWORD_RECOVERY event
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsValidToken(true);
-      } else if (event === 'SIGNED_OUT') {
-        // User signed out, no valid token
-        toast({
-          title: 'Ungültiger oder abgelaufener Link',
-          description: 'Bitte fordern Sie einen neuen Link zum Zurücksetzen des Passworts an.',
-          variant: 'destructive',
-        });
-        setTimeout(() => navigate('/auth'), 3000);
-      }
+      // Defer async operations per Supabase best practices
+      setTimeout(() => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsValidToken(true);
+          setIsLoading(false);
+        } else if (event === 'SIGNED_IN' && session) {
+          // Recovery flow sometimes emits SIGNED_IN instead of PASSWORD_RECOVERY
+          setIsValidToken(true);
+          setIsLoading(false);
+        }
+      }, 0);
     });
 
-    // Also check current session as fallback
-    const checkResetToken = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setIsValidToken(true);
+    // Check for existing session (handles case where event already fired)
+    const checkExistingSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          setIsValidToken(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        // If URL had recovery params but no session yet, wait a bit for Supabase to process
+        if (hasRecoveryParams) {
+          // Give Supabase time to process the token exchange
+          timeoutId = setTimeout(() => {
+            // Final check before declaring invalid
+            supabase.auth.getSession().then(({ data: { session: finalSession } }) => {
+              if (finalSession?.user) {
+                setIsValidToken(true);
+              } else {
+                setIsValidToken(false);
+                toast({
+                  title: 'Ungültiger oder abgelaufener Link',
+                  description: 'Bitte fordern Sie einen neuen Link zum Zurücksetzen des Passworts an.',
+                  variant: 'destructive',
+                });
+                setTimeout(() => navigate('/auth'), 3000);
+              }
+              setIsLoading(false);
+            });
+          }, 2000);
+        } else {
+          // No recovery params in URL and no session - invalid access
+          setIsValidToken(false);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+        setIsLoading(false);
+        setIsValidToken(false);
       }
     };
 
-    checkResetToken();
+    // Start session check
+    checkExistingSession();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [navigate, toast]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -72,7 +119,7 @@ export default function ResetPassword() {
       return;
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     try {
       const { error } = await supabase.auth.updateUser({
@@ -104,9 +151,26 @@ export default function ResetPassword() {
         variant: 'destructive',
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
+
+  // Show loading state while checking token
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <CardTitle className="mt-4">Link wird überprüft...</CardTitle>
+            <CardDescription>
+              Bitte warten Sie einen Moment.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   if (isSuccess) {
     return (
@@ -220,8 +284,8 @@ export default function ResetPassword() {
                   minLength={8}
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Passwort ändern
               </Button>
             </form>
