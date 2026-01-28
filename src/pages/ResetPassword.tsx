@@ -4,26 +4,41 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import logo from '@/assets/bueze-logo.webp';
 
 export default function ResetPassword() {
-  const [isLoading, setIsLoading] = useState(true); // Start with loading state
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isValidToken, setIsValidToken] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [customToken, setCustomToken] = useState<string | null>(null);
+  const [useCustomFlow, setUseCustomFlow] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
-    // Check if URL hash contains recovery token indicators
+    // Check for custom token in query params first (new flow)
+    const tokenParam = searchParams.get('token');
+    
+    if (tokenParam) {
+      // Custom token flow - token will be validated on submit
+      setCustomToken(tokenParam);
+      setUseCustomFlow(true);
+      setIsValidToken(true);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Legacy Supabase flow - check URL hash for recovery tokens
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const hasRecoveryParams = hashParams.has('access_token') || 
                               (hashParams.has('type') && hashParams.get('type') === 'recovery');
@@ -93,7 +108,7 @@ export default function ResetPassword() {
       subscription.unsubscribe();
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [navigate, toast]);
+  }, [navigate, toast, searchParams]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,17 +137,28 @@ export default function ResetPassword() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password
-      });
+      if (useCustomFlow && customToken) {
+        // Custom token flow - call edge function
+        const response = await fetch(
+          'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/validate-password-reset-token',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: customToken, newPassword: password })
+          }
+        );
 
-      if (error) {
-        toast({
-          title: 'Fehler',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          toast({
+            title: 'Fehler',
+            description: data.error || 'Ungültiger oder abgelaufener Link.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
         setIsSuccess(true);
         toast({
           title: 'Passwort aktualisiert',
@@ -143,8 +169,33 @@ export default function ResetPassword() {
         setTimeout(() => {
           navigate('/auth');
         }, 3000);
+      } else {
+        // Legacy Supabase flow
+        const { error } = await supabase.auth.updateUser({
+          password: password
+        });
+
+        if (error) {
+          toast({
+            title: 'Fehler',
+            description: error.message,
+            variant: 'destructive',
+          });
+        } else {
+          setIsSuccess(true);
+          toast({
+            title: 'Passwort aktualisiert',
+            description: 'Ihr Passwort wurde erfolgreich geändert. Sie werden zur Login-Seite weitergeleitet.',
+          });
+          
+          // Redirect to login after 3 seconds
+          setTimeout(() => {
+            navigate('/auth');
+          }, 3000);
+        }
       }
     } catch (error) {
+      console.error('Password reset error:', error);
       toast({
         title: 'Fehler',
         description: 'Ein unerwarteter Fehler ist aufgetreten.',
@@ -219,9 +270,17 @@ export default function ResetPassword() {
           <CardHeader>
             <CardTitle>Ungültiger Link</CardTitle>
             <CardDescription>
-              Dieser Link ist abgelaufen oder ungültig. Sie werden zur Login-Seite weitergeleitet.
+              Dieser Link ist abgelaufen oder ungültig. Bitte fordern Sie einen neuen Link an.
             </CardDescription>
           </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => navigate('/auth')} 
+              className="w-full"
+            >
+              Zur Login-Seite
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );

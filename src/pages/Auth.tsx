@@ -192,25 +192,29 @@ export default function Auth() {
     setIsResetting(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const response = await fetch(
+        'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-password-reset',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: resetEmail })
+        }
+      );
 
-      if (error) {
-        toast({
-          title: 'Fehler',
-          description: error.message,
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'E-Mail gesendet',
-          description: 'Bitte überprüfen Sie Ihren Posteingang für den Link zum Zurücksetzen des Passworts.',
-        });
-        setIsDialogOpen(false);
-        setResetEmail('');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send reset email');
       }
+
+      toast({
+        title: 'E-Mail gesendet',
+        description: 'Bitte überprüfen Sie Ihren Posteingang für den Link zum Zurücksetzen des Passworts.',
+      });
+      setIsDialogOpen(false);
+      setResetEmail('');
     } catch (error) {
+      console.error('Password reset error:', error);
       toast({
         title: 'Fehler',
         description: 'Ein unerwarteter Fehler ist aufgetreten.',

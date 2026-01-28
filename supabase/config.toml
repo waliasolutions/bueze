@@ -95,3 +95,9 @@ verify_jwt = false
 
 [functions.lead-expiry-check]
 verify_jwt = false
+
+[functions.send-password-reset]
+verify_jwt = false
+
+[functions.validate-password-reset-token]
+verify_jwt = false
