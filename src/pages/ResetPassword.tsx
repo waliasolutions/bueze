@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
@@ -21,13 +21,13 @@ export default function ResetPassword() {
   const [useCustomFlow, setUseCustomFlow] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
-    // Check for custom token in query params first (new flow)
-    const tokenParam = searchParams.get('token');
+    // Parse token directly from URL (more reliable than useSearchParams with lazy loading)
+    const urlParams = new URLSearchParams(window.location.search);
+    const tokenParam = urlParams.get('token');
     
     if (tokenParam) {
       // Custom token flow - token will be validated on submit
@@ -108,7 +108,7 @@ export default function ResetPassword() {
       subscription.unsubscribe();
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [navigate, toast, searchParams]);
+  }, [navigate, toast]);
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
