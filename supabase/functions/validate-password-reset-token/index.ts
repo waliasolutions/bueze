@@ -12,24 +12,17 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { token, newPassword } = await req.json();
+    const { token, newPassword, validateOnly } = await req.json();
 
-    if (!token || !newPassword) {
+    // Token is always required
+    if (!token) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Token and new password are required' }),
+        JSON.stringify({ success: false, valid: false, error: 'Token is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Validate password length
-    if (newPassword.length < 8) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Password must be at least 8 characters' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Validating password reset token');
+    console.log('Validating password reset token, validateOnly:', validateOnly);
 
     // Find and validate token
     const { data: tokenData, error: tokenError } = await supabase
@@ -48,7 +41,32 @@ serve(async (req) => {
     if (!tokenData) {
       console.log('Invalid or expired token');
       return new Response(
-        JSON.stringify({ success: false, error: 'Ungültiger oder abgelaufener Link' }),
+        JSON.stringify({ success: false, valid: false, error: 'Ungültiger oder abgelaufener Link' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If validateOnly flag is set, just confirm the token is valid without updating password
+    if (validateOnly) {
+      console.log('Token is valid (validateOnly mode)');
+      return new Response(
+        JSON.stringify({ success: true, valid: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // For actual password reset, newPassword is required
+    if (!newPassword) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'New password is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Validate password length
+    if (newPassword.length < 8) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Password must be at least 8 characters' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
