@@ -868,6 +868,8 @@ export type Database = {
           current_period_end: string
           current_period_start: string
           id: string
+          payment_reminder_1_sent: boolean | null
+          payment_reminder_2_sent: boolean | null
           pending_plan: string | null
           plan_type: string
           proposals_limit: number
@@ -883,6 +885,8 @@ export type Database = {
           current_period_end?: string
           current_period_start?: string
           id?: string
+          payment_reminder_1_sent?: boolean | null
+          payment_reminder_2_sent?: boolean | null
           pending_plan?: string | null
           plan_type?: string
           proposals_limit?: number
@@ -898,6 +902,8 @@ export type Database = {
           current_period_end?: string
           current_period_start?: string
           id?: string
+          payment_reminder_1_sent?: boolean | null
+          payment_reminder_2_sent?: boolean | null
           pending_plan?: string | null
           plan_type?: string
           proposals_limit?: number
