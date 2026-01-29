@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     // - /dashboard, /handwerker-dashboard (user accounts)
     // - /submit-lead, /lead-submission-success (transactional - user requested)
     // - /browse-leads, /lead-details/* (transactional)
-    // - /handwerker-verzeichnis (directory - user requested noindex)
+    
     // - /messages, /conversations (messaging)
     // - /profile, /handwerker-profile-edit, /handwerker-onboarding (account management)
     // - /checkout, /proposal-review (payment flow)
