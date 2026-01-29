@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.validate-password-reset-token]
 verify_jwt = false
+
+[functions.send-pending-payment-reminder]
+verify_jwt = false
