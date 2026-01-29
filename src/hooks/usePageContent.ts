@@ -10,6 +10,26 @@ interface PageContent {
   status: string;
 }
 
+/**
+ * Normalize SEO fields from database to consistent frontend format
+ * Handles legacy field names (meta_title, meta_description, canonical_url, robots_meta)
+ * and converts to standard names (title, description, canonical, robots)
+ */
+function normalizeSeoData(seo: any): any {
+  if (!seo) return null;
+  
+  return {
+    // Use new field names, fall back to legacy names
+    title: seo.title || seo.meta_title || null,
+    description: seo.description || seo.meta_description || null,
+    canonical: seo.canonical || seo.canonical_url || null,
+    robots: seo.robots || seo.robots_meta || 'index,follow',
+    og_image: seo.og_image || null,
+    // Keep any additional fields
+    ...seo,
+  };
+}
+
 export const usePageContent = (pageKey: string) => {
   const { data: content, isLoading: loading, error, refetch } = useQuery({
     queryKey: ['page-content', pageKey],
@@ -22,7 +42,12 @@ export const usePageContent = (pageKey: string) => {
         .single();
 
       if (error) throw error;
-      return data as PageContent;
+      
+      // Normalize SEO data for consistent frontend consumption
+      return {
+        ...data,
+        seo: normalizeSeoData(data?.seo),
+      } as PageContent;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes - CMS content doesn't change often
     gcTime: 30 * 60 * 1000, // 30 minutes cache
@@ -53,7 +78,12 @@ export const useAllPageContent = (contentType?: string) => {
       const { data, error } = await query.order('page_key');
 
       if (error) throw error;
-      return (data || []) as PageContent[];
+      
+      // Normalize SEO data for all items
+      return (data || []).map(item => ({
+        ...item,
+        seo: normalizeSeoData(item?.seo),
+      })) as PageContent[];
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 30 * 60 * 1000,

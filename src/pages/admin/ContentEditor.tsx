@@ -272,45 +272,45 @@ const ContentEditor = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="meta_title">Meta Titel</Label>
+                    <Label htmlFor="title">Meta Titel</Label>
                     <Input
-                      id="meta_title"
-                      value={content.seo?.meta_title || ''}
-                      onChange={(e) => updateSeoField('meta_title', e.target.value)}
+                      id="title"
+                      value={content.seo?.title || content.seo?.meta_title || ''}
+                      onChange={(e) => updateSeoField('title', e.target.value)}
                       maxLength={60}
                     />
                     <p className="text-sm text-muted-foreground mt-1">
-                      {(content.seo?.meta_title || '').length}/60 Zeichen
+                      {(content.seo?.title || content.seo?.meta_title || '').length}/60 Zeichen
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="meta_description">Meta Beschreibung</Label>
+                    <Label htmlFor="description">Meta Beschreibung</Label>
                     <Textarea
-                      id="meta_description"
-                      value={content.seo?.meta_description || ''}
-                      onChange={(e) => updateSeoField('meta_description', e.target.value)}
+                      id="description"
+                      value={content.seo?.description || content.seo?.meta_description || ''}
+                      onChange={(e) => updateSeoField('description', e.target.value)}
                       maxLength={160}
                       rows={3}
                     />
                     <p className="text-sm text-muted-foreground mt-1">
-                      {(content.seo?.meta_description || '').length}/160 Zeichen
+                      {(content.seo?.description || content.seo?.meta_description || '').length}/160 Zeichen
                     </p>
                   </div>
                   <div>
-                    <Label htmlFor="canonical_url">Canonical URL</Label>
+                    <Label htmlFor="canonical">Canonical URL</Label>
                     <Input
-                      id="canonical_url"
-                      value={content.seo?.canonical_url || ''}
-                      onChange={(e) => updateSeoField('canonical_url', e.target.value)}
+                      id="canonical"
+                      value={content.seo?.canonical || content.seo?.canonical_url || ''}
+                      onChange={(e) => updateSeoField('canonical', e.target.value)}
                       placeholder="https://bueeze.ch/..."
                     />
                   </div>
                   <div>
-                    <Label htmlFor="robots_meta">Robots Meta</Label>
+                    <Label htmlFor="robots">Robots Meta</Label>
                     <Input
-                      id="robots_meta"
-                      value={content.seo?.robots_meta || ''}
-                      onChange={(e) => updateSeoField('robots_meta', e.target.value)}
+                      id="robots"
+                      value={content.seo?.robots || content.seo?.robots_meta || 'index,follow'}
+                      onChange={(e) => updateSeoField('robots', e.target.value)}
                       placeholder="index,follow"
                     />
                   </div>

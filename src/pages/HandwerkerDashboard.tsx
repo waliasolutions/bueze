@@ -681,26 +681,37 @@ const HandwerkerDashboard = () => {
       }
       setLogoUploading(true);
       const fileExt = file.name.split('.').pop();
-      const fileName = `logos/${user.id}/logo-${Date.now()}.${fileExt}`;
+      // Use consistent path with HandwerkerProfileEdit - store logos in handwerker-portfolio bucket
+      const fileName = `${user.id}/logo.${fileExt}`;
 
-      // Delete old logo if exists
+      // Delete old logo if exists - check both buckets for backwards compatibility
       if (profileData.logo_url) {
-        const oldPath = profileData.logo_url.split('/handwerker-documents/')[1];
-        if (oldPath) {
-          await supabase.storage.from('handwerker-documents').remove([oldPath]);
+        // Try handwerker-portfolio bucket first (correct location)
+        const portfolioPath = profileData.logo_url.split('/handwerker-portfolio/')[1];
+        if (portfolioPath) {
+          await supabase.storage.from('handwerker-portfolio').remove([portfolioPath.split('?')[0]]);
+        } else {
+          // Fallback: check old handwerker-documents bucket location
+          const documentsPath = profileData.logo_url.split('/handwerker-documents/')[1];
+          if (documentsPath) {
+            await supabase.storage.from('handwerker-documents').remove([documentsPath.split('?')[0]]);
+          }
         }
       }
 
-      // Upload new logo
+      // Upload new logo to handwerker-portfolio bucket (SSOT with HandwerkerProfileEdit)
       const {
         error: uploadError
-      } = await supabase.storage.from('handwerker-documents').upload(fileName, file);
+      } = await supabase.storage.from('handwerker-portfolio').upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      });
       if (uploadError) throw uploadError;
 
-      // Get public URL
+      // Get public URL from handwerker-portfolio bucket
       const {
         data
-      } = supabase.storage.from('handwerker-documents').getPublicUrl(fileName);
+      } = supabase.storage.from('handwerker-portfolio').getPublicUrl(fileName);
       if (data?.publicUrl) {
         setProfileData(prev => ({
           ...prev,
