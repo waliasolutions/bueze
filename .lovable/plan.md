@@ -1,227 +1,219 @@
 
-# Automatic Payment Reminder System for Pending Subscriptions
+# Implementierungsplan: Kritische Korrekturen und Entfernung Handwerkerverzeichnis
 
-## Overview
+## Zusammenfassung der Testergebnisse
 
-This plan implements an automatic payment reminder system that sends payment reminders 2-3 days after admin approval for handwerkers who selected a paid plan during registration. This ensures they complete their subscription without requiring manual follow-up.
+### ✅ Funktioniert korrekt:
+- **Lead-Submission-Formular** (`/submit-lead`): 3-Schritt-Formular mit Kontakt → Projekt → Standort
+- **Edge-Funktionen**: `send-pending-payment-reminder`, `lead-expiry-check` funktionieren einwandfrei
+- **Datenbank**: 15 Leads, 17 Handwerker-Profile, 6 Offerten, 1 Bewertung
+- **Subscription-System**: Tracking-Spalten für Zahlungserinnerungen vorhanden
+- **Admin-Bewertungsmanagement**: Voll funktionsfähig mit Filterung und Moderation
 
-## Current Flow (Before)
-
-1. Handwerker registers → selects paid plan → `pending_plan` stored
-2. Admin approves profile → `verified_at` timestamp set
-3. Approval email sent with payment link
-4. ❌ **No follow-up** - user may forget to pay
-5. User stuck in "free tier" indefinitely
-
-## New Flow (After)
-
-1. Handwerker registers → selects paid plan → `pending_plan` stored
-2. Admin approves profile → `verified_at` timestamp set
-3. Approval email sent with payment link
-4. ✅ **Day 2-3**: Automatic payment reminder email sent
-5. ✅ **Day 7**: Final reminder (optional escalation)
-6. User completes payment → `pending_plan` cleared
+### ⚠️ Gefundene Probleme:
+1. **Toter Link in Navigation**: `/browse-leads` existiert nicht, sollte `/search` sein
+2. **Handwerkerverzeichnis muss entfernt werden** (wie vom Benutzer gewünscht)
 
 ---
 
-## Technical Implementation
+## Änderungen
 
-### Component 1: New Edge Function `send-pending-payment-reminder`
+### 1. Navigation-Link korrigieren
+**Datei:** `src/config/navigation.ts`
+- Zeile 22: `/browse-leads` → `/search` ändern
 
-**File: `supabase/functions/send-pending-payment-reminder/index.ts`**
+### 2. Handwerkerverzeichnis komplett entfernen
 
-This function:
-- Queries `handwerker_subscriptions` for records with `pending_plan IS NOT NULL`
-- Joins with `handwerker_profiles` to check `verified_at` timestamp
-- Filters for profiles approved 48-72 hours ago (first reminder) and 7 days ago (final reminder)
-- Sends branded payment reminder emails with direct checkout links
-- Tracks sent reminders via new columns to prevent duplicates
+**Dateien zu ändern:**
+
+| Datei | Änderung |
+|-------|----------|
+| `src/App.tsx` | Route `/handwerker-verzeichnis` entfernen (Zeile 44, 160) |
+| `supabase/functions/generate-sitemap/index.ts` | Kommentar über `/handwerker-verzeichnis` entfernen (Zeile 98) |
+
+**Datei zu löschen:**
+- `src/pages/HandwerkerVerzeichnis.tsx`
+
+### 3. Keine Änderungen erforderlich:
+- `src/components/Header.tsx` - kein Link zum Verzeichnis
+- `src/components/Footer.tsx` - kein Link zum Verzeichnis
+- `src/config/navigation.ts` - kein Link zum Verzeichnis
+
+---
+
+## Technische Details
+
+### Änderung 1: Navigation-Link korrigieren
 
 ```typescript
-// Pseudocode structure:
-serve(async (req) => {
-  const supabase = createSupabaseAdmin();
-  
-  // Find approved handwerkers with pending plans who haven't been reminded
-  const { data: pendingPayments } = await supabase
-    .from('handwerker_subscriptions')
-    .select(`
-      *,
-      handwerker_profiles!inner(
-        verified_at, first_name, last_name, company_name, email
-      ),
-      profiles!inner(email)
-    `)
-    .not('pending_plan', 'is', null)
-    .eq('plan_type', 'free');  // Still on free tier
-  
-  for (const sub of pendingPayments) {
-    const approvedAt = new Date(sub.handwerker_profiles.verified_at);
-    const hoursSinceApproval = (Date.now() - approvedAt.getTime()) / (1000 * 60 * 60);
-    
-    // First reminder: 48-72 hours after approval
-    if (hoursSinceApproval >= 48 && !sub.payment_reminder_1_sent) {
-      await sendPaymentReminder(sub, 'first');
-      await markReminderSent(sub.id, 'payment_reminder_1_sent');
-    }
-    
-    // Final reminder: 7 days after approval
-    if (hoursSinceApproval >= 168 && !sub.payment_reminder_2_sent) {
-      await sendPaymentReminder(sub, 'final');
-      await markReminderSent(sub.id, 'payment_reminder_2_sent');
-    }
-  }
-});
+// src/config/navigation.ts Zeile 22
+// ALT:
+{ label: 'Aufträge finden', href: '/browse-leads', icon: Search },
+
+// NEU:
+{ label: 'Aufträge finden', href: '/search', icon: Search },
 ```
 
-### Component 2: Database Migration
+### Änderung 2: App.tsx - Route entfernen
 
-**New columns on `handwerker_subscriptions`:**
+```typescript
+// Entfernen:
+// Zeile 44:
+const HandwerkerVerzeichnis = lazy(() => import("./pages/HandwerkerVerzeichnis"));
 
-```sql
--- Track payment reminder status
-ALTER TABLE handwerker_subscriptions
-ADD COLUMN payment_reminder_1_sent BOOLEAN DEFAULT FALSE,
-ADD COLUMN payment_reminder_2_sent BOOLEAN DEFAULT FALSE;
+// Zeile 160:
+<Route path="/handwerker-verzeichnis" element={<HandwerkerVerzeichnis />} />
 ```
 
-### Component 3: Cron Job Setup
+### Änderung 3: Sitemap-Kommentar entfernen
 
-**Daily cron job at 10:00 AM Swiss time (9:00 UTC in summer, 8:00 UTC in winter):**
-
-```sql
-SELECT cron.schedule(
-  'pending-payment-reminders',
-  '0 9 * * *',  -- 9:00 UTC = 10:00 Swiss time (summer)
-  $$
-  SELECT net.http_post(
-    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-pending-payment-reminder',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer <anon_key>'
-    ),
-    body := '{}'::jsonb
-  );
-  $$
-);
-```
-
-### Component 4: Email Templates
-
-**First Reminder (48 hours):**
-- Subject: "💳 Vergessen? Ihr Abo wartet auf Sie - Büeze.ch"
-- Tone: Friendly reminder
-- CTA: Direct payment link
-
-**Final Reminder (7 days):**
-- Subject: "⏰ Letzte Erinnerung: Aktivieren Sie Ihr Abo - Büeze.ch"
-- Tone: Urgency, mention expiring opportunity
-- CTA: Direct payment link + option to cancel pending plan
-
-### Component 5: Update `supabase/config.toml`
-
-```toml
-[functions.send-pending-payment-reminder]
-verify_jwt = false
+```typescript
+// supabase/functions/generate-sitemap/index.ts
+// Zeile 98 entfernen:
+// - /handwerker-verzeichnis (directory - user requested noindex)
 ```
 
 ---
 
-## Files to Create/Modify
+## 18 Manuelle Testszenarien (Vereinfacht)
 
-| File | Action | Description |
-|------|--------|-------------|
-| `supabase/functions/send-pending-payment-reminder/index.ts` | Create | New edge function for payment reminders |
-| `supabase/config.toml` | Modify | Add function configuration |
-| Database migration | Create | Add reminder tracking columns |
-| SQL for cron job | Manual | User runs in Supabase SQL Editor |
+### Kunde-Tests
 
----
+**Szenario 1: Neuen Auftrag erstellen**
+1. Gehe auf `bueze.ch` und klicke auf "Jetzt starten"
+2. Fülle Kontaktdaten aus: Vorname, Nachname, E-Mail, Passwort
+3. Klicke "Weiter" und wähle eine Kategorie (z.B. Elektrik)
+4. Gib einen Titel ein und klicke "Weiter"
+5. Gib PLZ "8001" ein und wähle ein Budget
+6. Klicke "Auftrag veröffentlichen"
+→ **Erwartetes Ergebnis:** Erfolgsseite erscheint, E-Mail-Bestätigung kommt
 
-## Email Template Design
+**Szenario 2: Anmeldung mit bestehendem Konto**
+1. Gehe auf `bueze.ch/auth`
+2. Gib E-Mail und Passwort ein
+3. Klicke "Anmelden"
+→ **Erwartetes Ergebnis:** Weiterleitung zum Dashboard
 
-**First Reminder (48 hours after approval):**
+**Szenario 3: Offerten im Dashboard ansehen**
+1. Melde dich als Kunde an
+2. Gehe auf "Meine Aufträge" im Menü
+3. Klicke auf einen bestehenden Auftrag
+→ **Erwartetes Ergebnis:** Auftragsdetails und erhaltene Offerten sichtbar
 
-```
-Subject: 💳 Vergessen? Ihr Abo wartet auf Sie - Büeze.ch
+**Szenario 4: Offerte annehmen**
+1. Als Kunde: Öffne einen Auftrag mit Offerten
+2. Klicke auf "Annehmen" bei einer Offerte
+3. Bestätige die Annahme
+→ **Erwartetes Ergebnis:** Status ändert sich, Kontaktdaten des Handwerkers werden sichtbar
 
-Hallo [Name],
+**Szenario 5: Nachricht an Handwerker senden**
+1. Nach Offerte-Annahme: Klicke auf "Nachricht senden"
+2. Schreibe eine Nachricht
+3. Sende die Nachricht
+→ **Erwartetes Ergebnis:** Nachricht erscheint im Chat
 
-Vor 2 Tagen wurde Ihr Handwerker-Profil freigeschaltet – herzlichen Glückwunsch! 🎉
-
-Sie haben sich für das [Plan Name] entschieden, aber die Zahlung steht noch aus.
-
-Mit Ihrem gewählten Abo erhalten Sie:
-✅ Unbegrenzte Offerten pro Monat
-✅ Sofortigen Zugang zu allen Aufträgen
-✅ Mehr Chancen auf neue Kunden
-
-[JETZT BEZAHLEN UND STARTEN]
-
-Oder starten Sie kostenlos mit 5 Offerten pro Monat.
-
-Bei Fragen: info@bueeze.ch
-```
-
-**Final Reminder (7 days after approval):**
-
-```
-Subject: ⏰ Letzte Erinnerung: Aktivieren Sie Ihr Abo - Büeze.ch
-
-Hallo [Name],
-
-Ihr Handwerker-Profil ist seit einer Woche aktiv, aber Ihr gewähltes 
-[Plan Name] wartet noch auf die Aktivierung.
-
-Während Sie warten, gewinnen andere Handwerker bereits neue Aufträge. 
-Sichern Sie sich Ihren Wettbewerbsvorteil!
-
-[JETZT ABO AKTIVIEREN]
-
-Nicht interessiert? Sie können den ausstehenden Plan hier stornieren 
-und kostenlos weitermachen: [PLAN STORNIEREN]
-
-Ihr Büeze.ch Team
-```
+**Szenario 6: Passwort zurücksetzen**
+1. Gehe auf `bueze.ch/auth`
+2. Klicke auf "Passwort vergessen"
+3. Gib deine E-Mail-Adresse ein
+4. Prüfe dein E-Mail-Postfach
+→ **Erwartetes Ergebnis:** E-Mail mit Reset-Link kommt an
 
 ---
 
-## Edge Cases Handled
+### Handwerker-Tests
 
-| Scenario | Handling |
-|----------|----------|
-| User pays before reminder | `pending_plan` is NULL, no reminder sent |
-| User cancels pending plan | `pending_plan` is NULL, no reminder sent |
-| Profile not yet approved | `verified_at` is NULL, skipped |
-| Reminder already sent | Boolean flag prevents duplicates |
-| Multiple pending plans (impossible) | Only one `pending_plan` column exists |
+**Szenario 7: Als Handwerker registrieren**
+1. Gehe auf `bueze.ch/handwerker`
+2. Klicke "Jetzt registrieren"
+3. Fülle alle Kontaktdaten aus
+4. Wähle mindestens eine Kategorie und Servicegebiet
+5. Schliesse die Registrierung ab
+→ **Erwartetes Ergebnis:** Bestätigungsseite, Hinweis auf Admin-Prüfung
+
+**Szenario 8: Handwerker-Dashboard nutzen**
+1. Melde dich als genehmigter Handwerker an
+2. Dashboard sollte automatisch laden
+3. Prüfe: Passende Aufträge, Offerten-Zähler, Nachrichten
+→ **Erwartetes Ergebnis:** Alle Bereiche laden ohne Fehler
+
+**Szenario 9: Offerte für einen Auftrag einreichen**
+1. Als Handwerker: Öffne einen passenden Auftrag
+2. Gib Preisspanne ein (z.B. 500 - 1500 CHF)
+3. Schreibe eine Nachricht an den Kunden
+4. Klicke "Offerte einreichen"
+→ **Erwartetes Ergebnis:** Erfolgsmeldung, Offerte im "Meine Angebote"-Bereich
+
+**Szenario 10: Offerten-Limit prüfen (Gratis-Paket)**
+1. Als Handwerker im Gratis-Paket
+2. Versuche die 6. Offerte einzureichen
+→ **Erwartetes Ergebnis:** Upgrade-Hinweis erscheint, Offerte wird blockiert
+
+**Szenario 11: Abo-Upgrade durchführen**
+1. Gehe auf `bueze.ch/checkout?plan=monthly`
+2. Prüfe die Plandetails (CHF 90/Monat)
+3. Klicke "Jetzt bezahlen"
+→ **Erwartetes Ergebnis:** Weiterleitung zu Payrexx-Zahlungsseite
+
+**Szenario 12: Profil bearbeiten**
+1. Als Handwerker: Gehe auf "Profil bearbeiten"
+2. Ändere die Beschreibung oder lade ein Logo hoch
+3. Speichere die Änderungen
+→ **Erwartetes Ergebnis:** Erfolgsmeldung, Änderungen sichtbar
 
 ---
 
-## Testing Plan
+### Admin-Tests
 
-1. Create test handwerker with pending plan
-2. Approve profile (sets `verified_at`)
-3. Manually invoke edge function with past timestamp simulation
-4. Verify email received with correct content
-5. Verify reminder flag updated
-6. Run again, verify no duplicate email
+**Szenario 13: Handwerker freischalten**
+1. Melde dich als Admin an (`bueze.ch/auth`)
+2. Gehe auf "Freigaben" im Admin-Menü
+3. Finde einen ausstehenden Handwerker
+4. Klicke "Freischalten"
+→ **Erwartetes Ergebnis:** Handwerker wird genehmigt, E-Mail wird versendet
+
+**Szenario 14: Bewertungen verwalten**
+1. Als Admin: Gehe auf "Bewertungen" im Admin-Menü
+2. Prüfe die Statistiken (Gesamt, Durchschnitt, Öffentlich/Versteckt)
+3. Verstecke oder lösche eine Bewertung
+→ **Erwartetes Ergebnis:** Aktionen werden ausgeführt, Erfolgsmeldung erscheint
+
+**Szenario 15: Aufträge im Admin-Bereich verwalten**
+1. Als Admin: Gehe auf "Aufträge"
+2. Filtere nach Status oder Kategorie
+3. Pausiere oder lösche einen Auftrag
+→ **Erwartetes Ergebnis:** Status ändert sich entsprechend
 
 ---
 
-## Implementation Order
+### System-Tests
 
-1. **Create database migration** - Add reminder tracking columns
-2. **Create edge function** - `send-pending-payment-reminder`
-3. **Update config.toml** - Register new function
-4. **Deploy edge function** - Automatic on save
-5. **Set up cron job** - Manual SQL execution in Supabase dashboard
+**Szenario 16: 404-Seite testen**
+1. Gehe auf `bueze.ch/nicht-existiert`
+→ **Erwartetes Ergebnis:** "Seite nicht gefunden"-Meldung erscheint
+
+**Szenario 17: Handwerkerverzeichnis ist entfernt**
+1. Gehe auf `bueze.ch/handwerker-verzeichnis`
+→ **Erwartetes Ergebnis:** 404-Seite erscheint (Route existiert nicht mehr)
+
+**Szenario 18: Mobile Navigation testen**
+1. Öffne die Seite auf dem Handy
+2. Tippe auf das Menü-Symbol (☰)
+3. Navigiere durch alle Menüpunkte
+→ **Erwartetes Ergebnis:** Alle Links funktionieren, Menü schliesst nach Auswahl
 
 ---
 
-## Notes
+## Zusammenfassung der Änderungen
 
-- Cron job SQL must be run manually in Supabase SQL Editor (not via migrations) because it contains instance-specific URLs and keys
-- The 48-72 hour window gives users time to complete payment on their own schedule while ensuring follow-up
-- Final reminder at 7 days creates urgency without being annoying
-- Both reminders include option to cancel pending plan and stay on free tier
+| Komponente | Status | Aktion |
+|------------|--------|--------|
+| Lead-Submission | ✅ Funktioniert | Keine |
+| Handwerker-Registrierung | ✅ Funktioniert | Keine |
+| Subscription-System | ✅ Funktioniert | Keine |
+| Payment-Reminder | ✅ Funktioniert | Keine |
+| Bewertungsverwaltung | ✅ Funktioniert | Keine |
+| Navigation-Link | ❌ Defekt | Korrigieren |
+| Handwerkerverzeichnis | Zu entfernen | Route + Datei löschen |
+
+Nach der Implementierung wird das System vollständig funktionsfähig sein ohne tote Links oder unerwünschte Seiten.
