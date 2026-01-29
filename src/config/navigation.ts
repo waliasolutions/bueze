@@ -19,7 +19,7 @@ export interface NavItem {
 export const roleNavigation: Record<'handwerker' | 'client', NavItem[]> = {
   handwerker: [
     { label: 'Dashboard', href: '/handwerker-dashboard', icon: LayoutDashboard },
-    { label: 'Aufträge finden', href: '/browse-leads', icon: Search },
+    { label: 'Aufträge finden', href: '/search', icon: Search },
     { label: 'Meine Angebote', href: '/proposals', icon: FileText },
     { label: 'Nachrichten', href: '/conversations', icon: MessageSquare },
     { label: 'Profil bearbeiten', href: '/handwerker-profile/edit', icon: Settings },
