@@ -95,7 +95,7 @@ export const Header = () => {
           <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
-            <img src={logo} alt="Bueze.ch - Schweizer Handwerker Marktplatz" className="h-8 sm:h-10 md:h-11 w-auto p-[3px]" loading="eager" decoding="async" fetchPriority="high" width="140" height="44" />
+            <img src={logo} alt="Bueze.ch - Schweizer Handwerker Marktplatz" className="h-8 sm:h-10 md:h-11 w-auto p-[3px]" loading="eager" decoding="async" width="140" height="44" />
           </div>
 
           {/* Desktop Navigation */}

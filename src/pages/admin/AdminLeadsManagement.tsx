@@ -32,7 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
-import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2 } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2, AlertCircle, Bell } from "lucide-react";
 import { majorCategories } from "@/config/majorCategories";
 import { SWISS_CANTONS, getCantonLabel } from "@/config/cantons";
 import { getUrgencyLabel } from "@/config/urgencyLevels";
@@ -57,7 +57,9 @@ export default function AdminLeadsManagement() {
   const [selectedLead, setSelectedLead] = useState<LeadWithOwnerContact | null>(null);
   const [actionLead, setActionLead] = useState<LeadWithOwnerContact | null>(null);
   const [showActionDialog, setShowActionDialog] = useState(false);
-  const [actionType, setActionType] = useState<'pause' | 'delete' | 'reactivate'>('pause');
+  const [actionType, setActionType] = useState<'pause' | 'delete' | 'reactivate' | 'renotify'>('pause');
+  const [orphanLeadIds, setOrphanLeadIds] = useState<Set<string>>(new Set());
+  const [renotifyLoading, setRenotifyLoading] = useState<string | null>(null);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -68,8 +70,27 @@ export default function AdminLeadsManagement() {
   useEffect(() => {
     if (hasChecked && isAuthorized) {
       fetchLeads();
+      fetchOrphanLeads();
     }
   }, [hasChecked, isAuthorized]);
+
+  // Fetch orphan lead IDs from admin_notifications
+  const fetchOrphanLeads = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('admin_notifications')
+        .select('related_id')
+        .eq('type', 'orphan_lead')
+        .not('related_id', 'is', null);
+      
+      if (!error && data) {
+        const orphanIds = new Set(data.map(n => n.related_id).filter(Boolean) as string[]);
+        setOrphanLeadIds(orphanIds);
+      }
+    } catch (error) {
+      console.error('Error fetching orphan leads:', error);
+    }
+  };
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -177,14 +198,60 @@ export default function AdminLeadsManagement() {
     setExpandedLeads(newExpanded);
   };
 
-  const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate') => {
+  const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate' | 'renotify') => {
     setActionLead(lead);
     setActionType(action);
     setShowActionDialog(true);
   };
 
+  // Re-notify handwerkers for orphan leads (manually trigger notification)
+  const handleRenotifyHandwerkers = async (leadId: string) => {
+    setRenotifyLoading(leadId);
+    try {
+      const response = await fetch(
+        'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-lead-notification',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to re-notify');
+      }
+
+      if (data.isOrphanLead) {
+        toast.warning(`Weiterhin keine passenden Handwerker gefunden. ${data.matchingHandwerkersCount || 0} Matches.`);
+      } else {
+        toast.success(`${data.successCount || 0} Handwerker erneut benachrichtigt.`);
+        // Remove from orphan list if successful
+        setOrphanLeadIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(leadId);
+          return newSet;
+        });
+      }
+    } catch (error: any) {
+      console.error('Error re-notifying:', error);
+      toast.error(error.message || 'Fehler beim erneuten Benachrichtigen.');
+    } finally {
+      setRenotifyLoading(null);
+      setShowActionDialog(false);
+      setActionLead(null);
+    }
+  };
+
   const executeLeadAction = async () => {
     if (!actionLead) return;
+
+    // Handle renotify separately
+    if (actionType === 'renotify') {
+      await handleRenotifyHandwerkers(actionLead.id);
+      return;
+    }
 
     try {
       let newStatus: 'active' | 'paused' | 'deleted';
@@ -203,6 +270,8 @@ export default function AdminLeadsManagement() {
           newStatus = 'active';
           actionDescription = 'reaktiviert';
           break;
+        default:
+          return;
       }
 
       const { error } = await supabase
@@ -242,6 +311,12 @@ export default function AdminLeadsManagement() {
           title: 'Auftrag reaktivieren',
           description: 'Möchten Sie diesen Auftrag wieder aktivieren? Er wird dann wieder für Handwerker sichtbar sein.',
           actionLabel: 'Reaktivieren',
+        };
+      case 'renotify':
+        return {
+          title: 'Handwerker erneut benachrichtigen',
+          description: 'Dies sendet erneut E-Mail-Benachrichtigungen an alle passenden Handwerker. Nützlich für Orphan-Leads nach Hinzufügen neuer Handwerker.',
+          actionLabel: 'Benachrichtigen',
         };
     }
   };
@@ -307,6 +382,7 @@ export default function AdminLeadsManagement() {
                   <SelectItem value="active">Aktiv</SelectItem>
                   <SelectItem value="paused">Pausiert</SelectItem>
                   <SelectItem value="completed">Abgeschlossen</SelectItem>
+                  <SelectItem value="expired">Abgelaufen</SelectItem>
                   <SelectItem value="draft">Entwurf</SelectItem>
                   <SelectItem value="deleted">Gelöscht</SelectItem>
                 </SelectContent>
@@ -419,9 +495,17 @@ export default function AdminLeadsManagement() {
                           {getCategoryLabel(lead.category)}
                         </TableCell>
                         <TableCell>
-                          <Badge className={LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.color || 'bg-gray-500'}>
-                            {LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.label || lead.status}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge className={LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.color || 'bg-gray-500'}>
+                              {LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.label || lead.status}
+                            </Badge>
+                            {orphanLeadIds.has(lead.id) && (
+                              <Badge variant="destructive" className="text-xs">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Orphan
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <div className="flex items-center gap-1 text-sm">
@@ -454,20 +538,20 @@ export default function AdminLeadsManagement() {
                                 onClick={() => handleLeadAction(lead, 'pause')}
                                 title="Auftrag pausieren"
                               >
-                                <Pause className="h-4 w-4 text-orange-600" />
+                                <Pause className="h-4 w-4 text-warning" />
                               </Button>
                             )}
-                            {lead.status === 'paused' && (
+                            {(lead.status === 'paused' || lead.status === 'expired') && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleLeadAction(lead, 'reactivate')}
                                 title="Auftrag reaktivieren"
                               >
-                                <Play className="h-4 w-4 text-green-600" />
+                                <Play className="h-4 w-4 text-success" />
                               </Button>
                             )}
-                            {(lead.status === 'active' || lead.status === 'paused') && (
+                            {(lead.status === 'active' || lead.status === 'paused' || lead.status === 'expired') && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -475,6 +559,22 @@ export default function AdminLeadsManagement() {
                                 title="Auftrag löschen"
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            )}
+                            {/* Re-notify button for orphan leads or any active lead */}
+                            {lead.status === 'active' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleLeadAction(lead, 'renotify')}
+                                title={orphanLeadIds.has(lead.id) ? "Handwerker erneut benachrichtigen (Orphan Lead)" : "Handwerker erneut benachrichtigen"}
+                                disabled={renotifyLoading === lead.id}
+                              >
+                                {renotifyLoading === lead.id ? (
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Bell className={`h-4 w-4 ${orphanLeadIds.has(lead.id) ? 'text-destructive' : 'text-primary'}`} />
+                                )}
                               </Button>
                             )}
                           </div>
