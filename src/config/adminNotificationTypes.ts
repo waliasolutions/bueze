@@ -44,6 +44,13 @@ export const ADMIN_NOTIFICATION_TYPES: Record<string, NotificationTypeConfig> = 
     color: 'info',
     priority: 'medium',
   },
+  orphan_lead: {
+    label: 'Auftrag ohne Handwerker',
+    description: 'Ein Auftrag hat keine passenden Handwerker gefunden (keine Kategorie-/Gebiets-Übereinstimmung)',
+    icon: 'AlertCircle',
+    color: 'error',
+    priority: 'critical',
+  },
   proposal_accepted: {
     label: 'Offerte angenommen',
     description: 'Eine Offerte wurde vom Kunden angenommen',
