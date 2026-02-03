@@ -1,219 +1,165 @@
 
-# Implementierungsplan: Kritische Korrekturen und Entfernung Handwerkerverzeichnis
 
-## Zusammenfassung der Testergebnisse
+# Behebung: Kritische Billing-Bugs & Einkommensübersicht
 
-### ✅ Funktioniert korrekt:
-- **Lead-Submission-Formular** (`/submit-lead`): 3-Schritt-Formular mit Kontakt → Projekt → Standort
-- **Edge-Funktionen**: `send-pending-payment-reminder`, `lead-expiry-check` funktionieren einwandfrei
-- **Datenbank**: 15 Leads, 17 Handwerker-Profile, 6 Offerten, 1 Bewertung
-- **Subscription-System**: Tracking-Spalten für Zahlungserinnerungen vorhanden
-- **Admin-Bewertungsmanagement**: Voll funktionsfähig mit Filterung und Moderation
+## Zusammenfassung
 
-### ⚠️ Gefundene Probleme:
-1. **Toter Link in Navigation**: `/browse-leads` existiert nicht, sollte `/search` sein
-2. **Handwerkerverzeichnis muss entfernt werden** (wie vom Benutzer gewünscht)
+Nach umfassender Analyse des gesamten Billing- und Einkommensystems habe ich **2 kritische Bugs** identifiziert, die dazu führen, dass Umsatzdaten falsch oder gar nicht angezeigt werden.
 
 ---
 
-## Änderungen
+## Kritische Bugs gefunden
 
-### 1. Navigation-Link korrigieren
-**Datei:** `src/config/navigation.ts`
-- Zeile 22: `/browse-leads` → `/search` ändern
+### BUG 1: Status-Mismatch (`'succeeded'` vs `'paid'`)
 
-### 2. Handwerkerverzeichnis komplett entfernen
+**Problem:** Der Payrexx-Webhook speichert Zahlungen mit `status: 'succeeded'`, aber alle UI-Komponenten filtern nach `status: 'paid'`.
 
-**Dateien zu ändern:**
+| Komponente | Filter-Status | Webhook-Status | Match? |
+|------------|---------------|----------------|--------|
+| AdminDashboard | `paid` | `succeeded` | ❌ NEIN |
+| AdminPayments | `paid` | `succeeded` | ❌ NEIN |
+| PaymentHistoryTable | `paid` | `succeeded` | ❌ NEIN |
 
-| Datei | Änderung |
-|-------|----------|
-| `src/App.tsx` | Route `/handwerker-verzeichnis` entfernen (Zeile 44, 160) |
-| `supabase/functions/generate-sitemap/index.ts` | Kommentar über `/handwerker-verzeichnis` entfernen (Zeile 98) |
+**Auswirkung:** Alle tatsächlichen Zahlungen werden nicht in der Umsatzübersicht angezeigt!
 
-**Datei zu löschen:**
-- `src/pages/HandwerkerVerzeichnis.tsx`
-
-### 3. Keine Änderungen erforderlich:
-- `src/components/Header.tsx` - kein Link zum Verzeichnis
-- `src/components/Footer.tsx` - kein Link zum Verzeichnis
-- `src/config/navigation.ts` - kein Link zum Verzeichnis
+**Betroffene Dateien:**
+- `supabase/functions/payrexx-webhook/index.ts` (Zeile 151)
 
 ---
 
-## Technische Details
+### BUG 2: Doppelte Division durch 100
 
-### Änderung 1: Navigation-Link korrigieren
+**Problem:** Payrexx sendet Beträge in Rappen (z.B. 9000 = CHF 90.00). Der Webhook teilt bereits durch 100 vor dem Speichern, aber alle UI-Komponenten teilen nochmals durch 100 bei der Anzeige.
 
-```typescript
-// src/config/navigation.ts Zeile 22
-// ALT:
-{ label: 'Aufträge finden', href: '/browse-leads', icon: Search },
-
-// NEU:
-{ label: 'Aufträge finden', href: '/search', icon: Search },
+**Berechnungsfehler:**
+```
+Payrexx sendet: 9000 Rappen (= CHF 90.00)
+Webhook speichert: 9000 / 100 = 90
+UI zeigt an: 90 / 100 = CHF 0.90 ❌
 ```
 
-### Änderung 2: App.tsx - Route entfernen
+**Betroffene Dateien:**
+- `supabase/functions/payrexx-webhook/index.ts` (Zeilen 148, 200)
+- `src/pages/admin/AdminDashboard.tsx` (Zeile 101)
+- `src/pages/admin/AdminPayments.tsx` (Zeile 90)
+- `src/components/PaymentHistoryTable.tsx` (Zeile 55)
 
+---
+
+## Lösungsplan
+
+### Fix 1: Status-Korrektur im Webhook
+
+**Datei:** `supabase/functions/payrexx-webhook/index.ts`
+
+Zeile 151 ändern von:
 ```typescript
-// Entfernen:
-// Zeile 44:
-const HandwerkerVerzeichnis = lazy(() => import("./pages/HandwerkerVerzeichnis"));
-
-// Zeile 160:
-<Route path="/handwerker-verzeichnis" element={<HandwerkerVerzeichnis />} />
+status: 'succeeded',
+```
+zu:
+```typescript
+status: 'paid',
 ```
 
-### Änderung 3: Sitemap-Kommentar entfernen
-
+Zeile 203 ändern von:
 ```typescript
-// supabase/functions/generate-sitemap/index.ts
-// Zeile 98 entfernen:
-// - /handwerker-verzeichnis (directory - user requested noindex)
+status: 'failed',
+```
+(bleibt) - aber Konsistenz-Check: fehlgeschlagene Zahlungen haben korrekterweise `status: 'failed'`
+
+### Fix 2: Betrag-Speicherung in Rappen (ohne Division)
+
+**Datei:** `supabase/functions/payrexx-webhook/index.ts`
+
+Zeile 148 ändern von:
+```typescript
+amount: amount / 100, // Convert from Rappen to CHF
+```
+zu:
+```typescript
+amount: amount, // Store in Rappen (cents) as per schema
+```
+
+Zeile 200 ebenso ändern von:
+```typescript
+amount: amount / 100,
+```
+zu:
+```typescript
+amount: amount, // Store in Rappen (cents) as per schema
 ```
 
 ---
 
-## 18 Manuelle Testszenarien (Vereinfacht)
+## Bestehende Einkommensübersicht (Bereits implementiert)
 
-### Kunde-Tests
+### Für Handwerker:
+| Feature | Ort | Status |
+|---------|-----|--------|
+| Zahlungshistorie | Profil → "Rechnungen" Tab | ✅ Vorhanden |
+| Total bezahlt | PaymentHistoryTable Header | ✅ Vorhanden |
+| PDF-Rechnungen | Download-Button pro Zahlung | ✅ Vorhanden |
+| Abo-Übersicht | Profil → "Abonnement" Tab | ✅ Vorhanden |
 
-**Szenario 1: Neuen Auftrag erstellen**
-1. Gehe auf `bueze.ch` und klicke auf "Jetzt starten"
-2. Fülle Kontaktdaten aus: Vorname, Nachname, E-Mail, Passwort
-3. Klicke "Weiter" und wähle eine Kategorie (z.B. Elektrik)
-4. Gib einen Titel ein und klicke "Weiter"
-5. Gib PLZ "8001" ein und wähle ein Budget
-6. Klicke "Auftrag veröffentlichen"
-→ **Erwartetes Ergebnis:** Erfolgsseite erscheint, E-Mail-Bestätigung kommt
-
-**Szenario 2: Anmeldung mit bestehendem Konto**
-1. Gehe auf `bueze.ch/auth`
-2. Gib E-Mail und Passwort ein
-3. Klicke "Anmelden"
-→ **Erwartetes Ergebnis:** Weiterleitung zum Dashboard
-
-**Szenario 3: Offerten im Dashboard ansehen**
-1. Melde dich als Kunde an
-2. Gehe auf "Meine Aufträge" im Menü
-3. Klicke auf einen bestehenden Auftrag
-→ **Erwartetes Ergebnis:** Auftragsdetails und erhaltene Offerten sichtbar
-
-**Szenario 4: Offerte annehmen**
-1. Als Kunde: Öffne einen Auftrag mit Offerten
-2. Klicke auf "Annehmen" bei einer Offerte
-3. Bestätige die Annahme
-→ **Erwartetes Ergebnis:** Status ändert sich, Kontaktdaten des Handwerkers werden sichtbar
-
-**Szenario 5: Nachricht an Handwerker senden**
-1. Nach Offerte-Annahme: Klicke auf "Nachricht senden"
-2. Schreibe eine Nachricht
-3. Sende die Nachricht
-→ **Erwartetes Ergebnis:** Nachricht erscheint im Chat
-
-**Szenario 6: Passwort zurücksetzen**
-1. Gehe auf `bueze.ch/auth`
-2. Klicke auf "Passwort vergessen"
-3. Gib deine E-Mail-Adresse ein
-4. Prüfe dein E-Mail-Postfach
-→ **Erwartetes Ergebnis:** E-Mail mit Reset-Link kommt an
+### Für Admin:
+| Feature | Ort | Status |
+|---------|-----|--------|
+| Gesamtumsatz | AdminDashboard Karte | ✅ Vorhanden |
+| Monatsumsatz | AdminPayments | ✅ Vorhanden |
+| Aktive Abos | AdminPayments | ✅ Vorhanden |
+| Ø Umsatz pro Nutzer | AdminPayments | ✅ Vorhanden |
+| Abo-Verteilung (Pie Chart) | AdminPayments | ✅ Vorhanden |
+| Zahlungstabelle | AdminPayments | ✅ Vorhanden |
 
 ---
 
-### Handwerker-Tests
+## Optionale Verbesserungen
 
-**Szenario 7: Als Handwerker registrieren**
-1. Gehe auf `bueze.ch/handwerker`
-2. Klicke "Jetzt registrieren"
-3. Fülle alle Kontaktdaten aus
-4. Wähle mindestens eine Kategorie und Servicegebiet
-5. Schliesse die Registrierung ab
-→ **Erwartetes Ergebnis:** Bestätigungsseite, Hinweis auf Admin-Prüfung
+### Enhancement 1: Monatsumsatz im Handwerker-Dashboard
 
-**Szenario 8: Handwerker-Dashboard nutzen**
-1. Melde dich als genehmigter Handwerker an
-2. Dashboard sollte automatisch laden
-3. Prüfe: Passende Aufträge, Offerten-Zähler, Nachrichten
-→ **Erwartetes Ergebnis:** Alle Bereiche laden ohne Fehler
+Aktuell sehen Handwerker nur ihre Zahlungshistorie. Eine kompakte Übersicht wäre nützlich:
 
-**Szenario 9: Offerte für einen Auftrag einreichen**
-1. Als Handwerker: Öffne einen passenden Auftrag
-2. Gib Preisspanne ein (z.B. 500 - 1500 CHF)
-3. Schreibe eine Nachricht an den Kunden
-4. Klicke "Offerte einreichen"
-→ **Erwartetes Ergebnis:** Erfolgsmeldung, Offerte im "Meine Angebote"-Bereich
+```
+┌──────────────────────────────────────┐
+│ 💰 Ihre Ausgaben                     │
+│                                      │
+│ Diesen Monat: CHF 90.00              │
+│ Gesamt bezahlt: CHF 270.00           │
+│ Nächste Zahlung: 15.02.2026          │
+└──────────────────────────────────────┘
+```
 
-**Szenario 10: Offerten-Limit prüfen (Gratis-Paket)**
-1. Als Handwerker im Gratis-Paket
-2. Versuche die 6. Offerte einzureichen
-→ **Erwartetes Ergebnis:** Upgrade-Hinweis erscheint, Offerte wird blockiert
+### Enhancement 2: Revenue-Trend im Admin-Dashboard
 
-**Szenario 11: Abo-Upgrade durchführen**
-1. Gehe auf `bueze.ch/checkout?plan=monthly`
-2. Prüfe die Plandetails (CHF 90/Monat)
-3. Klicke "Jetzt bezahlen"
-→ **Erwartetes Ergebnis:** Weiterleitung zu Payrexx-Zahlungsseite
+Ein einfaches Liniendiagramm für die letzten 6 Monate wäre hilfreich:
 
-**Szenario 12: Profil bearbeiten**
-1. Als Handwerker: Gehe auf "Profil bearbeiten"
-2. Ändere die Beschreibung oder lade ein Logo hoch
-3. Speichere die Änderungen
-→ **Erwartetes Ergebnis:** Erfolgsmeldung, Änderungen sichtbar
+```
+Revenue Trend (CHF)
+│
+│     ╭─────╮
+│    ╭╯     ╰───╮
+│ ──╯           ╰──
+└─────────────────────
+  Okt  Nov  Dez  Jan
+```
 
 ---
 
-### Admin-Tests
+## Dateien zu ändern
 
-**Szenario 13: Handwerker freischalten**
-1. Melde dich als Admin an (`bueze.ch/auth`)
-2. Gehe auf "Freigaben" im Admin-Menü
-3. Finde einen ausstehenden Handwerker
-4. Klicke "Freischalten"
-→ **Erwartetes Ergebnis:** Handwerker wird genehmigt, E-Mail wird versendet
-
-**Szenario 14: Bewertungen verwalten**
-1. Als Admin: Gehe auf "Bewertungen" im Admin-Menü
-2. Prüfe die Statistiken (Gesamt, Durchschnitt, Öffentlich/Versteckt)
-3. Verstecke oder lösche eine Bewertung
-→ **Erwartetes Ergebnis:** Aktionen werden ausgeführt, Erfolgsmeldung erscheint
-
-**Szenario 15: Aufträge im Admin-Bereich verwalten**
-1. Als Admin: Gehe auf "Aufträge"
-2. Filtere nach Status oder Kategorie
-3. Pausiere oder lösche einen Auftrag
-→ **Erwartetes Ergebnis:** Status ändert sich entsprechend
+| Datei | Änderung | Priorität |
+|-------|----------|-----------|
+| `supabase/functions/payrexx-webhook/index.ts` | Status 'paid' statt 'succeeded', Amount ohne Division | ⚠️ KRITISCH |
 
 ---
 
-### System-Tests
+## Zusammenfassung
 
-**Szenario 16: 404-Seite testen**
-1. Gehe auf `bueze.ch/nicht-existiert`
-→ **Erwartetes Ergebnis:** "Seite nicht gefunden"-Meldung erscheint
+Das Billing-System ist architektonisch korrekt aufgebaut:
+- Zahlungen werden via Payrexx-Webhook erfasst
+- `payment_history` Tabelle speichert alle Transaktionen
+- Handwerker sehen ihre Rechnungen im Profil
+- Admins haben eine vollständige Umsatzübersicht
 
-**Szenario 17: Handwerkerverzeichnis ist entfernt**
-1. Gehe auf `bueze.ch/handwerker-verzeichnis`
-→ **Erwartetes Ergebnis:** 404-Seite erscheint (Route existiert nicht mehr)
+**Aber:** Durch die zwei Bugs werden aktuell **keine Zahlungen** korrekt angezeigt. Nach dem Fix funktioniert alles wie vorgesehen.
 
-**Szenario 18: Mobile Navigation testen**
-1. Öffne die Seite auf dem Handy
-2. Tippe auf das Menü-Symbol (☰)
-3. Navigiere durch alle Menüpunkte
-→ **Erwartetes Ergebnis:** Alle Links funktionieren, Menü schliesst nach Auswahl
-
----
-
-## Zusammenfassung der Änderungen
-
-| Komponente | Status | Aktion |
-|------------|--------|--------|
-| Lead-Submission | ✅ Funktioniert | Keine |
-| Handwerker-Registrierung | ✅ Funktioniert | Keine |
-| Subscription-System | ✅ Funktioniert | Keine |
-| Payment-Reminder | ✅ Funktioniert | Keine |
-| Bewertungsverwaltung | ✅ Funktioniert | Keine |
-| Navigation-Link | ❌ Defekt | Korrigieren |
-| Handwerkerverzeichnis | Zu entfernen | Route + Datei löschen |
-
-Nach der Implementierung wird das System vollständig funktionsfähig sein ohne tote Links oder unerwünschte Seiten.
