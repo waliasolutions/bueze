@@ -145,10 +145,10 @@ Deno.serve(async (req) => {
         .from('payment_history')
         .insert({
           user_id: userId,
-          amount: amount / 100, // Convert from Rappen to CHF
+          amount: amount, // Store in Rappen (cents) - UI divides by 100 for display
           currency: currency || 'CHF',
           plan_type: planType,
-          status: 'succeeded',
+          status: 'paid', // Use 'paid' to match UI filter expectations
           payment_provider: 'payrexx',
           payrexx_transaction_id: transactionId.toString(),
           payment_date: now.toISOString(),
@@ -197,7 +197,7 @@ Deno.serve(async (req) => {
         .from('payment_history')
         .insert({
           user_id: userId,
-          amount: amount / 100,
+          amount: amount, // Store in Rappen (cents) - UI divides by 100 for display
           currency: currency || 'CHF',
           plan_type: planType,
           status: 'failed',
