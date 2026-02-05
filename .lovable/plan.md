@@ -1,244 +1,254 @@
 
-# Handwerker Offerten-Limit Prüfung und UI-Verbesserungen
 
-## Zusammenfassung der Änderungen
+# Fix Reviews: Full Client Names for Handwerker + Client Review History
 
-Es werden **3 Änderungen** implementiert:
+## Issues Identified
 
-1. **Mindestzeichenanzahl entfernen** - Die 50-Zeichen-Pflicht für Offerten-Nachrichten entfällt
-2. **Standard-Textvorlage hinzufügen** - Automatischer Grusstext mit Firmenname beim Öffnen des Dialogs
-3. **Quota-Prüfung funktioniert bereits** - Die Limit-Prüfung via `can_submit_proposal` RPC ist implementiert
+### Issue 1: Client Names Are Anonymous for Handwerker
+**Problem:** In `HandwerkerReviewResponse.tsx` (line 107-109), reviewer names show only the first name:
+```typescript
+const reviewerName = review.profiles?.first_name || 
+  review.profiles?.full_name?.split(' ')[0] || 
+  'Kunde';
+```
+
+**Also:** In `HandwerkerRating.tsx` (line 121), public-facing reviews only show first names:
+```typescript
+const reviewerName = review.reviewer?.full_name?.split(' ')[0] || 'Kunde';
+```
+
+**Distinction:**
+- **Handwerker Dashboard (private view):** Should show **full name** since review is already submitted
+- **Public profile:** Can keep first name only for privacy
 
 ---
 
-## Aktuelle Situation
+### Issue 2: Email Notification on Handwerker Response - Already Working
+**Status:** The email notification system for handwerker responses is already implemented:
+- `trigger_send_rating_response_notification()` - Database trigger fires on UPDATE when `handwerker_response` changes from NULL
+- `send-rating-response-notification` Edge Function - Fetches client email and sends notification
+- `ratingResponseClientTemplate` - Email template with link to dashboard
 
-### Offerten-Limit (bereits funktional)
-- `can_submit_proposal` RPC prüft vor jeder Offerte das Kontingent
-- Bei Limit-Überschreitung: Toast "Kontingent erschöpft" + Weiterleitung zu `/checkout`
-- `ProposalLimitBadge` zeigt verbleibende Offerten an
-
-### Validierung (zu ändern)
-- **Datei:** `src/hooks/useProposalFormValidation.ts` (Zeilen 68-78)
-- **Aktuell:** Minimum 50 Zeichen erforderlich
-- **UI-Label:** "Ihre Nachricht * (min. 50 Zeichen)"
+**The trigger and email are working correctly.** Client receives email when handwerker responds.
 
 ---
 
-## Änderung 1: Mindestzeichenanzahl entfernen
+### Issue 3: Client Cannot See Their Given Reviews
+**Problem:** The Client Dashboard (`src/pages/Dashboard.tsx`) has tabs for:
+- Meine Aufträge (My Leads)
+- Erhaltene Offerten (Received Proposals)
+- Archiv
+- Profil
 
-### Datei: `src/hooks/useProposalFormValidation.ts`
+**Missing:** A "Meine Bewertungen" (My Reviews) tab where clients can see reviews they have given.
 
-**Zeilen 68-78 ändern von:**
-```typescript
-case 'message': {
-  if (!values.message) {
-    return 'Nachricht ist erforderlich';
-  }
-  if (values.message.length < 50) {
-    return `Noch ${50 - values.message.length} Zeichen erforderlich`;
-  }
-  if (values.message.length > 2000) {
-    return 'Maximal 2000 Zeichen erlaubt';
-  }
-  return null;
-}
-```
+---
 
-**Zu:**
-```typescript
-case 'message': {
-  if (!values.message || values.message.trim().length === 0) {
-    return 'Nachricht ist erforderlich';
-  }
-  if (values.message.length > 2000) {
-    return 'Maximal 2000 Zeichen erlaubt';
-  }
-  return null;
-}
-```
+## Solution Overview
 
-### Datei: `src/pages/HandwerkerDashboard.tsx`
-
-**Zeile 1264 ändern von:**
-```tsx
-<Label htmlFor="message">Ihre Nachricht * (min. 50 Zeichen)</Label>
-```
-
-**Zu:**
-```tsx
-<Label htmlFor="message">Ihre Nachricht *</Label>
-```
-
-**Zeilen 1278-1280 entfernen:** (Zeichenzähler mit min. 50)
-```tsx
-<p className={`text-xs ${proposalForm.message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
-  {proposalForm.message.length}/50 Zeichen (min. 50)
-</p>
-```
-
-### Datei: `src/pages/OpportunityView.tsx`
-
-**Zeile 355 ändern von:**
-```tsx
-<Label htmlFor="message">Ihre Nachricht * (min. 50 Zeichen)</Label>
-```
-
-**Zu:**
-```tsx
-<Label htmlFor="message">Ihre Nachricht *</Label>
-```
-
-**Zeilen 359-360 entfernen:** HTML-Attribute `minLength={50}`
-
-**Zeilen 368-370 entfernen:** (Zeichenzähler)
-```tsx
-<p className={`text-xs ${formValues.message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
-  {formValues.message.length}/50 Zeichen (min. 50)
-</p>
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  Changes Required                                            │
+├─────────────────────────────────────────────────────────────┤
+│  1. HandwerkerReviewResponse.tsx                            │
+│     Show FULL NAME (not just first name) to handwerker      │
+│     review.profiles?.full_name || 'Kunde'                   │
+├─────────────────────────────────────────────────────────────┤
+│  2. Dashboard.tsx (Client Dashboard)                        │
+│     Add "Meine Bewertungen" tab showing:                    │
+│     - Reviews the client has given                          │
+│     - Star rating, comment, project title                   │
+│     - Handwerker response (if any)                          │
+│     - Link to handwerker profile                            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Änderung 2: Standard-Textvorlage mit Firmenname
+## Technical Changes
 
-Beim Öffnen des Offerten-Dialogs soll automatisch ein Standard-Text eingefügt werden:
+### Change 1: Show Full Client Name to Handwerker
 
-```
-Guten Tag
+**File: `src/components/HandwerkerReviewResponse.tsx`**
 
-Gerne schicken wir Ihnen unsere Offerte.
-
-Freundliche Grüsse
-[Firmenname]
-```
-
-### Datei: `src/pages/HandwerkerDashboard.tsx`
-
-**Zeile 1191 ändern von:**
-```tsx
-<Button onClick={() => setSelectedLead(lead)}>
-```
-
-**Zu:**
-```tsx
-<Button onClick={() => {
-  // Set default message template with company name
-  const companyName = handwerkerProfile?.company_name || 'Ihr Handwerker-Team';
-  setProposalForm(prev => ({
-    ...prev,
-    message: prev.message || `Guten Tag\n\nGerne schicken wir Ihnen unsere Offerte.\n\nFreundliche Grüsse\n${companyName}`
-  }));
-  setSelectedLead(lead);
-}}>
-```
-
-**Wichtig:** `prev.message ||` stellt sicher, dass nur bei leerem Nachrichtenfeld der Standardtext eingefügt wird. Hat der Handwerker bereits etwas geschrieben, bleibt es erhalten.
-
-### Datei: `src/pages/OpportunityView.tsx`
-
-Der OpportunityView-Formular benötigt Zugriff auf das Handwerker-Profil:
-
-**Nach Zeile 29 (neue State):**
+**Line 107-109 change from:**
 ```typescript
-const [handwerkerProfile, setHandwerkerProfile] = useState<{company_name: string | null} | null>(null);
+const reviewerName = review.profiles?.first_name || 
+  review.profiles?.full_name?.split(' ')[0] || 
+  'Kunde';
 ```
 
-**In fetchData() (nach Zeile 69), Handwerker-Profil laden:**
+**To:**
 ```typescript
-// Fetch handwerker profile for default message
-if (currentUser) {
-  const { data: hwProfile } = await supabase
-    .from('handwerker_profiles')
-    .select('company_name')
-    .eq('user_id', currentUser.id)
-    .maybeSingle();
+// Show full name to handwerker (they have a business relationship)
+const reviewerName = review.profiles?.full_name || 
+  review.profiles?.first_name || 
+  'Kunde';
+```
+
+**Note:** The handwerker already has full contact details for accepted proposals, so showing full name on reviews is consistent.
+
+---
+
+### Change 2: Add "Meine Bewertungen" Tab to Client Dashboard
+
+**File: `src/pages/Dashboard.tsx`**
+
+**Add new state (around line 29):**
+```typescript
+const [myReviews, setMyReviews] = useState<ReviewWithDetails[]>([]);
+const [reviewsLoading, setReviewsLoading] = useState(false);
+```
+
+**Add fetch function (after fetchUserData):**
+```typescript
+const fetchMyReviews = async (userId: string) => {
+  setReviewsLoading(true);
+  try {
+    const { data: reviewsData } = await supabase
+      .from('reviews')
+      .select(`
+        *,
+        leads (title, category),
+        handwerker:handwerker_profiles!reviewed_id (
+          first_name, last_name, company_name
+        )
+      `)
+      .eq('reviewer_id', userId)
+      .order('created_at', { ascending: false });
+    
+    setMyReviews(reviewsData || []);
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+  } finally {
+    setReviewsLoading(false);
+  }
+};
+```
+
+**Call in fetchUserData (add to Promise.all):**
+```typescript
+// Fetch reviews given by this user
+supabase
+  .from('reviews')
+  .select(`
+    *,
+    leads (title, category),
+    reviewed:handwerker_profiles!reviewed_id (
+      first_name, last_name, company_name, user_id
+    )
+  `)
+  .eq('reviewer_id', user.id)
+  .order('created_at', { ascending: false })
+```
+
+**Add new tab in TabsList (after "Archiv"):**
+```tsx
+<TabsTrigger value="reviews" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
+  <span className="hidden sm:inline">Meine Bewertungen</span>
+  <span className="sm:hidden">Bewertungen</span>
+  <span className="ml-1">({myReviews.length})</span>
+</TabsTrigger>
+```
+
+**Add TabsContent for reviews:**
+```tsx
+<TabsContent value="reviews" className="space-y-6">
+  <h2 className="text-xl font-semibold">Meine Bewertungen</h2>
   
-  if (hwProfile) {
-    setHandwerkerProfile(hwProfile);
-    // Set default message if empty
-    const companyName = hwProfile.company_name || 'Ihr Handwerker-Team';
-    setFormValues(prev => ({
-      ...prev,
-      message: `Guten Tag\n\nGerne schicken wir Ihnen unsere Offerte.\n\nFreundliche Grüsse\n${companyName}`
-    }));
-  }
-}
+  {myReviews.length === 0 ? (
+    <Card>
+      <CardContent className="text-center py-12">
+        <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <p className="text-muted-foreground">
+          Sie haben noch keine Bewertungen abgegeben.
+        </p>
+      </CardContent>
+    </Card>
+  ) : (
+    <div className="space-y-4">
+      {myReviews.map((review) => {
+        const handwerkerName = review.reviewed?.company_name || 
+          `${review.reviewed?.first_name} ${review.reviewed?.last_name}`.trim() || 
+          'Handwerker';
+        
+        return (
+          <Card key={review.id}>
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <StarRating rating={review.rating} size="sm" />
+                    <Badge variant="outline">{review.rating}/5</Badge>
+                  </div>
+                  {review.title && (
+                    <CardTitle className="text-base">{review.title}</CardTitle>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {formatTimeAgo(review.created_at)}
+                </span>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Für: <strong>{handwerkerName}</strong> • Projekt: {review.leads?.title}
+              </div>
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              {review.comment && (
+                <p className="text-sm">{review.comment}</p>
+              )}
+              
+              {/* Show handwerker response if exists */}
+              {review.handwerker_response && (
+                <div className="border-l-2 border-primary pl-3 mt-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-primary mb-1">
+                    <MessageSquare className="h-4 w-4" />
+                    Antwort von {handwerkerName}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {review.handwerker_response}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  )}
+</TabsContent>
 ```
 
 ---
 
-## Änderung 3: Quota-Check Validierung (bereits implementiert)
+## Summary of Changes
 
-Die Quota-Prüfung funktioniert bereits korrekt:
-
-### HandwerkerDashboard.tsx (Zeilen 503-518):
-```typescript
-// Check quota
-const { data: canSubmit, error: checkError } = await supabase.rpc('can_submit_proposal', {
-  handwerker_user_id: user.id
-});
-if (checkError) throw checkError;
-if (!canSubmit) {
-  toast({
-    title: 'Kontingent erschöpft',
-    description: 'Sie haben Ihr monatliches Offerten-Limit erreicht. Bitte upgraden Sie Ihr Abo.',
-    variant: 'destructive'
-  });
-  setSubmittingProposal(false);
-  return;
-}
-```
-
-### OpportunityView.tsx (Zeilen 106-120):
-Gleiche Logik mit Weiterleitung zu `/checkout`
-
-### Visuelles Feedback:
-- `ProposalLimitBadge` zeigt "X von Y Offerten übrig"
-- Bei Limit erreicht: "Limit erreicht - Jetzt upgraden" (klickbar)
+| File | Change | Purpose |
+|------|--------|---------|
+| `src/components/HandwerkerReviewResponse.tsx` | Show full_name instead of first_name | Handwerker sees full client name |
+| `src/pages/Dashboard.tsx` | Add "Meine Bewertungen" tab with reviews list | Client can see their given reviews |
 
 ---
 
-## Dateien zu ändern
+## What's Already Working
 
-| Datei | Änderung |
-|-------|----------|
-| `src/hooks/useProposalFormValidation.ts` | Mindestzeichenprüfung entfernen |
-| `src/pages/HandwerkerDashboard.tsx` | Label anpassen, Zeichenzähler entfernen, Standard-Textvorlage |
-| `src/pages/OpportunityView.tsx` | Label anpassen, Zeichenzähler entfernen, Standard-Textvorlage |
-
----
-
-## Erwartetes Verhalten nach Implementierung
-
-1. **Textfeld:** Handwerker sehen sofort den vorausgefüllten Text:
-   ```
-   Guten Tag
-   
-   Gerne schicken wir Ihnen unsere Offerte.
-   
-   Freundliche Grüsse
-   walia solutions
-   ```
-
-2. **Keine Zeichenbeschränkung:** Kurze Nachrichten wie "Siehe Anhang" sind erlaubt
-
-3. **Quota bei Limit:** Nach 5 Offerten (Free-Plan) erscheint Toast + Upgrade-Aufforderung
+- Email notification when handwerker responds to review (trigger + Edge Function)
+- Rating reminder emails after 7 days (cron job)
+- Review submission flow
+- Handwerker can see and respond to reviews
 
 ---
 
-## Technische Anmerkung zur Quota
+## Expected Result
 
-Der aktuelle `proposals_used_this_period` Wert in der Datenbank scheint nicht synchron mit der tatsächlichen Anzahl eingereichten Proposals zu sein. Dies wird über den `increment_proposal_count` Trigger gesteuert. Falls Diskrepanzen auftreten, kann eine SQL-Korrektur vorgenommen werden:
+**For Handwerker:**
+- Reviews tab shows full client name (e.g., "Test Testnachname" instead of "Test")
 
-```sql
--- Proposal-Zähler synchronisieren
-UPDATE handwerker_subscriptions hs
-SET proposals_used_this_period = (
-  SELECT COUNT(*) 
-  FROM lead_proposals lp 
-  WHERE lp.handwerker_id = hs.user_id 
-    AND lp.created_at >= hs.current_period_start
-)
-WHERE status = 'active';
-```
+**For Client:**
+- New "Meine Bewertungen" tab in Dashboard
+- Shows all reviews they have given
+- Displays handwerker name/company, project, rating, comment
+- Shows handwerker response if one exists
+- Can track their review history
+
