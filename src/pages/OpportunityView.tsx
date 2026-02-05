@@ -27,6 +27,7 @@ const OpportunityView = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hasProposal, setHasProposal] = useState(false);
+  const [handwerkerProfile, setHandwerkerProfile] = useState<{company_name: string | null} | null>(null);
 
   const [formValues, setFormValues] = useState({
     price_min: '',
@@ -59,6 +60,23 @@ const OpportunityView = () => {
       setLead(leadData);
 
       if (currentUser) {
+        // Fetch handwerker profile for default message
+        const { data: hwProfile } = await supabase
+          .from('handwerker_profiles')
+          .select('company_name')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+        
+        if (hwProfile) {
+          setHandwerkerProfile(hwProfile);
+          // Set default message
+          const companyName = hwProfile.company_name || 'Ihr Handwerker-Team';
+          setFormValues(prev => ({
+            ...prev,
+            message: `Guten Tag\n\nGerne schicken wir Ihnen unsere Offerte.\n\nFreundliche Grüsse\n${companyName}`
+          }));
+        }
+
         const { data: existingProposal } = await supabase
           .from('lead_proposals')
           .select('id')
@@ -352,11 +370,10 @@ const OpportunityView = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="message">Ihre Nachricht * (min. 50 Zeichen)</Label>
+                  <Label htmlFor="message">Ihre Nachricht *</Label>
                   <Textarea
                     id="message"
                     required
-                    minLength={50}
                     maxLength={2000}
                     rows={6}
                     className={touched.message && errors.message ? 'border-destructive' : ''}
@@ -365,9 +382,6 @@ const OpportunityView = () => {
                     onBlur={() => handleBlur('message')}
                     placeholder="Beschreiben Sie Ihre Erfahrung, Herangehensweise und warum Sie der richtige Handwerker für dieses Projekt sind..."
                   />
-                  <p className={`text-xs ${formValues.message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                    {formValues.message.length}/50 Zeichen (min. 50)
-                  </p>
                   {touched.message && errors.message && (
                     <p className="text-xs text-destructive">{errors.message}</p>
                   )}
