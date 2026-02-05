@@ -5,6 +5,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { ReceivedProposals } from '@/components/ReceivedProposals';
 import { RatingPrompt } from '@/components/RatingPrompt';
+import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import { logWithCorrelation, captureException } from '@/lib/errorTracking';
 import { trackError } from '@/lib/errorCategories';
 import { Button } from '@/components/ui/button';
@@ -33,8 +34,9 @@ interface ClientReview {
   handwerker_response: string | null;
   response_at: string | null;
   reviewed_id: string;
+  reviewed_user_id?: string;
   leads: { title: string; category: string } | null;
-  handwerker_profile?: { first_name: string | null; last_name: string | null; company_name: string | null } | null;
+  handwerker_profile?: { first_name: string | null; last_name: string | null; company_name: string | null; user_id: string | null } | null;
 }
 
 const Dashboard = () => {
@@ -44,6 +46,8 @@ const Dashboard = () => {
   const [archivedLeads, setArchivedLeads] = useState<LeadListItem[]>([]);
   const [myReviews, setMyReviews] = useState<ClientReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedHandwerkerId, setSelectedHandwerkerId] = useState<string | null>(null);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const { isAdmin, isHandwerker, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -169,7 +173,7 @@ const Dashboard = () => {
         const reviewedIds = [...new Set(reviewsData.map(r => r.reviewed_id))];
         const { data: handwerkerProfiles } = await supabase
           .from('handwerker_profiles')
-          .select('id, first_name, last_name, company_name')
+          .select('id, user_id, first_name, last_name, company_name')
           .in('id', reviewedIds);
         
         const profileMap = new Map(handwerkerProfiles?.map(p => [p.id, p]) || []);
@@ -395,7 +399,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <div className="min-h-screen bg-background">
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="max-w-6xl mx-auto">
@@ -692,6 +697,21 @@ const Dashboard = () => {
                               </p>
                             </div>
                           )}
+                          
+                          {/* View handwerker profile button */}
+                          {review.handwerker_profile?.user_id && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedHandwerkerId(review.handwerker_profile!.user_id!);
+                                setProfileModalOpen(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Profil ansehen
+                            </Button>
+                          )}
                         </CardContent>
                       </Card>
                     );
@@ -734,7 +754,15 @@ const Dashboard = () => {
         </div>
       </main>
       <Footer />
-    </div>
+      </div>
+      
+      {/* Handwerker Profile Modal */}
+      <HandwerkerProfileModal
+        handwerkerId={selectedHandwerkerId}
+        open={profileModalOpen}
+        onOpenChange={setProfileModalOpen}
+      />
+    </>
   );
 };
 
