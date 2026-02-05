@@ -1,254 +1,194 @@
 
+# Admin Review Management with Response Capability
 
-# Fix Reviews: Full Client Names for Handwerker + Client Review History
+## Current State Analysis
 
-## Issues Identified
+### Existing Components
+- **AdminReviewsManagement** (`src/pages/admin/ReviewsManagement.tsx`): Lists all reviews with filters, visibility toggle, delete functionality
+- **HandwerkerReviewResponse** (`src/components/HandwerkerReviewResponse.tsx`): Reusable component for viewing reviews and submitting responses
 
-### Issue 1: Client Names Are Anonymous for Handwerker
-**Problem:** In `HandwerkerReviewResponse.tsx` (line 107-109), reviewer names show only the first name:
-```typescript
-const reviewerName = review.profiles?.first_name || 
-  review.profiles?.full_name?.split(' ')[0] || 
-  'Kunde';
+### What's Missing
+Admin can currently:
+- View all reviews in a table
+- Toggle visibility (public/hidden)
+- Delete reviews
+- See "Antwort vorhanden" indicator
+
+Admin cannot:
+- View the full review details (comment, response)
+- Add or edit handwerker_response on behalf of handwerker
+
+### RLS Policies - Already Configured
+```sql
+-- Admins can update all reviews (includes handwerker_response)
+qual: (get_user_role(auth.uid()) = 'admin'::app_role)
 ```
 
-**Also:** In `HandwerkerRating.tsx` (line 121), public-facing reviews only show first names:
-```typescript
-const reviewerName = review.reviewer?.full_name?.split(' ')[0] || 'Kunde';
-```
-
-**Distinction:**
-- **Handwerker Dashboard (private view):** Should show **full name** since review is already submitted
-- **Public profile:** Can keep first name only for privacy
-
 ---
 
-### Issue 2: Email Notification on Handwerker Response - Already Working
-**Status:** The email notification system for handwerker responses is already implemented:
-- `trigger_send_rating_response_notification()` - Database trigger fires on UPDATE when `handwerker_response` changes from NULL
-- `send-rating-response-notification` Edge Function - Fetches client email and sends notification
-- `ratingResponseClientTemplate` - Email template with link to dashboard
+## Solution: SSOT Approach - Extract Shared Review Card Component
 
-**The trigger and email are working correctly.** Client receives email when handwerker responds.
-
----
-
-### Issue 3: Client Cannot See Their Given Reviews
-**Problem:** The Client Dashboard (`src/pages/Dashboard.tsx`) has tabs for:
-- Meine Aufträge (My Leads)
-- Erhaltene Offerten (Received Proposals)
-- Archiv
-- Profil
-
-**Missing:** A "Meine Bewertungen" (My Reviews) tab where clients can see reviews they have given.
-
----
-
-## Solution Overview
+Rather than duplicating the review display/response logic from `HandwerkerReviewResponse`, I'll create a **shared component** that both handwerker and admin can use.
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│  Changes Required                                            │
-├─────────────────────────────────────────────────────────────┤
-│  1. HandwerkerReviewResponse.tsx                            │
-│     Show FULL NAME (not just first name) to handwerker      │
-│     review.profiles?.full_name || 'Kunde'                   │
-├─────────────────────────────────────────────────────────────┤
-│  2. Dashboard.tsx (Client Dashboard)                        │
-│     Add "Meine Bewertungen" tab showing:                    │
-│     - Reviews the client has given                          │
-│     - Star rating, comment, project title                   │
-│     - Handwerker response (if any)                          │
-│     - Link to handwerker profile                            │
-└─────────────────────────────────────────────────────────────┘
+Current:
+┌─────────────────────────────────────────────────────────┐
+│  HandwerkerReviewResponse.tsx                           │
+│  - Full review cards with response UI                   │
+│  - Used only by HandwerkerDashboard                     │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│  ReviewsManagement.tsx                                  │
+│  - Table view with limited info                         │
+│  - No response capability                               │
+└─────────────────────────────────────────────────────────┘
+
+After:
+┌─────────────────────────────────────────────────────────┐
+│  ReviewCard.tsx (NEW - shared)                          │
+│  - Single review display with full details              │
+│  - Response form (if canRespond prop is true)           │
+│  - Shows existing response                              │
+│  - Optional visibility toggle (admin only)              │
+│  - Optional delete button (admin only)                  │
+└─────────────────────────────────────────────────────────┘
+         │                            │
+         ▼                            ▼
+┌─────────────────────┐    ┌─────────────────────────────┐
+│ HandwerkerReview    │    │ ReviewsManagement           │
+│ Response.tsx        │    │ (Admin)                     │
+│ - Uses ReviewCard   │    │ - Uses Dialog + ReviewCard  │
+│ - canRespond=true   │    │ - canRespond=true           │
+│ - showAdmin=false   │    │ - showAdmin=true            │
+└─────────────────────┘    └─────────────────────────────┘
 ```
 
 ---
 
-## Technical Changes
+## Technical Implementation
 
-### Change 1: Show Full Client Name to Handwerker
+### Step 1: Create Shared ReviewCard Component
+
+**New File: `src/components/ReviewCard.tsx`**
+
+Props interface:
+```typescript
+interface ReviewCardProps {
+  review: ReviewForAdmin | ReviewForHandwerker;
+  onReviewUpdated: () => void;
+  // Feature flags
+  canRespond?: boolean;        // Show response form
+  showAdminActions?: boolean;  // Show visibility toggle, delete
+  isExpanded?: boolean;        // Control expanded state externally
+}
+```
+
+Features:
+- Display: rating, title, reviewer name, date, project title, comment
+- Response section: show existing response or response form
+- Admin actions: visibility toggle, delete (only when showAdminActions=true)
+- Shares response submission logic with HandwerkerReviewResponse
+
+### Step 2: Refactor HandwerkerReviewResponse to Use ReviewCard
 
 **File: `src/components/HandwerkerReviewResponse.tsx`**
 
-**Line 107-109 change from:**
-```typescript
-const reviewerName = review.profiles?.first_name || 
-  review.profiles?.full_name?.split(' ')[0] || 
-  'Kunde';
-```
-
-**To:**
-```typescript
-// Show full name to handwerker (they have a business relationship)
-const reviewerName = review.profiles?.full_name || 
-  review.profiles?.first_name || 
-  'Kunde';
-```
-
-**Note:** The handwerker already has full contact details for accepted proposals, so showing full name on reviews is consistent.
-
----
-
-### Change 2: Add "Meine Bewertungen" Tab to Client Dashboard
-
-**File: `src/pages/Dashboard.tsx`**
-
-**Add new state (around line 29):**
-```typescript
-const [myReviews, setMyReviews] = useState<ReviewWithDetails[]>([]);
-const [reviewsLoading, setReviewsLoading] = useState(false);
-```
-
-**Add fetch function (after fetchUserData):**
-```typescript
-const fetchMyReviews = async (userId: string) => {
-  setReviewsLoading(true);
-  try {
-    const { data: reviewsData } = await supabase
-      .from('reviews')
-      .select(`
-        *,
-        leads (title, category),
-        handwerker:handwerker_profiles!reviewed_id (
-          first_name, last_name, company_name
-        )
-      `)
-      .eq('reviewer_id', userId)
-      .order('created_at', { ascending: false });
-    
-    setMyReviews(reviewsData || []);
-  } catch (error) {
-    console.error('Error fetching reviews:', error);
-  } finally {
-    setReviewsLoading(false);
-  }
-};
-```
-
-**Call in fetchUserData (add to Promise.all):**
-```typescript
-// Fetch reviews given by this user
-supabase
-  .from('reviews')
-  .select(`
-    *,
-    leads (title, category),
-    reviewed:handwerker_profiles!reviewed_id (
-      first_name, last_name, company_name, user_id
-    )
-  `)
-  .eq('reviewer_id', user.id)
-  .order('created_at', { ascending: false })
-```
-
-**Add new tab in TabsList (after "Archiv"):**
+Change from inline card rendering to:
 ```tsx
-<TabsTrigger value="reviews" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
-  <span className="hidden sm:inline">Meine Bewertungen</span>
-  <span className="sm:hidden">Bewertungen</span>
-  <span className="ml-1">({myReviews.length})</span>
-</TabsTrigger>
+{reviews.map((review) => (
+  <ReviewCard
+    key={review.id}
+    review={review}
+    onReviewUpdated={onReviewUpdated}
+    canRespond={true}
+    showAdminActions={false}
+  />
+))}
 ```
 
-**Add TabsContent for reviews:**
+This maintains exact current functionality while removing ~100 lines of duplicate code.
+
+### Step 3: Add Review Detail Dialog to Admin Page
+
+**File: `src/pages/admin/ReviewsManagement.tsx`**
+
+Add "View Details" action button that opens a Dialog containing ReviewCard:
 ```tsx
-<TabsContent value="reviews" className="space-y-6">
-  <h2 className="text-xl font-semibold">Meine Bewertungen</h2>
-  
-  {myReviews.length === 0 ? (
-    <Card>
-      <CardContent className="text-center py-12">
-        <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-        <p className="text-muted-foreground">
-          Sie haben noch keine Bewertungen abgegeben.
-        </p>
-      </CardContent>
-    </Card>
-  ) : (
-    <div className="space-y-4">
-      {myReviews.map((review) => {
-        const handwerkerName = review.reviewed?.company_name || 
-          `${review.reviewed?.first_name} ${review.reviewed?.last_name}`.trim() || 
-          'Handwerker';
-        
-        return (
-          <Card key={review.id}>
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <StarRating rating={review.rating} size="sm" />
-                    <Badge variant="outline">{review.rating}/5</Badge>
-                  </div>
-                  {review.title && (
-                    <CardTitle className="text-base">{review.title}</CardTitle>
-                  )}
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {formatTimeAgo(review.created_at)}
-                </span>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Für: <strong>{handwerkerName}</strong> • Projekt: {review.leads?.title}
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-3">
-              {review.comment && (
-                <p className="text-sm">{review.comment}</p>
-              )}
-              
-              {/* Show handwerker response if exists */}
-              {review.handwerker_response && (
-                <div className="border-l-2 border-primary pl-3 mt-3">
-                  <div className="flex items-center gap-2 text-sm font-medium text-primary mb-1">
-                    <MessageSquare className="h-4 w-4" />
-                    Antwort von {handwerkerName}
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {review.handwerker_response}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  )}
-</TabsContent>
+<Dialog>
+  <DialogTrigger asChild>
+    <Button variant="ghost" size="icon" title="Details anzeigen">
+      <Eye className="h-4 w-4" />
+    </Button>
+  </DialogTrigger>
+  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+    <DialogHeader>
+      <DialogTitle>Bewertung Details</DialogTitle>
+    </DialogHeader>
+    <ReviewCard
+      review={review}
+      onReviewUpdated={() => {
+        loadReviews();
+        // Close dialog if needed
+      }}
+      canRespond={true}
+      showAdminActions={true}
+    />
+  </DialogContent>
+</Dialog>
+```
+
+### Step 4: Update Type Definitions
+
+**File: `src/types/entities.ts`**
+
+Create a union type for ReviewCard to accept both admin and handwerker review types:
+```typescript
+export type ReviewCardData = ReviewForAdmin | ReviewForHandwerker;
 ```
 
 ---
 
-## Summary of Changes
+## Files to Modify/Create
 
-| File | Change | Purpose |
+| File | Action | Purpose |
 |------|--------|---------|
-| `src/components/HandwerkerReviewResponse.tsx` | Show full_name instead of first_name | Handwerker sees full client name |
-| `src/pages/Dashboard.tsx` | Add "Meine Bewertungen" tab with reviews list | Client can see their given reviews |
+| `src/components/ReviewCard.tsx` | CREATE | Shared review display + response component |
+| `src/components/HandwerkerReviewResponse.tsx` | REFACTOR | Use ReviewCard, remove duplicate code |
+| `src/pages/admin/ReviewsManagement.tsx` | UPDATE | Add detail dialog with ReviewCard |
+| `src/types/entities.ts` | UPDATE | Add ReviewCardData union type |
 
 ---
 
-## What's Already Working
+## Benefits
 
-- Email notification when handwerker responds to review (trigger + Edge Function)
-- Rating reminder emails after 7 days (cron job)
-- Review submission flow
-- Handwerker can see and respond to reviews
+1. **SSOT**: Single ReviewCard component for all review displays
+2. **DRY**: Response form logic written once, used everywhere
+3. **No Code Bloat**: Reduces HandwerkerReviewResponse by ~80 lines
+4. **Consistent UX**: Same review display pattern for handwerker and admin
+5. **Easy Testing**: One component to test for review functionality
 
 ---
 
-## Expected Result
+## Admin Workflow After Implementation
 
-**For Handwerker:**
-- Reviews tab shows full client name (e.g., "Test Testnachname" instead of "Test")
+1. Admin navigates to `/admin/reviews`
+2. Sees table with all reviews, filters, stats
+3. Clicks "View Details" (eye icon) on any review
+4. Dialog opens showing:
+   - Full review with rating, comment
+   - Existing handwerker response (if any)
+   - Response form (admin can write response on behalf of handwerker)
+   - Visibility toggle
+   - Delete button
+5. Admin can respond → saves `handwerker_response` field
+6. Dialog closes, table refreshes to show "Antwort vorhanden"
 
-**For Client:**
-- New "Meine Bewertungen" tab in Dashboard
-- Shows all reviews they have given
-- Displays handwerker name/company, project, rating, comment
-- Shows handwerker response if one exists
-- Can track their review history
+---
 
+## Technical Notes
+
+- Response submission uses same Supabase update as handwerker
+- Admin RLS policy already allows UPDATE on reviews
+- `invalidateReviewQueries` called after any mutation to refresh cache
+- No email triggered when admin responds (only handwerker trigger fires on response_at change)
