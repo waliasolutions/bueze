@@ -87,10 +87,37 @@ serve(async (req) => {
       throw new Error(result.error || 'Email sending failed');
     }
 
-    console.log('[send-message-notification] Message notification sent successfully:', { 
+    console.log('[send-message-notification] Email notification sent successfully:', { 
       messageId, 
       recipientEmail: recipientProfile.email 
     });
+
+    // Check if recipient is a handwerker and create in-app notification
+    const { data: isHandwerker } = await supabase
+      .from('handwerker_profiles')
+      .select('user_id')
+      .eq('user_id', message.recipient_id)
+      .maybeSingle();
+
+    if (isHandwerker) {
+      const { error: notifError } = await supabase.from('handwerker_notifications').insert({
+        user_id: message.recipient_id,
+        type: 'new_message',
+        title: 'Neue Nachricht',
+        message: `${senderName} hat Ihnen eine Nachricht gesendet`,
+        related_id: message.id,
+        metadata: { 
+          conversationId: message.conversation_id,
+          senderId: message.sender_id
+        }
+      });
+
+      if (notifError) {
+        console.error('[send-message-notification] Failed to create in-app notification:', notifError);
+      } else {
+        console.log('[send-message-notification] Handwerker in-app notification created');
+      }
+    }
 
     return successResponse({ success: true, message: 'Message notification sent' });
   } catch (error) {
