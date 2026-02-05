@@ -996,10 +996,15 @@ const HandwerkerDashboard = () => {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="reviews" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px]">
+              <TabsTrigger value="reviews" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px] relative">
                 <Star className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Bewertungen</span>
                 <span className="ml-1">({reviews.length})</span>
+                {dashboardStats.newReviews > 0 && (
+                  <Badge className="ml-1 sm:ml-2 bg-yellow-500 hover:bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5">
+                    {dashboardStats.newReviews}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="profile" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px]">
                 <UserIcon className="h-4 w-4 sm:mr-2" />

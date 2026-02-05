@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { SUBSCRIPTION_PLANS, type SubscriptionPlanType } from '@/config/subscriptionPlans';
+import { startOfMonth, startOfNextMonth } from '@/lib/swissTime';
 
 export interface SubscriptionData {
   id: string;
@@ -61,7 +62,11 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
       let subscriptionData = data;
 
       // Auto-create default free subscription if none exists
+      // Uses Swiss timezone for period boundaries (1st of month at 00:00)
       if (!subscriptionData && enableAutoCreate) {
+        const currentMonthStart = startOfMonth();
+        const nextMonthStart = startOfNextMonth();
+        
         const { data: newSub, error: insertError } = await supabase
           .from('handwerker_subscriptions')
           .insert({
@@ -70,8 +75,8 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
             status: 'active',
             proposals_used_this_period: 0,
             proposals_limit: 5,
-            current_period_start: new Date().toISOString(),
-            current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+            current_period_start: currentMonthStart.toISOString(),
+            current_period_end: nextMonthStart.toISOString()
           })
           .select()
           .single();
