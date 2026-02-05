@@ -4,8 +4,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StarRating } from '@/components/ui/star-rating';
+import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Globe, Clock, CheckCircle, Building2, Briefcase } from 'lucide-react';
+import { MapPin, Globe, Clock, Building2, Briefcase } from 'lucide-react';
 import { categoryLabels } from '@/config/categoryLabels';
 import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
 
@@ -152,9 +153,10 @@ export function HandwerkerProfileModal({ handwerkerId, open, onOpenChange }: Han
                 <div className="flex-1">
                   <DialogTitle className="text-xl flex items-center gap-2">
                     {getDisplayName()}
-                    {profile.is_verified && (
-                      <CheckCircle className="h-5 w-5 text-primary" />
-                    )}
+                    <VerifiedSwissBadge 
+                      isVerified={profile.is_verified || false} 
+                      showLabel={false}
+                    />
                   </DialogTitle>
                   
                   {profile.company_legal_form && (

@@ -229,10 +229,17 @@ const HandwerkerDashboard = () => {
         logo_url: profile.logo_url || ''
       });
 
-      // Only fetch leads if verified
+      // Fetch leads for approved AND pending (Pre-Verified Browse Mode)
+      const canBrowse = ['approved', 'pending'].includes(profile.verification_status || '');
+      
+      if (canBrowse) {
+        // Pending users can browse leads (read-only)
+        await fetchLeads(currentUser.id, profile.categories, profile.service_areas);
+      }
+      
+      // Only fetch proposals, reviews, and stats for approved users
       if (profile.verification_status === 'approved') {
         await Promise.all([
-          fetchLeads(currentUser.id, profile.categories, profile.service_areas), 
           fetchProposals(currentUser.id),
           fetchReviews(currentUser.id),
           fetchDashboardStats(currentUser.id)
@@ -313,8 +320,11 @@ const HandwerkerDashboard = () => {
       // Create set of lead IDs where handwerker already has proposals
       const proposedLeadIds = new Set(proposalsResult.data?.map(p => p.lead_id) || []);
 
-      // Filter out already-proposed leads
-      const availableLeads = (leadsResult.data || []).filter(lead => !proposedLeadIds.has(lead.id));
+      // Filter out already-proposed leads AND leads that have reached max proposals (Ghost Lead Prevention)
+      const availableLeads = (leadsResult.data || []).filter(lead => 
+        !proposedLeadIds.has(lead.id) &&
+        (lead.proposals_count || 0) < (lead.max_purchases || 5)
+      );
       
       // Store all available leads for stats
       setAllLeads(availableLeads);
@@ -334,13 +344,14 @@ const HandwerkerDashboard = () => {
     }
   };
   
-  // Re-fetch leads when filter settings change
+  // Re-fetch leads when filter settings change (also for pending users in browse mode)
   useEffect(() => {
-    if (user?.id && handwerkerProfile?.verification_status === 'approved') {
+    const canBrowse = ['approved', 'pending'].includes(handwerkerProfile?.verification_status || '');
+    if (user?.id && canBrowse) {
       fetchLeads(
         user.id, 
-        handwerkerProfile.categories || [], 
-        handwerkerProfile.service_areas || [],
+        handwerkerProfile?.categories || [], 
+        handwerkerProfile?.service_areas || [],
         showAllCategories,
         showAllRegions
       );
@@ -798,16 +809,16 @@ const HandwerkerDashboard = () => {
       </div>;
   }
 
-  // Check verification status - show pending state
-  if (handwerkerProfile.verification_status !== 'approved') {
+  // Check verification status - show restricted state for rejected/unknown, allow pending to browse
+  if (handwerkerProfile.verification_status !== 'approved' && handwerkerProfile.verification_status !== 'pending') {
     return <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8 pt-24">
-          <Alert className="max-w-2xl mx-auto mb-6 border-brand-200 bg-brand-50">
-            <Clock className="h-5 w-5 text-brand-600" />
-            <AlertTitle className="text-brand-900">Profil in Prüfung</AlertTitle>
-            <AlertDescription className="text-brand-700">
-              Ihr Profil wird derzeit geprüft. Sie können bereits Ihr Profil vervollständigen, aber Aufträge durchsuchen ist erst nach Freigabe möglich.
+          <Alert className="max-w-2xl mx-auto mb-6 border-destructive/20 bg-destructive/5">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <AlertTitle className="text-destructive">Profil nicht freigegeben</AlertTitle>
+            <AlertDescription className="text-destructive/80">
+              Ihr Profil wurde nicht freigegeben. Bitte kontaktieren Sie uns für weitere Informationen.
             </AlertDescription>
           </Alert>
           
@@ -815,31 +826,17 @@ const HandwerkerDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <UserIcon className="h-5 w-5" />
-                Willkommen bei Büeze.ch!
+                Status: {handwerkerProfile.verification_status || 'Unbekannt'}
               </CardTitle>
               <CardDescription>
-                Vervollständigen Sie Ihr Profil während der Prüfung
+                Kontaktieren Sie unseren Support
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <p className="text-muted-foreground">
-                  Ihr Handwerker-Konto wurde erstellt! Während wir Ihr Profil prüfen, können Sie bereits:
-                </p>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground ml-4">
-                  <li>Ihr Profil vervollständigen (Bio, Preise, Servicegebiete)</li>
-                  <li>Portfolio-Bilder hochladen</li>
-                  <li>Ihre Kontakt- und Bankdaten aktualisieren</li>
-                </ul>
-                <p className="text-muted-foreground font-medium">
-                  Nach der Freigabe durch unser Team können Sie dann Aufträge durchsuchen und Offerten abgeben.
-                </p>
-              </div>
-
               <div className="flex gap-3">
                 <Button onClick={() => navigate('/handwerker-profile/edit')} className="flex-1">
                   <UserIcon className="h-4 w-4 mr-2" />
-                  Profil vervollständigen
+                  Profil bearbeiten
                 </Button>
                 <Button onClick={() => navigate('/')} variant="outline" className="flex-1">
                   Zur Startseite
@@ -920,6 +917,17 @@ const HandwerkerDashboard = () => {
               Verwalten Sie Ihre Leads, Angebote und Profil
             </p>
           </div>
+
+          {/* Pending Verification Banner - Pre-Verified Browse Mode */}
+          {handwerkerProfile.verification_status === 'pending' && (
+            <Alert className="mb-6 border-yellow-300 bg-yellow-50">
+              <Clock className="h-4 w-4 text-yellow-600" />
+              <AlertTitle className="text-yellow-900">Profil in Prüfung</AlertTitle>
+              <AlertDescription className="text-yellow-800">
+                Ihr Profil wird von unserem Team geprüft. Sie können Aufträge ansehen, aber noch keine Offerten einreichen, bis Ihr Profil freigegeben wurde.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Dashboard Quick Stats - Unread Notifications */}
           {(dashboardStats.unreadMessages > 0 || dashboardStats.newAcceptedProposals > 0 || dashboardStats.newReviews > 0) && (

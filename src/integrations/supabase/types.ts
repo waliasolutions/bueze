@@ -723,6 +723,8 @@ export type Database = {
           verified_at: string | null
           verified_by: string | null
           website: string | null
+          zefix_data: Json | null
+          zefix_verified: boolean | null
         }
         Insert: {
           bank_name?: string | null
@@ -770,6 +772,8 @@ export type Database = {
           verified_at?: string | null
           verified_by?: string | null
           website?: string | null
+          zefix_data?: Json | null
+          zefix_verified?: boolean | null
         }
         Update: {
           bank_name?: string | null
@@ -817,6 +821,8 @@ export type Database = {
           verified_at?: string | null
           verified_by?: string | null
           website?: string | null
+          zefix_data?: Json | null
+          zefix_verified?: boolean | null
         }
         Relationships: []
       }

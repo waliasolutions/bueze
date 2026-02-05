@@ -98,10 +98,17 @@ Büeze.ch is a Swiss marketplace connecting homeowners with verified tradespeopl
         │                                               │
         ▼                                               ▼
 ┌───────────────────────────────────────────────────────────────┐
+│  Ghost Lead Prevention:                                       │
+│  • Leads hidden when proposals_count >= max_purchases (5)     │
+│  • Prevents wasted proposal credits on "full" leads           │
+└───────────────────────────────────────────────────────────────┘
+        │
+        ▼
+┌───────────────────────────────────────────────────────────────┐
 │  Quota System (30-day rolling from registration):             │
 │  • Free tier: 5 proposals/period                              │
 │  • Paid tier: Unlimited (-1)                                  │
-│  • Reset: 30 days from current_period_start                   │
+│  • Reset: 30 days from current_period_start (Swiss TZ)        │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -119,24 +126,24 @@ Büeze.ch is a Swiss marketplace connecting homeowners with verified tradespeopl
 │  Registration  │────►│  Pending       │────►│  Admin Review  │
 │  Form          │     │  Profile       │     │                │
 └────────────────┘     └────────────────┘     └────────────────┘
-        │                                              │
-        ▼                                              ▼
+        │                      │                       │
+        ▼                      ▼                       ▼
 ┌────────────────────────────────────┐        ┌───────────────┐
 │  Creates:                          │        │   Approved?   │
 │  • handwerker_profiles (pending)   │        └───────────────┘
 │  • Admin notification              │               │
 │  • pending_plan (if paid selected) │        ┌──────┴──────┐
 └────────────────────────────────────┘        ▼             ▼
-                                        ┌──────────┐  ┌──────────┐
-                                        │ Approved │  │ Rejected │
-                                        └──────────┘  └──────────┘
-                                              │
-                                              ▼
-                                     ┌─────────────────┐
-                                     │ • Role → handwerker
-                                     │ • Payment link sent
-                                     │ • (if pending_plan)
-                                     └─────────────────┘
+        │                               ┌──────────┐  ┌──────────┐
+        ▼                               │ Approved │  │ Rejected │
+┌────────────────────────────────────┐  └──────────┘  └──────────┘
+│  PRE-VERIFIED BROWSE MODE:         │        │
+│  • Pending users CAN browse leads  │        ▼
+│  • Cannot submit proposals yet     │ ┌─────────────────┐
+│  • See yellow status banner        │ │ • Role → handwerker
+└────────────────────────────────────┘ │ • Payment link sent
+                                       │ • (if pending_plan)
+                                       └─────────────────┘
 ```
 
 **Key Files:**
@@ -157,7 +164,7 @@ profiles (id, email, full_name, phone, canton, city, zip, ...)
 user_roles (user_id, role: app_role)
 
 -- Handwerker-specific
-handwerker_profiles (id, user_id, company_name, categories[], service_areas[], verification_status, ...)
+handwerker_profiles (id, user_id, company_name, categories[], service_areas[], verification_status, zefix_verified, zefix_data, ...)
 handwerker_subscriptions (user_id, plan_type, proposals_limit, proposals_used_this_period, current_period_start, current_period_end, pending_plan, ...)
 handwerker_service_areas (handwerker_id, start_plz, end_plz, label)
 handwerker_documents (user_id, document_type, document_url, expiry_date, ...)

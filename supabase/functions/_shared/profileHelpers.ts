@@ -173,6 +173,10 @@ export async function createMagicToken(
     case 'dashboard':
       magicLink = `https://bueeze.ch/dashboard?token=${token}`;
       break;
+    case 'conversation':
+      // Deep-link directly to the specific conversation
+      magicLink = `https://bueeze.ch/messages/${options.resourceId}?token=${token}`;
+      break;
     case 'rating':
       magicLink = `https://bueeze.ch/rate/${options.resourceId}?token=${token}`;
       break;
