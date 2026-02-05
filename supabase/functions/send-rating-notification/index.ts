@@ -74,11 +74,30 @@ serve(async (req) => {
       throw new Error(result.error || 'Email sending failed');
     }
 
-    console.log('[send-rating-notification] Rating notification sent successfully:', { 
+    console.log('[send-rating-notification] Email notification sent successfully:', { 
       reviewId, 
       handwerkerEmail: handwerkerProfile.email,
       rating: review.rating
     });
+
+    // Insert in-app notification for handwerker
+    const { error: notifError } = await supabase.from('handwerker_notifications').insert({
+      user_id: review.reviewed_id,
+      type: 'new_review',
+      title: 'Neue Bewertung erhalten',
+      message: `${clientFirstName} hat Sie mit ${review.rating} Sternen bewertet`,
+      related_id: reviewId,
+      metadata: { 
+        lead_id: review.lead_id,
+        rating: review.rating
+      }
+    });
+
+    if (notifError) {
+      console.error('[send-rating-notification] Failed to create in-app notification:', notifError);
+    } else {
+      console.log('[send-rating-notification] Handwerker in-app notification created');
+    }
 
     return successResponse({ success: true, message: 'Rating notification sent' });
   } catch (error) {

@@ -68,6 +68,25 @@ serve(async (req) => {
       console.log('Conversation created:', conversation?.id);
     }
 
+    // Insert in-app notification for handwerker
+    const { error: notifError } = await supabase.from('handwerker_notifications').insert({
+      user_id: proposal.handwerker_id,
+      type: 'proposal_accepted',
+      title: 'Offerte angenommen!',
+      message: `${clientProfile?.fullName || 'Ein Kunde'} hat Ihre Offerte für "${proposal.leads?.title || 'Projekt'}" angenommen`,
+      related_id: proposalId,
+      metadata: { 
+        lead_id: proposal.lead_id,
+        conversation_id: conversation?.id
+      }
+    });
+
+    if (notifError) {
+      console.error('[send-acceptance-emails] Failed to create in-app notification:', notifError);
+    } else {
+      console.log('[send-acceptance-emails] Handwerker in-app notification created');
+    }
+
     const conversationLink = conversation 
       ? `https://bueeze.ch/messages/${conversation.id}` 
       : 'https://bueeze.ch/messages';
