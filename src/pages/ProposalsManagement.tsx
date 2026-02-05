@@ -491,19 +491,39 @@ const ProposalsManagement = () => {
                               variant="outline" 
                               className="mt-2"
                               onClick={async () => {
-                                const { data: conversation } = await supabase
+                                // First check if conversation exists
+                                let { data: conversation } = await supabase
                                   .from('conversations')
                                   .select('id')
                                   .eq('lead_id', proposal.lead_id)
                                   .eq('handwerker_id', proposal.handwerker_id)
                                   .maybeSingle();
                                 
+                                // Fallback: Create conversation if not exists
+                                if (!conversation) {
+                                  console.log('[ProposalsManagement] Creating fallback conversation for accepted proposal');
+                                  const { data: newConversation, error } = await supabase
+                                    .from('conversations')
+                                    .insert({
+                                      lead_id: proposal.lead_id,
+                                      homeowner_id: user?.id,
+                                      handwerker_id: proposal.handwerker_id,
+                                    })
+                                    .select()
+                                    .single();
+                                  
+                                  if (!error && newConversation) {
+                                    conversation = newConversation;
+                                  }
+                                }
+                                
                                 if (conversation) {
                                   navigate(`/messages/${conversation.id}`);
                                 } else {
                                   toast({
-                                    title: "Keine Unterhaltung gefunden",
-                                    description: "Es wurde noch keine Unterhaltung mit diesem Handwerker erstellt.",
+                                    title: "Fehler",
+                                    description: "Unterhaltung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+                                    variant: "destructive",
                                   });
                                 }
                               }}

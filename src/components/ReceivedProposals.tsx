@@ -17,6 +17,7 @@ import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProposalComparisonDialog } from './ProposalComparisonDialog';
 import { invalidateProposalQueries } from '@/lib/queryInvalidation';
+import { HandwerkerProfileModal } from './HandwerkerProfileModal';
 import type { ProposalWithHandwerkerInfo } from '@/types/entities';
 
 // Extended type for ReceivedProposals with specific joined data
@@ -60,6 +61,8 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
   const [comparisonOpen, setComparisonOpen] = useState(false);
   const [sortBy, setSortBy] = useState<'date' | 'price_low' | 'price_high'>('date');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -485,7 +488,10 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.location.href = `/handwerker/${proposal.handwerker_id}`}
+                          onClick={() => {
+                            setSelectedProfileId(proposal.handwerker_id);
+                            setProfileModalOpen(true);
+                          }}
                         >
                           <User className="h-4 w-4 mr-1" />
                           Profil ansehen
@@ -571,19 +577,39 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                         variant="outline" 
                         size="sm"
                         onClick={async () => {
-                          const { data: conversation } = await supabase
+                          // First check if conversation exists
+                          let { data: conversation } = await supabase
                             .from('conversations')
                             .select('id')
                             .eq('lead_id', proposal.lead_id)
                             .eq('handwerker_id', proposal.handwerker_id)
                             .maybeSingle();
                           
+                          // Fallback: Create conversation if not exists
+                          if (!conversation) {
+                            console.log('[ReceivedProposals] Creating fallback conversation for accepted proposal');
+                            const { data: newConversation, error } = await supabase
+                              .from('conversations')
+                              .insert({
+                                lead_id: proposal.lead_id,
+                                homeowner_id: userId,
+                                handwerker_id: proposal.handwerker_id,
+                              })
+                              .select()
+                              .single();
+                            
+                            if (!error && newConversation) {
+                              conversation = newConversation;
+                            }
+                          }
+                          
                           if (conversation) {
                             navigate(`/messages/${conversation.id}`);
                           } else {
                             toast({
-                              title: "Keine Unterhaltung gefunden",
-                              description: "Es wurde noch keine Unterhaltung mit diesem Handwerker erstellt.",
+                              title: "Fehler",
+                              description: "Unterhaltung konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+                              variant: "destructive",
                             });
                           }
                         }}
@@ -621,6 +647,13 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
         proposals={getComparisonProposals()}
         onAccept={handleAccept}
         onReject={handleReject}
+      />
+
+      {/* Handwerker Profile Modal */}
+      <HandwerkerProfileModal
+        handwerkerId={selectedProfileId}
+        open={profileModalOpen}
+        onOpenChange={setProfileModalOpen}
       />
     </div>
   );
