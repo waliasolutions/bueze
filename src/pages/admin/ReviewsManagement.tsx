@@ -11,14 +11,16 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import { Star, Eye, EyeOff, Trash2, Search, ArrowLeft, MessageSquare } from 'lucide-react';
+ import { Star, Eye, EyeOff, Trash2, Search, MessageSquare, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StarRating } from '@/components/ui/star-rating';
 import { invalidateReviewQueries } from '@/lib/queryInvalidation';
+ import { ReviewCard } from '@/components/ReviewCard';
 import type { ReviewForAdmin } from '@/types/entities';
 
 const ReviewsManagement = () => {
@@ -32,6 +34,8 @@ const ReviewsManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRating, setFilterRating] = useState<string>('all');
   const [filterVisibility, setFilterVisibility] = useState<string>('all');
+   const [selectedReview, setSelectedReview] = useState<ReviewForAdmin | null>(null);
+   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -357,6 +361,44 @@ const ReviewsManagement = () => {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
+                               <Dialog 
+                                 open={detailDialogOpen && selectedReview?.id === review.id} 
+                                 onOpenChange={(open) => {
+                                   setDetailDialogOpen(open);
+                                   if (!open) setSelectedReview(null);
+                                 }}
+                               >
+                                 <DialogTrigger asChild>
+                                   <Button
+                                     variant="ghost"
+                                     size="icon"
+                                     title="Details anzeigen"
+                                     onClick={() => {
+                                       setSelectedReview(review);
+                                       setDetailDialogOpen(true);
+                                     }}
+                                   >
+                                     <FileText className="h-4 w-4" />
+                                   </Button>
+                                 </DialogTrigger>
+                                 <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                                   <DialogHeader>
+                                     <DialogTitle>Bewertung Details</DialogTitle>
+                                   </DialogHeader>
+                                   {selectedReview && (
+                                     <ReviewCard
+                                       review={selectedReview}
+                                       onReviewUpdated={() => {
+                                         loadReviews();
+                                         setDetailDialogOpen(false);
+                                         setSelectedReview(null);
+                                       }}
+                                       canRespond={true}
+                                       showAdminActions={true}
+                                     />
+                                   )}
+                                 </DialogContent>
+                               </Dialog>
                               <Button
                                 variant="ghost"
                                 size="icon"
