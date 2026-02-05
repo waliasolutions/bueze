@@ -1,52 +1,210 @@
-# Billing-Bugs Behoben ✅
 
-## Zusammenfassung
+# Fix: Login Issues for All User Types
 
-Die zwei kritischen Bugs im Billing-System wurden behoben:
+## Executive Summary
 
-### ✅ BUG 1: Status-Mismatch - BEHOBEN
+After comprehensive database and code analysis, I've identified several issues affecting login functionality for different user types. The core problems are:
 
-**Problem:** Webhook speicherte `'succeeded'`, UI filterte nach `'paid'`  
-**Fix:** `supabase/functions/payrexx-webhook/index.ts` Zeile 152 geändert zu `status: 'paid'`
-
-### ✅ BUG 2: Doppelte Division - BEHOBEN
-
-**Problem:** Webhook teilte durch 100, UI teilte nochmals durch 100  
-**Fix:** `supabase/functions/payrexx-webhook/index.ts` speichert jetzt `amount` direkt in Rappen (keine Division)
+1. **2 users without any role** in `user_roles` table (trigger may have failed during signup)
+2. **Approved handwerker with super_admin role** - info@walia-solutions.ch has both handwerker profile (approved) and super_admin role, causing incorrect routing
+3. **Pending handwerkers with 'user' role** - 7 handwerkers with pending status still have 'user' role (correct behavior - they haven't been approved yet)
+4. **No issues found with dekyi@walia-solutions.ch** - This user exists with 'user' role and no handwerker profile (expected behavior)
 
 ---
 
-## Änderungen durchgeführt
+## Current Database State Analysis
 
-| Datei | Änderung | Status |
-|-------|----------|--------|
-| `supabase/functions/payrexx-webhook/index.ts` | Status 'paid', Amount in Rappen | ✅ Erledigt |
+### Users Without Roles (Critical)
+| Email | Full Name | Issue |
+|-------|-----------|-------|
+| miti.walia@gmail.com | Amit Walia | No entry in `user_roles` table |
+| bfbffbnfn@hotmsil.com | Bfbfbf Fnfbfbff | No entry in `user_roles` table (test account) |
+
+**Root Cause:** The `handle_new_user` database trigger may have failed during signup, or these users were created through a non-standard path.
+
+### Admin with Handwerker Profile (Edge Case)
+| Email | Role | Handwerker Status |
+|-------|------|-------------------|
+| info@walia-solutions.ch | super_admin | approved |
+
+**Impact:** This user correctly redirects to `/admin/dashboard` (admin role takes priority), but the handwerker profile shows 'super_admin' role instead of 'handwerker' in queries.
+
+### Pending Handwerkers with User Role (Expected)
+7 handwerkers with `verification_status='pending'` have role='user'. This is **correct behavior** - they only get 'handwerker' role upon admin approval.
 
 ---
 
-## Hinweis zu bestehenden Daten
+## Fix Plan
 
-Falls bereits Zahlungen mit `status: 'succeeded'` oder falschem Betrag in der DB existieren,
-können diese manuell korrigiert werden:
+### Fix 1: Add Missing User Roles (Database)
+
+Run SQL to add default 'user' role for accounts missing role entries:
 
 ```sql
--- Status korrigieren
-UPDATE payment_history SET status = 'paid' WHERE status = 'succeeded';
+-- Add 'user' role for users without any role entry
+INSERT INTO user_roles (user_id, role)
+SELECT p.id, 'user'::app_role
+FROM profiles p
+LEFT JOIN user_roles ur ON p.id = ur.user_id
+WHERE ur.role IS NULL
+ON CONFLICT (user_id, role) DO NOTHING;
+```
 
--- Beträge korrigieren (falls als CHF statt Rappen gespeichert)
--- Beispiel: 90 → 9000 (CHF 90.00 in Rappen)
-UPDATE payment_history SET amount = amount * 100 WHERE amount < 1000 AND status = 'paid';
+### Fix 2: Improve Auth.tsx Login Redirect Logic
+
+Current logic in `Auth.tsx` correctly prioritizes admin/super_admin roles. However, add better error handling and logging for debugging:
+
+**File: `src/pages/Auth.tsx`**
+
+Changes:
+1. Add console logging for auth redirect debugging
+2. Add fallback for users without any role (treat as 'user')
+3. Improve error handling in role fetching
+
+### Fix 3: Improve useUserRole Hook Resilience
+
+**File: `src/hooks/useUserRole.ts`**
+
+Changes:
+1. Default to 'user' role when no roles found in database
+2. Add better error logging for debugging
+3. Ensure consistent behavior across all auth states
+
+### Fix 4: Improve Dashboard Redirect Safety
+
+**File: `src/pages/Dashboard.tsx`**
+
+Current behavior: If user has handwerker profile and is not admin, redirects to `/handwerker-dashboard`. This is correct.
+
+**File: `src/pages/HandwerkerDashboard.tsx`**
+
+Current behavior: If user has no handwerker profile, redirects to `/handwerker-onboarding`. This is correct.
+
+---
+
+## Technical Changes
+
+### Database Migration
+
+Add missing roles for users without entries:
+
+```sql
+-- Fix: Add default user role for accounts missing role entries
+INSERT INTO user_roles (user_id, role)
+SELECT p.id, 'user'::app_role
+FROM profiles p
+LEFT JOIN user_roles ur ON p.id = ur.user_id
+WHERE ur.role IS NULL
+ON CONFLICT (user_id, role) DO NOTHING;
+```
+
+### src/pages/Auth.tsx
+
+Add debug logging and improve error handling:
+
+```typescript
+// In handlePostLoginRedirect function
+const handlePostLoginRedirect = async (user, roleData, isHandwerkerRole) => {
+  console.log('[Auth] Post-login redirect - user:', user.id);
+  console.log('[Auth] Role data:', roleData);
+  console.log('[Auth] Is handwerker role:', isHandwerkerRole);
+  
+  // Priority 1: Admin roles
+  if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
+    console.log('[Auth] Redirecting to admin dashboard');
+    navigate('/admin/dashboard');
+    return;
+  }
+  
+  // Check for handwerker profile
+  const { data: existingProfile } = await supabase
+    .from('handwerker_profiles')
+    .select('id, verification_status')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  
+  console.log('[Auth] Handwerker profile:', existingProfile);
+  
+  // Priority 2: Handwerker with profile
+  if (isHandwerkerRole || existingProfile) {
+    if (existingProfile?.verification_status === 'approved') {
+      console.log('[Auth] Redirecting to handwerker dashboard');
+      navigate('/handwerker-dashboard');
+    } else {
+      console.log('[Auth] Redirecting to handwerker onboarding (pending/no profile)');
+      navigate('/handwerker-onboarding');
+    }
+    return;
+  }
+  
+  // Priority 3: Default to client dashboard
+  console.log('[Auth] Redirecting to client dashboard');
+  navigate('/dashboard');
+};
+```
+
+### src/hooks/useUserRole.ts
+
+Improve role handling when no roles found:
+
+```typescript
+// In fetchRoles function, after fetching
+const fetchedRoles: AppRole[] = rolesData?.map(r => r.role as AppRole) || [];
+
+// If no roles found, default to 'user' and log warning
+if (fetchedRoles.length === 0) {
+  console.warn('[useUserRole] No roles found for user:', userId, '- defaulting to user role');
+}
+
+if (isMounted) {
+  setAllRoles(fetchedRoles.length > 0 ? fetchedRoles : ['user']);
+  setLoading(false);
+}
 ```
 
 ---
 
-## Zusammenfassung
+## Files to Modify
 
-Das Billing-System ist architektonisch korrekt aufgebaut:
-- Zahlungen werden via Payrexx-Webhook erfasst
-- `payment_history` Tabelle speichert alle Transaktionen
-- Handwerker sehen ihre Rechnungen im Profil
-- Admins haben eine vollständige Umsatzübersicht
+| File | Change |
+|------|--------|
+| Database (SQL) | Add missing user roles via migration |
+| `src/pages/Auth.tsx` | Add debug logging, improve redirect logic |
+| `src/hooks/useUserRole.ts` | Add warning for missing roles, ensure default 'user' behavior |
 
-**Aber:** Durch die zwei Bugs werden aktuell **keine Zahlungen** korrekt angezeigt. Nach dem Fix funktioniert alles wie vorgesehen.
+---
 
+## Testing Checklist
+
+After implementation:
+
+1. **dekyi@walia-solutions.ch (Client)**
+   - [ ] Can log in at `/auth`
+   - [ ] Redirects to `/dashboard`
+   - [ ] Can create leads and view proposals
+
+2. **Gmail addresses (e.g., pm.wsolutions@gmail.com - Handwerker)**
+   - [ ] Can log in at `/auth`
+   - [ ] If approved: redirects to `/handwerker-dashboard`
+   - [ ] If pending: redirects to `/handwerker-onboarding` or sees pending status
+
+3. **info@walia-solutions.ch (Super Admin)**
+   - [ ] Can log in at `/auth`
+   - [ ] Redirects to `/admin/dashboard`
+   - [ ] Admin role takes priority over handwerker profile
+
+4. **miti.walia@gmail.com (Was missing role)**
+   - [ ] After DB fix: Can log in and access `/dashboard`
+
+---
+
+## Summary
+
+The login issues are primarily caused by:
+1. Missing role entries in the database (2 users)
+2. Normal behavior being misinterpreted as bugs (pending handwerkers have 'user' role until approved)
+
+The fixes add:
+- Database migration to repair missing role entries
+- Debug logging for easier troubleshooting
+- Defensive coding to handle edge cases gracefully
