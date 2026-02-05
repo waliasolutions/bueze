@@ -34,8 +34,13 @@ export default function Auth() {
   });
 
   const handlePostLoginRedirect = async (user: { id: string; user_metadata?: Record<string, unknown> }, roleData: { role: string } | null, isHandwerkerRole: boolean) => {
+    console.log('[Auth] Post-login redirect - user:', user.id);
+    console.log('[Auth] Role data:', roleData);
+    console.log('[Auth] Is handwerker role:', isHandwerkerRole);
+    
     // Check for admin/super_admin role FIRST
     if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
+      console.log('[Auth] Redirecting to admin dashboard');
       navigate('/admin/dashboard');
       return;
     }
@@ -47,19 +52,37 @@ export default function Auth() {
       .eq('user_id', user.id)
       .maybeSingle();
     
+    console.log('[Auth] Handwerker profile:', existingProfile);
+    
     // Check if user is a handwerker (by role or metadata)
     const userRole = user.user_metadata?.role;
     const isHandwerker = isHandwerkerRole || userRole === 'handwerker';
     
     if (isHandwerker) {
       if (existingProfile) {
+        console.log('[Auth] Redirecting to handwerker dashboard');
+        navigate('/handwerker-dashboard');
+      } else {
+        console.log('[Auth] Redirecting to handwerker onboarding');
+        navigate('/handwerker-onboarding');
+      }
+      return;
+    }
+    
+    // Priority 3: Check if user has pending handwerker profile (submitted but not approved)
+    if (existingProfile) {
+      console.log('[Auth] User has handwerker profile, redirecting to onboarding/dashboard based on status');
+      if (existingProfile.verification_status === 'approved') {
         navigate('/handwerker-dashboard');
       } else {
         navigate('/handwerker-onboarding');
       }
-    } else {
-      navigate('/dashboard');
+      return;
     }
+    
+    // Default: Client dashboard
+    console.log('[Auth] Redirecting to client dashboard');
+    navigate('/dashboard');
   };
 
   useEffect(() => {

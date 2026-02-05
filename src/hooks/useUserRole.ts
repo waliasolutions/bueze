@@ -56,6 +56,11 @@ export function useUserRole(): UseUserRoleResult {
         // Extract roles array
         const fetchedRoles: AppRole[] = rolesData?.map(r => r.role as AppRole) || ['user'];
         
+        // Log warning if no roles found - defensive coding
+        if (!rolesData || rolesData.length === 0) {
+          console.warn('[useUserRole] No roles found for user:', userId, '- defaulting to user role');
+        }
+        
         // Update cache
         roleCache.set(userId, { roles: fetchedRoles, timestamp: Date.now() });
 
