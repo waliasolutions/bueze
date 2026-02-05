@@ -97,6 +97,14 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
                   Sie haben nur noch {subscription.remainingProposals} Offerte{subscription.remainingProposals !== 1 ? 'n' : ''} übrig. 
                   Upgraden Sie jetzt für unbegrenzte Offerten.
                 </p>
+                <Button 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => navigate('/checkout')}
+                >
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  Jetzt upgraden
+                </Button>
               </div>
             </div>
           )}
@@ -110,6 +118,14 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({ userId
                 <p className="text-sm text-red-800">
                   Sie haben Ihr monatliches Limit erreicht. Upgraden Sie für unbegrenzte Offerten oder warten Sie {subscription.daysUntilReset} Tag{subscription.daysUntilReset !== 1 ? 'e' : ''} bis zur Zurücksetzung.
                 </p>
+                <Button 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => navigate('/checkout')}
+                >
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  Jetzt upgraden
+                </Button>
               </div>
             </div>
           )}

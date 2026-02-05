@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useProposalFormValidation } from "@/hooks/useProposalFormValidation";
 import { Header } from "@/components/Header";
@@ -512,7 +513,12 @@ const HandwerkerDashboard = () => {
         toast({
           title: 'Kontingent erschöpft',
           description: 'Sie haben Ihr monatliches Offerten-Limit erreicht. Bitte upgraden Sie Ihr Abo.',
-          variant: 'destructive'
+          variant: 'destructive',
+          action: (
+            <ToastAction altText="Jetzt upgraden" onClick={() => navigate('/checkout')}>
+              Upgraden
+            </ToastAction>
+          ),
         });
         setSubmittingProposal(false);
         return;

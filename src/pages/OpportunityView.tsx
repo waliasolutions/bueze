@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 import { useProposalFormValidation } from '@/hooks/useProposalFormValidation';
 import { MapPin, Clock, Coins, Calendar, AlertCircle, Loader2 } from 'lucide-react';
 import { getUrgencyLabel } from '@/config/urgencyLevels';
@@ -131,9 +132,13 @@ const OpportunityView = () => {
         toast({
           title: 'Kontingent erschöpft',
           description: 'Sie haben Ihr monatliches Offerten-Limit erreicht. Bitte upgraden Sie Ihr Abo.',
-          variant: 'destructive'
+          variant: 'destructive',
+          action: (
+            <ToastAction altText="Jetzt upgraden" onClick={() => navigate('/checkout')}>
+              Upgraden
+            </ToastAction>
+          ),
         });
-        navigate('/checkout');
         return;
       }
 
