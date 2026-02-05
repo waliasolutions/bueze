@@ -1,282 +1,401 @@
 
-# Deep QA Analysis: Profiles, Logins, Quotas, Time & Review Notifications
 
-## QA Findings Summary
+# Feedback Assessment & Implementation Plan
 
-### 1. Profile Data Integrity (2024-2026)
-**Status: ✅ Data looks healthy with some minor concerns**
+## Executive Summary
 
-**Findings from database queries:**
-- 17+ handwerker profiles found with proper `user_id`, `email`, and `verification_status`
-- All profiles have corresponding entries in both `profiles` and `user_roles` tables
-- **Issue Found**: Some pending handwerker profiles still have `role: user` instead of `role: handwerker`
-  - Example: `eddy_eni@hotmail.com`, `rm@muster.ch`, etc. have handwerker profiles but their user_roles show `role: user`
-  - This is by design (per memory: role upgraded to handwerker upon admin approval)
-- **Approved handwerkers** correctly have `role: handwerker` (e.g., `haushelferservice@gmail.com`, `amit.walia@gmx.ch`)
+This analysis reviews the feedback against the current Büeze.ch architecture to identify what's already implemented, what needs fixing, and what would be new features. The goal is to prioritize high-impact changes that directly address Swiss market friction points while maintaining SSOT, DRY, and avoiding code bloat.
 
-### 2. Login Functionality
-**Status: ✅ Robust with proper fallbacks**
+---
 
-**Current Implementation (`src/pages/Auth.tsx`):**
-- Correct priority: Admin → Handwerker → Client
-- Uses `getUserRoles()` from SSOT `roleHelpers.ts`
-- Defers async operations with `setTimeout(0)` to prevent auth deadlock (per Supabase best practices)
-- Falls back to 'user' role if no roles found (defensive coding)
+## Feedback Assessment Matrix
 
-### 3. Quota Reached Message Logic
-**Status: ✅ Correctly implemented, only shows for those at limit**
+| Feedback Point | Status | Priority | Complexity |
+|----------------|--------|----------|------------|
+| A. Ghost Lead Problem (max proposals) | ✅ ALREADY IMPLEMENTED | N/A | N/A |
+| B. Registration Deadlock (browse before approval) | ⚠️ PARTIALLY NEEDED | HIGH | Medium |
+| C. Search Gap (radius-based) | ⚠️ ALREADY CANTON-BASED | LOW | High |
+| Footer Year (2025→2026) | ✅ ALREADY DYNAMIC | N/A | N/A |
+| Quota Rolling Period | ✅ ALREADY FIXED | N/A | N/A |
+| Map-First Dashboard | 🆕 NEW FEATURE | MEDIUM | High |
+| Chat Templates | 🆕 NEW FEATURE | MEDIUM | Low |
+| Urgency Badges | ✅ ALREADY IMPLEMENTED | N/A | N/A |
+| Profile in Proposal View | ✅ ALREADY IMPLEMENTED | N/A | N/A |
+| Status Timeline | 🆕 NEW FEATURE | MEDIUM | Medium |
+| Bulk Admin Approval | ✅ ALREADY IMPLEMENTED | N/A | N/A |
+| Zefix Auto-Verification | 🆕 NEW FEATURE | HIGH | Medium |
+| Verified Swiss Company Badge | 🆕 NEW FEATURE | HIGH | Low |
+| Deep-Link Emails | ⚠️ PARTIALLY IMPLEMENTED | MEDIUM | Low |
 
-**Implementation verified in multiple locations:**
-- `useSubscription.ts`: `isDepleted = !isUnlimited && remainingProposals <= 0`
-- `can_submit_proposal` RPC function: Checks `proposals_used_this_period < proposals_limit`
-- Toast with upgrade button in `HandwerkerDashboard.tsx` and `OpportunityView.tsx`
-- `SubscriptionManager.tsx` shows warnings at correct thresholds
+---
 
-**Current quota status check (from DB):**
-- All active subscriptions currently show `quota_status: ok` (no one at limit currently)
+## Detailed Analysis
 
-### 4. Monthly Reset Timing
-**Status: ⚠️ ISSUE FOUND - Resets on rolling 30 days, not 1st of month at 0:00 AM**
+### ✅ ALREADY IMPLEMENTED (No Changes Needed)
 
-**Current Implementation in `can_submit_proposal` function:**
+#### A. Ghost Lead Problem
+**Current State:** `leads.max_purchases = 5` (default), `proposals_count` tracks submissions.
+
+**Database confirms:**
 ```sql
-IF sub_record.current_period_end < NOW() THEN
-  UPDATE handwerker_subscriptions
-  SET 
-    proposals_used_this_period = 0,
-    current_period_start = NOW(),
-    current_period_end = NOW() + INTERVAL '1 month'
+max_purchases INTEGER DEFAULT 5
+proposals_count INTEGER DEFAULT 0
 ```
 
-**Problems:**
-1. Uses `NOW()` which is UTC, not Swiss timezone
-2. Resets on rolling 30-day basis from signup date, not 1st of month
-3. No DST awareness for Swiss timezone
+**Gap:** The dashboard doesn't filter out leads where `proposals_count >= max_purchases`. This IS the fix needed.
 
-**Required Fix:** 
-- Change reset logic to use Swiss timezone midnight on 1st of month
-- Use `Europe/Zurich` timezone for all period calculations
+#### Footer Year
+**Current Implementation:** `© {new Date().getFullYear()}` in `Footer.tsx:159`
+Already dynamic - shows 2026 correctly.
 
-### 5. DST Assurance for Swiss Timezone
-**Status: ⚠️ Partially implemented**
+#### Quota Rolling Period
+**Already Fixed:** `can_submit_proposal()` uses 30-day rolling from registration with Swiss timezone.
 
-**Good:**
-- `src/lib/swissTime.ts` exists as SSOT with `SWISS_TIMEZONE = 'Europe/Zurich'`
-- Uses `date-fns-tz` for proper DST handling
-- Has `startOfMonth()` function
+#### Urgency Badges
+**Already Implemented:** `getUrgencyLabel()` and `getUrgencyColor()` in `src/config/urgencyLevels.ts`.
+Dashboard already shows urgency badges on leads.
 
-**Gaps:**
-- Database function `can_submit_proposal` uses `NOW()` (UTC) not Swiss time
-- `useSubscription.ts` creates periods with `new Date()` (UTC) not Swiss time
-- Period calculations don't account for timezone when creating new periods
+#### Profile in Proposal View
+**Already Implemented:** `HandwerkerProfileModal` used in `ReceivedProposals`, `ProposalsManagement`, `ConversationsList`.
 
-### 6. New Review Badge on Handwerker Dashboard Tab
-**Status: ⚠️ MISSING - Reviews tab doesn't show unread count badge**
+#### Bulk Admin Approval
+**Already Implemented:** Checkbox selection + bulk actions in `HandwerkerApprovals.tsx`.
 
-**Current Implementation:**
-- Proposals tab: Shows `pendingProposalsCount` badge (orange) ✅
-- Reviews tab: Only shows `({reviews.length})` total count, **no unread indicator**
-- Dashboard stats area: Shows `dashboardStats.newReviews` in cards ✅ but not on tab
+---
 
-**Pattern exists for comparison:**
+### ⚠️ NEEDS FIXING (Priority Fixes)
+
+#### 1. Ghost Lead Filtering (Critical)
+**Issue:** `HandwerkerDashboard.fetchLeads()` doesn't exclude leads where `proposals_count >= max_purchases`.
+
+**File:** `src/pages/HandwerkerDashboard.tsx:307`
+
+**Current:**
+```typescript
+supabase.from('leads').select('*').eq('status', 'active')
+```
+
+**Fix:**
+```typescript
+supabase.from('leads')
+  .select('*')
+  .eq('status', 'active')
+  .or('proposals_count.lt.max_purchases,max_purchases.is.null')
+```
+
+**Alternative (if Supabase doesn't support cross-column comparison):**
+Filter client-side after fetch:
+```typescript
+const availableLeads = (leadsResult.data || []).filter(lead => 
+  !proposedLeadIds.has(lead.id) &&
+  (lead.proposals_count || 0) < (lead.max_purchases || 5)
+);
+```
+
+**Files to Modify:**
+- `src/pages/HandwerkerDashboard.tsx`
+- `src/pages/BrowseLeads.tsx` (if exists)
+- `src/pages/OpportunityView.tsx` (show "Bereits vergeben" if full)
+
+---
+
+#### 2. Registration Deadlock - Pre-Verified Browse
+**Issue:** Pending handwerkers can't browse leads until approved.
+
+**Current Flow:**
+```
+Registration → Pending → [Wait for Admin] → Approved → Browse Leads
+```
+
+**Proposed Flow:**
+```
+Registration → Pending → Browse Leads (READ-ONLY) → [Admin Approval] → Submit Proposals
+```
+
+**Implementation:**
+
+1. **Modify `HandwerkerDashboard.tsx`** (lines 233-240):
+```typescript
+// Current: Only fetch leads if verified
+if (profile.verification_status === 'approved') {
+  await Promise.all([fetchLeads(...), fetchProposals(...), ...]);
+}
+
+// New: Fetch leads for pending too, but restrict proposals
+const canBrowse = ['approved', 'pending'].includes(profile.verification_status);
+if (canBrowse) {
+  await fetchLeads(...);
+}
+if (profile.verification_status === 'approved') {
+  await Promise.all([fetchProposals(...), fetchReviews(...), ...]);
+}
+```
+
+2. **Disable proposal submission UI for pending:**
+```typescript
+const canSubmitProposals = handwerkerProfile?.verification_status === 'approved';
+
+// In proposal form
+<Button disabled={!canSubmitProposals}>
+  {!canSubmitProposals ? 'Warten auf Freigabe' : 'Offerte einreichen'}
+</Button>
+```
+
+3. **Show status banner for pending users:**
 ```tsx
-// Proposals tab has badge
-{pendingProposalsCount > 0 && (
-  <Badge className="ml-1 sm:ml-2 bg-orange-500 ...">
-    {pendingProposalsCount}
-  </Badge>
+{handwerkerProfile?.verification_status === 'pending' && (
+  <Alert className="mb-4 bg-yellow-50 border-yellow-200">
+    <Clock className="h-4 w-4" />
+    <AlertTitle>Profil in Prüfung</AlertTitle>
+    <AlertDescription>
+      Sie können Aufträge ansehen, aber noch keine Offerten einreichen, 
+      bis Ihr Profil freigegeben wurde.
+    </AlertDescription>
+  </Alert>
 )}
 ```
 
-**Reviews tab needs same pattern using `dashboardStats.newReviews`**
+**Files to Modify:**
+- `src/pages/HandwerkerDashboard.tsx`
+- `src/pages/OpportunityView.tsx` (proposal form disable)
 
 ---
 
-## Implementation Plan
+#### 3. Deep-Link Emails Enhancement
+**Current State:** Magic links exist but go to generic dashboard, not specific conversations.
 
-### Change 1: Add Unread Reviews Badge to Reviews Tab
-**File: `src/pages/HandwerkerDashboard.tsx`**
-
-**Line ~1000-1003 change from:**
-```tsx
-<TabsTrigger value="reviews" className="...">
-  <Star className="h-4 w-4 sm:mr-2" />
-  <span className="hidden sm:inline">Bewertungen</span>
-  <span className="ml-1">({reviews.length})</span>
-</TabsTrigger>
+**Current (`profileHelpers.ts:171`):**
+```typescript
+case 'proposal':
+  magicLink = `https://bueeze.ch/dashboard?proposalId=${options.resourceId}&token=${token}`;
 ```
 
-**To:**
-```tsx
-<TabsTrigger value="reviews" className="... relative">
-  <Star className="h-4 w-4 sm:mr-2" />
-  <span className="hidden sm:inline">Bewertungen</span>
-  <span className="ml-1">({reviews.length})</span>
-  {dashboardStats.newReviews > 0 && (
-    <Badge className="ml-1 sm:ml-2 bg-yellow-500 hover:bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5">
-      {dashboardStats.newReviews}
-    </Badge>
-  )}
-</TabsTrigger>
+**Missing:** Message notification links to specific conversation.
+
+**Fix:** Add `conversation` resource type:
+```typescript
+case 'conversation':
+  magicLink = `https://bueeze.ch/messages/${options.resourceId}?token=${token}`;
+  break;
 ```
 
-**SSOT Compliance:** Uses existing `dashboardStats.newReviews` state (DRY - no new queries needed)
+**File:** `supabase/functions/_shared/profileHelpers.ts`
 
 ---
 
-### Change 2: Swiss Timezone Monthly Reset (Database Function)
-**Migration: Update `can_submit_proposal` function**
+### 🆕 NEW FEATURES (Future Enhancements)
 
-**Updated function:**
+#### 1. Zefix API Auto-Verification (HIGH PRIORITY)
+**Business Value:** Reduces admin workload, speeds up approval for legitimate companies.
+
+**Implementation Plan:**
+
+1. **Add database field:**
 ```sql
-CREATE OR REPLACE FUNCTION public.can_submit_proposal(handwerker_user_id uuid)
- RETURNS boolean
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'public'
-AS $function$
-DECLARE
-  sub_record RECORD;
-  swiss_now TIMESTAMP WITH TIME ZONE;
-  next_month_start TIMESTAMP WITH TIME ZONE;
-BEGIN
-  -- Get current time in Swiss timezone
-  swiss_now := NOW() AT TIME ZONE 'Europe/Zurich';
-  
-  -- Calculate next month's 1st at 00:00:00 Swiss time
-  next_month_start := date_trunc('month', swiss_now + INTERVAL '1 month') AT TIME ZONE 'Europe/Zurich';
-  
-  -- Get or create subscription record
-  SELECT * INTO sub_record
-  FROM handwerker_subscriptions
-  WHERE user_id = handwerker_user_id;
-  
-  -- If no subscription exists, create free tier with period ending at next month start
-  IF NOT FOUND THEN
-    INSERT INTO handwerker_subscriptions (
-      user_id, 
-      plan_type, 
-      proposals_limit,
-      current_period_start,
-      current_period_end
-    )
-    VALUES (
-      handwerker_user_id, 
-      'free', 
-      5,
-      date_trunc('month', swiss_now) AT TIME ZONE 'Europe/Zurich',
-      next_month_start
-    )
-    RETURNING * INTO sub_record;
-  END IF;
-  
-  -- Check if period has expired and reset if needed (DST-safe comparison)
-  IF sub_record.current_period_end < NOW() THEN
-    -- Reset to 1st of CURRENT month at 00:00 Swiss time
-    UPDATE handwerker_subscriptions
-    SET 
-      proposals_used_this_period = 0,
-      current_period_start = date_trunc('month', swiss_now) AT TIME ZONE 'Europe/Zurich',
-      current_period_end = next_month_start
-    WHERE user_id = handwerker_user_id;
-    RETURN TRUE;
-  END IF;
-  
-  -- Check if unlimited (-1) or under limit
-  IF sub_record.proposals_limit = -1 THEN
-    RETURN TRUE;
-  END IF;
-  
-  RETURN sub_record.proposals_used_this_period < sub_record.proposals_limit;
-END;
-$function$;
+ALTER TABLE handwerker_profiles ADD COLUMN zefix_verified BOOLEAN DEFAULT false;
+ALTER TABLE handwerker_profiles ADD COLUMN zefix_data JSONB;
 ```
 
-**Key improvements:**
-- Uses `AT TIME ZONE 'Europe/Zurich'` for DST-aware calculations
-- Resets on 1st of month at 00:00:00 Swiss time (not rolling 30 days)
-- Uses `date_trunc('month', ...)` for precise month boundaries
-
----
-
-### Change 3: Update useSubscription Hook for Swiss Timezone
-**File: `src/hooks/useSubscription.ts`**
-
-**Import swissTime helpers:**
+2. **Create Edge Function:** `supabase/functions/verify-zefix/index.ts`
 ```typescript
-import { now as swissNow, addMonths, startOfMonth } from '@/lib/swissTime';
+// Query Zefix API: https://www.zefix.ch/ZefixREST/api/v1/
+// Input: uid_number (CHE-xxx.xxx.xxx)
+// Output: Company verification status, legal name, address
 ```
 
-**Update auto-create logic (lines 64-77) to use Swiss time:**
-```typescript
-// Auto-create default free subscription if none exists
-if (!subscriptionData && enableAutoCreate) {
-  const currentMonthStart = startOfMonth();
-  const nextMonthStart = startOfMonth(addMonths(new Date(), 1));
-  
-  const { data: newSub, error: insertError } = await supabase
-    .from('handwerker_subscriptions')
-    .insert({
-      user_id: userId,
-      plan_type: 'free',
-      status: 'active',
-      proposals_used_this_period: 0,
-      proposals_limit: 5,
-      current_period_start: currentMonthStart.toISOString(),
-      current_period_end: nextMonthStart.toISOString()
-    })
-    .select()
-    .single();
+3. **Auto-trigger on registration:**
+- When `uid_number` is provided during registration
+- Store result in `zefix_data` JSONB
+- Set `zefix_verified = true` if match found
 
-  if (insertError) throw insertError;
-  subscriptionData = newSub;
-}
-```
+4. **Admin UI enhancement:**
+- Show Zefix verification badge
+- Display company data for cross-reference
+- "Fast-track approval" button for Zefix-verified profiles
+
+**Files to Create:**
+- `supabase/functions/verify-zefix/index.ts`
+
+**Files to Modify:**
+- `src/pages/admin/HandwerkerApprovals.tsx` (show badge)
+- `src/pages/HandwerkerOnboarding.tsx` (trigger on submit)
 
 ---
 
-### Change 4: Add Helper for Next Month Start in Swiss Time
-**File: `src/lib/swissTime.ts`**
+#### 2. Verified Swiss Company Badge (HIGH PRIORITY)
+**Business Value:** Differentiator against Renovero, builds trust.
 
-**Add new function:**
-```typescript
-/**
- * Get start of next month in Swiss timezone (00:00:00)
- * DST-safe: properly handles March/October transitions
- */
-export function startOfNextMonth(date?: Date | string): Date {
-  const d = date ? toSwissTime(date) : now();
-  const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1, 0, 0, 0, 0);
-  return fromZonedTime(nextMonth, SWISS_TIMEZONE);
-}
+**Implementation:**
+
+1. **Create Badge Component:**
+```tsx
+// src/components/VerifiedBadge.tsx
+export const VerifiedSwissBadge = ({ zefixVerified, uid }: Props) => (
+  <Tooltip>
+    <TooltipTrigger>
+      <Badge className="bg-red-600 text-white">
+        <Shield className="h-3 w-3 mr-1" />
+        Verifiziert
+      </Badge>
+    </TooltipTrigger>
+    <TooltipContent>
+      Geprüfte Schweizer Firma im Handelsregister
+      {uid && <a href={`https://www.zefix.ch/.../${uid}`}>Zefix-Eintrag</a>}
+    </TooltipContent>
+  </Tooltip>
+);
 ```
 
+2. **Display in:**
+- `HandwerkerProfileModal`
+- Proposal cards in `ReceivedProposals`
+- `handwerker_profiles_public` view
+
+**Files to Create:**
+- `src/components/VerifiedSwissBadge.tsx`
+
+**Files to Modify:**
+- `src/components/HandwerkerProfileModal.tsx`
+- `src/components/ReceivedProposals.tsx`
+
 ---
 
-## Summary of Changes
+#### 3. Chat Message Templates (MEDIUM PRIORITY)
+**Business Value:** Speeds up handwerker responses, improves UX.
 
-| File | Change | Purpose |
-|------|--------|---------|
-| `src/pages/HandwerkerDashboard.tsx` | Add yellow badge to Reviews tab | Show unread review count like Proposals |
-| `src/lib/swissTime.ts` | Add `startOfNextMonth()` helper | DST-safe next month calculation |
-| `src/hooks/useSubscription.ts` | Use Swiss time for period creation | Consistent timezone handling |
-| **Database Migration** | Update `can_submit_proposal` function | Reset at 1st of month 00:00 Swiss time |
+**Implementation:**
+
+1. **Add template button in Messages.tsx:**
+```tsx
+const messageTemplates = [
+  { id: 'viewing', label: 'Besichtigung', text: 'Ich kann für eine Besichtigung am {date} um {time} vorbeikommen.' },
+  { id: 'quote', label: 'Offerte', text: 'Basierend auf Ihrer Anfrage kann ich folgende Offerte unterbreiten: ...' },
+  { id: 'clarification', label: 'Rückfrage', text: 'Um Ihnen eine genaue Offerte zu erstellen, hätte ich noch folgende Fragen: ...' },
+];
+
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <Button variant="outline" size="icon">
+      <FileText className="h-4 w-4" />
+    </Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent>
+    {messageTemplates.map(t => (
+      <DropdownMenuItem onClick={() => setNewMessage(t.text)}>
+        {t.label}
+      </DropdownMenuItem>
+    ))}
+  </DropdownMenuContent>
+</DropdownMenu>
+```
+
+**Files to Modify:**
+- `src/pages/Messages.tsx`
+- Create `src/config/messageTemplates.ts` (SSOT)
 
 ---
 
-## Verification Checklist
+#### 4. Status Timeline for Clients (MEDIUM PRIORITY)
+**Business Value:** Better UX for clients tracking their leads.
 
-After implementation:
-1. **Review badge**: Log in as handwerker with unread reviews → see yellow badge on Reviews tab
-2. **Quota message**: User with 5/5 used proposals → sees depleted message with upgrade button
-3. **Monthly reset**: Subscription periods end at 1st of month 00:00 Swiss time
-4. **DST safety**: March 28 (spring forward) and October 25 (fall back) transitions handled correctly
+**Implementation:**
+
+1. **Create StatusTimeline component:**
+```tsx
+// src/components/StatusTimeline.tsx
+const LEAD_STAGES = [
+  { id: 'posted', label: 'Aufgegeben', icon: FileText },
+  { id: 'receiving', label: 'Offerten erhalten', icon: Users },
+  { id: 'contracted', label: 'Handwerker gewählt', icon: CheckCircle },
+  { id: 'completed', label: 'Abgeschlossen', icon: Star },
+];
+
+export const StatusTimeline = ({ lead }: { lead: LeadListItem }) => {
+  const currentStage = getLeadStage(lead);
+  // Visual stepper similar to MultiStepProgress
+};
+```
+
+2. **Use in Dashboard.tsx** lead cards instead of text status.
+
+**Files to Create:**
+- `src/components/StatusTimeline.tsx`
+
+**Files to Modify:**
+- `src/pages/Dashboard.tsx`
+
+---
+
+#### 5. Map-First Dashboard (LOWER PRIORITY - HIGH COMPLEXITY)
+**Business Value:** Geographic thinking for handwerkers.
+
+**Current State:** List-based dashboard, Mapbox already integrated in `ServiceAreaMap.tsx`.
+
+**Complexity:** Requires significant UI rework, coordinate storage for all leads, real-time updates.
+
+**Recommendation:** Defer to Phase 2. Current canton/PLZ filtering provides adequate geographic targeting.
+
+---
+
+### ❌ NOT RECOMMENDED
+
+#### Radius-Based Matching
+**Current:** Canton + PLZ matching is simpler, reliable, and matches Swiss administrative structure.
+
+**Concern with radius:** 
+- Requires geocoding all PLZ codes (computational overhead)
+- Swiss geography (mountains, valleys) makes straight-line radius misleading
+- Current approach is well-understood by users ("Kanton Zürich")
+
+**Recommendation:** Keep current approach. Canton-based is more meaningful for Swiss handwerkers than "50km radius."
+
+---
+
+## Implementation Priority
+
+### Phase 1: Critical Fixes (This Sprint)
+1. **Ghost Lead Filtering** - Prevent wasted proposals
+2. **Pre-Verified Browse** - Reduce registration abandonment
+3. **Verified Swiss Badge** - Quick trust signal
+
+### Phase 2: Trust & Efficiency
+4. **Zefix API Integration** - Auto-verification
+5. **Chat Templates** - Faster responses
+6. **Deep-Link Enhancement** - Better email UX
+
+### Phase 3: UX Polish
+7. **Status Timeline** - Client experience
+8. **Map View** - (Only if demand validated)
 
 ---
 
 ## Technical Notes
 
-- **SSOT maintained**: Uses existing `dashboardStats` state for badge (no duplicate queries)
-- **DRY pattern**: Badge styling matches existing Proposals tab pattern exactly
-- **Timezone safety**: All period calculations use `Europe/Zurich` timezone
-- **No code bloat**: Minimal changes, reuses existing infrastructure
+### SSOT Compliance
+- Message templates → `src/config/messageTemplates.ts`
+- Status stages → `src/config/leadStatuses.ts` (extend existing)
+- Zefix data → Database + edge function
+
+### DRY Compliance
+- `VerifiedSwissBadge` reused across all profile displays
+- `StatusTimeline` replaces multiple status text displays
+- Proposal limit check extracted to shared helper
+
+### No Code Bloat
+- Zefix verification is edge function (server-side)
+- Templates are config-driven, not hardcoded
+- Badge component is small (~30 lines)
+
+---
+
+## Database Changes Summary
+
+```sql
+-- Zefix verification support
+ALTER TABLE handwerker_profiles 
+ADD COLUMN zefix_verified BOOLEAN DEFAULT false,
+ADD COLUMN zefix_data JSONB;
+```
+
+No other schema changes required - `max_purchases`, `proposals_count`, `uid_number` already exist.
+
