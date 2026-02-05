@@ -124,6 +124,16 @@ export function addMonths(date: Date | string, months: number): Date {
 }
 
 /**
+ * Get start of next month in Swiss timezone (00:00:00)
+ * DST-safe: properly handles March/October transitions
+ */
+export function startOfNextMonth(date?: Date | string): Date {
+  const d = date ? toSwissTime(date) : now();
+  const nextMonth = new Date(d.getFullYear(), d.getMonth() + 1, 1, 0, 0, 0, 0);
+  return fromZonedTime(nextMonth, SWISS_TIMEZONE);
+}
+
+/**
  * Check if date is in the past
  */
 export function isPast(date: Date | string): boolean {
