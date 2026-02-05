@@ -66,11 +66,8 @@ export function useProposalFormValidation(formValues: ProposalFormValues) {
         return null;
       }
       case 'message': {
-        if (!values.message) {
+        if (!values.message || values.message.trim().length === 0) {
           return 'Nachricht ist erforderlich';
-        }
-        if (values.message.length < 50) {
-          return `Noch ${50 - values.message.length} Zeichen erforderlich`;
         }
         if (values.message.length > 2000) {
           return 'Maximal 2000 Zeichen erlaubt';

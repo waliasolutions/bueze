@@ -1188,7 +1188,15 @@ const HandwerkerDashboard = () => {
                               </div>
                               <Dialog open={selectedLead?.id === lead.id} onOpenChange={open => !open && setSelectedLead(null)}>
                                 <DialogTrigger asChild>
-                                  <Button onClick={() => setSelectedLead(lead)}>
+                                  <Button onClick={() => {
+                                    // Set default message template with company name
+                                    const companyName = handwerkerProfile?.company_name || 'Ihr Handwerker-Team';
+                                    setProposalForm(prev => ({
+                                      ...prev,
+                                      message: prev.message || `Guten Tag\n\nGerne schicken wir Ihnen unsere Offerte.\n\nFreundliche Grüsse\n${companyName}`
+                                    }));
+                                    setSelectedLead(lead);
+                                  }}>
                                     <Send className="h-4 w-4 mr-2" />
                                     Angebot senden
                                   </Button>
@@ -1261,7 +1269,7 @@ const HandwerkerDashboard = () => {
                                       )}
                                     </div>
                                     <div className="space-y-2">
-                                      <Label htmlFor="message">Ihre Nachricht * (min. 50 Zeichen)</Label>
+                                      <Label htmlFor="message">Ihre Nachricht *</Label>
                                       <Textarea 
                                         id="message" 
                                         placeholder="Beschreiben Sie, wie Sie den Auftrag ausführen würden..." 
@@ -1275,9 +1283,6 @@ const HandwerkerDashboard = () => {
                                         })}
                                         onBlur={() => handleBlur('message')}
                                       />
-                                      <p className={`text-xs ${proposalForm.message.length < 50 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                        {proposalForm.message.length}/50 Zeichen (min. 50)
-                                      </p>
                                       {touched.message && errors.message && (
                                         <p className="text-xs text-destructive">{errors.message}</p>
                                       )}
