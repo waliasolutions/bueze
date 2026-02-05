@@ -15,7 +15,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useProposalFormValidation } from "@/hooks/useProposalFormValidation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User as UserIcon, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X, Filter, Globe, RotateCcw } from "lucide-react";
+import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User as UserIcon, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X, Filter, Globe, RotateCcw, MessageSquare } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -67,6 +67,13 @@ const HandwerkerDashboard = () => {
   // Tab State
   const [activeTab, setActiveTab] = useState("leads");
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // Dashboard notification stats
+  const [dashboardStats, setDashboardStats] = useState({
+    unreadMessages: 0,
+    newAcceptedProposals: 0,
+    newReviews: 0
+  });
 
   // Profile Tab
   const [profileEditing, setProfileEditing] = useState(false);
@@ -226,7 +233,8 @@ const HandwerkerDashboard = () => {
         await Promise.all([
           fetchLeads(currentUser.id, profile.categories, profile.service_areas), 
           fetchProposals(currentUser.id),
-          fetchReviews(currentUser.id)
+          fetchReviews(currentUser.id),
+          fetchDashboardStats(currentUser.id)
         ]);
       }
       setLoading(false);
@@ -235,6 +243,27 @@ const HandwerkerDashboard = () => {
       navigate('/auth');
     }
   };
+
+  // Fetch dashboard notification stats
+  const fetchDashboardStats = async (userId: string) => {
+    if (!userId) return;
+    try {
+      const { data: notifications } = await supabase
+        .from('handwerker_notifications')
+        .select('type, read')
+        .eq('user_id', userId)
+        .eq('read', false);
+      
+      setDashboardStats({
+        unreadMessages: (notifications || []).filter(n => n.type === 'new_message').length,
+        newAcceptedProposals: (notifications || []).filter(n => n.type === 'proposal_accepted').length,
+        newReviews: (notifications || []).filter(n => n.type === 'new_review').length
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    }
+  };
+
   // Helper function to check if lead matches handwerker's categories
   const checkCategoryMatch = (lead: LeadListItem, categories: string[]) => {
     if (categories.length === 0) return true;
@@ -885,6 +914,66 @@ const HandwerkerDashboard = () => {
               Verwalten Sie Ihre Leads, Angebote und Profil
             </p>
           </div>
+
+          {/* Dashboard Quick Stats - Unread Notifications */}
+          {(dashboardStats.unreadMessages > 0 || dashboardStats.newAcceptedProposals > 0 || dashboardStats.newReviews > 0) && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              {dashboardStats.unreadMessages > 0 && (
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-shadow border-primary/20 bg-primary/5" 
+                  onClick={() => navigate('/conversations')}
+                >
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-primary/10">
+                        <MessageSquare className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{dashboardStats.unreadMessages}</p>
+                        <p className="text-sm text-muted-foreground">Neue Nachrichten</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {dashboardStats.newAcceptedProposals > 0 && (
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-shadow border-green-500/20 bg-green-500/5" 
+                  onClick={() => setActiveTab('proposals')}
+                >
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-green-500/10">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{dashboardStats.newAcceptedProposals}</p>
+                        <p className="text-sm text-muted-foreground">Angenommene Offerten</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {dashboardStats.newReviews > 0 && (
+                <Card 
+                  className="cursor-pointer hover:shadow-md transition-shadow border-yellow-500/20 bg-yellow-500/5" 
+                  onClick={() => setActiveTab('reviews')}
+                >
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-yellow-500/10">
+                        <Star className="h-6 w-6 text-yellow-600" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{dashboardStats.newReviews}</p>
+                        <p className="text-sm text-muted-foreground">Neue Bewertungen</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="w-full flex flex-wrap sm:grid sm:grid-cols-4 h-auto p-1 gap-1">

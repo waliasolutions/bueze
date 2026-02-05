@@ -13,7 +13,7 @@ const PROFANITY_LIST = [
 ];
 
 // Minimum review length
-export const MIN_REVIEW_LENGTH = 20;
+export const MIN_REVIEW_LENGTH = 0; // No minimum - allow any length including empty
 export const MAX_REVIEW_LENGTH = 1000;
 
 export interface ValidationResult {
@@ -30,10 +30,7 @@ export function validateReviewContent(text: string): ValidationResult {
   const warnings: string[] = [];
   const trimmedText = text.trim();
 
-  // Check minimum length
-  if (trimmedText.length > 0 && trimmedText.length < MIN_REVIEW_LENGTH) {
-    errors.push(`Die Bewertung muss mindestens ${MIN_REVIEW_LENGTH} Zeichen haben.`);
-  }
+  // Note: No minimum length check - short comments like "Top!" are allowed
 
   // Check maximum length
   if (trimmedText.length > MAX_REVIEW_LENGTH) {
