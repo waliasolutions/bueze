@@ -104,8 +104,9 @@ export const HandwerkerReviewResponse = ({ reviews, onReviewUpdated }: Handwerke
 
       {/* Individual Reviews */}
       {reviews.map((review) => {
-        const reviewerName = review.profiles?.first_name || 
-          review.profiles?.full_name?.split(' ')[0] || 
+        // Show full name to handwerker (they have a business relationship)
+        const reviewerName = review.profiles?.full_name || 
+          review.profiles?.first_name || 
           'Kunde';
         const projectTitle = review.leads?.title || 'Projekt';
 

@@ -16,17 +16,33 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, MapPin, Eye, Users, FileText, Trash2, Archive, RotateCcw } from 'lucide-react';
+import { Plus, MapPin, Eye, Users, FileText, Trash2, Archive, RotateCcw, Star, MessageSquare } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
+import { StarRating } from '@/components/ui/star-rating';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
+
+// Type for reviews given by client
+interface ClientReview {
+  id: string;
+  rating: number;
+  title: string | null;
+  comment: string | null;
+  created_at: string;
+  handwerker_response: string | null;
+  response_at: string | null;
+  reviewed_id: string;
+  leads: { title: string; category: string } | null;
+  handwerker_profile?: { first_name: string | null; last_name: string | null; company_name: string | null } | null;
+}
 
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfileBasic | null>(null);
   const [myLeads, setMyLeads] = useState<LeadListItem[]>([]);
   const [archivedLeads, setArchivedLeads] = useState<LeadListItem[]>([]);
+  const [myReviews, setMyReviews] = useState<ClientReview[]>([]);
   const [loading, setLoading] = useState(true);
   const { isAdmin, isHandwerker, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
@@ -78,7 +94,8 @@ const Dashboard = () => {
         { data: profileData },
         { data: leadsData },
         { data: archivedData },
-        { data: handwerkerProfileData }
+        { data: handwerkerProfileData },
+        { data: reviewsData }
       ] = await Promise.all([
         // Fetch user profile
         supabase
@@ -110,7 +127,24 @@ const Dashboard = () => {
           .from('handwerker_profiles')
           .select('id, is_verified')
           .eq('user_id', user.id)
-          .maybeSingle()
+          .maybeSingle(),
+        
+        // Fetch reviews given by this user
+        supabase
+          .from('reviews')
+          .select(`
+            id,
+            rating,
+            title,
+            comment,
+            created_at,
+            handwerker_response,
+            response_at,
+            reviewed_id,
+            leads (title, category)
+          `)
+          .eq('reviewer_id', user.id)
+          .order('created_at', { ascending: false })
       ]);
 
       // Handle profile data
@@ -129,6 +163,26 @@ const Dashboard = () => {
       // Set leads data
       setMyLeads(leadsData || []);
       setArchivedLeads(archivedData || []);
+      
+      // Fetch handwerker profiles for reviews if we have reviews
+      if (reviewsData && reviewsData.length > 0) {
+        const reviewedIds = [...new Set(reviewsData.map(r => r.reviewed_id))];
+        const { data: handwerkerProfiles } = await supabase
+          .from('handwerker_profiles')
+          .select('id, first_name, last_name, company_name')
+          .in('id', reviewedIds);
+        
+        const profileMap = new Map(handwerkerProfiles?.map(p => [p.id, p]) || []);
+        
+        const reviewsWithProfiles = reviewsData.map(review => ({
+          ...review,
+          handwerker_profile: profileMap.get(review.reviewed_id) || null
+        }));
+        
+        setMyReviews(reviewsWithProfiles as ClientReview[]);
+      } else {
+        setMyReviews([]);
+      }
 
       // Check if handwerker and redirect if needed (but NOT for admins testing client view)
       if (handwerkerProfileData && !isAdmin) {
@@ -398,6 +452,11 @@ const Dashboard = () => {
               <TabsTrigger value="archive" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
                 Archiv ({archivedLeads.length})
               </TabsTrigger>
+              <TabsTrigger value="reviews" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
+                <span className="hidden sm:inline">Meine Bewertungen</span>
+                <span className="sm:hidden">Bewertungen</span>
+                <span className="ml-1">({myReviews.length})</span>
+              </TabsTrigger>
               <TabsTrigger value="profile" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2">
                 Profil
               </TabsTrigger>
@@ -573,6 +632,72 @@ const Dashboard = () => {
                 </Button>
               </div>
               <ReceivedProposals userId={user?.id} />
+            </TabsContent>
+
+            <TabsContent value="reviews" className="space-y-6">
+              <h2 className="text-xl font-semibold">Meine Bewertungen</h2>
+              
+              {myReviews.length === 0 ? (
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      Sie haben noch keine Bewertungen abgegeben.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-4">
+                  {myReviews.map((review) => {
+                    const handwerkerName = review.handwerker_profile?.company_name || 
+                      `${review.handwerker_profile?.first_name || ''} ${review.handwerker_profile?.last_name || ''}`.trim() || 
+                      'Handwerker';
+                    
+                    return (
+                      <Card key={review.id}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <StarRating rating={review.rating} size="sm" />
+                                <Badge variant="outline">{review.rating}/5</Badge>
+                              </div>
+                              {review.title && (
+                                <CardTitle className="text-base">{review.title}</CardTitle>
+                              )}
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {formatTimeAgo(review.created_at)}
+                            </span>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            Für: <strong>{handwerkerName}</strong> • Projekt: {review.leads?.title || 'Unbekannt'}
+                          </div>
+                        </CardHeader>
+                        
+                        <CardContent className="space-y-3">
+                          {review.comment && (
+                            <p className="text-sm">{review.comment}</p>
+                          )}
+                          
+                          {/* Show handwerker response if exists */}
+                          {review.handwerker_response && (
+                            <div className="border-l-2 border-primary pl-3 mt-3">
+                              <div className="flex items-center gap-2 text-sm font-medium text-primary mb-1">
+                                <MessageSquare className="h-4 w-4" />
+                                Antwort von {handwerkerName}
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {review.handwerker_response}
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="profile" className="space-y-6">
