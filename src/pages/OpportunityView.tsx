@@ -28,7 +28,7 @@ const OpportunityView = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [hasProposal, setHasProposal] = useState(false);
-  const [handwerkerProfile, setHandwerkerProfile] = useState<{company_name: string | null} | null>(null);
+  const [handwerkerProfile, setHandwerkerProfile] = useState<{company_name: string | null; verification_status?: string | null} | null>(null);
 
   const [formValues, setFormValues] = useState({
     price_min: '',
@@ -61,21 +61,23 @@ const OpportunityView = () => {
       setLead(leadData);
 
       if (currentUser) {
-        // Fetch handwerker profile for default message
+        // Fetch handwerker profile for default message and verification status
         const { data: hwProfile } = await supabase
           .from('handwerker_profiles')
-          .select('company_name')
+          .select('company_name, verification_status')
           .eq('user_id', currentUser.id)
           .maybeSingle();
         
         if (hwProfile) {
           setHandwerkerProfile(hwProfile);
-          // Set default message
-          const companyName = hwProfile.company_name || 'Ihr Handwerker-Team';
-          setFormValues(prev => ({
-            ...prev,
-            message: `Guten Tag\n\nGerne schicken wir Ihnen unsere Offerte.\n\nFreundliche Grüsse\n${companyName}`
-          }));
+          // Set default message only if approved (pending users can't submit anyway)
+          if (hwProfile.verification_status === 'approved') {
+            const companyName = hwProfile.company_name || 'Ihr Handwerker-Team';
+            setFormValues(prev => ({
+              ...prev,
+              message: `Guten Tag\n\nGerne schicken wir Ihnen unsere Offerte.\n\nFreundliche Grüsse\n${companyName}`
+            }));
+          }
         }
 
         const { data: existingProposal } = await supabase
@@ -302,6 +304,21 @@ const OpportunityView = () => {
                 <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                 <h3 className="font-semibold mb-2">Frist abgelaufen</h3>
                 <p className="text-muted-foreground">Die Frist für diese Anfrage ist abgelaufen.</p>
+              </div>
+            ) : handwerkerProfile?.verification_status === 'pending' ? (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                <Clock className="h-12 w-12 text-yellow-600 mx-auto mb-3" />
+                <h3 className="font-semibold text-yellow-900 mb-2">Profil in Prüfung</h3>
+                <p className="text-yellow-700">
+                  Ihr Profil wird noch geprüft. Sie können Aufträge ansehen, aber noch keine Offerten einreichen.
+                </p>
+                <Button 
+                  className="mt-4" 
+                  variant="outline"
+                  onClick={() => navigate('/handwerker-dashboard')}
+                >
+                  Zum Dashboard
+                </Button>
               </div>
             ) : hasProposal ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">

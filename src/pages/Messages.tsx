@@ -7,10 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, ArrowLeft, User } from 'lucide-react';
+import { Send, ArrowLeft, User, FileText } from 'lucide-react';
 import { formatTime, formatDateRelative } from '@/lib/swissTime';
+import { messageTemplates } from '@/config/messageTemplates';
 
 interface Message {
   id: string;
@@ -423,6 +425,25 @@ const Messages = () => {
           <Card>
             <CardContent className="p-3 sm:p-4">
               <form onSubmit={sendMessage} className="flex gap-2">
+                {/* Message Templates Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="min-w-[44px] min-h-[44px] shrink-0">
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-56">
+                    {messageTemplates.map((template) => (
+                      <DropdownMenuItem 
+                        key={template.id}
+                        onClick={() => setNewMessage(template.text)}
+                      >
+                        {template.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
