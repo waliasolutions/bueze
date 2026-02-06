@@ -261,7 +261,7 @@ const ConversationsList = () => {
                     ? 'Sie haben noch keine Nachrichten. Durchsuchen Sie verfügbare Aufträge und reichen Sie Offerten ein.'
                     : 'Sie haben noch keine Nachrichten. Erstellen Sie einen Auftrag, um Offerten von Handwerkern zu erhalten.'}
                 </p>
-                <Button onClick={() => navigate(isHandwerker ? '/browse-leads' : '/submit-lead')}>
+                <Button onClick={() => navigate(isHandwerker ? '/search' : '/submit-lead')}>
                   {isHandwerker ? 'Aufträge durchsuchen' : 'Auftrag erstellen'}
                 </Button>
               </CardContent>

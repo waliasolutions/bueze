@@ -219,6 +219,9 @@ const App = () => {
                 <Route path="/legal/agb" element={<AGB />} />
                 <Route path="/impressum" element={<Impressum />} />
                 <Route path="/datenschutz" element={<Datenschutz />} />
+                {/* Legal redirects for consistency */}
+                <Route path="/legal/impressum" element={<Navigate to="/impressum" replace />} />
+                <Route path="/legal/datenschutz" element={<Navigate to="/datenschutz" replace />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 
                 {/* Catch-all */}

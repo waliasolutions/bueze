@@ -52,7 +52,7 @@ export const Header = () => {
       path.startsWith('/handwerker-dashboard') ||
       path.startsWith('/handwerker-profile') ||
       path.startsWith('/handwerker-onboarding') ||
-      path === '/browse-leads' ||
+      path === '/search' ||
       path.startsWith('/opportunity')
     ) {
       return 'handwerker';

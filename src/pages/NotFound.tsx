@@ -42,7 +42,7 @@ const NotFound = () => {
             </Button>
             
             <Button asChild variant="outline" className="w-full">
-              <Link to="/browse-leads">
+              <Link to="/search">
                 <Search className="mr-2 h-4 w-4" />
                 Aufträge durchsuchen
               </Link>

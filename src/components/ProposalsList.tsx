@@ -164,7 +164,7 @@ export const ProposalsList: React.FC<ProposalsListProps> = ({ userId }) => {
             <p className="text-[hsl(var(--muted-foreground))] mb-4">
               Sie haben noch keine Offerten eingereicht.
             </p>
-            <Button onClick={() => navigate('/browse-leads')}>
+            <Button onClick={() => navigate('/search')}>
               Anfragen durchsuchen
             </Button>
           </CardContent>
