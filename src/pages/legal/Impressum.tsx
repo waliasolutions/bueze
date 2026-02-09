@@ -10,7 +10,7 @@ const Impressum = () => {
   const schemaMarkup = wrapInGraph(
     generateWebPageSchema(
       "Impressum",
-      "Impressum und rechtliche Informationen zur Büeze GmbH, dem Betreiber der Handwerker-Vermittlungsplattform Büeze.ch.",
+      "Impressum und rechtliche Informationen zur Büeze.ch GmbH, dem Betreiber der Handwerker-Vermittlungsplattform Büeze.ch.",
       "https://bueeze.ch/impressum"
     )
   );
@@ -19,7 +19,7 @@ const Impressum = () => {
     <div className="min-h-screen bg-background">
       <DynamicHelmet
         title="Impressum | Büeze.ch"
-        description="Impressum und rechtliche Informationen zur Büeze GmbH, dem Betreiber der Handwerker-Vermittlungsplattform Büeze.ch."
+        description="Impressum und rechtliche Informationen zur Büeze.ch GmbH, dem Betreiber der Handwerker-Vermittlungsplattform Büeze.ch."
         canonical="https://bueeze.ch/impressum"
         robotsMeta="index,follow"
         schemaMarkup={schemaMarkup}
@@ -35,8 +35,8 @@ const Impressum = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Angaben gemäss Art. 3 UWG</h2>
                 <div className="text-ink-700 space-y-2">
-                  <p><strong>Büeze GmbH</strong></p>
-                  <p>Gotthardstrasse 37<br />6410 Goldau<br />Schweiz</p>
+                  <p><strong>Büeze.ch GmbH</strong></p>
+                  <p>Industriestrasse 28<br />9487 Gamprin-Bendern<br />Liechtenstein</p>
                 </div>
               </section>
 
@@ -69,7 +69,7 @@ const Impressum = () => {
                 <div className="text-ink-700 space-y-2">
                   <p><strong>Rechtsform:</strong> Gesellschaft mit beschränkter Haftung (GmbH)</p>
                   <p><strong>Handelsregistereintrag:</strong> Im Handelsregister eingetragen</p>
-                  <p><strong>Handelsregister:</strong> Kanton Schwyz</p>
+                  <p><strong>Handelsregister:</strong> Liechtenstein</p>
                   <p><strong>UID:</strong> CHE-389.446.099</p>
                 </div>
               </section>
@@ -85,7 +85,7 @@ const Impressum = () => {
                 <h2 className="text-2xl font-bold mb-4">Inhaltlich Verantwortliche</h2>
                 <div className="text-ink-700">
                   <p>Verantwortlich für den Inhalt gemäss Art. 3 Abs. 1 UWG:</p>
-                  <p>Büeze GmbH, vertreten durch die Geschäftsführung</p>
+                  <p>Büeze.ch GmbH, vertreten durch die Geschäftsführung</p>
                 </div>
               </section>
 
@@ -190,12 +190,12 @@ const Impressum = () => {
                 <h2 className="text-2xl font-bold mb-4">Anwendbares Recht</h2>
                 <div className="text-ink-700">
                   <p>
-                    Auf alle Rechtsbeziehungen zwischen Büeze GmbH und seinen Nutzern findet ausschliesslich Schweizer Recht 
+                    Auf alle Rechtsbeziehungen zwischen Büeze.ch GmbH und seinen Nutzern findet ausschliesslich liechtensteinisches Recht 
                     Anwendung unter Ausschluss der Bestimmungen des UN-Kaufrechts.
                   </p>
                   <p className="mt-2">
                     <strong>Gerichtsstand:</strong> Bei Streitigkeiten aus der Nutzung dieser Website gilt als Gerichtsstand 
-                    Schwyz, Schweiz.
+                    Gamprin-Bendern, Liechtenstein.
                   </p>
                 </div>
               </section>

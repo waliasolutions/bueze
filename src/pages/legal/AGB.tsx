@@ -36,7 +36,7 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">1. Geltungsbereich</h2>
                 <p className="text-ink-700 mb-4">
                   Diese Allgemeinen Geschäftsbedingungen (AGB) regeln die Nutzung der Online-Plattform BÜEZE.CH (nachfolgend „Plattform") der
-                  Büeze GmbH, Gotthardstrasse 37, 6410 Goldau, Schweiz.
+                  Büeze.ch GmbH, Industriestrasse 28, 9487 Gamprin-Bendern, Liechtenstein.
                 </p>
                 <p className="text-ink-700 mb-4">
                   Sie gelten für alle Nutzerinnen und Nutzer der Plattform, insbesondere:
@@ -206,7 +206,7 @@ const AGB = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">9. Geistiges Eigentum</h2>
                 <p className="text-ink-700 mb-4">
-                  Alle Inhalte, Texte, Logos, Designs und Softwareelemente der Plattform sind Eigentum der Büeze GmbH oder entsprechend lizenziert.
+                  Alle Inhalte, Texte, Logos, Designs und Softwareelemente der Plattform sind Eigentum der Büeze.ch GmbH oder entsprechend lizenziert.
                   Jegliche Nutzung ausserhalb der Plattform bedarf der schriftlichen Zustimmung.
                 </p>
               </section>
@@ -222,8 +222,8 @@ const AGB = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">11. Anwendbares Recht und Gerichtsstand</h2>
                 <p className="text-ink-700 mb-4">
-                  Es gilt ausschliesslich Schweizer Recht.
-                  Gerichtsstand ist Schwyz, Schweiz.
+                  Es gilt ausschliesslich liechtensteinisches Recht.
+                  Gerichtsstand ist Gamprin-Bendern, Liechtenstein.
                 </p>
               </section>
 
@@ -231,9 +231,9 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">Kontakt</h2>
                 <p className="text-ink-700 mb-2">
                   <strong>BÜEZE.CH</strong><br />
-                  Büeze GmbH<br />
-                  Gotthardstrasse 37<br />
-                  6410 Goldau SZ<br />
+                  Büeze.ch GmbH<br />
+                  Industriestrasse 28<br />
+                  9487 Gamprin-Bendern<br />
                   Telefon: +41 41 558 22 33<br />
                   E-Mail: info@bueeze.ch<br />
                   www.bueeze.ch
