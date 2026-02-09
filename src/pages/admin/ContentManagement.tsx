@@ -87,9 +87,20 @@ const ContentManagement = () => {
     }
   };
 
+  const pageKeyLabels: Record<string, string> = {
+    homepage_hero: 'Hero-Bereich',
+    homepage_how_it_works: 'So funktioniert es',
+    homepage_faq: 'FAQ',
+    homepage_footer: 'Footer',
+  };
+
+  const getDisplayTitle = (content: PageContent) => {
+    return pageKeyLabels[content.page_key] || content.fields?.title || content.page_key;
+  };
+
   const filteredContents = contents.filter((content) =>
     content.page_key.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    content.fields?.title?.toLowerCase().includes(searchTerm.toLowerCase())
+    getDisplayTitle(content).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -147,7 +158,7 @@ const ContentManagement = () => {
                           </TableCell>
                           <TableCell className="font-mono text-sm">{content.page_key}</TableCell>
                           <TableCell className="font-medium">
-                            {content.fields?.title || '-'}
+                            {getDisplayTitle(content)}
                           </TableCell>
                           <TableCell>
                             <Badge variant={content.status === 'published' ? 'default' : 'secondary'}>

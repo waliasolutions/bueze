@@ -13,10 +13,17 @@ import { homepageSeoDefaults } from '@/config/contentDefaults';
 const Index = () => {
   const { content } = usePageContent('homepage');
   const { content: heroContent, loading: heroLoading } = usePageContent('homepage_hero');
+  const { content: howItWorksContent } = usePageContent('homepage_how_it_works');
+  const { content: faqContent } = usePageContent('homepage_faq');
+  const { content: footerContent } = usePageContent('homepage_footer');
   
-  // Transform FAQ data to schema format
-  const faqItems = faqData.flatMap(category => 
-    category.questions.map(item => ({
+  // Use CMS FAQ data for schema if available, otherwise use defaults
+  const faqCategories = faqContent?.fields?.categories?.length 
+    ? faqContent.fields.categories 
+    : faqData;
+
+  const faqItems = faqCategories.flatMap((category: any) => 
+    (category.questions || []).map((item: any) => ({
       question: item.q,
       answer: item.a
     }))
@@ -44,10 +51,10 @@ const Index = () => {
       <Header />
       <main className="pt-16">
         <Hero content={heroContent} loading={heroLoading} />
-        <HowItWorks />
-        <FAQ />
+        <HowItWorks content={howItWorksContent} />
+        <FAQ content={faqContent} />
       </main>
-      <Footer />
+      <Footer content={footerContent} />
       <MobileStickyFooter />
     </div>
   );
