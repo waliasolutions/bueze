@@ -40,11 +40,10 @@ export const generateOrganizationSchema = () => ({
   "description": "Handwerker Portal für die Schweiz – verbindet Auftraggeber mit geprüften Handwerkern",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Gotthardstrasse 37",
-    "addressLocality": "Goldau",
-    "postalCode": "6410",
-    "addressRegion": "SZ",
-    "addressCountry": "CH"
+    "streetAddress": "Industriestrasse 28",
+    "addressLocality": "Gamprin-Bendern",
+    "postalCode": "9487",
+    "addressCountry": "LI"
   },
   "areaServed": {
     "@type": "Country",
@@ -93,11 +92,10 @@ export const generateLocalBusinessSchema = () => ({
   "email": "info@bueeze.ch",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Gotthardstrasse 37",
-    "addressLocality": "Goldau",
-    "postalCode": "6410",
-    "addressRegion": "Schwyz",
-    "addressCountry": "CH"
+    "streetAddress": "Industriestrasse 28",
+    "addressLocality": "Gamprin-Bendern",
+    "postalCode": "9487",
+    "addressCountry": "LI"
   },
   "priceRange": "CHF",
   "areaServed": {

@@ -108,8 +108,8 @@ const ratingReminderTemplate = (data: {
       </p>
     </div>
     <div class="footer">
-      <p><strong>Büeze GmbH</strong><br>
-      Gotthardstrasse 37 | 6410 Goldau | Schweiz</p>
+      <p><strong>Büeze.ch GmbH</strong><br>
+      Industriestrasse 28 | 9487 Gamprin-Bendern | Liechtenstein</p>
       <p><a href="https://bueeze.ch">www.bueeze.ch</a> | <a href="mailto:info@bueeze.ch">info@bueeze.ch</a></p>
     </div>
   </div>

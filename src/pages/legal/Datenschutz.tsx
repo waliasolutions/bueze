@@ -9,7 +9,7 @@ const Datenschutz = () => {
   const schemaMarkup = wrapInGraph(
     generateWebPageSchema(
       "Datenschutzerklärung",
-      "Datenschutzerklärung der Büeze GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten.",
+      "Datenschutzerklärung der Büeze.ch GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten.",
       "https://bueeze.ch/datenschutz"
     )
   );
@@ -18,7 +18,7 @@ const Datenschutz = () => {
     <div className="min-h-screen bg-background">
       <DynamicHelmet
         title="Datenschutzerklärung | Büeze.ch"
-        description="Datenschutzerklärung der Büeze GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten."
+        description="Datenschutzerklärung der Büeze.ch GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten."
         canonical="https://bueeze.ch/datenschutz"
         robotsMeta="index,follow"
         schemaMarkup={schemaMarkup}
@@ -37,8 +37,8 @@ const Datenschutz = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">1. Verantwortliche Stelle</h2>
                 <div className="text-ink-700 space-y-2">
-                  <p><strong>Büeze GmbH</strong></p>
-                  <p>Gotthardstrasse 37<br />6410 Goldau<br />Schweiz</p>
+                  <p><strong>Büeze.ch GmbH</strong></p>
+                  <p>Industriestrasse 28<br />9487 Gamprin-Bendern<br />Liechtenstein</p>
                   <p>
                     E-Mail:{' '}
                     <a href="mailto:info@bueeze.ch" className="text-brand-500 hover:text-brand-600">
@@ -58,7 +58,7 @@ const Datenschutz = () => {
                 <h2 className="text-2xl font-bold mb-4">2. Geltungsbereich</h2>
                 <p className="text-ink-700">
                   Diese Datenschutzerklärung klärt Nutzer über die Art, den Umfang und Zwecke der Erhebung und Verwendung 
-                  personenbezogener Daten durch die Büeze GmbH auf der Plattform www.bueeze.ch auf. Die Datenschutzerklärung 
+                  personenbezogener Daten durch die Büeze.ch GmbH auf der Plattform www.bueeze.ch auf. Die Datenschutzerklärung 
                   gilt gemäss dem revidierten Schweizer Datenschutzgesetz (nDSG) sowie der EU-Datenschutz-Grundverordnung 
                   (DSGVO), soweit diese anwendbar ist.
                 </p>
@@ -390,9 +390,9 @@ const Datenschutz = () => {
                   Bei Fragen zum Datenschutz oder zur Ausübung Ihrer Rechte kontaktieren Sie uns bitte:
                 </p>
                 <div className="text-ink-700 space-y-2">
-                  <p><strong>Büeze GmbH</strong></p>
+                  <p><strong>Büeze.ch GmbH</strong></p>
                   <p>Datenschutz</p>
-                  <p>Gotthardstrasse 37<br />6410 Goldau<br />Schweiz</p>
+                  <p>Industriestrasse 28<br />9487 Gamprin-Bendern<br />Liechtenstein</p>
                   <p>
                     E-Mail:{' '}
                     <a href="mailto:info@bueeze.ch" className="text-brand-500 hover:text-brand-600">

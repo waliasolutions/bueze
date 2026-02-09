@@ -67,7 +67,7 @@ export const Footer = () => {
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <MapPin className="h-4 w-4 flex-shrink-0" />
-                <span>Gotthardstrasse 37, 6410 Goldau</span>
+                <span>Industriestrasse 28, 9487 Gamprin-Bendern</span>
               </div>
             </div>
           </div>
@@ -156,7 +156,7 @@ export const Footer = () => {
           {/* Copyright */}
           <div className="text-center">
             <p className="text-sm text-ink-300">
-              © {new Date().getFullYear()} Büeze GmbH. Alle Rechte vorbehalten.
+              © {new Date().getFullYear()} Büeze.ch GmbH. Alle Rechte vorbehalten.
             </p>
           </div>
         </div>
