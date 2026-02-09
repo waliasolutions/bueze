@@ -32,7 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
-import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2, AlertCircle, Bell } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2, AlertCircle, Bell, Download, FileText } from "lucide-react";
 import { majorCategories } from "@/config/majorCategories";
 import { SWISS_CANTONS, getCantonLabel } from "@/config/cantons";
 import { getUrgencyLabel } from "@/config/urgencyLevels";
@@ -589,8 +589,40 @@ export default function AdminLeadsManagement() {
                                 <h4 className="font-semibold mb-2">Beschreibung</h4>
                                 <p className="text-sm whitespace-pre-wrap break-words">{lead.description}</p>
                                 {lead.media_urls && lead.media_urls.length > 0 && (
-                                  <div className="mt-2 text-sm text-muted-foreground">
-                                    📎 {lead.media_urls.length} Anhang/Anhänge
+                                  <div className="mt-3">
+                                    <h4 className="font-semibold mb-2 text-sm">Anhänge ({lead.media_urls.length})</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                      {lead.media_urls.map((url, idx) => {
+                                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg|bmp)$/i.test(url);
+                                        const fileName = url.split('/').pop() || `Datei ${idx + 1}`;
+                                        return (
+                                          <a
+                                            key={idx}
+                                            href={url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            download
+                                            className="group relative block rounded-lg overflow-hidden border bg-background hover:ring-2 hover:ring-primary transition-all"
+                                          >
+                                            {isImage ? (
+                                              <img
+                                                src={url}
+                                                alt={`Anhang ${idx + 1}`}
+                                                className="w-full h-24 md:h-32 object-cover"
+                                              />
+                                            ) : (
+                                              <div className="w-full h-24 md:h-32 flex flex-col items-center justify-center gap-1 bg-muted">
+                                                <FileText className="h-8 w-8 text-muted-foreground" />
+                                                <span className="text-xs text-muted-foreground truncate max-w-[90%] px-1">{fileName}</span>
+                                              </div>
+                                            )}
+                                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/30 transition-colors">
+                                              <Download className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </div>
+                                          </a>
+                                        );
+                                      })}
+                                    </div>
                                   </div>
                                 )}
                               </div>
