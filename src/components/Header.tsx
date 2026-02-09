@@ -8,6 +8,7 @@ import { ClientNotifications } from './ClientNotifications';
 import { HandwerkerNotifications } from './HandwerkerNotifications';
 import { AdminViewSwitcher } from './AdminViewSwitcher';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -24,6 +25,7 @@ export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role, isAdmin, isHandwerker, userId, loading: roleLoading } = useUserRole();
+  const { activeView, isImpersonating, setActiveView } = useViewMode();
   const isOnAdminPage = location.pathname.startsWith('/admin');
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -40,27 +42,7 @@ export const Header = () => {
     };
   }, [isMenuOpen]);
 
-  // Determine current view for AdminViewSwitcher based on route
-  const getCurrentView = (): 'admin' | 'client' | 'handwerker' => {
-    const path = location.pathname;
-    
-    // Admin routes
-    if (path.startsWith('/admin')) return 'admin';
-    
-    // Handwerker routes - include all handwerker-related pages
-    if (
-      path.startsWith('/handwerker-dashboard') ||
-      path.startsWith('/handwerker-profile') ||
-      path.startsWith('/handwerker-onboarding') ||
-      path === '/search' ||
-      path.startsWith('/opportunity')
-    ) {
-      return 'handwerker';
-    }
-    
-    // Client routes (default)
-    return 'client';
-  };
+  // getCurrentView removed -- activeView now comes from ViewModeContext
 
   const handleNavClick = (href: string, e: React.MouseEvent) => {
     if (href.startsWith('/#')) {
@@ -135,7 +117,7 @@ export const Header = () => {
                 {!roleLoading && isAdmin && (
                   <>
                     <AdminNotifications />
-                    <AdminViewSwitcher currentView={getCurrentView()} />
+                    <AdminViewSwitcher />
                   </>
                 )}
                 {!roleLoading && isHandwerker && !isAdmin && <HandwerkerNotifications />}
@@ -204,6 +186,32 @@ export const Header = () => {
         </div>
         </div>
       </header>
+
+      {/* Impersonation Banner */}
+      {isImpersonating && (
+        <div className={`fixed top-16 left-0 right-0 z-[49] text-center py-2 px-4 text-sm font-medium flex items-center justify-center gap-3 ${
+          activeView === 'client'
+            ? 'bg-blue-50 text-blue-800 border-b border-blue-200'
+            : 'bg-green-50 text-green-800 border-b border-green-200'
+        }`}>
+          <span>
+            {activeView === 'client'
+              ? 'Sie sehen die Plattform als Kunde'
+              : 'Sie sehen die Plattform als Handwerker'}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => {
+              setActiveView('admin');
+              navigate('/admin/dashboard');
+            }}
+          >
+            Zurück zur Admin-Ansicht
+          </Button>
+        </div>
+      )}
 
       {/* Mobile Menu Backdrop */}
       <div 
@@ -293,7 +301,7 @@ export const Header = () => {
                   {/* Admin View Switcher */}
                   {isAdmin && (
                     <div className="px-4 py-2 mb-2">
-                      <AdminViewSwitcher currentView={getCurrentView()} />
+                      <AdminViewSwitcher />
                     </div>
                   )}
 
