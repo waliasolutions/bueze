@@ -1,109 +1,58 @@
 
 
-# Deep QA: Navigation System Analysis
+# Update Company Name & Address Everywhere
 
-## QA Test Summary
+## What's Changing
 
-### Routes Tested - All Working
-| Route | Status | Notes |
-|-------|--------|-------|
-| `/` (Homepage) | ✅ | All sections load correctly |
-| `/kategorien` | ✅ | Category grid displays |
-| `/kategorien/bau-renovation` | ✅ | Subcategories work |
-| `/handwerker` | ✅ | Landing page loads |
-| `/pricing` | ✅ | Pricing page works |
-| `/submit-lead` | ✅ | Lead form loads |
-| `/auth` | ✅ | Login/register works |
-| `/legal/agb` | ✅ | AGB page loads |
-| `/impressum` | ✅ | Impressum loads |
-| `/datenschutz` | ✅ | Privacy page loads |
-| `/admin` | ✅ | Redirects to auth correctly |
-| `/handwerker-dashboard` | ✅ | Redirects to auth correctly |
-| `/search` | ✅ | Redirects to auth correctly |
-| `/proposals` | ✅ | Redirects to auth correctly |
-| `/*` (404) | ✅ | Shows friendly 404 page |
+| Field | Old | New |
+|-------|-----|-----|
+| Company name | Büeze GmbH | Büeze.ch GmbH |
+| Street | Gotthardstrasse 37 | Industriestrasse 28 |
+| City/Postal | 6410 Goldau | 9487 Gamprin-Bendern |
+| Country | Schweiz (CH) | Liechtenstein (LI) |
+| Handelsregister | Kanton Schwyz | Liechtenstein |
+| Gerichtsstand | Schwyz, Schweiz | Gamprin-Bendern, Liechtenstein |
+| addressRegion (SEO) | SZ / Schwyz | - (Liechtenstein has no cantons) |
 
-### Issues Found
+## Files to Update (10 files total)
 
-#### Issue 1: Broken `/browse-leads` Links (CRITICAL)
-**4 files reference deprecated `/browse-leads` route instead of `/search`:**
+### Frontend Pages (4 files)
+1. **`src/components/Footer.tsx`** -- Address line + copyright name
+2. **`src/pages/legal/Impressum.tsx`** -- Company name, address, meta description, Handelsregister, Gerichtsstand, schema text
+3. **`src/pages/legal/Datenschutz.tsx`** -- Company name + address in 2 locations (section 1 + section 13), meta description
+4. **`src/pages/legal/AGB.tsx`** -- Company name + address in intro + contact section, Gerichtsstand
 
-1. `src/components/ProposalsList.tsx:167` - Empty state button
-2. `src/pages/ConversationsList.tsx:264` - Empty state button  
-3. `src/pages/NotFound.tsx:45` - 404 page "Aufträge durchsuchen" button
-4. `src/components/Header.tsx:55` - View detection (minor, doesn't cause 404)
+### SEO / Schema (2 files)
+5. **`src/lib/schemaHelpers.ts`** -- Organization + LocalBusiness schemas: streetAddress, addressLocality, postalCode, addressRegion, addressCountry
+6. **`index.html`** -- `meta author` tag
 
-**Impact:** Users clicking these buttons see 404 error
+### Email Templates (4 edge function files)
+7. **`supabase/functions/_shared/emailTemplates.ts`** -- Footer block
+8. **`supabase/functions/send-subscription-confirmation/index.ts`** -- Footer block
+9. **`supabase/functions/send-rating-reminder/index.ts`** -- Footer block
+10. **`supabase/functions/send-proposal-rejection-email/index.ts`** -- Footer block
 
-#### Issue 2: Inconsistent Legal Route Structure (Minor)
-- `/legal/agb` exists but `/legal/impressum` and `/legal/datenschutz` do NOT
-- Routes are `/impressum` and `/datenschutz` (without `/legal/` prefix)
-- No redirect from `/legal/impressum` → `/impressum`
+## What Stays the Same
+- Email: info@bueeze.ch (unchanged)
+- Phone: +41 41 558 22 33 (unchanged)
+- UID: CHE-389.446.099 (unchanged -- Swiss UIDs remain valid for LI-registered companies)
+- Website URL: bueeze.ch (unchanged)
+- `src/config/cantons.ts` -- unrelated reference data, not company info
 
-**Impact:** SEO confusion, potential broken external links
+## Technical Details
 
-#### Issue 3: Console Warning (Minor)
-- Logo preload warning: `bueze-logo.webp was preloaded but not used`
-- No functional impact
+All changes are simple string replacements. The edge function files will be redeployed after editing. No database migration needed -- this is purely display/content.
 
----
+### Replacement Map (applied consistently)
 
-## Implementation Plan
-
-### Fix 1: Update Broken `/browse-leads` References
-
-**File: `src/components/ProposalsList.tsx` (line 167)**
-```tsx
-// Change from:
-<Button onClick={() => navigate('/browse-leads')}>
-// To:
-<Button onClick={() => navigate('/search')}>
+```text
+"Büeze GmbH"           -->  "Büeze.ch GmbH"
+"Gotthardstrasse 37"   -->  "Industriestrasse 28"
+"6410 Goldau"          -->  "9487 Gamprin-Bendern"
+"Schweiz" (country)    -->  "Liechtenstein"
+"Kanton Schwyz"        -->  "Liechtenstein"
+"Schwyz, Schweiz"      -->  "Gamprin-Bendern, Liechtenstein"
+addressCountry: "CH"   -->  "LI"
+addressRegion: "SZ"    -->  removed (N/A for LI)
 ```
-
-**File: `src/pages/ConversationsList.tsx` (line 264)**
-```tsx
-// Change from:
-<Button onClick={() => navigate(isHandwerker ? '/browse-leads' : '/submit-lead')}>
-// To:
-<Button onClick={() => navigate(isHandwerker ? '/search' : '/submit-lead')}>
-```
-
-**File: `src/pages/NotFound.tsx` (line 45)**
-```tsx
-// Change from:
-<Link to="/browse-leads">
-// To:
-<Link to="/search">
-```
-
-**File: `src/components/Header.tsx` (line 55)**
-```tsx
-// Change from:
-path === '/browse-leads' ||
-// To:
-path === '/search' ||
-```
-
-### Fix 2: Add Redirect Routes for Legal Pages
-
-**File: `src/App.tsx`** - Add redirects after line 221:
-```tsx
-{/* Legal redirects for consistency */}
-<Route path="/legal/impressum" element={<Navigate to="/impressum" replace />} />
-<Route path="/legal/datenschutz" element={<Navigate to="/datenschutz" replace />} />
-```
-
----
-
-## Summary
-
-| Issue | Priority | Files | Effort |
-|-------|----------|-------|--------|
-| Broken `/browse-leads` links | HIGH | 4 files | 5 min |
-| Legal route redirects | LOW | 1 file | 2 min |
-| Logo preload warning | LOW | 1 file | 2 min |
-
-**Total estimated fix time: 10 minutes**
-
-All other navigation routes, auth guards, and role-based redirects are working correctly. The footer links, header navigation, and category pages all function as expected.
 
