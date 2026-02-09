@@ -27,6 +27,7 @@ import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
 import { Label } from '@/components/ui/label';
 import { majorCategories } from '@/config/majorCategories';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useViewMode } from '@/contexts/ViewModeContext';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name muss mindestens 2 Zeichen haben'),
@@ -76,15 +77,19 @@ const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isHandwerker: isHandwerkerRole, isAdmin } = useUserRole();
+  const { activeView } = useViewMode();
 
-  // Role-aware back navigation
+  // Role-aware back navigation using activeView
   const handleBackNavigation = () => {
-    if (isAdmin) {
-      navigate('/admin');
-    } else if (isHandwerkerRole) {
-      navigate('/handwerker-dashboard');
-    } else {
-      navigate('/dashboard');
+    switch (activeView) {
+      case 'admin':
+        navigate('/admin');
+        break;
+      case 'handwerker':
+        navigate('/handwerker-dashboard');
+        break;
+      default:
+        navigate('/dashboard');
     }
   };
 
@@ -369,7 +374,13 @@ const Profile = () => {
     );
   }
 
-  const isHandwerker = !!handwerkerProfile;
+  // View-aware handwerker detection:
+  // - Admin in "client" view: never show handwerker tabs
+  // - Admin in "handwerker" view: show if profile data exists
+  // - Admin in "admin" view or non-admin: use database logic
+  const isHandwerker = isAdmin
+    ? activeView === 'handwerker' ? !!handwerkerProfile : activeView === 'admin' ? !!handwerkerProfile : false
+    : !!handwerkerProfile;
 
   return (
     <div className="min-h-screen bg-background">

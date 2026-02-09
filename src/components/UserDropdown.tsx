@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { clearVersionedData, STORAGE_KEYS } from '@/lib/localStorageVersioning';
 import { useUserRole } from '@/hooks/useUserRole';
 import { roleNavigation } from '@/config/navigation';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import type { UserProfileBasic } from '@/types/entities';
 
 export const UserDropdown = () => {
@@ -24,6 +25,7 @@ export const UserDropdown = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userId, isAdmin, isHandwerker, isClient, loading: roleLoading } = useUserRole();
+  const { activeView } = useViewMode();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -92,7 +94,14 @@ export const UserDropdown = () => {
   };
 
   const getRoleLabel = () => {
-    if (isAdmin) return 'Administrator';
+    // Use activeView for admins to reflect current view mode
+    if (isAdmin) {
+      switch (activeView) {
+        case 'handwerker': return 'Handwerker';
+        case 'client': return 'Kunde';
+        default: return 'Administrator';
+      }
+    }
     if (isHandwerker) return 'Handwerker';
     return 'Kunde';
   };
@@ -106,8 +115,10 @@ export const UserDropdown = () => {
     );
   }
 
-  // Get navigation items based on role
-  const navItems = isHandwerker ? roleNavigation.handwerker : roleNavigation.client;
+  // Get navigation items based on activeView (for admins) or real role
+  const navItems = isAdmin
+    ? (activeView === 'handwerker' ? roleNavigation.handwerker : roleNavigation.client)
+    : (isHandwerker ? roleNavigation.handwerker : roleNavigation.client);
 
   return (
     <DropdownMenu>

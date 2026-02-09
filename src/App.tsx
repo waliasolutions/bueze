@@ -10,6 +10,7 @@ import { CookieBanner } from "@/components/CookieBanner";
 import RouteErrorBoundary from "@/components/RouteErrorBoundary";
 import PageLoader from "@/components/PageLoader";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
+import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AdminSuspenseFallback } from "@/components/admin/AdminPageSkeleton";
 
 // Critical routes - loaded immediately
@@ -140,6 +141,7 @@ const App = () => {
           <Toaster />
           <Sonner />
           <CookieBanner />
+          <ViewModeProvider>
           <RouteErrorBoundary>
             <Suspense fallback={<PageLoader />}>
               <Routes>
@@ -229,6 +231,7 @@ const App = () => {
               </Routes>
             </Suspense>
           </RouteErrorBoundary>
+          </ViewModeProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
