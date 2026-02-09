@@ -583,7 +583,18 @@ export default function AdminLeadsManagement() {
                       <CollapsibleContent asChild>
                         <TableRow>
                           <TableCell colSpan={11} className="bg-muted/50">
-                            <div className="p-4">
+                            <div className="p-4 space-y-4">
+                              {/* Lead Description */}
+                              <div>
+                                <h4 className="font-semibold mb-2">Beschreibung</h4>
+                                <p className="text-sm whitespace-pre-wrap break-words">{lead.description}</p>
+                                {lead.media_urls && lead.media_urls.length > 0 && (
+                                  <div className="mt-2 text-sm text-muted-foreground">
+                                    📎 {lead.media_urls.length} Anhang/Anhänge
+                                  </div>
+                                )}
+                              </div>
+                              {/* Proposals */}
                               <h4 className="font-semibold mb-3">Eingereichte Offerten ({proposals[lead.id]?.length || 0})</h4>
                               {proposals[lead.id] && proposals[lead.id].length > 0 ? (
                                 <div className="space-y-3">
