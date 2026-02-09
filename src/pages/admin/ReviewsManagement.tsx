@@ -97,6 +97,8 @@ const ReviewsManagement = () => {
         description: 'Bewertungen konnten nicht geladen werden.',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
