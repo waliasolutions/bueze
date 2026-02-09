@@ -4,16 +4,30 @@ import { Mail, Phone, MapPin, Facebook, Instagram } from 'lucide-react';
 import logo from '@/assets/bueze-logo.png';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { footerDefaults } from '@/config/contentDefaults';
 
-export const Footer = () => {
+interface FooterProps {
+  content?: { fields?: any } | null;
+}
+
+export const Footer = ({ content }: FooterProps) => {
+  const fields = content?.fields;
+  const companyDescription = fields?.companyDescription || footerDefaults.companyDescription;
+  const email = fields?.email || footerDefaults.email;
+  const phone = fields?.phone || footerDefaults.phone;
+  const address = fields?.address || footerDefaults.address;
+  const socialLinks = {
+    facebook: fields?.socialLinks?.facebook || footerDefaults.socialLinks.facebook,
+    instagram: fields?.socialLinks?.instagram || footerDefaults.socialLinks.instagram,
+  };
+  const quickLinks = fields?.quickLinks?.length ? fields.quickLinks : footerDefaults.quickLinks;
+
   // Group subcategories by major category
   const categoriesWithSubs = Object.values(majorCategories).map(category => {
-    // Use the same approach as MajorCategoryLanding: only show subcategories 
-    // explicitly listed in category.subcategories array
     const subs = category.subcategories
       .map(subId => subcategoryLabels[subId])
-      .filter(Boolean) // Remove any undefined entries
-      .slice(0, 8); // Limit to 8 for scannability
+      .filter(Boolean)
+      .slice(0, 8);
     
     return {
       ...category,
@@ -21,58 +35,39 @@ export const Footer = () => {
     };
   });
 
-  const quickLinks = [
-    { label: 'Für Auftraggeber', href: '/submit-lead' },
-    { label: 'Für Handwerker', href: '/handwerker' },
-    { label: 'Preise', href: '/pricing' },
-    { label: 'AGB', href: '/legal/agb' },
-    { label: 'Impressum', href: '/impressum' },
-    { label: 'Datenschutz', href: '/datenschutz' },
-  ];
-
   return (
     <footer className="bg-ink-900 text-surface">
       <div className="container mx-auto px-4 py-16">
-        {/* Main Footer Content */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
-          {/* Company Info - 3 columns on desktop */}
           <div className="lg:col-span-3 space-y-6">
             <div className="flex items-center">
               <img src={logo} alt="Büeze.ch - Geprüfte Handwerker in der Schweiz finden" className="h-20 w-auto" loading="lazy" decoding="async" width="80" height="80" />
             </div>
             
             <p className="text-ink-300 leading-relaxed text-sm">
-              Die Plattform für Handwerker-Vermittlung in der Schweiz. 
-              Verbinden Sie sich mit geprüften Profis für Ihr nächstes Projekt.
+              {companyDescription}
             </p>
 
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Mail className="h-4 w-4 flex-shrink-0" />
-                <a 
-                  href="mailto:info@bueeze.ch"
-                  className="hover:text-brand-400 transition-colors"
-                >
-                  info@bueeze.ch
+                <a href={`mailto:${email}`} className="hover:text-brand-400 transition-colors">
+                  {email}
                 </a>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Phone className="h-4 w-4 flex-shrink-0" />
-                <a 
-                  href="tel:+41415582233"
-                  className="hover:text-brand-400 transition-colors"
-                >
-                  +41 41 558 22 33
+                <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-brand-400 transition-colors">
+                  {phone}
                 </a>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <MapPin className="h-4 w-4 flex-shrink-0" />
-                <span>Industriestrasse 28, 9487 Gamprin-Bendern</span>
+                <span>{address}</span>
               </div>
             </div>
           </div>
 
-          {/* Categories Grid - 9 columns on desktop */}
           <div className="lg:col-span-9">
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
               {categoriesWithSubs.map((category) => (
@@ -111,12 +106,9 @@ export const Footer = () => {
           </div>
         </div>
 
-
-        {/* Bottom Footer */}
         <div className="border-t border-ink-700 mt-12 pt-8">
-          {/* Quick Links */}
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-8">
-            {quickLinks.map((link, index) => (
+            {quickLinks.map((link: any, index: number) => (
               <React.Fragment key={link.href}>
                 <Link
                   to={link.href}
@@ -131,10 +123,9 @@ export const Footer = () => {
             ))}
           </div>
 
-          {/* Social Links */}
           <div className="flex justify-center items-center gap-4 mb-8">
             <a 
-              href="https://m.facebook.com/profile.php?id=61582960604117"
+              href={socialLinks.facebook}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Facebook"
@@ -143,7 +134,7 @@ export const Footer = () => {
               <Facebook className="h-5 w-5 text-white" />
             </a>
             <a 
-              href="https://www.instagram.com/bueeze.ch/"
+              href={socialLinks.instagram}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"
@@ -153,7 +144,6 @@ export const Footer = () => {
             </a>
           </div>
 
-          {/* Copyright */}
           <div className="text-center">
             <p className="text-sm text-ink-300">
               © {new Date().getFullYear()} Büeze.ch GmbH. Alle Rechte vorbehalten.
