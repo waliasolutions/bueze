@@ -1,54 +1,46 @@
 
 
-# Fix: Reviews Not Displaying Due to Loading State Bug
+# Fix: Payment History Showing in Admin View on Profile Page
 
 ## Root Cause
 
-The `isLoading` state in `ReviewsManagement.tsx` is initialized as `true` (line 31) but **never set to `false`**. The `loadReviews` function fetches data successfully but does not call `setIsLoading(false)`.
+In `src/pages/Profile.tsx` (line 381-383), the view-aware logic has a bug:
 
-This means the computed value:
+```typescript
+const isHandwerker = isAdmin
+  ? activeView === 'handwerker' ? !!handwerkerProfile : activeView === 'admin' ? !!handwerkerProfile : false
+  : !!handwerkerProfile;
 ```
-const isReady = hasChecked && isAuthorized && !isLoading;
-```
-is always `false`, so `AdminLayout` receives `isLoading={true}` permanently, hiding all content behind the loading skeleton.
 
-The RLS migration applied in the last step is working correctly -- the API returns all 3 reviews with status 200. This is purely a frontend bug.
+When the admin is in **"admin" view**, `isHandwerker` resolves to `!!handwerkerProfile`. Since the admin user has a handwerker profile record in the database, all handwerker-specific tabs (Handwerker-Profil, Abonnement, Rechnungen) incorrectly appear.
+
+**Expected behavior**: These tabs should only appear when the admin switches to "Handwerker-Ansicht".
 
 ## Fix
 
-**File: `src/pages/admin/ReviewsManagement.tsx`**
+**File: `src/pages/Profile.tsx`** (line 381-383)
 
-Add `setIsLoading(false)` in the `loadReviews` function:
+Change the logic so admin view never shows handwerker tabs:
 
-```
-const loadReviews = async () => {
-  try {
-    // ... existing fetch logic ...
-    setReviews(enrichedReviews);
-  } catch (error) {
-    // ... existing error handling ...
-  } finally {
-    setIsLoading(false);  // <-- ADD THIS
-  }
-};
+```typescript
+const isHandwerker = isAdmin
+  ? activeView === 'handwerker' && !!handwerkerProfile
+  : !!handwerkerProfile;
 ```
 
-## What Changes
+This means:
+- **Admin in "admin" view**: No handwerker tabs (correct -- admin context)
+- **Admin in "client" view**: No handwerker tabs (correct -- client context)
+- **Admin in "handwerker" view**: Handwerker tabs shown if profile data exists (correct -- testing handwerker experience)
+- **Non-admin handwerker**: Handwerker tabs shown based on database (unchanged)
+- **Non-admin client**: No handwerker tabs (unchanged)
+
+## Scope
 
 | Item | Details |
 |------|---------|
-| File | `src/pages/admin/ReviewsManagement.tsx` |
-| Change | Add `finally { setIsLoading(false) }` to `loadReviews` |
-| Lines affected | ~1 line added inside the existing try/catch block |
-| Risk | None -- standard pattern used across all other admin pages |
+| File | `src/pages/Profile.tsx` |
+| Lines changed | 1 (line 381-383 simplified) |
+| Risk | None -- purely a conditional fix |
+| Other files | No changes needed |
 
-## What Does NOT Change
-
-- RLS policies (already fixed)
-- Review data or schema
-- Admin UI layout or filters
-- Any other admin pages
-
-## Verification
-
-After the fix, navigating to `/admin/reviews` will show all 3 existing reviews with stats, filters, and moderation actions fully functional.
