@@ -375,11 +375,12 @@ const Profile = () => {
   }
 
   // View-aware handwerker detection:
-  // - Admin in "client" view: never show handwerker tabs
+  // - Admin in "admin" view: no handwerker tabs (admin context)
+  // - Admin in "client" view: no handwerker tabs (client context)
   // - Admin in "handwerker" view: show if profile data exists
-  // - Admin in "admin" view or non-admin: use database logic
+  // - Non-admin: use database logic
   const isHandwerker = isAdmin
-    ? activeView === 'handwerker' ? !!handwerkerProfile : activeView === 'admin' ? !!handwerkerProfile : false
+    ? activeView === 'handwerker' && !!handwerkerProfile
     : !!handwerkerProfile;
 
   return (
