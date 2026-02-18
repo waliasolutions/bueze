@@ -105,6 +105,18 @@ Deno.serve(async (req) => {
     // Create Supabase admin client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Idempotency check: if this transaction was already processed, return 200
+    const { data: existingPayment } = await supabase
+      .from('payment_history')
+      .select('id')
+      .eq('payrexx_transaction_id', transactionId.toString())
+      .maybeSingle();
+
+    if (existingPayment) {
+      console.log(`Transaction ${transactionId} already processed, skipping`);
+      return successResponse({ received: true, already_processed: true });
+    }
+
     // Handle different transaction statuses
     if (status === 'confirmed' || status === 'waiting') {
       // Payment successful - activate subscription

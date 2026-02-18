@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { Save, Shield, Code } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -16,6 +16,7 @@ export default function GTMConfiguration() {
   const navigate = useNavigate();
   const { settings, loading, updateSettings } = useSiteSettings();
   const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
+  const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     gtm_container_id: '',
@@ -37,9 +38,9 @@ export default function GTMConfiguration() {
     try {
       const result = await updateSettings(formData);
       if (result.success) {
-        toast.success('GTM configuration saved successfully. Refresh the page to see changes.');
+        toast({ title: 'GTM Konfiguration gespeichert. Seite aktualisieren um Änderungen zu sehen.' });
       } else {
-        toast.error('Failed to save: ' + result.error);
+        toast({ title: 'Speichern fehlgeschlagen: ' + result.error, variant: 'destructive' });
       }
     } finally {
       setSaving(false);

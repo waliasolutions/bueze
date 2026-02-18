@@ -18,7 +18,7 @@ import {
 import { useAllPageContent } from '@/hooks/usePageContent';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { Search, Save, AlertCircle, Download, Upload, Globe, ExternalLink } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -41,6 +41,7 @@ interface PageMeta {
 }
 
 export default function BulkMetaManager() {
+  const { toast } = useToast();
   const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const { contents, loading, refetch } = useAllPageContent();
   const { settings: siteSettings, updateSettings } = useSiteSettings();
@@ -92,11 +93,11 @@ export default function BulkMetaManager() {
 
       if (error) throw error;
 
-      toast.success('Meta tags updated successfully');
+      toast({ title: 'Meta Tags aktualisiert' });
       setEditingId(null);
       refetch();
     } catch (error: any) {
-      toast.error('Failed to update meta tags: ' + error.message);
+      toast({ title: 'Meta Tags konnten nicht aktualisiert werden: ' + error.message, variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -112,9 +113,9 @@ export default function BulkMetaManager() {
     try {
       const result = await updateSettings(defaultMetaData);
       if (result.success) {
-        toast.success('Default meta tags saved successfully');
+        toast({ title: 'Standard Meta Tags gespeichert' });
       } else {
-        toast.error('Failed to save: ' + result.error);
+        toast({ title: 'Speichern fehlgeschlagen: ' + result.error, variant: 'destructive' });
       }
     } finally {
       setSaving(false);

@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, 
   Search, 
@@ -42,6 +42,7 @@ interface DeletionAuditRecord {
 }
 
 export default function DeletionAudit() {
+  const { toast } = useToast();
   const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
   const [loading, setLoading] = useState(true);
   const [records, setRecords] = useState<DeletionAuditRecord[]>([]);
@@ -100,7 +101,7 @@ export default function DeletionAudit() {
       setRecords(data || []);
     } catch (error) {
       console.error('Error loading deletion audit:', error);
-      toast.error('Löschprotokoll konnte nicht geladen werden.');
+      toast({ title: 'Löschprotokoll konnte nicht geladen werden.', variant: 'destructive' });
     } finally {
       setLoading(false);
       setIsRefreshing(false);
