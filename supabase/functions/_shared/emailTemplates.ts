@@ -1,6 +1,17 @@
 // Email template library for BÜEZE.CH
 // Swiss-inspired, clean design with consistent branding
 
+/**
+ * Safe interpolation helper - prevents "undefined" or "null" from appearing in emails.
+ * Falls back to provided default or empty string.
+ */
+export const safe = (value: unknown, fallback = ''): string => {
+  if (value === null || value === undefined || value === 'undefined' || value === 'null') {
+    return fallback;
+  }
+  return String(value);
+};
+
 export const emailWrapper = (content: string) => `
 <!DOCTYPE html>
 <html lang="de">
@@ -118,15 +129,15 @@ export const newLeadNotificationTemplate = (data: NewLeadData) => {
 
   return emailWrapper(`
     <div class="content">
-      <h2>Neue Anfrage in ${data.category}</h2>
-      <p>Hallo ${data.handwerkerName},</p>
+      <h2>Neue Anfrage in ${safe(data.category, 'Ihrem Fachgebiet')}</h2>
+      <p>Hallo ${safe(data.handwerkerName, 'Handwerker')},</p>
       <p>Eine neue Anfrage in Ihrem Fachgebiet ist verfügbar:</p>
       
       <div class="info-box">
-        <p><strong>Kategorie:</strong> ${data.category}</p>
-        <p><strong>Standort:</strong> ${data.city}</p>
+        <p><strong>Kategorie:</strong> ${safe(data.category)}</p>
+        <p><strong>Standort:</strong> ${safe(data.city)}</p>
         <p><strong>Budget:</strong> ${budgetText}</p>
-        <p><strong>Dringlichkeit:</strong> ${data.urgency}</p>
+        <p><strong>Dringlichkeit:</strong> ${safe(data.urgency)}</p>
         <hr class="divider">
         <p><strong>Projektbeschreibung:</strong></p>
         <p>${truncatedDesc}</p>
@@ -166,11 +177,11 @@ export const newProposalNotificationTemplate = (data: NewProposalData) => {
   return emailWrapper(`
     <div class="content">
       <h2>Neue Offerte für Ihr Projekt</h2>
-      <p>Hallo ${data.clientName},</p>
-      <p>Sie haben eine neue Offerte für Ihr Projekt <strong>"${data.projectTitle}"</strong> erhalten!</p>
+      <p>Hallo ${safe(data.clientName, 'Kunde')},</p>
+      <p>Sie haben eine neue Offerte für Ihr Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> erhalten!</p>
       
       <div class="info-box">
-        <p><strong>Handwerker:</strong> ${data.handwerkerFirstName} (${data.handwerkerCity})</p>
+        <p><strong>Handwerker:</strong> ${safe(data.handwerkerFirstName)} (${safe(data.handwerkerCity)})</p>
         <p><strong>Bewertung:</strong> ${ratingStars}</p>
         <p><strong>Preisrahmen:</strong> ${priceText}</p>
       </div>
@@ -201,15 +212,15 @@ export const proposalAcceptedHandwerkerTemplate = (data: ProposalAcceptedHandwer
   return emailWrapper(`
     <div class="content">
       <h2>🎉 Gratulation! Ihre Offerte wurde angenommen</h2>
-      <p>Hallo ${data.handwerkerName},</p>
-      <p>Gute Nachrichten! Der Kunde hat Ihre Offerte für das Projekt <strong>"${data.projectTitle}"</strong> angenommen.</p>
+      <p>Hallo ${safe(data.handwerkerName, 'Handwerker')},</p>
+      <p>Gute Nachrichten! Der Kunde hat Ihre Offerte für das Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> angenommen.</p>
       
       <div class="info-box">
         <h3 style="margin-top: 0; color: #0066CC;">Kontaktdaten des Kunden</h3>
-        <p><strong>Name:</strong> ${data.clientName}</p>
-        <p><strong>Telefon:</strong> ${data.clientPhone}</p>
-        <p><strong>E-Mail:</strong> ${data.clientEmail}</p>
-        <p><strong>Adresse:</strong> ${data.clientAddress}</p>
+        <p><strong>Name:</strong> ${safe(data.clientName)}</p>
+        <p><strong>Telefon:</strong> ${safe(data.clientPhone, 'Nicht angegeben')}</p>
+        <p><strong>E-Mail:</strong> ${safe(data.clientEmail, 'Nicht angegeben')}</p>
+        <p><strong>Adresse:</strong> ${safe(data.clientAddress, 'Nicht angegeben')}</p>
       </div>
 
       <p style="text-align: center;">
@@ -251,21 +262,21 @@ export const proposalAcceptedClientTemplate = (data: ProposalAcceptedClientData)
   return emailWrapper(`
     <div class="content">
       <h2>Sie haben einen Handwerker ausgewählt</h2>
-      <p>Hallo ${data.clientName},</p>
-      <p>Sie haben <strong>${data.handwerkerName}</strong> für Ihr Projekt <strong>"${data.projectTitle}"</strong> ausgewählt.</p>
+      <p>Hallo ${safe(data.clientName, 'Kunde')},</p>
+      <p>Sie haben <strong>${safe(data.handwerkerName)}</strong> für Ihr Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> ausgewählt.</p>
       
       <div class="info-box">
         <h3 style="margin-top: 0; color: #0066CC;">Kontaktdaten des Handwerkers</h3>
-        <p><strong>Firma:</strong> ${data.handwerkerCompany}</p>
-        <p><strong>Ansprechpartner:</strong> ${data.handwerkerName}</p>
-        <p><strong>Telefon:</strong> ${data.handwerkerPhone}</p>
-        <p><strong>E-Mail:</strong> ${data.handwerkerEmail}</p>
+        <p><strong>Firma:</strong> ${safe(data.handwerkerCompany)}</p>
+        <p><strong>Ansprechpartner:</strong> ${safe(data.handwerkerName)}</p>
+        <p><strong>Telefon:</strong> ${safe(data.handwerkerPhone, 'Nicht angegeben')}</p>
+        <p><strong>E-Mail:</strong> ${safe(data.handwerkerEmail, 'Nicht angegeben')}</p>
         ${data.handwerkerWebsite ? `<p><strong>Website:</strong> <a href="${data.handwerkerWebsite}">${data.handwerkerWebsite}</a></p>` : ''}
       </div>
 
       <div class="info-box">
         <h3 style="margin-top: 0; color: #0066CC;">Offertendetails</h3>
-        <p><strong>Preis:</strong> ${data.proposalPrice}</p>
+        <p><strong>Preis:</strong> ${safe(data.proposalPrice)}</p>
         <p><strong>Zeitrahmen:</strong> ${data.proposalTimeframe}</p>
       </div>
 
@@ -301,7 +312,7 @@ export const guestWelcomeTemplate = (data: GuestWelcomeData) => {
   return emailWrapper(`
     <div class="content">
       <h2>Willkommen bei BÜEZE.CH!</h2>
-      <p>Hallo ${data.fullName},</p>
+      <p>Hallo ${safe(data.fullName, 'Kunde')},</p>
       <p>Vielen Dank für Ihre Anfrage! Wir haben ein Konto für Sie erstellt, 
       damit Sie den Status Ihrer Anfrage verfolgen und mit Handwerkern kommunizieren können.</p>
       
@@ -344,12 +355,12 @@ interface DeadlineReminderData {
 export const deadlineReminderTemplate = (data: DeadlineReminderData) => {
   return emailWrapper(`
     <div class="content">
-      <h2>⏰ Erinnerung: Noch ${data.daysRemaining} Tage für Offerten</h2>
-      <p>Hallo ${data.recipientName},</p>
-      <p>Die Frist für Offerten zum Projekt <strong>"${data.projectTitle}"</strong> (${data.category}) läuft bald ab.</p>
+      <h2>⏰ Erinnerung: Noch ${safe(data.daysRemaining)} Tage für Offerten</h2>
+      <p>Hallo ${safe(data.recipientName, 'Handwerker')},</p>
+      <p>Die Frist für Offerten zum Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> (${safe(data.category)}) läuft bald ab.</p>
       
       <div class="info-box" style="border-left-color: #FF6B00;">
-        <p><strong>⏰ Noch ${data.daysRemaining} Tage Zeit</strong></p>
+        <p><strong>⏰ Noch ${safe(data.daysRemaining)} Tage Zeit</strong></p>
         <p>Reichen Sie jetzt Ihre Offerte ein, bevor die Frist abläuft!</p>
       </div>
 
@@ -702,7 +713,7 @@ export const rejectionNotificationTemplate = (data: RejectionData) => {
     <div class="content">
       <h2 style="color: #d32f2f;">Registrierung nicht genehmigt</h2>
       
-      <p>Sehr geehrte/r ${data.firstName} ${data.lastName},</p>
+      <p>Sehr geehrte/r ${safe(data.firstName)} ${safe(data.lastName)},</p>
       
       <p>
         Vielen Dank für Ihr Interesse an einer Zusammenarbeit mit Büeze.ch.
@@ -768,8 +779,8 @@ export const newMessageNotificationTemplate = (data: NewMessageData) => {
   return emailWrapper(`
     <div class="content">
       <h2>💬 Neue Nachricht erhalten</h2>
-      <p>Hallo ${data.recipientName},</p>
-      <p>Sie haben eine neue Nachricht von <strong>${data.senderName}</strong> zum Projekt <strong>"${data.projectTitle}"</strong> erhalten.</p>
+      <p>Hallo ${safe(data.recipientName, 'Kunde')},</p>
+      <p>Sie haben eine neue Nachricht von <strong>${safe(data.senderName)}</strong> zum Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> erhalten.</p>
       
       <div class="info-box">
         <p style="font-style: italic; color: #555; margin: 0;">"${truncatedMessage}"</p>
@@ -802,8 +813,8 @@ export const ratingReceivedHandwerkerTemplate = (data: RatingReceivedData) => {
   return emailWrapper(`
     <div class="content">
       <h2>⭐ Neue Bewertung erhalten</h2>
-      <p>Hallo ${data.handwerkerName},</p>
-      <p>Sie haben eine neue Bewertung für das Projekt <strong>"${data.projectTitle}"</strong> erhalten!</p>
+      <p>Hallo ${safe(data.handwerkerName, 'Handwerker')},</p>
+      <p>Sie haben eine neue Bewertung für das Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> erhalten!</p>
       
       <div class="info-box">
         <p><strong>Bewertung:</strong> ${stars} (${data.rating}/5)</p>
@@ -840,8 +851,8 @@ export const ratingResponseClientTemplate = (data: RatingResponseData) => {
   return emailWrapper(`
     <div class="content">
       <h2>💬 Antwort auf Ihre Bewertung</h2>
-      <p>Hallo ${data.clientName},</p>
-      <p><strong>${data.handwerkerName}</strong> hat auf Ihre Bewertung zum Projekt <strong>"${data.projectTitle}"</strong> geantwortet.</p>
+      <p>Hallo ${safe(data.clientName, 'Kunde')},</p>
+      <p><strong>${safe(data.handwerkerName)}</strong> hat auf Ihre Bewertung zum Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> geantwortet.</p>
       
       <div class="info-box">
         <p style="font-style: italic; color: #555; margin: 0;">"${truncatedResponse}"</p>
@@ -866,8 +877,8 @@ export const ratingReminderTemplate = (data: RatingReminderData) => {
   return emailWrapper(`
     <div class="content">
       <h2>⭐ Wie war Ihre Erfahrung?</h2>
-      <p>Hallo ${data.clientName},</p>
-      <p>Ihr Projekt <strong>"${data.projectTitle}"</strong> mit <strong>${data.handwerkerName}</strong> wurde vor einer Woche abgeschlossen.</p>
+      <p>Hallo ${safe(data.clientName, 'Kunde')},</p>
+      <p>Ihr Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> mit <strong>${safe(data.handwerkerName)}</strong> wurde vor einer Woche abgeschlossen.</p>
       
       <div class="info-box">
         <p><strong>Ihre Bewertung hilft anderen Kunden</strong>, den richtigen Handwerker zu finden, 
@@ -896,8 +907,8 @@ export const proposalRejectionTemplate = (data: ProposalRejectionData) => {
   return emailWrapper(`
     <div class="content">
       <h2>Offerte nicht ausgewählt</h2>
-      <p>Hallo ${data.handwerkerName},</p>
-      <p>Leider wurde Ihre Offerte für das Projekt <strong>"${data.projectTitle}"</strong> von ${data.clientFirstName} nicht ausgewählt.</p>
+      <p>Hallo ${safe(data.handwerkerName, 'Handwerker')},</p>
+      <p>Leider wurde Ihre Offerte für das Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> von ${safe(data.clientFirstName, 'dem Kunden')} nicht ausgewählt.</p>
       
       <div class="info-box">
         <p>Der Kunde hat sich für einen anderen Handwerker entschieden. 

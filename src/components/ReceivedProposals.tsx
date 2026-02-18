@@ -587,7 +587,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                           
                           // Fallback: Create conversation if not exists
                           if (!conversation) {
-                            console.log('[ReceivedProposals] Creating fallback conversation for accepted proposal');
+                            if (import.meta.env.DEV) console.log('[ReceivedProposals] Creating fallback conversation for accepted proposal');
                             const { data: newConversation, error } = await supabase
                               .from('conversations')
                               .insert({

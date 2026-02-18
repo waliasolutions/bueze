@@ -3,6 +3,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useHandwerkerDocuments } from '@/hooks/useHandwerkerDocuments';
 import { DocumentExpiryCard } from '@/components/DocumentExpiryCard';
 import { DocumentUploadDialog } from '@/components/DocumentUploadDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DocumentManagementSectionProps {
   profileId: string;
@@ -36,8 +37,18 @@ export function DocumentManagementSection({ profileId, userId }: DocumentManagem
     }
   };
 
-  const handleDownload = (url: string, name: string) => {
-    window.open(url, '_blank');
+  const handleDownload = async (storedPath: string, name: string) => {
+    // Generate a signed URL for the private bucket
+    const { data, error } = await supabase.storage
+      .from('handwerker-documents')
+      .createSignedUrl(storedPath, 3600);
+
+    if (error || !data?.signedUrl) {
+      // Fallback: try as direct URL for legacy documents
+      window.open(storedPath, '_blank');
+      return;
+    }
+    window.open(data.signedUrl, '_blank');
   };
 
   if (loading || !userId || !profileId) {

@@ -104,10 +104,7 @@ export function DocumentUploadDialog({
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('handwerker-documents')
-        .getPublicUrl(fileName);
-
+      // Store relative path (not public URL) for private bucket
       // Insert document record
       const { error: insertError } = await supabase
         .from('handwerker_documents')
@@ -116,7 +113,7 @@ export function DocumentUploadDialog({
           user_id: userId,
           document_type: documentType,
           document_name: documentName || typeLabel,
-          document_url: publicUrl,
+          document_url: fileName,
           expiry_date: expiryDate || null,
           issued_date: issuedDate || null,
           issuing_authority: issuingAuthority || null,

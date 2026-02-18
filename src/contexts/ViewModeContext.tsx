@@ -83,7 +83,21 @@ export const ViewModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!isAdmin) return;
     setActiveViewState(view);
     sessionStorage.setItem(SESSION_KEY, view);
-  }, [isAdmin]);
+
+    // Audit log: record view mode switch
+    if (userId) {
+      supabase
+        .from('admin_audit_log')
+        .insert({
+          admin_user_id: userId,
+          action: 'view_mode_switch',
+          details: { from: activeView, to: view },
+        })
+        .then(({ error }) => {
+          if (error) console.error('Audit log insert failed:', error);
+        });
+    }
+  }, [isAdmin, userId, activeView]);
 
   const isImpersonating = isAdmin && activeView !== 'admin';
 

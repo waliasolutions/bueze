@@ -71,14 +71,15 @@ export function useHandwerkerDocuments(userId: string | null): UseHandwerkerDocu
       const doc = documents.find(d => d.id === id);
       if (!doc) return false;
 
-      // Delete from storage
+      // Delete from storage - handle both relative paths and legacy full URLs
+      let storagePath = doc.document_url;
       const urlParts = doc.document_url.split('/handwerker-documents/');
       if (urlParts.length === 2) {
-        const filePath = urlParts[1].split('?')[0];
-        await supabase.storage
-          .from('handwerker-documents')
-          .remove([filePath]);
+        storagePath = urlParts[1].split('?')[0];
       }
+      await supabase.storage
+        .from('handwerker-documents')
+        .remove([storagePath]);
 
       // Delete from database
       const { error: deleteError } = await supabase
