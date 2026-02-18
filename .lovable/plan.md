@@ -111,15 +111,15 @@ The current implementation logs view mode switches with `from`/`to` in the `deta
 |---|------|------|--------|
 | 1 | Revoke Stripe keys | Manual (user) | Pending -- user action |
 | 2 | Private bucket + signed URLs | Migration + code | **Done** |
-| 3 | Payrexx idempotency (UNIQUE constraint) | Migration | **Needs DB constraint** |
+| 3 | Payrexx idempotency (UNIQUE constraint) | Migration + code | **Done** |
 | 4 | Email template safety | Edge function | **Done** |
-| 5 | Remove broken crons + register missing ones | SQL (manual) | **Pending** |
+| 5 | Remove broken crons + register missing ones | SQL (manual) | **Pending -- user action** |
 | 6 | Admin audit logging | Migration + code | **Done** |
 | 7 | Toast standardization | Code | **Done** |
 | 8 | Console.log cleanup | Code | **Done** |
-| 9 | ReviewsManagement N+1 fix | Code | **Pending** |
+| 9 | ReviewsManagement N+1 fix | Code | **Done** |
 
-**Items requiring implementation: #3 (DB constraint), #5 (cron SQL), #9 (N+1 fix)**
+**Items requiring user action: #1 (Stripe keys), #5 (cron SQL via SQL Editor)**
 
 ---
 
