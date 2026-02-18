@@ -56,38 +56,38 @@ const ReviewsManagement = () => {
 
       if (error) throw error;
 
-      // Fetch related data for each review
-      const enrichedReviews = await Promise.all(
-        (reviewsData || []).map(async (review) => {
-          // Get reviewer info
-          const { data: reviewer } = await supabase
-            .from('profiles')
-            .select('full_name, email')
-            .eq('id', review.reviewer_id)
-            .single();
+      const reviews = reviewsData || [];
 
-          // Get handwerker info
-          const { data: handwerker } = await supabase
-            .from('handwerker_profiles')
-            .select('first_name, last_name, company_name')
-            .eq('user_id', review.reviewed_id)
-            .single();
+      // Collect unique IDs for batch fetching
+      const reviewerIds = [...new Set(reviews.map(r => r.reviewer_id).filter(Boolean))];
+      const reviewedIds = [...new Set(reviews.map(r => r.reviewed_id).filter(Boolean))];
+      const leadIds = [...new Set(reviews.map(r => r.lead_id).filter(Boolean))];
 
-          // Get lead info
-          const { data: lead } = await supabase
-            .from('leads')
-            .select('title')
-            .eq('id', review.lead_id)
-            .single();
+      // Batch-fetch all related data in parallel (3 queries instead of N*3)
+      const [profilesRes, handwerkerRes, leadsRes] = await Promise.all([
+        reviewerIds.length > 0
+          ? supabase.from('profiles').select('id, full_name, email').in('id', reviewerIds)
+          : { data: [] },
+        reviewedIds.length > 0
+          ? supabase.from('handwerker_profiles').select('user_id, first_name, last_name, company_name').in('user_id', reviewedIds)
+          : { data: [] },
+        leadIds.length > 0
+          ? supabase.from('leads').select('id, title').in('id', leadIds)
+          : { data: [] },
+      ]);
 
-          return {
-            ...review,
-            reviewer,
-            handwerker,
-            lead,
-          };
-        })
-      );
+      // Build lookup maps
+      const profileMap = new Map((profilesRes.data || []).map(p => [p.id, p]));
+      const handwerkerMap = new Map((handwerkerRes.data || []).map(h => [h.user_id, h]));
+      const leadMap = new Map((leadsRes.data || []).map(l => [l.id, l]));
+
+      // Enrich reviews using lookup maps
+      const enrichedReviews = reviews.map(review => ({
+        ...review,
+        reviewer: profileMap.get(review.reviewer_id) || null,
+        handwerker: handwerkerMap.get(review.reviewed_id) || null,
+        lead: leadMap.get(review.lead_id) || null,
+      }));
 
       setReviews(enrichedReviews);
     } catch (error) {

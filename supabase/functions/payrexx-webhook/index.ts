@@ -152,15 +152,15 @@ Deno.serve(async (req) => {
         return errorResponse('Failed to update subscription', 500);
       }
 
-      // Record payment in history
+      // Record payment in history (UNIQUE constraint on payrexx_transaction_id prevents duplicates)
       const { error: paymentError } = await supabase
         .from('payment_history')
         .insert({
           user_id: userId,
-          amount: amount, // Store in Rappen (cents) - UI divides by 100 for display
+          amount: amount,
           currency: currency || 'CHF',
           plan_type: planType,
-          status: 'paid', // Use 'paid' to match UI filter expectations
+          status: 'paid',
           payment_provider: 'payrexx',
           payrexx_transaction_id: transactionId.toString(),
           payment_date: now.toISOString(),
@@ -204,12 +204,12 @@ Deno.serve(async (req) => {
         console.error('Error reverting subscription:', subError);
       }
 
-      // Record failed payment
+      // Record failed payment (UNIQUE constraint prevents duplicates on retry)
       await supabase
         .from('payment_history')
         .insert({
           user_id: userId,
-          amount: amount, // Store in Rappen (cents) - UI divides by 100 for display
+          amount: amount,
           currency: currency || 'CHF',
           plan_type: planType,
           status: 'failed',
