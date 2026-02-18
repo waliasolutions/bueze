@@ -1,130 +1,175 @@
 
 
-# Revised Production Readiness Remediation Plan
+# Revised Production Readiness Plan v3
 
-Incorporates all QA feedback. Items resequenced by actual risk severity.
-
----
-
-## Phase 1: Security-Critical (Immediate)
-
-### 1.1 Revoke Stripe Secrets at Stripe Dashboard
-- **Risk**: Active API keys for a decommissioned payment provider are an exploitable security surface
-- **Action (Manual, User)**: Log into the Stripe dashboard, revoke the API key and webhook secret, then remove `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` from Supabase Edge Function secrets
-- **No code change needed** -- purely operational
-
-### 1.2 Make `handwerker-documents` Storage Bucket Private
-- **Risk**: HIGH -- GDPR/DSG relevant. Trade licenses, certifications, and possibly identity documents are publicly accessible via direct URL
-- **Current state**: `handwerker-documents` bucket is `public: true`
-- **Action**: 
-  1. SQL migration to set bucket to private
-  2. Update `DocumentManagementSection.tsx`, `useHandwerkerDocuments.ts`, and admin document views to use Supabase signed URLs (via `supabase.storage.from('handwerker-documents').createSignedUrl(path, 3600)`) instead of public URLs
-  3. Update document upload flow to store relative paths instead of full public URLs
-- **Files affected**: ~4 files (document upload, document display, admin document review)
-
-### 1.3 Payrexx Webhook Idempotency
-- **Risk**: HIGH -- If Payrexx retries a webhook (network timeout, 5xx), the same transaction creates duplicate `payment_history` rows. No unique constraint exists on `payrexx_transaction_id`.
-- **Action**:
-  1. Add UNIQUE constraint on `payment_history.payrexx_transaction_id` (where not null)
-  2. Use `ON CONFLICT` in webhook insert to prevent duplicates
-  3. Add early-exit check: if transaction already processed, return 200 immediately
-- **Files affected**: `supabase/functions/payrexx-webhook/index.ts`, 1 migration
+Incorporates all QA round 2 feedback with verified findings from live database.
 
 ---
 
-## Phase 2: Data Integrity & Compliance
+## Verified Claims
 
-### 2.1 Email Template Interpolation Safety
-- **Risk**: MEDIUM -- Any null/undefined field renders as literal "undefined" in customer emails
-- **Current state**: 968-line template file with ~30+ direct string interpolations and no fallback guards
-- **Action**: Create a `safeInterpolate` helper that defaults to empty string, and wrap all template data accesses. Specific high-risk fields:
-  - `data.handwerkerName` -- used in 5 templates
-  - `data.clientName` -- used in 6 templates  
-  - `data.projectTitle` -- used in 8 templates
-  - `data.clientPhone`, `data.clientEmail`, `data.clientAddress` -- contact data in acceptance emails
-- **File affected**: `supabase/functions/_shared/emailTemplates.ts`
-
-### 2.2 Missing Cron Jobs
-- **Current state**: Only 3 cron jobs are registered:
-  1. `proposal-deadline-reminders` (daily 09:00 UTC)
-  2. `reset-monthly-proposal-quotas` (1st of month -- targets old `subscriptions` table, NOT `handwerker_subscriptions`)
-  3. `cleanup-pending-uploads-daily` (02:00 UTC -- references non-existent edge function)
-- **Missing crons**: `lead-expiry-check`, `document-expiry-reminder`, `send-rating-reminder`
-- **Broken cron**: `reset-monthly-proposal-quotas` updates `public.subscriptions` which likely doesn't exist (the active table is `handwerker_subscriptions`)
-- **Action**: 
-  1. Register missing cron jobs via SQL
-  2. Fix or remove the broken `reset-monthly-proposal-quotas` job
-  3. Remove the orphaned `cleanup-pending-uploads-daily` job
-
-### 2.3 Admin View Mode Audit Logging
-- **Risk**: MEDIUM -- DSG/GDPR governance gap. Admins can impersonate client/handwerker views with no record
-- **Action**: Add a lightweight `admin_audit_log` table and log view mode switches in `ViewModeContext.tsx`
-- **Scope**: 1 migration + 1 file change
+| Claim | Status | Evidence |
+|-------|--------|----------|
+| UNIQUE(user_id) on handwerker_subscriptions | **Confirmed** | Constraint `handwerker_subscriptions_user_id_key` exists |
+| UNIQUE on payment_history.payrexx_transaction_id | **Missing** | No unique constraints on payment_history |
+| Broken quota reset cron | **Confirmed** | Cron job #2 targets `public.subscriptions` (non-existent table) |
+| Affected handwerkers with stuck quotas | **None currently** | 0 free-tier users at or above their limit; `can_submit_proposal` RPC resets quotas on-the-fly using a rolling 30-day window, so the broken cron is actually dead code -- the RPC handles resets |
+| cleanup-pending-uploads edge function | **Does not exist** | No function directory found; cron #3 is orphaned |
+| Existing document URLs in DB | **No data** | `handwerker_documents` table is empty -- no migration of existing URLs needed |
+| ReviewsManagement N+1 pattern | **Confirmed** | Lines 60-90: `Promise.all` with individual queries per review for profiles, handwerker_profiles, leads |
+| Audit log already implemented | **Confirmed** | ViewModeContext.tsx lines 87-98 insert into admin_audit_log on view switch |
 
 ---
 
-## Phase 3: Code Quality & Robustness
+## Key Corrections to Previous Plan
 
-### 3.1 Standardize Toast System
-- **Current state**: Two independent toast systems coexist:
-  - Radix toasts via `@/hooks/use-toast` (used in 39 files)
-  - Sonner toasts via `sonner` (used in 1 file: `AdminLeadsManagement.tsx`)
-- **Action**: Migrate `AdminLeadsManagement.tsx` from `sonner` to Radix `useToast`. This is a 1-file fix since Sonner is only used in one place.
-- **Decision**: Keep Radix as the standard (overwhelmingly dominant usage)
+### 1. Broken Cron is Dead Code, Not a Billing Bug
+The `can_submit_proposal` RPC (the actual enforcement point) uses a rolling 30-day window with on-the-fly reset logic. It checks `current_period_end`, and if expired, resets `proposals_used_this_period` to 0 and extends the period by 30 days. The cron job targeting `public.subscriptions` (wrong table, wrong columns) has never fired successfully -- but it doesn't matter because the RPC handles resets autonomously. **Action**: Remove the broken cron. No data correction needed.
 
-### 3.2 Console.log Cleanup
-- **Files**: `Auth.tsx` (8 logs), `ReceivedProposals.tsx` (1), `OpportunityView.tsx` (1)
-- **Action**: Wrap in `import.meta.env.DEV` guards
+### 2. No Document URL Migration Needed
+The `handwerker_documents` table is currently empty (no rows). Making the bucket private requires no retroactive URL conversion. The code changes to store relative paths and use signed URLs only affect future uploads.
 
-### 3.3 ReviewsManagement N+1 Query Fix
-- **Action**: Batch-fetch profiles and leads using `.in('id', [...ids])` pattern (already done in the approved plan from earlier)
-- **Add `isMounted` guard** to prevent state updates on unmounted component
+### 3. isMounted Guard is Unnecessary
+ReviewsManagement uses raw `useState` + `async` in `loadReviews`, but React 18 no longer warns on unmounted state updates. The real fix is the N+1 query pattern (batch-fetch), not an isMounted guard. The fix should use `.in('id', [...ids])` for profiles, handwerker_profiles, and leads.
 
-### 3.4 useUserRole SSOT Migration (17 files)
-- **Deferred to post-launch** but documented. Files still querying `user_roles` directly:
-  - Dashboard.tsx, HandwerkerDashboard.tsx, all admin pages, ConversationsList.tsx, Messages.tsx, Auth.tsx, etc.
+### 4. Audit Log Scope Clarification
+The current implementation logs view mode switches with `from`/`to` in the `details` JSONB. The QA feedback is valid that logging *actions during impersonation* would be more valuable for compliance. However, this is a significant scope expansion (intercepting all data access during impersonation) that belongs post-launch. The current switch-level logging is sufficient for launch.
 
 ---
 
-## Phase 4: Post-Launch (Documented, Not Blocking)
+## Updated Execution Plan
 
-### 4.1 HandwerkerDashboard Decomposition
-- 1963-line monolith -- extract into tab components
-- Not a launch blocker (single-user load, not public-facing)
+### Phase 1: Security-Critical
 
-### 4.2 Edge Function Rate Limiting
-- `guest-user-auto-create` and other public endpoints need rate limiting
-- Requires Supabase-level configuration or middleware in edge functions
+**1.1 Stripe Secret Revocation** (Manual -- user action)
+- Revoke keys at Stripe Dashboard
+- Remove `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` from Supabase secrets
 
-### 4.3 Backup & Disaster Recovery Documentation
-- Document RTO/RPO targets
-- Verify Supabase point-in-time recovery is enabled and window is sufficient
-- Not code -- operational documentation
+**1.2 Private Bucket + Signed URLs**
+- SQL migration: set `handwerker-documents` bucket to private (already done in previous implementation)
+- Code: store relative paths on upload, use `createSignedUrl()` on display (already done)
+- No existing data migration needed (table is empty)
+- **Status: COMPLETED**
 
-### 4.4 Secrets Rotation Tracking
-- Add "Last Rotated" metadata for all secrets
-- Operational process, not code
+**1.3 Payrexx Webhook Idempotency**
+- SQL migration: add UNIQUE constraint on `payment_history.payrexx_transaction_id` (WHERE NOT NULL)
+- Edge function: use `INSERT ... ON CONFLICT (payrexx_transaction_id) DO NOTHING` instead of plain insert, and check returned rows to determine if it was a duplicate
+- Add early-exit check before processing (already implemented in previous round)
+- **Remaining**: Add the DB constraint + switch insert to ON CONFLICT pattern
+
+### Phase 2: Operational Cleanup
+
+**2.1 Fix Cron Jobs** (SQL via Supabase SQL Editor -- not migration)
+- **Remove** broken `reset-monthly-proposal-quotas` (job #2) -- dead code, RPC handles resets
+- **Remove** orphaned `cleanup-pending-uploads-daily` (job #3) -- edge function doesn't exist
+- **Register** missing crons:
+  - `lead-expiry-check`: daily at 08:00 UTC (calls existing edge function)
+  - `document-expiry-reminder`: daily at 09:00 UTC (calls existing edge function)
+  - `send-rating-reminder`: daily at 10:00 UTC (calls existing edge function)
+
+**2.2 Email Template Interpolation Safety**
+- Add `safe()` helper to `emailTemplates.ts` (already done in previous implementation)
+- **Status: COMPLETED**
+
+**2.3 Admin Audit Logging**
+- Table and basic switch logging already implemented
+- Post-launch: expand to log actions during impersonation
+- **Status: COMPLETED (launch-sufficient)**
+
+### Phase 3: Code Quality
+
+**3.1 ReviewsManagement N+1 Fix**
+- Collect all unique `reviewer_id`, `reviewed_id`, `lead_id` from the reviews array
+- Batch-fetch profiles via `.in('id', [...reviewerIds])`
+- Batch-fetch handwerker_profiles via `.in('user_id', [...reviewedIds])`
+- Batch-fetch leads via `.in('id', [...leadIds])`
+- Map results back to reviews
+- No isMounted guard needed (React 18)
+- **File**: `src/pages/admin/ReviewsManagement.tsx` lines 50-103
+
+**3.2 Toast Standardization**
+- Migrate remaining Sonner usage to Radix useToast
+- **Status: COMPLETED** (done in previous implementation for GTMConfiguration, DeletionAudit, BulkMetaManager)
+
+**3.3 Console.log Cleanup**
+- **Status: COMPLETED** (done in previous implementation for Auth.tsx, ReceivedProposals.tsx)
+
+### Phase 4: Post-Launch (Documented)
+
+- HandwerkerDashboard decomposition (1963-line monolith)
+- Edge function rate limiting (especially `guest-user-auto-create`)
+- Edge function error handling strategy (partial state updates, dead letter handling)
+- Expanded audit logging for actions during impersonation
+- Backup/DR documentation (verify PITR is enabled on Supabase plan)
+- Secrets rotation tracking
 
 ---
 
-## Summary: Execution Sequence
+## Remaining Work Summary
 
-| Priority | Item | Type | Risk |
-|----------|------|------|------|
-| 1 | Revoke Stripe keys at Stripe dashboard | Manual (user) | Security |
-| 2 | Private bucket for handwerker-documents + signed URLs | Migration + code | GDPR/DSG |
-| 3 | Payrexx webhook idempotency (unique constraint) | Migration + code | Data integrity |
-| 4 | Email template interpolation fallbacks | Edge function | User-facing bug |
-| 5 | Fix broken/missing cron jobs | SQL (manual) | Operational |
-| 6 | Admin view mode audit logging | Migration + code | Compliance |
-| 7 | Standardize toast system (1 file) | Code | UX/Accessibility |
-| 8 | Console.log cleanup | Code | Hygiene |
-| 9 | ReviewsManagement N+1 fix | Code | Performance |
+| # | Item | Type | Status |
+|---|------|------|--------|
+| 1 | Revoke Stripe keys | Manual (user) | Pending -- user action |
+| 2 | Private bucket + signed URLs | Migration + code | **Done** |
+| 3 | Payrexx idempotency (UNIQUE constraint) | Migration | **Needs DB constraint** |
+| 4 | Email template safety | Edge function | **Done** |
+| 5 | Remove broken crons + register missing ones | SQL (manual) | **Pending** |
+| 6 | Admin audit logging | Migration + code | **Done** |
+| 7 | Toast standardization | Code | **Done** |
+| 8 | Console.log cleanup | Code | **Done** |
+| 9 | ReviewsManagement N+1 fix | Code | **Pending** |
 
-## What Does NOT Change
-- RLS architecture (already solid with SECURITY DEFINER pattern)
-- Spam protection stack (already comprehensive)
-- Error boundary architecture (already production-grade)
-- Subscription unique constraint (already exists: `UNIQUE(user_id)`)
-- useSubscription write-on-read: The `UNIQUE(user_id)` constraint already prevents duplicate rows. The concurrent-tab scenario raised in feedback is already handled at the database level.
+**Items requiring implementation: #3 (DB constraint), #5 (cron SQL), #9 (N+1 fix)**
+
+---
+
+## Technical Details
+
+### Cron SQL (to run in SQL Editor, not migration)
+
+```text
+-- Remove broken/orphaned crons
+SELECT cron.unschedule(2);
+SELECT cron.unschedule(3);
+
+-- Register missing crons
+SELECT cron.schedule('lead-expiry-check', '0 8 * * *', $$
+  SELECT net.http_post(
+    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/lead-expiry-check',
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer <anon_key>"}'::jsonb,
+    body := '{}'::jsonb
+  );
+$$);
+
+SELECT cron.schedule('document-expiry-reminder', '0 9 * * *', $$
+  SELECT net.http_post(
+    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/document-expiry-reminder',
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer <anon_key>"}'::jsonb,
+    body := '{}'::jsonb
+  );
+$$);
+
+SELECT cron.schedule('send-rating-reminder', '0 10 * * *', $$
+  SELECT net.http_post(
+    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-rating-reminder',
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer <anon_key>"}'::jsonb,
+    body := '{}'::jsonb
+  );
+$$);
+```
+
+### Payment History UNIQUE Constraint (migration)
+
+```text
+ALTER TABLE payment_history
+ADD CONSTRAINT payment_history_payrexx_transaction_id_unique
+UNIQUE (payrexx_transaction_id);
+```
+
+### ReviewsManagement Batch-Fetch Pattern
+
+Replace `Promise.all` with individual queries (lines 60-90) with:
+1. Collect IDs: `reviewerIds`, `reviewedIds`, `leadIds`
+2. Three batch queries using `.in()`
+3. Build lookup maps, then enrich reviews in a single loop
 
