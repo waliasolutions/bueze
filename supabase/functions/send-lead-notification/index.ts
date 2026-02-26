@@ -1,10 +1,11 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { fetchClientProfile, createMagicToken } from '../_shared/profileHelpers.ts';
 import { getCategoryLabel } from '../_shared/categoryLabels.ts';
 import { newLeadNotificationTemplate, newLeadAdminNotificationTemplate } from '../_shared/emailTemplates.ts';
+import { formatSwissDateTime } from '../_shared/dateFormatter.ts';
 
 // Major category to subcategory mapping for proper matching
 const majorCategorySubcategories: Record<string, string[]> = {
@@ -171,13 +172,7 @@ serve(async (req) => {
       budgetMax: lead.budget_max,
       urgency: lead.urgency || 'planning',
       leadId: lead.id,
-      submittedAt: new Date(lead.created_at).toLocaleDateString('de-CH', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
+      submittedAt: formatSwissDateTime(lead.created_at),
     });
 
     const adminResult = await sendEmail({

@@ -1,6 +1,9 @@
 // Email template library for BÜEZE.CH
 // Swiss-inspired, clean design with consistent branding
 
+import { getUrgencyLabel } from './categoryLabels.ts';
+import { subcategoryLabels } from './subcategoryLabels.ts';
+
 /**
  * Safe interpolation helper - prevents "undefined" or "null" from appearing in emails.
  * Falls back to provided default or empty string.
@@ -344,32 +347,190 @@ export const guestWelcomeTemplate = (data: GuestWelcomeData) => {
   `);
 };
 
-interface DeadlineReminderData {
-  projectTitle: string;
-  category: string;
-  daysRemaining: number;
-  magicLink: string;
-  recipientName: string;
+// Proposal Deadline Client Reminder Template
+interface ProposalDeadlineClientData {
+  clientName: string;
+  leadTitle: string;
+  proposalsCount: number;
+  formattedDeadline: string;
+  dashboardLink: string;
 }
 
-export const deadlineReminderTemplate = (data: DeadlineReminderData) => {
+export const proposalDeadlineClientTemplate = (data: ProposalDeadlineClientData) => {
   return emailWrapper(`
     <div class="content">
-      <h2>⏰ Erinnerung: Noch ${safe(data.daysRemaining)} Tage für Offerten</h2>
-      <p>Hallo ${safe(data.recipientName, 'Handwerker')},</p>
-      <p>Die Frist für Offerten zum Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> (${safe(data.category)}) läuft bald ab.</p>
-      
+      <h2>⏰ Offerten warten auf Ihre Antwort</h2>
+      <p>Hallo ${safe(data.clientName, 'Kunde')},</p>
+      <p>Sie haben <strong>${data.proposalsCount} ${data.proposalsCount === 1 ? 'Offerte' : 'Offerten'}</strong> für Ihr Projekt erhalten:</p>
+
       <div class="info-box" style="border-left-color: #FF6B00;">
-        <p><strong>⏰ Noch ${safe(data.daysRemaining)} Tage Zeit</strong></p>
-        <p>Reichen Sie jetzt Ihre Offerte ein, bevor die Frist abläuft!</p>
+        <h3 style="margin: 0 0 10px 0; color: #0066CC;">${safe(data.leadTitle)}</h3>
+        <p style="margin: 0; color: #d97706; font-weight: bold;">⏰ Frist: ${data.formattedDeadline} (noch 2 Tage!)</p>
+      </div>
+
+      <p>Bitte überprüfen Sie die Offerten zeitnah in Ihrem Dashboard.</p>
+
+      <p style="text-align: center;">
+        <a href="${data.dashboardLink}" class="button">Offerten ansehen</a>
+      </p>
+    </div>
+  `);
+};
+
+// Proposal Deadline Handwerker Reminder Template
+interface ProposalDeadlineHandwerkerData {
+  handwerkerName: string;
+  leadTitle: string;
+  formattedDeadline: string;
+  magicLink: string;
+  category: string;
+  city: string;
+  budgetMin?: number;
+  budgetMax?: number;
+}
+
+export const proposalDeadlineHandwerkerTemplate = (data: ProposalDeadlineHandwerkerData) => {
+  const budgetText = data.budgetMin && data.budgetMax
+    ? `CHF ${data.budgetMin.toLocaleString('de-CH')} - ${data.budgetMax.toLocaleString('de-CH')}`
+    : 'Budget nicht angegeben';
+
+  return emailWrapper(`
+    <div class="content">
+      <h2>⏰ Letzte Chance für eine Offerte!</h2>
+      <p>Hallo ${safe(data.handwerkerName, 'Handwerker')},</p>
+      <p>Die Frist für diese Anfrage läuft bald ab:</p>
+
+      <div class="info-box">
+        <h3 style="margin: 0 0 15px 0; color: #0066CC;">${safe(data.leadTitle)}</h3>
+        <p style="margin: 5px 0;"><strong>Kategorie:</strong> ${safe(data.category)}</p>
+        <p style="margin: 5px 0;"><strong>Ort:</strong> ${safe(data.city)}</p>
+        <p style="margin: 5px 0;"><strong>Budget:</strong> ${budgetText}</p>
+      </div>
+
+      <div class="info-box" style="border-left-color: #FF6B00;">
+        <p style="margin: 0; color: #d97706; font-weight: bold;">⏰ Frist: ${data.formattedDeadline} (noch 2 Tage!)</p>
+      </div>
+
+      <p>Sie haben sich diese Anfrage angesehen, aber noch keine Offerte eingereicht.</p>
+
+      <p style="text-align: center;">
+        <a href="${data.magicLink}" class="button" style="background: #f59e0b;">Jetzt Offerte einreichen</a>
+      </p>
+    </div>
+  `);
+};
+
+// Subscription Confirmation Template
+interface SubscriptionConfirmationData {
+  handwerkerName: string;
+  planName: string;
+  amount: string;
+  periodEnd: string;
+}
+
+export const subscriptionConfirmationTemplate = (data: SubscriptionConfirmationData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>🎉 Willkommen als Premium-Handwerker!</h2>
+      <p>Hallo ${safe(data.handwerkerName, 'Handwerker')},</p>
+      <p>Vielen Dank für Ihr Upgrade! Ihr Abonnement wurde erfolgreich aktiviert.</p>
+
+      <div class="info-box" style="background: #d1fae5; border-left-color: #10b981;">
+        <h3 style="margin-top: 0; color: #065f46;">Abonnement aktiviert</h3>
+        <p><strong>Plan:</strong> ${safe(data.planName)}</p>
+        <p><strong>Betrag:</strong> ${safe(data.amount)}</p>
+        <p><strong>Gültig bis:</strong> ${safe(data.periodEnd)}</p>
+      </div>
+
+      <div class="info-box">
+        <h3 style="margin-top: 0; color: #0066CC;">Ihre Vorteile</h3>
+        <ul style="margin: 0; padding-left: 20px;">
+          <li>Unbegrenzte Offerten pro Monat</li>
+          <li>Bevorzugte Platzierung in Suchergebnissen</li>
+          <li>Erweiterte Profilstatistiken</li>
+          <li>Prioritäts-Support</li>
+        </ul>
       </div>
 
       <p style="text-align: center;">
-        <a href="${data.magicLink}" class="button">Jetzt Offerte einreichen</a>
+        <a href="https://bueeze.ch/handwerker-dashboard" class="button">Zum Dashboard</a>
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        Nach Ablauf der Frist können keine neuen Offerten mehr eingereicht werden.
+        Sie können Ihr Abonnement jederzeit in Ihrem Dashboard verwalten. Bei Fragen stehen wir Ihnen gerne zur Verfügung.
+      </p>
+    </div>
+  `);
+};
+
+// Pending Payment First Reminder Template
+interface PendingPaymentFirstReminderData {
+  name: string;
+  planName: string;
+  checkoutUrl: string;
+}
+
+export const pendingPaymentFirstReminderTemplate = (data: PendingPaymentFirstReminderData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>💳 Ihr Abo wartet auf Sie</h2>
+      <p>Hallo ${safe(data.name, 'Handwerker')},</p>
+      <p>Vor 2 Tagen wurde Ihr Handwerker-Profil freigeschaltet – herzlichen Glückwunsch! 🎉</p>
+      <p>Sie haben sich für das <strong>${safe(data.planName)}</strong> entschieden, aber die Zahlung steht noch aus.</p>
+
+      <div class="info-box">
+        <p style="margin: 0 0 10px 0;"><strong>Mit Ihrem gewählten Abo erhalten Sie:</strong></p>
+        <p style="margin: 5px 0;">✅ Unbegrenzte Offerten pro Monat</p>
+        <p style="margin: 5px 0;">✅ Sofortigen Zugang zu allen Aufträgen</p>
+        <p style="margin: 5px 0;">✅ Mehr Chancen auf neue Kunden</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.checkoutUrl}" class="button">Jetzt bezahlen und starten</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Oder starten Sie kostenlos mit 5 Offerten pro Monat.
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Bei Fragen: <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+      </p>
+    </div>
+  `);
+};
+
+// Pending Payment Final Reminder Template
+interface PendingPaymentFinalReminderData {
+  name: string;
+  planName: string;
+  checkoutUrl: string;
+  cancelUrl: string;
+}
+
+export const pendingPaymentFinalReminderTemplate = (data: PendingPaymentFinalReminderData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>⏰ Letzte Erinnerung: Abo aktivieren</h2>
+      <p>Hallo ${safe(data.name, 'Handwerker')},</p>
+      <p>Ihr Handwerker-Profil ist seit einer Woche aktiv, aber Ihr gewähltes <strong>${safe(data.planName)}</strong> wartet noch auf die Aktivierung.</p>
+
+      <div class="info-box" style="border-left-color: #FF6B00;">
+        <p style="margin: 0;">
+          ⏰ <strong>Letzte Erinnerung:</strong> Während Sie warten, gewinnen andere Handwerker bereits neue Aufträge. Sichern Sie sich Ihren Wettbewerbsvorteil!
+        </p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.checkoutUrl}" class="button">Jetzt Abo aktivieren</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666; text-align: center;">
+        Nicht interessiert? <a href="${data.cancelUrl}">Ausstehenden Plan stornieren</a> und kostenlos weitermachen.
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Bei Fragen: <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
       </p>
     </div>
   `);
@@ -399,24 +560,17 @@ export const newLeadAdminNotificationTemplate = (data: NewLeadAdminNotificationD
     ? data.description.substring(0, 300) + '...' 
     : data.description;
 
-  const urgencyLabels: Record<string, string> = {
-    'today': 'Heute',
-    'this_week': 'Diese Woche',
-    'this_month': 'Diesen Monat',
-    'planning': 'Planungsphase'
-  };
-
   return emailWrapper(`
     <div class="content">
       <h2>📋 Neuer Auftrag eingegangen</h2>
       <p>Ein neuer Auftrag wurde auf der Plattform eingereicht:</p>
-      
+
       <div class="info-box">
         <h3 style="margin-top: 0; color: #0066CC;">Auftragsdetails</h3>
         <p><strong>Kategorie:</strong> ${data.category}</p>
         <p><strong>Standort:</strong> ${data.city}, ${data.canton}</p>
         <p><strong>Budget:</strong> ${budgetText}</p>
-        <p><strong>Dringlichkeit:</strong> ${urgencyLabels[data.urgency] || data.urgency}</p>
+        <p><strong>Dringlichkeit:</strong> ${getUrgencyLabel(data.urgency)}</p>
         <p><strong>Eingereicht am:</strong> ${data.submittedAt}</p>
       </div>
 
@@ -453,142 +607,75 @@ export interface AdminRegistrationData {
   submittedAt: string;
 }
 
+// Major category mapping for grouping subcategories in admin emails
+const majorCategoryMap: Record<string, { label: string; subcats: string[] }> = {
+  'elektroinstallationen': {
+    label: 'Elektroinstallationen',
+    subcats: ['electrician_installation', 'electrician_repair', 'electrician_panel',
+              'electrician_lighting', 'electrician_charging', 'electrician_smart_home',
+              'electrician_solar']
+  },
+  'metallbau': {
+    label: 'Metallbau',
+    subcats: ['metalworker_construction', 'metalworker_stairs', 'metalworker_gates',
+              'metalworker_balconies']
+  },
+  'bau_renovation': {
+    label: 'Bau & Renovation',
+    subcats: ['builder_new_construction', 'builder_renovation', 'builder_masonry',
+              'builder_plastering', 'builder_insulation']
+  },
+  'bodenbelaege': {
+    label: 'Bodenbeläge',
+    subcats: ['flooring_parquet', 'flooring_tiles', 'flooring_carpet',
+              'flooring_vinyl', 'flooring_natural_stone', 'flooring_screeding']
+  },
+  'heizung': {
+    label: 'Heizung & Lüftung',
+    subcats: ['heating_installation', 'heating_service', 'heating_floor',
+              'heating_solar_thermal', 'heating_heat_pump', 'heating_ventilation']
+  },
+  'sanitaer': {
+    label: 'Sanitär',
+    subcats: ['plumber_installation', 'plumber_repair', 'plumber_bathroom',
+              'plumber_kitchen', 'plumber_heating', 'plumber_drainage']
+  },
+  'kuechen': {
+    label: 'Küchen',
+    subcats: ['kitchen_planning', 'kitchen_installation', 'kitchen_appliances',
+              'kitchen_countertops']
+  },
+  'schreinerei': {
+    label: 'Schreinerei',
+    subcats: ['carpenter_furniture', 'carpenter_doors', 'carpenter_windows',
+              'carpenter_stairs', 'carpenter_builtin', 'carpenter_flooring']
+  },
+  'raeumungen': {
+    label: 'Räumungen & Umzüge',
+    subcats: ['cleaning_clearance', 'cleaning_moving', 'cleaning_construction',
+              'cleaning_garden']
+  },
+  'maler': {
+    label: 'Maler & Gipser',
+    subcats: ['painter_interior', 'painter_exterior', 'painter_wallpaper',
+              'painter_plastering']
+  },
+  'dach': {
+    label: 'Dach & Fassade',
+    subcats: ['roofer_repair', 'roofer_new', 'roofer_insulation', 'roofer_facade']
+  },
+  'gartenbau': {
+    label: 'Gartenbau',
+    subcats: ['landscaper_garden', 'landscaper_terrace', 'landscaper_lawn',
+              'landscaper_fencing']
+  },
+  'fenster': {
+    label: 'Fenster & Türen',
+    subcats: ['window_new', 'window_repair', 'window_doors', 'window_shutters']
+  }
+};
+
 export const adminRegistrationNotificationTemplate = (data: AdminRegistrationData) => {
-  // Import subcategory labels for human-readable category names
-  const subcategoryLabels: Record<string, string> = {
-    "electrician_installation": "Elektroinstallationen",
-    "electrician_repair": "Elektriker Reparaturen",
-    "electrician_panel": "Sicherungskasten & Unterverteilung",
-    "electrician_lighting": "Beleuchtung & Lichtplanung",
-    "electrician_charging": "Ladestationen E-Auto",
-    "electrician_smart_home": "Smart Home Installation",
-    "electrician_solar": "Photovoltaik & Solaranlagen",
-    "metalworker_construction": "Metallbau",
-    "metalworker_stairs": "Treppen & Geländer",
-    "metalworker_gates": "Tore & Zäune",
-    "metalworker_balconies": "Balkone & Terrassen",
-    "builder_new_construction": "Neubau",
-    "builder_renovation": "Umbau & Sanierung",
-    "builder_masonry": "Maurer- & Betonarbeiten",
-    "builder_plastering": "Verputz- & Stuckarbeiten",
-    "builder_insulation": "Wärmedämmung & Isolation",
-    "flooring_parquet": "Parkett und Laminat",
-    "flooring_tiles": "Plattenbeläge (Fliesen, Platten)",
-    "flooring_carpet": "Teppich & Textilbeläge",
-    "flooring_vinyl": "Vinyl & PVC",
-    "flooring_natural_stone": "Naturstein",
-    "flooring_screeding": "Unterlagsboden & Spachtelung",
-    "heating_installation": "Heizungsinstallation",
-    "heating_service": "Heizungswartung & Service",
-    "heating_floor": "Fussbodenheizung",
-    "heating_solar_thermal": "Solarthermie",
-    "heating_heat_pump": "Wärmepumpen",
-    "heating_ventilation": "Lüftung & Klimaanlage",
-    "plumber_installation": "Sanitärinstallationen",
-    "plumber_repair": "Sanitärreparaturen",
-    "plumber_bathroom": "Badewanne und Dusche",
-    "plumber_kitchen": "Kücheninstallationen",
-    "plumber_heating": "Heizung & Warmwasser",
-    "plumber_drainage": "Abwasser & Entwässerung",
-    "kitchen_planning": "Küchenplanung",
-    "kitchen_installation": "Kücheneinbau",
-    "kitchen_appliances": "Küchengeräte",
-    "kitchen_countertops": "Arbeitsplatten",
-    "carpenter_furniture": "Möbelbau",
-    "carpenter_doors": "Türen & Zargen",
-    "carpenter_windows": "Fenster",
-    "carpenter_stairs": "Treppen",
-    "carpenter_builtin": "Einbauschränke",
-    "carpenter_flooring": "Bodenbeläge",
-    "cleaning_clearance": "Auflösung und Entsorgung",
-    "cleaning_moving": "Umzugsservice",
-    "cleaning_construction": "Baureinigung",
-    "cleaning_garden": "Gartenräumung",
-    "painter_interior": "Innenanstrich",
-    "painter_exterior": "Aussenanstrich",
-    "painter_wallpaper": "Tapezieren",
-    "painter_plastering": "Gipserarbeiten",
-    "roofer_repair": "Dachreparatur",
-    "roofer_new": "Neues Dach",
-    "roofer_insulation": "Dachisolation",
-    "roofer_facade": "Fassadenarbeiten",
-    "landscaper_garden": "Gartengestaltung",
-    "landscaper_terrace": "Terrassen & Wege",
-    "landscaper_lawn": "Rasen & Bepflanzung",
-    "landscaper_fencing": "Zäune & Sichtschutz",
-    "window_new": "Neue Fenster",
-    "window_repair": "Fensterreparatur",
-    "window_doors": "Türen & Tore",
-    "window_shutters": "Rollläden & Storen",
-  };
-  
-  // Major category mapping for grouping subcategories
-  const majorCategoryMap: Record<string, { label: string; subcats: string[] }> = {
-    'elektroinstallationen': {
-      label: 'Elektroinstallationen',
-      subcats: ['electrician_installation', 'electrician_repair', 'electrician_panel',
-                'electrician_lighting', 'electrician_charging', 'electrician_smart_home',
-                'electrician_solar']
-    },
-    'metallbau': {
-      label: 'Metallbau',
-      subcats: ['metalworker_construction', 'metalworker_stairs', 'metalworker_gates',
-                'metalworker_balconies']
-    },
-    'bau_renovation': {
-      label: 'Bau & Renovation',
-      subcats: ['builder_new_construction', 'builder_renovation', 'builder_masonry',
-                'builder_plastering', 'builder_insulation']
-    },
-    'bodenbelaege': {
-      label: 'Bodenbeläge',
-      subcats: ['flooring_parquet', 'flooring_tiles', 'flooring_carpet',
-                'flooring_vinyl', 'flooring_natural_stone', 'flooring_screeding']
-    },
-    'heizung': {
-      label: 'Heizung & Lüftung',
-      subcats: ['heating_installation', 'heating_service', 'heating_floor',
-                'heating_solar_thermal', 'heating_heat_pump', 'heating_ventilation']
-    },
-    'sanitaer': {
-      label: 'Sanitär',
-      subcats: ['plumber_installation', 'plumber_repair', 'plumber_bathroom',
-                'plumber_kitchen', 'plumber_heating', 'plumber_drainage']
-    },
-    'kuechen': {
-      label: 'Küchen',
-      subcats: ['kitchen_planning', 'kitchen_installation', 'kitchen_appliances',
-                'kitchen_countertops']
-    },
-    'schreinerei': {
-      label: 'Schreinerei',
-      subcats: ['carpenter_furniture', 'carpenter_doors', 'carpenter_windows',
-                'carpenter_stairs', 'carpenter_builtin', 'carpenter_flooring']
-    },
-    'raeumungen': {
-      label: 'Räumungen & Umzüge',
-      subcats: ['cleaning_clearance', 'cleaning_moving', 'cleaning_construction',
-                'cleaning_garden']
-    },
-    'maler': {
-      label: 'Maler & Gipser',
-      subcats: ['painter_interior', 'painter_exterior', 'painter_wallpaper',
-                'painter_plastering']
-    },
-    'dach': {
-      label: 'Dach & Fassade',
-      subcats: ['roofer_repair', 'roofer_new', 'roofer_insulation', 'roofer_facade']
-    },
-    'gartenbau': {
-      label: 'Gartenbau',
-      subcats: ['landscaper_garden', 'landscaper_terrace', 'landscaper_lawn',
-                'landscaper_fencing']
-    },
-    'fenster': {
-      label: 'Fenster & Türen',
-      subcats: ['window_new', 'window_repair', 'window_doors', 'window_shutters']
-    }
-  };
 
   // Group subcategories by their major categories
   const categoryGroups = new Map<string, { label: string; subcats: string[] }>();

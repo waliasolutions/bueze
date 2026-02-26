@@ -1,18 +1,9 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper } from '../_shared/emailTemplates.ts';
-
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-// Plan display names
-const PLAN_NAMES: Record<string, string> = {
-  monthly: 'Monatlich (CHF 90)',
-  '6_month': '6 Monate (CHF 510)',
-  annual: 'Jährlich (CHF 960)',
-};
+import { PLAN_NAMES_WITH_PRICE } from '../_shared/planLabels.ts';
 
 // HTML template for approval email - standard (no pending plan)
 const approvalEmailTemplate = (userName: string) => {
@@ -106,7 +97,7 @@ serve(async (req) => {
     }
 
     // Create Supabase client to check for pending plan
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createSupabaseAdmin();
 
     // Check if user has a pending plan
     const { data: subscription } = await supabase
@@ -116,7 +107,7 @@ serve(async (req) => {
       .maybeSingle();
 
     const pendingPlan = subscription?.pending_plan;
-    const planName = pendingPlan ? PLAN_NAMES[pendingPlan] || pendingPlan : null;
+    const planName = pendingPlan ? PLAN_NAMES_WITH_PRICE[pendingPlan] || pendingPlan : null;
 
     // Choose appropriate email template
     let subject: string;
