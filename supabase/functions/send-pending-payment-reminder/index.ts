@@ -30,12 +30,11 @@ interface HandwerkerWithPendingPlan {
 }
 
 function getCheckoutUrl(plan: string): string {
-  const baseUrl = 'https://bueze.lovable.app';
-  return `${baseUrl}/checkout?plan=${plan}`;
+  return `https://bueeze.ch/checkout?plan=${plan}`;
 }
 
 function getCancelPendingPlanUrl(): string {
-  return 'https://bueze.lovable.app/profile';
+  return 'https://bueeze.ch/profile?tab=subscription&cancel_pending=true';
 }
 
 function getFirstReminderEmailHtml(
