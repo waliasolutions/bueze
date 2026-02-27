@@ -25,6 +25,7 @@ export interface SubscriptionData {
   isLow: boolean;
   isDepleted: boolean;
   pendingPlan: SubscriptionPlanType | null;
+  isCancellationPending: boolean;
 }
 
 interface UseSubscriptionOptions {
@@ -111,6 +112,7 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
           isLow: !isUnlimited && remainingProposals <= 2 && remainingProposals > 0,
           isDepleted: !isUnlimited && remainingProposals <= 0,
           pendingPlan: subscriptionData.pending_plan as SubscriptionPlanType | null,
+          isCancellationPending: subscriptionData.pending_plan === 'free' && planType !== 'free',
         });
       } else {
         setSubscription(null);

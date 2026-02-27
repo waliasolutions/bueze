@@ -32,6 +32,7 @@ interface SubscriptionManagementProps {
   availablePlans?: SubscriptionPlan[];
   onUpgradePlan: (planId: SubscriptionPlanType) => void;
   onCancelSubscription: () => void;
+  onUndoCancellation?: () => void;
   onPendingPlanCancelled?: () => void;
   loading?: boolean;
 }
@@ -40,6 +41,7 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
   currentSubscription,
   onUpgradePlan,
   onCancelSubscription,
+  onUndoCancellation,
   onPendingPlanCancelled,
   loading = false
 }) => {
@@ -122,11 +124,12 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
 
   const isUnlimited = currentSubscription.plan.proposalsLimit === -1;
   const remainingProposals = getRemainingProposals();
+  const isCancellationPending = currentSubscription.pendingPlan === 'free' && currentSubscription.plan.id !== 'free';
 
   return (
     <div className="space-y-6">
-      {/* Pending Plan Card */}
-      {currentSubscription.pendingPlan && currentSubscription.userId && (
+      {/* Pending Plan Card (upgrade pending, not cancellation) */}
+      {currentSubscription.pendingPlan && currentSubscription.pendingPlan !== 'free' && currentSubscription.userId && (
         <PendingPlanCard
           pendingPlan={currentSubscription.pendingPlan}
           isApproved={currentSubscription.isApproved ?? false}
@@ -200,11 +203,38 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span>
-              Nächste Abrechnung: {formatDate(currentSubscription.currentPeriodEnd)}
+              {isCancellationPending
+                ? `Aktiv bis: ${formatDate(currentSubscription.currentPeriodEnd)}`
+                : currentSubscription.plan.id === 'free'
+                  ? `Nächste Erneuerung: ${formatDate(currentSubscription.currentPeriodEnd)}`
+                  : `Laufzeit bis: ${formatDate(currentSubscription.currentPeriodEnd)}`
+              }
             </span>
           </div>
 
-          {currentSubscription.plan.id !== 'free' && (
+          {isCancellationPending && (
+            <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
+              <div className="flex items-center gap-2 text-amber-800">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="font-medium">Kündigung vorgemerkt</span>
+              </div>
+              <p className="text-sm text-amber-700 mt-1">
+                Ihr Abonnement wird zum {formatDate(currentSubscription.currentPeriodEnd)} auf den kostenlosen Plan umgestellt. Bis dahin behalten Sie vollen Zugriff.
+              </p>
+              {onUndoCancellation && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={onUndoCancellation}
+                >
+                  Kündigung zurücknehmen
+                </Button>
+              )}
+            </div>
+          )}
+
+          {currentSubscription.plan.id !== 'free' && !isCancellationPending && (
             <div className="pt-2 border-t">
               <Button
                 variant="ghost"

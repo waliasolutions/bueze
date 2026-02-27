@@ -214,24 +214,15 @@ const Profile = () => {
             const plan = SUBSCRIPTION_PLANS[planType];
             
             setCurrentSubscription({
-              plan: {
-                id: plan.id,
-                name: plan.name,
-                displayName: plan.displayName,
-                monthlyPrice: plan.pricePerMonth,
-                yearlyPrice: plan.price,
-                competitors: 0, // Deprecated field
-                includedLeads: plan.proposalsLimit === -1 ? Infinity : plan.proposalsLimit,
-                extraLeadPrice: 0,
-                features: plan.features
-              },
+              plan,
               isActive: subscriptionData.status === 'active',
               currentPeriodStart: subscriptionData.current_period_start,
               currentPeriodEnd: subscriptionData.current_period_end,
-              usedLeads: subscriptionData.proposals_used_this_period || 0,
-              isYearly: plan.billingCycle !== 'monthly',
+              usedProposals: subscriptionData.proposals_used_this_period || 0,
               hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified),
-              pendingPlan: (subscriptionData as any).pending_plan || null,
+              pendingPlan: subscriptionData.pending_plan || null,
+              userId: user.id,
+              isApproved: handwerkerData.verification_status === 'approved',
             });
           }
 
@@ -371,18 +362,12 @@ const Profile = () => {
   const handleCancelSubscription = async () => {
     setCancelling(true);
     try {
-      const now = new Date();
-      const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-
+      // Mark subscription for cancellation at period end (don't immediately downgrade)
       const { error } = await supabase
         .from('handwerker_subscriptions')
         .update({
-          plan_type: 'free',
-          proposals_limit: SUBSCRIPTION_PLANS.free.proposalsLimit,
-          proposals_used_this_period: 0,
-          current_period_start: now.toISOString(),
-          current_period_end: periodEnd.toISOString(),
-          updated_at: now.toISOString(),
+          pending_plan: 'free',
+          updated_at: new Date().toISOString(),
         })
         .eq('user_id', user.id)
         .eq('status', 'active');
@@ -390,8 +375,8 @@ const Profile = () => {
       if (error) throw error;
 
       toast({
-        title: 'Abonnement gekündigt',
-        description: 'Sie wurden auf den kostenlosen Plan umgestellt.',
+        title: 'Kündigung vorgemerkt',
+        description: 'Ihr Abonnement bleibt bis zum Ende der Laufzeit aktiv.',
       });
 
       setShowCancelDialog(false);
@@ -405,6 +390,35 @@ const Profile = () => {
       });
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleUndoCancellation = async () => {
+    try {
+      const { error } = await supabase
+        .from('handwerker_subscriptions')
+        .update({
+          pending_plan: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      toast({
+        title: 'Kündigung zurückgenommen',
+        description: 'Ihr Abonnement wird wie gewohnt fortgesetzt.',
+      });
+
+      fetchUserData();
+    } catch (error) {
+      console.error('Error undoing cancellation:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Die Kündigung konnte nicht zurückgenommen werden.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -820,6 +834,7 @@ const Profile = () => {
                   availablePlans={[]}
                   onUpgradePlan={handleUpgradePlan}
                   onCancelSubscription={() => setShowCancelDialog(true)}
+                  onUndoCancellation={handleUndoCancellation}
                 />
 
                 <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
@@ -827,7 +842,7 @@ const Profile = () => {
                     <DialogHeader>
                       <DialogTitle>Abonnement kündigen</DialogTitle>
                       <DialogDescription>
-                        Möchten Sie Ihr Abonnement wirklich kündigen? Sie werden auf den kostenlosen Plan mit {SUBSCRIPTION_PLANS.free.proposalsLimit} Offerten/Monat umgestellt.
+                        Möchten Sie Ihr Abonnement wirklich kündigen? Ihr Plan bleibt bis zum Ende der aktuellen Laufzeit aktiv. Danach werden Sie auf den kostenlosen Plan mit {SUBSCRIPTION_PLANS.free.proposalsLimit} Offerten/Monat umgestellt.
                       </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -838,7 +853,7 @@ const Profile = () => {
                         {cancelling ? (
                           <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Wird gekündigt...</>
                         ) : (
-                          'Ja, kündigen'
+                          'Ja, zum Laufzeitende kündigen'
                         )}
                       </Button>
                     </DialogFooter>

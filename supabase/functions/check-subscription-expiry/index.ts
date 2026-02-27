@@ -35,6 +35,7 @@ serve(async (req) => {
         proposals_used_this_period: 0,
         current_period_start: now,
         current_period_end: thirtyDaysFromNow.toISOString(),
+        pending_plan: null,
         updated_at: now,
       })
       .eq('status', 'active')
