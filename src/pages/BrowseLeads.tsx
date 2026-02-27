@@ -44,6 +44,7 @@ const BrowseLeads = () => {
 
   useEffect(() => {
     filterLeads();
+    setCurrentPage(1); // Reset pagination when filters change
   }, [leads, searchTerm, selectedMajorCategory, selectedCanton, selectedUrgency]);
 
   const checkUserSubscription = async () => {
@@ -154,9 +155,13 @@ const BrowseLeads = () => {
       );
     }
 
-    // Filter by major category (direct comparison now)
+    // Filter by major category — check both direct match and subcategories
     if (selectedMajorCategory && selectedMajorCategory !== 'all') {
-      filtered = filtered.filter(lead => lead.category === selectedMajorCategory);
+      const majorCat = majorCategories[selectedMajorCategory];
+      const validCategories = majorCat
+        ? [majorCat.id, ...majorCat.subcategories]
+        : [selectedMajorCategory];
+      filtered = filtered.filter(lead => validCategories.includes(lead.category));
     }
 
     if (selectedCanton && selectedCanton !== 'all') {

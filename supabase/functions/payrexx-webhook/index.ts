@@ -65,11 +65,21 @@ Deno.serve(async (req) => {
   try {
     // Get raw body for signature verification
     const rawBody = await req.text();
-    
+
+    // Verify webhook signature if present (Payrexx sends it in the header)
+    const signature = req.headers.get('x-payrexx-signature') || req.headers.get('payrexx-signature');
+    if (signature) {
+      const isValid = await verifySignature(rawBody, signature);
+      if (!isValid) {
+        console.error('Invalid webhook signature');
+        return errorResponse('Invalid signature', 403);
+      }
+    }
+
     // Parse form data from Payrexx webhook
     const formData = new URLSearchParams(rawBody);
     const transactionData = formData.get('transaction');
-    
+
     if (!transactionData) {
       console.error('No transaction data in webhook');
       return errorResponse('No transaction data', 400);

@@ -274,7 +274,7 @@ const HandwerkerDashboard = () => {
 
   // Helper function to check if lead matches handwerker's categories
   const checkCategoryMatch = (lead: LeadListItem, categories: string[]) => {
-    if (categories.length === 0) return true;
+    if (categories.length === 0) return false; // No categories set = no matches
     if (categories.includes(lead.category)) return true;
     
     // Check if lead's category is a major category and handwerker has a subcategory from it
@@ -292,7 +292,7 @@ const HandwerkerDashboard = () => {
 
   // Helper function to check if lead matches handwerker's service areas
   const checkServiceAreaMatch = (lead: LeadListItem, serviceAreas: string[]) => {
-    if (serviceAreas.length === 0) return true;
+    if (serviceAreas.length === 0) return false; // No service areas set = no matches
     const cantons = serviceAreas.filter(area => area.length === 2);
     const postalCodes = serviceAreas.filter(area => area.length >= 4);
     return cantons.includes(lead.canton) || postalCodes.includes(lead.zip);

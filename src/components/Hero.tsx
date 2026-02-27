@@ -128,7 +128,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
               trustSignals.map((signal: string, index: number) => (
                 <div key={index} className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                  <span dangerouslySetInnerHTML={{ __html: signal }} />
+                  <span>{signal}</span>
                 </div>
               ))
             )}
