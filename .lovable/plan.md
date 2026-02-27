@@ -1,69 +1,38 @@
 
 
-# Fix: Handwerker Profile Save Failure + Edge Function Build Errors
+# Fix: "Andere E-Mail verwenden" flow is not intuitive
 
-## Root Cause Analysis
+## Root Cause
+When the user sees the "E-Mail bereits registriert" login form and changes the email to a new one, clicking "Anmelden" tries to **log in** with that new email (which has no account). The user expected it to **register** with the new email instead. The "Andere E-Mail verwenden" link exists but is small and easy to miss.
 
-**Two issues compound to create the failure:**
+## Fix (in `HandwerkerOnboarding.tsx`)
 
-1. **Error swallowing in `handleSubmit`** (line 640-645 of `HandwerkerOnboarding.tsx`): The catch block checks `error instanceof Error`, but Supabase PostgrestError is NOT an instance of `Error` — it's a plain object with `message`, `code`, `details`. So the actual database error is hidden behind the generic "Profil konnte nicht gespeichert werden." toast.
+**Auto-detect email change in login form and switch back to registration:**
 
-2. **`validate_handwerker_data` trigger** (database): Rejects names containing "test", "dummy", "example" etc. The screenshot shows name "Test Amit Walia Test H" and company "test Handwerker" — both would be rejected. This is intentional production protection, but the error message from the trigger is swallowed by issue #1.
+1. In the login form's email `<Input>` onChange handler (line ~698), detect when `loginEmail` differs from the original `formData.email`. When the user changes it, automatically:
+   - Set `showLoginForm(false)` 
+   - Update `formData.email` with the new email
+   - This returns them to the registration form with the new email pre-filled
 
-**With proper error handling, the user would see:** "Invalid first name detected" — the actual trigger message.
-
-## Implementation Plan
-
-### Fix 1: Proper error handling in handleSubmit
-**File:** `src/pages/HandwerkerOnboarding.tsx` (lines 640-645)
-
-Change the catch block to extract PostgrestError messages:
+2. Concretely: wrap the `setLoginEmail` call with logic:
 ```typescript
-} catch (error: any) {
-  const message = error?.message || "Profil konnte nicht gespeichert werden.";
-  toast({
-    title: "Fehler",
-    description: message,
-    variant: "destructive",
-  });
-}
+onChange={(e) => {
+  const newEmail = e.target.value;
+  setLoginEmail(newEmail);
+  // If user clears or changes email significantly, switch back to registration
+  if (newEmail.trim().toLowerCase() !== formData.email.trim().toLowerCase()) {
+    // Debounce or trigger on blur — for now, add a visible "Neue E-Mail registrieren" button
+  }
+}}
 ```
 
-### Fix 2: dateFormatter.ts — remove invalid `timeZone` option
-**File:** `supabase/functions/_shared/dateFormatter.ts` (lines 15, 24)
+3. **Better approach**: Make "Andere E-Mail verwenden" more prominent — change it from a small text link to a full-width outline `<Button>` with clear labeling like "Mit anderer E-Mail registrieren". When clicked, it already calls `setShowLoginForm(false)` but should also clear/update `formData.email` so the user can type a new one.
 
-`date-fns` `format()` does not accept a `timeZone` option. After `toZonedTime()` the date is already adjusted — remove the options object.
+4. Apply the same pattern to `SubmitLead.tsx` for consistency (line ~784, "Zurück zur Registrierung" button).
 
-### Fix 3: Edge function `error` typing (~15 files)
-All catch blocks with `error.message` where `error` is `unknown`. Fix pattern: `(error as Error).message` or use the existing `errorResponse` helper with proper casting.
+## Files Changed
+- `src/pages/HandwerkerOnboarding.tsx` — Make "Andere E-Mail verwenden" a prominent button + pre-fill registration form with changed email
+- `src/pages/SubmitLead.tsx` — Same pattern for consistency
 
-**Affected files:**
-- `check-admin-role/index.ts`
-- `generate-sitemap/index.ts`
-- `populate-test-data/index.ts` (multiple)
-- `send-password-reset/index.ts`
-- `submit-to-indexing/index.ts` (multiple)
-- `validate-magic-token/index.ts`
-- All files using `return errorResponse(error)` — cast to `errorResponse(error as Error)`
-
-### Fix 4: `getUserByEmail` → `listUsers` with filter
-**File:** `supabase/functions/guest-user-auto-create/index.ts` (line 42)
-
-`getUserByEmail` doesn't exist on GoTrueAdminApi. Replace with `listUsers({ filter })` or check by querying profiles table instead.
-
-### Fix 5: Supabase join type mismatches (~4 files)
-Foreign key joins return arrays, not single objects. Need `[0]` access:
-- `send-delivery-emails/index.ts` line 43: `lead.lead_proposals` is array
-- `send-rating-notification/index.ts` line 62: `review.leads` is array
-- `send-rating-response-notification/index.ts` line 64: `review.leads` is array
-- `send-rating-reminder/index.ts` lines 82, 95, 123: `lead_proposals` is array
-
-### Fix 6: cleanup-orphaned-records dynamic property access
-**File:** `supabase/functions/cleanup-orphaned-records/index.ts` (line 116)
-
-Cast records to `Record<string, any>[]` for dynamic column access.
-
-## Execution Order
-1. Fix 1 (user-facing — unblocks profile creation feedback)
-2. Fixes 2-6 (edge function build errors — batch fix)
+## No database or edge function changes needed.
 
