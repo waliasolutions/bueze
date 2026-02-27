@@ -141,7 +141,7 @@ export const newLeadNotificationTemplate = (data: NewLeadData) => {
         <p><strong>Kategorie:</strong> ${safe(data.category)}</p>
         <p><strong>Standort:</strong> ${safe(data.city)}</p>
         <p><strong>Budget:</strong> ${budgetText}</p>
-        <p><strong>Dringlichkeit:</strong> ${safe(data.urgency)}</p>
+        <p><strong>Dringlichkeit:</strong> ${getUrgencyLabel(data.urgency)}</p>
         <hr class="divider">
         <p><strong>Projektbeschreibung:</strong></p>
         <p>${truncatedDesc}</p>

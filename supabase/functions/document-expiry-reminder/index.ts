@@ -71,7 +71,7 @@ serve(async (req) => {
       const result = await sendEmail({
         to: doc.email,
         subject,
-        textBody: `Hallo ${userName},\n\n${urgencyText}\n\nBitte aktualisieren Sie Ihr Dokument: ${FRONTEND_URL}/handwerker-profile-edit\n\nIhr Büeze.ch Team`,
+        textBody: `Hallo ${userName},\n\n${urgencyText}\n\nBitte aktualisieren Sie Ihr Dokument: ${FRONTEND_URL}/handwerker-profile/edit\n\nIhr Büeze.ch Team`,
       });
 
       if (result.success) {

@@ -119,10 +119,9 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Password reset successfully',
-        newPassword: newPassword // Return password so admin can share it if email fails
+      JSON.stringify({
+        success: true,
+        message: 'Password reset successfully. Das neue Passwort wurde per E-Mail gesendet.',
       }),
       {
         status: 200,

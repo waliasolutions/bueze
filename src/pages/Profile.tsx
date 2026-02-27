@@ -371,12 +371,18 @@ const Profile = () => {
   const handleCancelSubscription = async () => {
     setCancelling(true);
     try {
+      const now = new Date();
+      const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
       const { error } = await supabase
         .from('handwerker_subscriptions')
         .update({
           plan_type: 'free',
           proposals_limit: SUBSCRIPTION_PLANS.free.proposalsLimit,
-          updated_at: new Date().toISOString(),
+          proposals_used_this_period: 0,
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+          updated_at: now.toISOString(),
         })
         .eq('user_id', user.id)
         .eq('status', 'active');

@@ -80,7 +80,7 @@ serve(async (req) => {
             leadTitle: lead.title,
             proposalsCount: proposals.length,
             formattedDeadline,
-            dashboardLink: '${FRONTEND_URL}/dashboard'
+            dashboardLink: `${FRONTEND_URL}/dashboard`
           });
 
           console.log(`[proposal-deadline-reminder] Sending client reminder to ${ownerProfile.email}`);

@@ -185,7 +185,7 @@ const App = () => {
                 
                 {/* Utility routes */}
                 <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-                <Route path="/test-dashboard" element={<TestDashboard />} />
+                <Route path="/test-dashboard" element={<ProtectedRoute><TestDashboard /></ProtectedRoute>} />
                 <Route path="/magic" element={<MagicLinkHandler />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
                 

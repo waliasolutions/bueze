@@ -349,15 +349,23 @@ const HandwerkerApprovals = () => {
               await upsertUserRole(handwerker.user_id, 'handwerker');
             }
 
-            // Create subscription (if not exists)
-            await supabase
+            // Create subscription only if none exists (don't overwrite paid plans)
+            const { data: existingSub } = await supabase
               .from('handwerker_subscriptions')
-              .upsert({
-                user_id: handwerker.user_id,
-                plan_type: 'free',
-                proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
-                proposals_used_this_period: 0
-              }, { onConflict: 'user_id' });
+              .select('id')
+              .eq('user_id', handwerker.user_id)
+              .maybeSingle();
+
+            if (!existingSub) {
+              await supabase
+                .from('handwerker_subscriptions')
+                .insert({
+                  user_id: handwerker.user_id,
+                  plan_type: 'free',
+                  proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
+                  proposals_used_this_period: 0,
+                });
+            }
           }
 
           // Send approval email
@@ -415,18 +423,26 @@ const HandwerkerApprovals = () => {
         (async () => {
           try {
             const isAdminUser = await checkUserIsAdmin(userId);
-            
-            // Always create subscription
-            const subResult = await supabase
+
+            // Create subscription only if none exists (don't overwrite paid plans)
+            const { data: existingSub } = await supabase
               .from('handwerker_subscriptions')
-              .upsert({
-                user_id: userId,
-                plan_type: 'free',
-                proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
-                proposals_used_this_period: 0
-              }, { onConflict: 'user_id' });
-            
-            if (subResult.error) console.error('Subscription error (non-critical):', subResult.error);
+              .select('id')
+              .eq('user_id', userId)
+              .maybeSingle();
+
+            if (!existingSub) {
+              const subResult = await supabase
+                .from('handwerker_subscriptions')
+                .insert({
+                  user_id: userId,
+                  plan_type: 'free',
+                  proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
+                  proposals_used_this_period: 0,
+                });
+
+              if (subResult.error) console.error('Subscription error (non-critical):', subResult.error);
+            }
             
             // Only add handwerker role for non-admins
             if (!isAdminUser) {

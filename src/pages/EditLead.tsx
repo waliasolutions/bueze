@@ -16,6 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Save } from 'lucide-react';
 import { SWISS_CANTONS, CANTON_CODES } from '@/config/cantons';
 import { PostalCodeInput } from '@/components/PostalCodeInput';
+import { majorCategories } from '@/config/majorCategories';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { getUrgencyOptions } from '@/config/urgencyLevels';
 
 const leadSchema = z.object({
   title: z.string().min(10, 'Titel muss mindestens 10 Zeichen haben'),
@@ -32,20 +35,15 @@ const leadSchema = z.object({
 
 type LeadFormData = z.infer<typeof leadSchema>;
 
-const categories = [
-  { value: 'elektriker', label: 'Elektriker' },
-  { value: 'sanitaer', label: 'Sanitär' },
-  { value: 'heizung', label: 'Heizungsinstallateur' },
-  { value: 'maler', label: 'Maler' },
-  { value: 'schreiner', label: 'Schreiner' },
-];
+// Generate categories from SSOT config (same as SubmitLead)
+const categories = Object.values(majorCategories).flatMap(majorCat =>
+  majorCat.subcategories
+    .map(subId => subcategoryLabels[subId])
+    .filter(Boolean)
+    .map(sub => ({ value: sub.value, label: sub.label, group: majorCat.label }))
+);
 
-const urgencies = [
-  { value: 'today', label: 'Heute' },
-  { value: 'this_week', label: 'Diese Woche' },
-  { value: 'this_month', label: 'Dieser Monat' },
-  { value: 'planning', label: 'Planung' },
-];
+const urgencies = getUrgencyOptions();
 
 
 const EditLead = () => {
@@ -281,6 +279,7 @@ const EditLead = () => {
                                 </SelectItem>
                               ))}
                             </SelectContent>
+
                           </Select>
                           <FormMessage />
                         </FormItem>

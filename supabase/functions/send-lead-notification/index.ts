@@ -323,7 +323,7 @@ serve(async (req) => {
           description: lead.description,
           budgetMin: lead.budget_min,
           budgetMax: lead.budget_max,
-          urgency: lead.urgency || 'normal',
+          urgency: lead.urgency || 'planning',
           magicLink,
           handwerkerName,
         });

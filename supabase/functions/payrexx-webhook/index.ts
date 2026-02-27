@@ -232,21 +232,34 @@ Deno.serve(async (req) => {
       console.log(`Payment ${transactionId} for user ${userId} is waiting/processing, no action taken`);
 
     } else if (status === 'declined' || status === 'failed' || status === 'cancelled') {
-      // Payment failed — revert to free tier
-      const { error: subError } = await supabase
+      // Payment failed — only revert to free if user doesn't already have an active paid plan
+      const { data: existingSub } = await supabase
         .from('handwerker_subscriptions')
-        .upsert({
-          user_id: userId,
-          plan_type: 'free',
-          status: 'active',
-          proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        });
+        .select('plan_type')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
 
-      if (subError) {
-        console.error('Error reverting subscription:', subError);
+      const alreadyPaid = existingSub && existingSub.plan_type !== 'free';
+
+      if (!alreadyPaid) {
+        const { error: subError } = await supabase
+          .from('handwerker_subscriptions')
+          .upsert({
+            user_id: userId,
+            plan_type: 'free',
+            status: 'active',
+            proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
+            updated_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id',
+          });
+
+        if (subError) {
+          console.error('Error reverting subscription:', subError);
+        }
+      } else {
+        console.log(`User ${userId} already has paid plan ${existingSub.plan_type}, not reverting on failed payment`);
       }
 
       // Record failed payment

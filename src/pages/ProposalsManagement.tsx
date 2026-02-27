@@ -243,7 +243,7 @@ const ProposalsManagement = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 py-8 pt-24">
           <div className="space-y-4">
             <Skeleton className="h-10 w-64" />
             <Skeleton className="h-12 w-full" />
@@ -260,7 +260,7 @@ const ProposalsManagement = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 py-8 pt-24">
         <div className="max-w-5xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Offerten verwalten</h1>

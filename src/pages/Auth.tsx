@@ -331,7 +331,7 @@ export default function Auth() {
                     value={signUpData.password}
                     onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
                     required
-                    minLength={8}
+                    minLength={PASSWORD_MIN_LENGTH}
                   />
                 </div>
 
@@ -344,7 +344,7 @@ export default function Auth() {
                     value={signUpData.confirmPassword}
                     onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
                     required
-                    minLength={8}
+                    minLength={PASSWORD_MIN_LENGTH}
                   />
                 </div>
                 

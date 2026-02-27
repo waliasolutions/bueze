@@ -23,13 +23,18 @@ serve(async (req) => {
 
     console.log('[check-subscription-expiry] Starting subscription expiry check...');
 
-    // 1. Expire subscriptions past their end date
+    // 1. Downgrade expired paid subscriptions to free (keep status 'active' to avoid unique constraint issues)
+    const thirtyDaysFromNow = new Date();
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
     const { data: expired, error: expireError } = await supabase
       .from('handwerker_subscriptions')
       .update({
-        status: 'expired',
         plan_type: 'free',
         proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
+        proposals_used_this_period: 0,
+        current_period_start: now,
+        current_period_end: thirtyDaysFromNow.toISOString(),
         updated_at: now,
       })
       .eq('status', 'active')

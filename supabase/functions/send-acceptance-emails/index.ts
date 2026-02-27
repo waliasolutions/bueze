@@ -90,7 +90,7 @@ serve(async (req) => {
 
     const conversationLink = conversation 
       ? `${FRONTEND_URL}/messages/${conversation.id}` 
-      : '${FRONTEND_URL}/messages';
+      : `${FRONTEND_URL}/messages`;
 
     // Prepare email data
     const priceText = proposal.price_min && proposal.price_max
