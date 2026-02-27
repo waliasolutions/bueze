@@ -435,7 +435,7 @@ const HandwerkerDashboard = () => {
       const { data: reviewsData, error } = await supabase
         .from('reviews')
         .select(`
-          id, rating, title, comment, created_at, is_public, handwerker_response, response_at, reviewer_id, reviewed_id,
+          id, rating, title, comment, created_at, is_public, handwerker_response, response_at, reviewer_id, reviewed_id, lead_id,
           leads (title)
         `)
         .eq('reviewed_id', userId)
@@ -462,7 +462,7 @@ const HandwerkerDashboard = () => {
         profiles: reviewerProfilesMap.get(review.reviewer_id) || { first_name: 'Anonym', full_name: 'Anonym' }
       }));
       
-      setReviews(reviewsWithProfiles);
+      setReviews(reviewsWithProfiles as ReviewForHandwerker[]);
     } catch (error) {
       console.error('Error fetching reviews:', error);
     } finally {
@@ -1643,7 +1643,7 @@ const HandwerkerDashboard = () => {
                               )}
 
                               {/* Delivery confirmation for accepted proposals */}
-                              {proposal.status === 'accepted' && !proposal.leads?.delivered_at && (
+                              {proposal.status === 'accepted' && !(proposal.leads as any)?.delivered_at && (
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button className="mt-3 w-full" variant="default" size="sm">
@@ -1670,10 +1670,10 @@ const HandwerkerDashboard = () => {
                               )}
 
                               {/* Show delivered badge */}
-                              {proposal.status === 'accepted' && proposal.leads?.delivered_at && (
+                              {proposal.status === 'accepted' && (proposal.leads as any)?.delivered_at && (
                                 <div className="mt-3 flex items-center gap-2 text-sm text-green-700">
                                   <CheckCircle className="h-4 w-4" />
-                                  <span>Erledigt am {new Date(proposal.leads.delivered_at).toLocaleDateString('de-CH')}</span>
+                                  <span>Erledigt am {new Date((proposal.leads as any).delivered_at).toLocaleDateString('de-CH')}</span>
                                 </div>
                               )}
                             </div>

@@ -59,7 +59,7 @@ serve(async (req) => {
     const emailHtml = ratingReceivedHandwerkerTemplate({
       handwerkerName: handwerkerProfile.fullName,
       clientFirstName,
-      projectTitle: review.leads?.title || 'Projekt',
+      projectTitle: (review.leads as any)?.title || 'Projekt',
       rating: review.rating,
       comment: review.comment,
       profileLink,
@@ -103,6 +103,6 @@ serve(async (req) => {
     return successResponse({ success: true, message: 'Rating notification sent' });
   } catch (error) {
     console.error('[send-rating-notification] Error:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });

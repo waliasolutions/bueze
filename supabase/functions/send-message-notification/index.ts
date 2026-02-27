@@ -123,6 +123,6 @@ serve(async (req) => {
     return successResponse({ success: true, message: 'Message notification sent' });
   } catch (error) {
     console.error('[send-message-notification] Error:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });

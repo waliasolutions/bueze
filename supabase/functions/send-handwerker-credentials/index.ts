@@ -91,6 +91,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in send-handwerker-credentials:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });

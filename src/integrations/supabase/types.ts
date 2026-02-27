@@ -1092,6 +1092,8 @@ export type Database = {
           category: Database["public"]["Enums"]["handwerker_category"]
           city: string
           created_at: string
+          delivered_at: string | null
+          delivered_by: string | null
           description: string
           expires_at: string | null
           id: string
@@ -1122,6 +1124,8 @@ export type Database = {
           category: Database["public"]["Enums"]["handwerker_category"]
           city: string
           created_at?: string
+          delivered_at?: string | null
+          delivered_by?: string | null
           description: string
           expires_at?: string | null
           id?: string
@@ -1152,6 +1156,8 @@ export type Database = {
           category?: Database["public"]["Enums"]["handwerker_category"]
           city?: string
           created_at?: string
+          delivered_at?: string | null
+          delivered_by?: string | null
           description?: string
           expires_at?: string | null
           id?: string

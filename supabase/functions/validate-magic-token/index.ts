@@ -59,6 +59,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error validating magic token:', error);
-    return errorResponse(error.message, 400);
+    return errorResponse((error as Error).message, 400);
   }
 });

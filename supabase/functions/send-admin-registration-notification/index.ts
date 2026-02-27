@@ -76,6 +76,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in send-admin-registration-notification:', error);
-    return errorResponse(error, 500);
+    return errorResponse(error as Error, 500);
   }
 });
