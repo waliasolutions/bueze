@@ -76,6 +76,7 @@ const Datenschutz = () => {
                     Tätigkeitsbereiche, Servicezonen, Erfahrung, Zertifikate, Portfolio-Bilder</li>
                     <li><strong>Auftragsdaten:</strong> Projektbeschreibung, Budget, gewünschte Ausführungszeit, Fotos</li>
                     <li><strong>Kommunikationsdaten:</strong> Nachrichten zwischen Nutzern, Offerten, Kontaktdaten nach Annahme</li>
+                    <li><strong>Bewertungsdaten:</strong> Sternebewertungen (1–5), optionale Kommentare, Antworten des Handwerkers; öffentlich wird nur der Vorname des Auftraggebers angezeigt</li>
                     <li><strong>Zahlungsdaten:</strong> Über Payrexx verarbeitete Zahlungsinformationen (Kreditkartendaten werden 
                     nicht bei uns gespeichert)</li>
                   </ul>
@@ -201,6 +202,11 @@ const Datenschutz = () => {
                       Projektadresse) zwischen Auftraggeber und Handwerker ausgetauscht. Dies ist für die Vertragsabwicklung 
                       erforderlich.
                     </p>
+                    <p className="mb-2">
+                      Bewertungen werden nach Abschluss eines Auftrags öffentlich auf der Plattform angezeigt. 
+                      Dabei wird aus Datenschutzgründen ausschliesslich der Vorname des Auftraggebers verwendet. 
+                      Handwerker können öffentlich auf Bewertungen antworten.
+                    </p>
                   </div>
                 </div>
               </section>
@@ -231,6 +237,7 @@ const Datenschutz = () => {
                     <h3 className="text-lg font-semibold mb-2">7.2 Nach Kontolöschung</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li>Personenbezogene Daten: Gelöscht nach 30 Tagen (Widerrufsfrist)</li>
+                      <li>Bewertungsdaten: Bewertungen und Antworten bleiben anonymisiert bestehen, um die Integrität des Bewertungssystems zu gewährleisten; der Vorname wird durch einen Platzhalter ersetzt</li>
                       <li>Kommunikationsdaten: Anonymisiert nach 90 Tagen</li>
                       <li>Transaktionsdaten: Aufbewahrung für 10 Jahre (gesetzliche Aufbewahrungspflicht OR Art. 958f)</li>
                     </ul>
