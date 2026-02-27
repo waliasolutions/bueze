@@ -641,8 +641,16 @@ const HandwerkerDashboard = () => {
 
       toast({
         title: 'Auftrag als erledigt gemeldet',
-        description: 'Der Kunde kann nun eine Bewertung abgeben.',
+        description: 'Der Kunde wird per E-Mail benachrichtigt und kann nun eine Bewertung abgeben.',
       });
+
+      // Send delivery confirmation emails (non-blocking)
+      supabase.functions.invoke('send-delivery-emails', {
+        body: { leadId: proposal.lead_id },
+      }).catch(emailErr => {
+        console.error('Failed to send delivery emails:', emailErr);
+      });
+
       await fetchProposals(user.id);
     } catch (error) {
       console.error('Error marking as delivered:', error);

@@ -179,7 +179,7 @@ export async function createMagicToken(
       magicLink = `${FRONTEND_URL}/messages/${options.resourceId}?token=${token}`;
       break;
     case 'rating':
-      magicLink = `${FRONTEND_URL}/rate/${options.resourceId}?token=${token}`;
+      magicLink = `${FRONTEND_URL}/dashboard?rating=${options.resourceId}&token=${token}`;
       break;
     default:
       magicLink = `${FRONTEND_URL}/?token=${token}`;

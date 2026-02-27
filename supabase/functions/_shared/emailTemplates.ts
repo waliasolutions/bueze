@@ -984,6 +984,75 @@ export const ratingReminderTemplate = (data: RatingReminderData) => {
   `);
 };
 
+// Delivery Confirmation Template (for Handwerker)
+interface DeliveryConfirmationHandwerkerData {
+  handwerkerName: string;
+  projectTitle: string;
+  clientName: string;
+  dashboardLink: string;
+}
+
+export const deliveryConfirmationHandwerkerTemplate = (data: DeliveryConfirmationHandwerkerData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>Auftrag als erledigt gemeldet</h2>
+      <p>Hallo ${safe(data.handwerkerName, 'Handwerker')},</p>
+      <p>Sie haben das Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> erfolgreich als erledigt gemeldet.</p>
+
+      <div class="info-box" style="background: #d1fae5; border-left-color: #10b981;">
+        <p style="margin: 0;"><strong>Kunde:</strong> ${safe(data.clientName, 'Kunde')}</p>
+        <p style="margin: 5px 0 0 0;">Der Kunde wird benachrichtigt und kann nun eine Bewertung abgeben.</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.dashboardLink}" class="button">Zum Dashboard</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        <strong>Tipp:</strong> Positive Bewertungen stärken Ihr Profil und helfen Ihnen,
+        neue Kunden zu gewinnen. Bedanken Sie sich bei zufriedenen Kunden für eine Bewertung.
+      </p>
+    </div>
+  `);
+};
+
+// Delivery Review Invitation Template (for Client)
+interface DeliveryReviewInvitationData {
+  clientName: string;
+  handwerkerName: string;
+  projectTitle: string;
+  ratingLink: string;
+}
+
+export const deliveryReviewInvitationTemplate = (data: DeliveryReviewInvitationData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>Ihr Projekt wurde abgeschlossen</h2>
+      <p>Hallo ${safe(data.clientName, 'Kunde')},</p>
+      <p><strong>${safe(data.handwerkerName)}</strong> hat Ihr Projekt <strong>"${safe(data.projectTitle, 'Ihr Projekt')}"</strong> als abgeschlossen gemeldet.</p>
+
+      <div class="info-box" style="background: #dbeafe; border-left-color: #3b82f6;">
+        <p style="margin: 0;"><strong>Sind Sie zufrieden?</strong> Ihre Bewertung hilft anderen Kunden,
+        den richtigen Handwerker zu finden, und belohnt gute Arbeit.</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${data.ratingLink}" class="button">Jetzt bewerten</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Die Bewertung dauert nur 1 Minute und ist freiwillig.
+        Vielen Dank für Ihre Unterstützung!
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Bei Problemen oder Reklamationen kontaktieren Sie uns unter
+        <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
+      </p>
+    </div>
+  `);
+};
+
 // Proposal Rejection Template (for Handwerker)
 interface ProposalRejectionData {
   handwerkerName: string;
