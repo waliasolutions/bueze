@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { fetchClientProfile, fetchHandwerkerProfile, fetchHandwerkerRating, createMagicToken } from '../_shared/profileHelpers.ts';
 import { newProposalNotificationTemplate } from '../_shared/emailTemplates.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -64,7 +65,7 @@ serve(async (req) => {
       expiryDays: 30,
     });
 
-    const magicLink = tokenResult?.magicLink || `https://bueeze.ch/proposals/${proposalId}`;
+    const magicLink = tokenResult?.magicLink || `${FRONTEND_URL}/proposals/${proposalId}`;
 
     // Fetch handwerker rating stats
     const ratingStats = await fetchHandwerkerRating(supabase, proposal.handwerker_id);

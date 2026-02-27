@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { proposalDeadlineClientTemplate, proposalDeadlineHandwerkerTemplate } from '../_shared/emailTemplates.ts';
 import { formatSwissDateLong } from '../_shared/dateFormatter.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -79,7 +80,7 @@ serve(async (req) => {
             leadTitle: lead.title,
             proposalsCount: proposals.length,
             formattedDeadline,
-            dashboardLink: 'https://bueeze.ch/dashboard'
+            dashboardLink: '${FRONTEND_URL}/dashboard'
           });
 
           console.log(`[proposal-deadline-reminder] Sending client reminder to ${ownerProfile.email}`);
@@ -137,7 +138,7 @@ serve(async (req) => {
               expires_at: expiresAt.toISOString(),
             });
 
-            const magicLink = `https://bueeze.ch/opportunity/${lead.id}?token=${token}`;
+            const magicLink = `${FRONTEND_URL}/opportunity/${lead.id}?token=${token}`;
 
             const handwerkerEmailHtml = proposalDeadlineHandwerkerTemplate({
               handwerkerName: profile.full_name || 'Handwerker',

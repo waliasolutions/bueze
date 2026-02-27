@@ -9,6 +9,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper, safe } from '../_shared/emailTemplates.ts';
 import { getPlanName } from '../_shared/planLabels.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -77,7 +78,7 @@ serve(async (req) => {
                 Um weiterhin unbegrenzt Offerten einzureichen, erneuern Sie Ihr Abonnement.
               </p>
               <div style="text-align: center; margin: 32px 0;">
-                <a href="https://bueeze.ch/checkout" style="background-color: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                <a href="${FRONTEND_URL}/checkout" style="background-color: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                   Abonnement erneuern
                 </a>
               </div>
@@ -151,7 +152,7 @@ serve(async (req) => {
                 Erneuern Sie es rechtzeitig, um weiterhin unbegrenzt Offerten einzureichen.
               </p>
               <div style="text-align: center; margin: 32px 0;">
-                <a href="https://bueeze.ch/checkout" style="background-color: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                <a href="${FRONTEND_URL}/checkout" style="background-color: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                   Jetzt erneuern
                 </a>
               </div>

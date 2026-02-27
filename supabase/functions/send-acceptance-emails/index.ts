@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { fetchClientProfile, fetchHandwerkerProfile } from '../_shared/profileHelpers.ts';
 import { proposalAcceptedHandwerkerTemplate, proposalAcceptedClientTemplate } from '../_shared/emailTemplates.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -88,8 +89,8 @@ serve(async (req) => {
     }
 
     const conversationLink = conversation 
-      ? `https://bueeze.ch/messages/${conversation.id}` 
-      : 'https://bueeze.ch/messages';
+      ? `${FRONTEND_URL}/messages/${conversation.id}` 
+      : '${FRONTEND_URL}/messages';
 
     // Prepare email data
     const priceText = proposal.price_min && proposal.price_max

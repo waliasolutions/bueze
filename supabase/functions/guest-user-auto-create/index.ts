@@ -2,8 +2,9 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
-import { fetchClientProfile } from '../_shared/profileHelpers.ts';
+
 import { guestWelcomeTemplate } from '../_shared/emailTemplates.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 function generateSecurePassword(length = 16): string {
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
@@ -72,7 +73,7 @@ serve(async (req) => {
       expires_at: expiresAt.toISOString(),
     });
 
-    const magicLink = `https://bueeze.ch/dashboard?token=${token}&firstLogin=true`;
+    const magicLink = `${FRONTEND_URL}/dashboard?token=${token}&firstLogin=true`;
 
     const emailHtml = guestWelcomeTemplate({ email, password, fullName, magicLink });
 

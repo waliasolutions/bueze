@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { adminRegistrationNotificationTemplate } from '../_shared/emailTemplates.ts';
 import { formatSwissDateTime } from '../_shared/dateFormatter.ts';
+import { SUPPORT_EMAIL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -23,7 +24,7 @@ serve(async (req) => {
     // Fetch the handwerker profile
     const { data: profile, error: profileError } = await supabase
       .from('handwerker_profiles')
-      .select('*')
+      .select('id, first_name, last_name, email, phone_number, company_name, categories, service_areas, logo_url, business_address, created_at')
       .eq('id', profileId)
       .single();
 
@@ -55,10 +56,10 @@ serve(async (req) => {
     // Generate email HTML
     const emailHtml = adminRegistrationNotificationTemplate(emailData);
 
-    console.log('Sending email to info@bueeze.ch');
+    console.log('Sending admin notification email to:', SUPPORT_EMAIL);
 
     const result = await sendEmail({
-      to: 'info@bueeze.ch',
+      to: SUPPORT_EMAIL,
       subject: `Neue Handwerker-Registrierung: ${profile.first_name} ${profile.last_name}`,
       htmlBody: emailHtml,
     });

@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
-import { fetchClientProfile, createMagicToken } from '../_shared/profileHelpers.ts';
+import { fetchClientProfile } from '../_shared/profileHelpers.ts';
+import { FRONTEND_URL, SUPPORT_EMAIL } from '../_shared/siteConfig.ts';
 import { getCategoryLabel } from '../_shared/categoryLabels.ts';
 import { newLeadNotificationTemplate, newLeadAdminNotificationTemplate } from '../_shared/emailTemplates.ts';
 import { formatSwissDateTime } from '../_shared/dateFormatter.ts';
@@ -142,7 +143,7 @@ serve(async (req) => {
     // Fetch lead details
     const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .select('*')
+      .select('id, title, description, category, city, canton, zip, budget_min, budget_max, urgency, owner_id, created_at')
       .eq('id', leadId)
       .single();
 
@@ -176,7 +177,7 @@ serve(async (req) => {
     });
 
     const adminResult = await sendEmail({
-      to: 'info@bueeze.ch',
+      to: SUPPORT_EMAIL,
       subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city || `PLZ ${leadPLZ}`}`,
       htmlBody: adminEmailHtml,
     });
@@ -259,28 +260,62 @@ serve(async (req) => {
     let successCount = 0;
     let errorCount = 0;
 
+    // Batch-fetch all handwerker profiles (avoids N+1 queries)
+    const matchedUserIds = matchingHandwerkers.map(hw => hw.user_id);
+    const { data: profilesData } = matchedUserIds.length > 0
+      ? await supabase
+          .from('profiles')
+          .select('id, email, full_name')
+          .in('id', matchedUserIds)
+      : { data: [] };
+
+    const profileMap = new Map(
+      (profilesData || []).map(p => [p.id, p])
+    );
+
+    // Batch-create all magic tokens (avoids N+1 inserts)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+    const tokenRecords = matchingHandwerkers.map(hw => ({
+      token: crypto.randomUUID().replace(/-/g, ''),
+      user_id: hw.user_id,
+      resource_type: 'lead',
+      resource_id: leadId,
+      expires_at: expiresAt.toISOString(),
+    }));
+
+    if (tokenRecords.length > 0) {
+      const { error: tokenError } = await supabase.from('magic_tokens').insert(tokenRecords);
+      if (tokenError) {
+        console.error('[send-lead-notification] Batch token insert failed:', tokenError.message);
+      }
+    }
+
+    const tokenMap = new Map(
+      tokenRecords.map(t => [t.user_id, t.token])
+    );
+
+    // Send emails using pre-fetched data
     for (const hw of matchingHandwerkers) {
       try {
-        const hwProfile = await fetchClientProfile(supabase, hw.user_id);
+        const profile = profileMap.get(hw.user_id);
+        const email = profile?.email || hw.email;
 
-        if (!hwProfile?.email) {
+        if (!email) {
           console.warn(`[send-lead-notification] No email for handwerker ${hw.user_id}, skipping`);
           errorCount++;
           continue;
         }
 
-        const tokenResult = await createMagicToken(supabase, {
-          userId: hw.user_id,
-          resourceType: 'lead',
-          resourceId: leadId,
-          expiryDays: 7,
-        });
-
-        if (!tokenResult) {
-          console.error(`[send-lead-notification] Failed to create magic token for ${hw.user_id}`);
+        const token = tokenMap.get(hw.user_id);
+        if (!token) {
+          console.error(`[send-lead-notification] No token for ${hw.user_id}, skipping`);
           errorCount++;
           continue;
         }
+
+        const magicLink = `${FRONTEND_URL}/opportunity/${leadId}?token=${token}`;
+        const handwerkerName = profile?.full_name || hw.first_name || 'Handwerker';
 
         const emailHtml = newLeadNotificationTemplate({
           category: categoryLabel,
@@ -289,23 +324,20 @@ serve(async (req) => {
           budgetMin: lead.budget_min,
           budgetMax: lead.budget_max,
           urgency: lead.urgency || 'normal',
-          magicLink: tokenResult.magicLink,
-          handwerkerName: hwProfile.fullName || hw.first_name || 'Handwerker',
+          magicLink,
+          handwerkerName,
         });
 
-        console.log(`[send-lead-notification] Sending email to ${hwProfile.email} (match: ${hw.matchType})...`);
-
         const result = await sendEmail({
-          to: hwProfile.email,
+          to: email,
           subject: `Neue Anfrage in ${categoryLabel} - ${lead.city || `PLZ ${lead.zip}`}`,
           htmlBody: emailHtml,
         });
 
         if (result.success) {
-          console.log(`[send-lead-notification] ✓ Email sent to ${hwProfile.email}`);
           successCount++;
         } else {
-          console.error(`[send-lead-notification] ✗ Email failed for ${hwProfile.email}: ${result.error}`);
+          console.error(`[send-lead-notification] ✗ Email failed for ${email}: ${result.error}`);
           errorCount++;
         }
       } catch (error) {

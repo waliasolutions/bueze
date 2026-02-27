@@ -3,6 +3,7 @@
 
 import { getUrgencyLabel } from './categoryLabels.ts';
 import { subcategoryLabels } from './subcategoryLabels.ts';
+import { FRONTEND_URL, SUPPORT_EMAIL } from './siteConfig.ts';
 
 /**
  * Safe interpolation helper - prevents "undefined" or "null" from appearing in emails.
@@ -100,7 +101,7 @@ export const emailWrapper = (content: string) => `
     <div class="footer">
       <p><strong>Büeze.ch GmbH</strong><br>
       Industriestrasse 28 | 9487 Gamprin-Bendern | Liechtenstein</p>
-      <p><a href="https://bueeze.ch">www.bueeze.ch</a> | <a href="mailto:info@bueeze.ch">info@bueeze.ch</a></p>
+      <p><a href="${FRONTEND_URL}">www.bueeze.ch</a> | <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
       <p style="margin-top: 15px; color: #999;">
         Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht direkt auf diese Nachricht.
       </p>
@@ -298,7 +299,7 @@ export const proposalAcceptedClientTemplate = (data: ProposalAcceptedClientData)
       </ul>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen oder Problemen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen oder Problemen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);
@@ -453,7 +454,7 @@ export const subscriptionConfirmationTemplate = (data: SubscriptionConfirmationD
       </div>
 
       <p style="text-align: center;">
-        <a href="https://bueeze.ch/handwerker-dashboard" class="button">Zum Dashboard</a>
+        <a href="${FRONTEND_URL}/handwerker-dashboard" class="button">Zum Dashboard</a>
       </p>
 
       <p style="font-size: 14px; color: #666;">
@@ -494,7 +495,7 @@ export const pendingPaymentFirstReminderTemplate = (data: PendingPaymentFirstRem
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen: <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);
@@ -530,7 +531,7 @@ export const pendingPaymentFinalReminderTemplate = (data: PendingPaymentFinalRem
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen: <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);
@@ -586,7 +587,7 @@ export const newLeadAdminNotificationTemplate = (data: NewLeadAdminNotificationD
       </div>
 
       <p style="text-align: center;">
-        <a href="https://bueeze.ch/admin/leads" class="button">Im Admin-Dashboard ansehen</a>
+        <a href="${FRONTEND_URL}/admin/leads" class="button">Im Admin-Dashboard ansehen</a>
       </p>
     </div>
   `);
@@ -772,11 +773,11 @@ export const adminRegistrationNotificationTemplate = (data: AdminRegistrationDat
     </div>
     
     <div style="margin-top: 30px; text-align: center;">
-      <a href="https://bueeze.ch/admin/approvals" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+      <a href="${FRONTEND_URL}/admin/approvals" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
         🔍 Zur Freigabe-Seite
       </a>
       <p style="margin-top: 10px; font-size: 12px; color: #6b7280;">
-        Oder direkt einloggen: <a href="https://bueeze.ch/auth" style="color: #667eea;">bueeze.ch/auth</a>
+        Oder direkt einloggen: <a href="${FRONTEND_URL}/auth" style="color: #667eea;">bueeze.ch/auth</a>
       </p>
     </div>
     
@@ -831,8 +832,8 @@ export const rejectionNotificationTemplate = (data: RejectionData) => {
       <div class="info-box">
         <h3 style="margin-top: 0; color: #0066CC;">Kontakt aufnehmen</h3>
         <p style="margin-bottom: 0;">
-          <strong>E-Mail:</strong> <a href="mailto:info@bueeze.ch">info@bueeze.ch</a><br>
-          <strong>Website:</strong> <a href="https://bueeze.ch">www.bueeze.ch</a>
+          <strong>E-Mail:</strong> <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a><br>
+          <strong>Website:</strong> <a href="${FRONTEND_URL}">www.bueeze.ch</a>
         </p>
       </div>
       
@@ -1003,7 +1004,7 @@ export const proposalRejectionTemplate = (data: ProposalRejectionData) => {
       </div>
 
       <p style="text-align: center;">
-        <a href="https://bueeze.ch/handwerker-dashboard" class="button">Neue Anfragen ansehen</a>
+        <a href="${FRONTEND_URL}/handwerker-dashboard" class="button">Neue Anfragen ansehen</a>
       </p>
 
       <p style="font-size: 14px; color: #666;">
@@ -1036,7 +1037,7 @@ export const handwerkerWelcomeTemplate = (data: HandwerkerWelcomeData) => {
       </div>
 
       <p style="text-align: center;">
-        <a href="https://bueeze.ch/auth" class="button">🚀 Jetzt einloggen und loslegen</a>
+        <a href="${FRONTEND_URL}/auth" class="button">🚀 Jetzt einloggen und loslegen</a>
       </p>
 
       <div class="info-box" style="border-left-color: #FF6B00;">
@@ -1059,7 +1060,7 @@ export const handwerkerWelcomeTemplate = (data: HandwerkerWelcomeData) => {
       </div>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);

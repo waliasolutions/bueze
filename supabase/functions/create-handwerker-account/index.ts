@@ -30,7 +30,7 @@ serve(async (req) => {
     // 1. Get handwerker profile data
     const { data: profile, error: fetchError } = await supabase
       .from('handwerker_profiles')
-      .select('*')
+      .select('id, user_id, email, first_name, last_name, phone_number')
       .eq('id', profileId)
       .single();
 

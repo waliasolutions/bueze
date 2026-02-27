@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper } from '../_shared/emailTemplates.ts';
 import { PLAN_NAMES_WITH_PRICE } from '../_shared/planLabels.ts';
+import { FRONTEND_URL, SUPPORT_EMAIL } from '../_shared/siteConfig.ts';
 
 // HTML template for approval email - standard (no pending plan)
 const approvalEmailTemplate = (userName: string) => {
@@ -23,11 +24,11 @@ const approvalEmailTemplate = (userName: string) => {
       </div>
 
       <p style="text-align: center;">
-        <a href="https://bueeze.ch/handwerker-dashboard" class="button">Zum Handwerker-Dashboard</a>
+        <a href="${FRONTEND_URL}/handwerker-dashboard" class="button">Zum Handwerker-Dashboard</a>
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);
@@ -35,8 +36,8 @@ const approvalEmailTemplate = (userName: string) => {
 
 // HTML template for approval email with pending plan - includes payment CTA
 const approvalWithPlanEmailTemplate = (userName: string, planName: string, pendingPlan: string) => {
-  const paymentUrl = `https://bueeze.ch/checkout?plan=${pendingPlan}`;
-  const cancelUrl = `https://bueeze.ch/profile?tab=subscription&cancel_pending=true`;
+  const paymentUrl = `${FRONTEND_URL}/checkout?plan=${pendingPlan}`;
+  const cancelUrl = `${FRONTEND_URL}/profile?tab=subscription&cancel_pending=true`;
   
   return emailWrapper(`
     <div class="content">
@@ -68,7 +69,7 @@ const approvalWithPlanEmailTemplate = (userName: string, planName: string, pendi
       </div>
 
       <p style="text-align: center; margin-top: 20px;">
-        <a href="https://bueeze.ch/handwerker-dashboard" style="color: #0066CC; text-decoration: underline;">
+        <a href="${FRONTEND_URL}/handwerker-dashboard" style="color: #0066CC; text-decoration: underline;">
           Oder erstmal kostenlos starten (5 Offerten/Monat)
         </a>
       </p>
@@ -79,7 +80,7 @@ const approvalWithPlanEmailTemplate = (userName: string, planName: string, pendi
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);

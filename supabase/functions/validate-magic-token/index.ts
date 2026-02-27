@@ -25,7 +25,7 @@ serve(async (req) => {
     // Fetch and validate token
     const { data: magicToken, error: tokenError } = await supabase
       .from('magic_tokens')
-      .select('*')
+      .select('id, user_id, resource_type, resource_id, expires_at, metadata')
       .eq('token', token)
       .is('used_at', null)
       .single();

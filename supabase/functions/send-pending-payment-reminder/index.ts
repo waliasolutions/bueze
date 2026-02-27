@@ -8,13 +8,14 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { pendingPaymentFirstReminderTemplate, pendingPaymentFinalReminderTemplate } from '../_shared/emailTemplates.ts';
 import { getPlanNameWithPrice } from '../_shared/planLabels.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 function getCheckoutUrl(plan: string): string {
-  return `https://bueeze.ch/checkout?plan=${plan}`;
+  return `${FRONTEND_URL}/checkout?plan=${plan}`;
 }
 
 function getCancelPendingPlanUrl(): string {
-  return 'https://bueeze.ch/profile?tab=subscription&cancel_pending=true';
+  return `${FRONTEND_URL}/profile?tab=subscription&cancel_pending=true`;
 }
 
 serve(async (req) => {

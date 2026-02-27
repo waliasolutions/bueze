@@ -35,7 +35,7 @@ export const RatingPrompt: React.FC<RatingPromptProps> = ({ userId }) => {
 
     const fetchData = async () => {
       try {
-        // Get completed leads owned by user that have an accepted proposal
+        // Get delivered leads owned by user (handwerker confirmed delivery)
         const { data: completedLeads, error: leadsError } = await supabase
           .from('leads')
           .select(`
@@ -43,13 +43,15 @@ export const RatingPrompt: React.FC<RatingPromptProps> = ({ userId }) => {
             title,
             updated_at,
             accepted_proposal_id,
+            delivered_at,
             lead_proposals!leads_accepted_proposal_id_fkey(
               handwerker_id
             )
           `)
           .eq('owner_id', userId)
           .eq('status', 'completed')
-          .not('accepted_proposal_id', 'is', null);
+          .not('accepted_proposal_id', 'is', null)
+          .not('delivered_at', 'is', null);
 
         if (leadsError) throw leadsError;
         if (!completedLeads || completedLeads.length === 0 || !isMounted) return;

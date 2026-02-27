@@ -3,6 +3,7 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper } from '../_shared/emailTemplates.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
   liability_insurance: 'Haftpflichtversicherung',
@@ -23,7 +24,7 @@ serve(async (req) => {
 
     const { data: expiringDocs, error: fetchError } = await supabase
       .from('expiring_documents')
-      .select('*')
+      .select('id, user_id, email, first_name, last_name, company_name, document_type, document_name, expiry_date, expiry_status, reminder_7_sent, reminder_14_sent, reminder_30_sent')
       .in('expiry_status', ['expiring_30', 'expiring_14', 'expiring_7', 'expired'])
       .not('email', 'is', null);
 
@@ -70,7 +71,7 @@ serve(async (req) => {
       const result = await sendEmail({
         to: doc.email,
         subject,
-        textBody: `Hallo ${userName},\n\n${urgencyText}\n\nBitte aktualisieren Sie Ihr Dokument: https://bueeze.ch/handwerker-profile-edit\n\nIhr Büeze.ch Team`,
+        textBody: `Hallo ${userName},\n\n${urgencyText}\n\nBitte aktualisieren Sie Ihr Dokument: ${FRONTEND_URL}/handwerker-profile-edit\n\nIhr Büeze.ch Team`,
       });
 
       if (result.success) {

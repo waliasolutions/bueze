@@ -1,6 +1,8 @@
 // Shared SMTP2GO email sending utility for Edge Functions
 // SSOT for all email sending operations
 
+import { EMAIL_SENDER } from './siteConfig.ts';
+
 export interface EmailOptions {
   to: string | string[];
   subject: string;
@@ -37,7 +39,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   const recipients = Array.isArray(options.to) ? options.to : [options.to];
   
   const payload: Record<string, unknown> = {
-    sender: 'noreply@bueeze.ch',
+    sender: EMAIL_SENDER,
     to: recipients,
     subject: options.subject,
   };

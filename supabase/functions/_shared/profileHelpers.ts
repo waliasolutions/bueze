@@ -2,6 +2,7 @@
 // SSOT for profile data retrieval patterns
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { FRONTEND_URL } from './siteConfig.ts';
 
 export interface ClientProfile {
   id: string;
@@ -165,23 +166,23 @@ export async function createMagicToken(
   let magicLink = '';
   switch (options.resourceType) {
     case 'lead':
-      magicLink = `https://bueeze.ch/opportunity/${options.resourceId}?token=${token}`;
+      magicLink = `${FRONTEND_URL}/opportunity/${options.resourceId}?token=${token}`;
       break;
     case 'proposal':
-      magicLink = `https://bueeze.ch/dashboard?proposalId=${options.resourceId}&token=${token}`;
+      magicLink = `${FRONTEND_URL}/dashboard?proposalId=${options.resourceId}&token=${token}`;
       break;
     case 'dashboard':
-      magicLink = `https://bueeze.ch/dashboard?token=${token}`;
+      magicLink = `${FRONTEND_URL}/dashboard?token=${token}`;
       break;
     case 'conversation':
       // Deep-link directly to the specific conversation
-      magicLink = `https://bueeze.ch/messages/${options.resourceId}?token=${token}`;
+      magicLink = `${FRONTEND_URL}/messages/${options.resourceId}?token=${token}`;
       break;
     case 'rating':
-      magicLink = `https://bueeze.ch/rate/${options.resourceId}?token=${token}`;
+      magicLink = `${FRONTEND_URL}/rate/${options.resourceId}?token=${token}`;
       break;
     default:
-      magicLink = `https://bueeze.ch/?token=${token}`;
+      magicLink = `${FRONTEND_URL}/?token=${token}`;
   }
 
   return { token, magicLink };

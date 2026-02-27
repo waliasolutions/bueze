@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { corsHeaders } from '../_shared/cors.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 // Generate a secure random token
 function generateToken(length: number = 64): string {
@@ -9,8 +10,6 @@ function generateToken(length: number = 64): string {
   crypto.getRandomValues(array);
   return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
 }
-
-const PRODUCTION_URL = 'https://bueeze.ch';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -69,7 +68,7 @@ serve(async (req) => {
     }
 
     // Build reset URL
-    const resetUrl = `${PRODUCTION_URL}/reset-password?token=${token}`;
+    const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}`;
 
     console.log('Sending password reset email to:', email);
 
@@ -118,7 +117,7 @@ serve(async (req) => {
           <p style="color: #999; font-size: 12px; line-height: 1.6; text-align: center;">
             Mit freundlichen Grüssen,<br>
             Ihr Büeze.ch Team<br>
-            <a href="https://bueeze.ch" style="color: #2563eb;">https://bueeze.ch</a>
+            <a href="${FRONTEND_URL}" style="color: #2563eb;">${FRONTEND_URL}</a>
           </p>
           
           <p style="color: #999; font-size: 11px; line-height: 1.6; text-align: center; margin-top: 20px;">

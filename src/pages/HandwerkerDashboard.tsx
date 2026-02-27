@@ -365,7 +365,7 @@ const HandwerkerDashboard = () => {
         .from('lead_proposals')
         .select(`
           *,
-          leads!lead_proposals_lead_id_fkey (title, city, canton, owner_id)
+          leads!lead_proposals_lead_id_fkey (title, city, canton, owner_id, delivered_at)
         `)
         .eq('handwerker_id', userId)
         .order('submitted_at', { ascending: false });
@@ -435,7 +435,7 @@ const HandwerkerDashboard = () => {
       const { data: reviewsData, error } = await supabase
         .from('reviews')
         .select(`
-          *,
+          id, rating, title, comment, created_at, is_public, handwerker_response, response_at, reviewer_id, reviewed_id,
           leads (title)
         `)
         .eq('reviewed_id', userId)
@@ -619,6 +619,37 @@ const HandwerkerDashboard = () => {
         title: "Fehler",
         description: "Angebot konnte nicht zurückgezogen werden.",
         variant: "destructive"
+      });
+    }
+  };
+
+  // Handle mark project as delivered
+  const handleMarkDelivered = async (proposal: ProposalWithClientInfo) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          delivered_at: new Date().toISOString(),
+          delivered_by: user.id,
+        })
+        .eq('id', proposal.lead_id)
+        .eq('status', 'completed')
+        .is('delivered_at', null);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Auftrag als erledigt gemeldet',
+        description: 'Der Kunde kann nun eine Bewertung abgeben.',
+      });
+      await fetchProposals(user.id);
+    } catch (error) {
+      console.error('Error marking as delivered:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Der Auftrag konnte nicht als erledigt markiert werden.',
+        variant: 'destructive',
       });
     }
   };
@@ -1600,6 +1631,41 @@ const HandwerkerDashboard = () => {
                                       </div>
                                     )}
                                   </div>
+                                </div>
+                              )}
+
+                              {/* Delivery confirmation for accepted proposals */}
+                              {proposal.status === 'accepted' && !proposal.leads?.delivered_at && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button className="mt-3 w-full" variant="default" size="sm">
+                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      Auftrag als erledigt melden
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Auftrag als erledigt melden?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Bestätigen Sie, dass die Arbeiten für diesen Auftrag abgeschlossen und übergeben wurden.
+                                        Der Kunde wird anschliessend eine Bewertung abgeben können.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleMarkDelivered(proposal)}>
+                                        Ja, Auftrag ist erledigt
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+
+                              {/* Show delivered badge */}
+                              {proposal.status === 'accepted' && proposal.leads?.delivered_at && (
+                                <div className="mt-3 flex items-center gap-2 text-sm text-green-700">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>Erledigt am {new Date(proposal.leads.delivered_at).toLocaleDateString('de-CH')}</span>
                                 </div>
                               )}
                             </div>
