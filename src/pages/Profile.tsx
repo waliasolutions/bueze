@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -75,9 +75,23 @@ const Profile = () => {
   const [showAddPaymentDialog, setShowAddPaymentDialog] = useState(false);
   const [serviceAreaInput, setServiceAreaInput] = useState('');
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { isHandwerker: isHandwerkerRole, isAdmin } = useUserRole();
   const { activeView } = useViewMode();
+
+  // Handle checkout success redirect
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast({
+        title: 'Zahlung erfolgreich',
+        description: 'Ihr Abonnement wird in Kürze aktiviert. Dies kann einige Sekunden dauern.',
+      });
+      // Clean up URL params
+      searchParams.delete('success');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
   // Role-aware back navigation using activeView
   const handleBackNavigation = () => {
@@ -218,7 +232,8 @@ const Profile = () => {
               currentPeriodEnd: subscriptionData.current_period_end,
               usedLeads: subscriptionData.proposals_used_this_period || 0,
               isYearly: plan.billingCycle !== 'monthly',
-              hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified)
+              hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified),
+              pendingPlan: (subscriptionData as any).pending_plan || null,
             });
           }
 
@@ -400,7 +415,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="personal" className="space-y-6">
+          <Tabs defaultValue={searchParams.get('tab') || 'personal'} className="space-y-6">
             <TabsList className="w-full flex flex-wrap sm:inline-flex h-auto p-1 gap-1 overflow-x-auto">
               <TabsTrigger value="personal" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
                 <User className="h-4 w-4 sm:mr-2" />
