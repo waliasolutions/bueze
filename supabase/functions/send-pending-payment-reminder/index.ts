@@ -42,7 +42,7 @@ serve(async (req) => {
 
     if (subError) {
       console.error('Error fetching subscriptions:', subError);
-      return errorResponse(`Failed to fetch subscriptions: ${subError.message}`, 500);
+      return errorResponse('Failed to fetch subscriptions', 500);
     }
 
     if (!subscriptions || subscriptions.length === 0) {

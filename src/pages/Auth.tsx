@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { getUserRoles } from '@/lib/roleHelpers';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
@@ -19,7 +19,10 @@ export default function Auth() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  // If redirected here from a ProtectedRoute, capture the intended destination
+  const returnTo = (location.state as { from?: string })?.from;
 
   const [signInData, setSignInData] = useState({
     email: '',
@@ -38,8 +41,15 @@ export default function Auth() {
       console.log('[Auth] Post-login redirect - user:', user.id);
       console.log('[Auth] Role data:', roleData);
       console.log('[Auth] Is handwerker role:', isHandwerkerRole);
+      console.log('[Auth] Return to:', returnTo);
     }
-    
+
+    // If user came from a specific protected page, redirect back there
+    if (returnTo && returnTo !== '/auth' && returnTo !== '/') {
+      navigate(returnTo);
+      return;
+    }
+
     // Check for admin/super_admin role FIRST
     if (roleData && (roleData.role === 'admin' || roleData.role === 'super_admin')) {
       if (import.meta.env.DEV) console.log('[Auth] Redirecting to admin dashboard');

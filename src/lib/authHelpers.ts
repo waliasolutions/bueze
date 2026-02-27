@@ -1,4 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
+import { clearAdminAuthCache } from '@/contexts/AdminAuthContext';
+import { STORAGE_KEYS } from '@/lib/localStorageVersioning';
 
 /**
  * ============================================
@@ -95,13 +97,17 @@ export const enhancedLogout = async (): Promise<void> => {
   try {
     // Sign out from Supabase
     await supabase.auth.signOut();
-    
-    // Clear all handwerker-related localStorage
-    localStorage.removeItem('handwerker-onboarding-draft');
-    
-    // Clear any other session-specific data
+
+    // Clear all session-specific localStorage (preserve cookie consent)
+    localStorage.removeItem(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
+    localStorage.removeItem(STORAGE_KEYS.SUBMIT_LEAD_DRAFT);
+
+    // Clear admin auth cache
+    clearAdminAuthCache();
+
+    // Clear session storage
     sessionStorage.clear();
-    
+
   } catch (error) {
     console.error('Error during logout:', error);
     throw error;
