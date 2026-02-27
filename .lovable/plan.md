@@ -1,38 +1,21 @@
 
 
-# Fix: "Andere E-Mail verwenden" flow is not intuitive
+## Add "Bewertungen" section to AGB
 
-## Root Cause
-When the user sees the "E-Mail bereits registriert" login form and changes the email to a new one, clicking "Anmelden" tries to **log in** with that new email (which has no account). The user expected it to **register** with the new email instead. The "Andere E-Mail verwenden" link exists but is small and easy to miss.
+Insert a new section **7. Bewertungen** between the current section 6 (Kündigung) and section 7 (Haftungsausschluss), then renumber sections 7-11 to 8-12.
 
-## Fix (in `HandwerkerOnboarding.tsx`)
+### Content of new section 7:
 
-**Auto-detect email change in login form and switch back to registration:**
+**7. Bewertungen**
 
-1. In the login form's email `<Input>` onChange handler (line ~698), detect when `loginEmail` differs from the original `formData.email`. When the user changes it, automatically:
-   - Set `showLoginForm(false)` 
-   - Update `formData.email` with the new email
-   - This returns them to the registration form with the new email pre-filled
+- Bewertungen können ausschliesslich nach vollständiger Erledigung und Abschluss eines vermittelten Auftrags abgegeben werden.
+- Es darf ausschliesslich die erbrachte handwerkliche Leistung bewertet werden; persönliche Angriffe, diskriminierende Äusserungen oder sachfremde Inhalte sind unzulässig.
+- Pro abgeschlossenem Auftrag kann der Auftraggeber eine Bewertung abgeben (1–5 Sterne, optionaler Kommentar).
+- Der bewertete Handwerker hat das Recht, auf eine Bewertung zu antworten.
+- Bewertungen werden öffentlich angezeigt; dabei wird aus Datenschutzgründen nur der Vorname des Auftraggebers angezeigt.
+- BÜEZE.CH behält sich das Recht vor, Bewertungen zu entfernen, die gegen diese AGB oder geltendes Recht verstossen.
 
-2. Concretely: wrap the `setLoginEmail` call with logic:
-```typescript
-onChange={(e) => {
-  const newEmail = e.target.value;
-  setLoginEmail(newEmail);
-  // If user clears or changes email significantly, switch back to registration
-  if (newEmail.trim().toLowerCase() !== formData.email.trim().toLowerCase()) {
-    // Debounce or trigger on blur — for now, add a visible "Neue E-Mail registrieren" button
-  }
-}}
-```
-
-3. **Better approach**: Make "Andere E-Mail verwenden" more prominent — change it from a small text link to a full-width outline `<Button>` with clear labeling like "Mit anderer E-Mail registrieren". When clicked, it already calls `setShowLoginForm(false)` but should also clear/update `formData.email` so the user can type a new one.
-
-4. Apply the same pattern to `SubmitLead.tsx` for consistency (line ~784, "Zurück zur Registrierung" button).
-
-## Files Changed
-- `src/pages/HandwerkerOnboarding.tsx` — Make "Andere E-Mail verwenden" a prominent button + pre-fill registration form with changed email
-- `src/pages/SubmitLead.tsx` — Same pattern for consistency
-
-## No database or edge function changes needed.
+### File: `src/pages/legal/AGB.tsx`
+- Insert new section after line 180 (end of section 6)
+- Renumber existing sections 7→8, 8→9, 9→10, 10→11, 11→12
 
