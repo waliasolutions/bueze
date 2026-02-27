@@ -8,7 +8,7 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper, safe } from '../_shared/emailTemplates.ts';
-import { getPlanName } from '../_shared/planLabels.ts';
+import { getPlanName, FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
@@ -29,7 +29,7 @@ serve(async (req) => {
       .update({
         status: 'expired',
         plan_type: 'free',
-        proposals_limit: 5,
+        proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
         updated_at: now,
       })
       .eq('status', 'active')

@@ -203,6 +203,19 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
               Nächste Abrechnung: {formatDate(currentSubscription.currentPeriodEnd)}
             </span>
           </div>
+
+          {currentSubscription.plan.id !== 'free' && (
+            <div className="pt-2 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                onClick={onCancelSubscription}
+              >
+                Abo kündigen
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

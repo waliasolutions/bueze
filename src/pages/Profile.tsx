@@ -19,8 +19,9 @@ import { PaymentMethodCard } from '@/components/PaymentMethodCard';
 import { SubscriptionManagement } from '@/components/SubscriptionManagement';
 import { AddPaymentMethodDialog } from '@/components/AddPaymentMethodDialog';
 import { PaymentHistoryTable } from '@/components/PaymentHistoryTable';
-import { X, Receipt } from 'lucide-react';
+import { X, Receipt, Loader2 } from 'lucide-react';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SWISS_CANTONS } from '@/config/cantons';
 import ServiceAreaMap from '@/components/ServiceAreaMap';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
@@ -168,7 +169,7 @@ const Profile = () => {
       // Fetch user profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, email, phone, city, zip, canton, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -185,29 +186,26 @@ const Profile = () => {
         // Check if user is handwerker by checking handwerker_profiles table
         const { data: handwerkerData } = await supabase
           .from('handwerker_profiles')
-          .select('*')
+          .select('id, user_id, bio, hourly_rate_min, hourly_rate_max, categories, service_areas, languages, website, verification_status, company_name, first_name, last_name')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (handwerkerData) {
-
-          if (handwerkerData) {
-            setHandwerkerProfile(handwerkerData);
-            handwerkerForm.reset({
-              bio: handwerkerData.bio || '',
-              hourly_rate_min: handwerkerData.hourly_rate_min || 60,
-              hourly_rate_max: handwerkerData.hourly_rate_max || 120,
-              categories: handwerkerData.categories || [],
-              service_areas: handwerkerData.service_areas || [],
-              languages: handwerkerData.languages || ['de'],
-              website: handwerkerData.website || '',
-            });
-          }
+          setHandwerkerProfile(handwerkerData);
+          handwerkerForm.reset({
+            bio: handwerkerData.bio || '',
+            hourly_rate_min: handwerkerData.hourly_rate_min || 60,
+            hourly_rate_max: handwerkerData.hourly_rate_max || 120,
+            categories: handwerkerData.categories || [],
+            service_areas: handwerkerData.service_areas || [],
+            languages: handwerkerData.languages || ['de'],
+            website: handwerkerData.website || '',
+          });
 
           // Fetch subscription data
           const { data: subscriptionData } = await supabase
             .from('handwerker_subscriptions')
-            .select('*')
+            .select('id, user_id, plan_type, status, proposals_used_this_period, proposals_limit, current_period_start, current_period_end, pending_plan, updated_at')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -367,9 +365,41 @@ const Profile = () => {
     navigate(`/checkout?plan=${planId}`);
   };
 
-  const handleCancelSubscription = () => {
-    // TODO: Implement proper cancellation flow
-    navigate('/profile?tab=subscription');
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('handwerker_subscriptions')
+        .update({
+          plan_type: 'free',
+          proposals_limit: SUBSCRIPTION_PLANS.free.proposalsLimit,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      toast({
+        title: 'Abonnement gekündigt',
+        description: 'Sie wurden auf den kostenlosen Plan umgestellt.',
+      });
+
+      setShowCancelDialog(false);
+      fetchUserData();
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Das Abonnement konnte nicht gekündigt werden.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCancelling(false);
+    }
   };
 
   if (loading) {
@@ -783,8 +813,31 @@ const Profile = () => {
                   currentSubscription={currentSubscription}
                   availablePlans={[]}
                   onUpgradePlan={handleUpgradePlan}
-                  onCancelSubscription={handleCancelSubscription}
+                  onCancelSubscription={() => setShowCancelDialog(true)}
                 />
+
+                <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Abonnement kündigen</DialogTitle>
+                      <DialogDescription>
+                        Möchten Sie Ihr Abonnement wirklich kündigen? Sie werden auf den kostenlosen Plan mit {SUBSCRIPTION_PLANS.free.proposalsLimit} Offerten/Monat umgestellt.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+                        Abbrechen
+                      </Button>
+                      <Button variant="destructive" onClick={handleCancelSubscription} disabled={cancelling}>
+                        {cancelling ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Wird gekündigt...</>
+                        ) : (
+                          'Ja, kündigen'
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
             )}
 

@@ -47,6 +47,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { FREE_TIER_PROPOSALS_LIMIT } from '@/config/subscriptionPlans';
 
 interface Handwerker {
   id: string;
@@ -212,7 +213,7 @@ export default function HandwerkerManagement() {
         await supabase.from('handwerker_subscriptions').upsert({
           user_id: handwerker.user_id,
           plan_type: 'free',
-          proposals_limit: 5,
+          proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
           proposals_used_this_period: 0,
         }, { onConflict: 'user_id' });
         
@@ -302,7 +303,7 @@ export default function HandwerkerManagement() {
           await supabase.from('handwerker_subscriptions').upsert({
             user_id: handwerker.user_id,
             plan_type: 'free',
-            proposals_limit: 5,
+            proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
             proposals_used_this_period: 0,
           }, { onConflict: 'user_id' });
           

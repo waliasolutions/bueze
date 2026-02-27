@@ -10,8 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  SUBSCRIPTION_PLANS, 
+import {
+  SUBSCRIPTION_PLANS,
+  FREE_TIER_PROPOSALS_LIMIT,
   SubscriptionPlanType,
   formatPrice,
 } from "@/config/subscriptionPlans";
@@ -31,6 +32,17 @@ export default function Checkout() {
   const [userId, setUserId] = useState<string | null>(null);
 
   const plan = SUBSCRIPTION_PLANS[selectedPlan];
+
+  // Show toast if user cancelled payment
+  useEffect(() => {
+    if (searchParams.get('cancelled') === 'true') {
+      toast({
+        title: 'Zahlung abgebrochen',
+        description: 'Sie können den Vorgang jederzeit erneut starten.',
+        variant: 'destructive',
+      });
+    }
+  }, []);
 
   useEffect(() => {
     checkAuthAndApproval();
@@ -85,7 +97,7 @@ export default function Checkout() {
           user_id: userId,
           pending_plan: selectedPlan,
           plan_type: 'free',
-          proposals_limit: 5,
+          proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
           proposals_used_this_period: 0,
         }, { onConflict: 'user_id' });
 
@@ -120,7 +132,7 @@ export default function Checkout() {
 
     try {
       const successUrl = `${window.location.origin}/profile?tab=subscription&success=true`;
-      const cancelUrl = `${window.location.origin}/checkout?plan=${selectedPlan}`;
+      const cancelUrl = `${window.location.origin}/checkout?plan=${selectedPlan}&cancelled=true`;
 
       // Use Payrexx for all payments (Swiss payment methods)
       const { data, error } = await supabase.functions.invoke('create-payrexx-gateway', {

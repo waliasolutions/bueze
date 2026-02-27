@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { SUBSCRIPTION_PLANS, type SubscriptionPlanType } from '@/config/subscriptionPlans';
+import { SUBSCRIPTION_PLANS, FREE_TIER_PROPOSALS_LIMIT, type SubscriptionPlanType } from '@/config/subscriptionPlans';
 
 export interface SubscriptionData {
   id: string;
@@ -51,7 +51,7 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
     try {
       const { data, error: fetchError } = await supabase
         .from('handwerker_subscriptions')
-        .select('*')
+        .select('id, user_id, plan_type, status, proposals_used_this_period, proposals_limit, current_period_start, current_period_end, pending_plan, updated_at')
         .eq('user_id', userId)
         .eq('status', 'active')
         .maybeSingle();
@@ -73,7 +73,7 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
             plan_type: 'free',
             status: 'active',
             proposals_used_this_period: 0,
-            proposals_limit: 5,
+            proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
             current_period_start: now.toISOString(),
             current_period_end: periodEnd.toISOString()
           })
@@ -110,7 +110,7 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
           isActive: subscriptionData.status === 'active',
           isLow: !isUnlimited && remainingProposals <= 2 && remainingProposals > 0,
           isDepleted: !isUnlimited && remainingProposals <= 0,
-          pendingPlan: (subscriptionData as any).pending_plan as SubscriptionPlanType | null,
+          pendingPlan: subscriptionData.pending_plan as SubscriptionPlanType | null,
         });
       } else {
         setSubscription(null);

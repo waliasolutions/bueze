@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
-import { PLAN_AMOUNTS } from '../_shared/planLabels.ts';
+import { PLAN_AMOUNTS, FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           plan_type: 'free',
           status: 'active',
-          proposals_limit: 5,
+          proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id',

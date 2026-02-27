@@ -3,7 +3,7 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { subscriptionConfirmationTemplate } from '../_shared/emailTemplates.ts';
-import { getPlanName } from '../_shared/planLabels.ts';
+import { getPlanName, PLAN_AMOUNTS } from '../_shared/planLabels.ts';
 import { formatSwissDate } from '../_shared/dateFormatter.ts';
 
 serve(async (req: Request) => {
@@ -44,11 +44,31 @@ serve(async (req: Request) => {
       `${hwProfile?.first_name || ''} ${hwProfile?.last_name || ''}`.trim() ||
       emailProfile.full_name || 'Handwerker';
 
+    // Auto-lookup periodEnd from subscription if not provided
+    let resolvedPeriodEnd = periodEnd;
+    let resolvedAmount = amount;
+
+    if (!resolvedPeriodEnd || !resolvedAmount) {
+      const { data: subscription } = await supabase
+        .from('handwerker_subscriptions')
+        .select('current_period_end')
+        .eq('user_id', userId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (!resolvedPeriodEnd && subscription?.current_period_end) {
+        resolvedPeriodEnd = subscription.current_period_end;
+      }
+      if (!resolvedAmount && PLAN_AMOUNTS[planType]) {
+        resolvedAmount = PLAN_AMOUNTS[planType];
+      }
+    }
+
     const planName = getPlanName(planType);
-    const formattedPeriodEnd = periodEnd
-      ? formatSwissDate(periodEnd)
+    const formattedPeriodEnd = resolvedPeriodEnd
+      ? formatSwissDate(resolvedPeriodEnd)
       : 'Unbegrenzt';
-    const formattedAmount = amount ? `CHF ${(amount / 100).toFixed(2)}` : 'Gemäss Ihrem Plan';
+    const formattedAmount = resolvedAmount ? `CHF ${(resolvedAmount / 100).toFixed(2)}` : 'Gemäss Ihrem Plan';
 
     console.log(`[send-subscription-confirmation] Sending confirmation to ${emailProfile.email}`);
 

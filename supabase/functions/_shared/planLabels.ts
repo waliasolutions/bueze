@@ -34,6 +34,9 @@ export function getPlanNameWithPrice(planType: string): string {
   return PLAN_NAMES_WITH_PRICE[planType] || planType;
 }
 
+/** SSOT: Free tier proposals limit. Use this instead of hardcoding 5. */
+export const FREE_TIER_PROPOSALS_LIMIT = 5;
+
 export function getPlanAmount(planType: string): number | null {
   return PLAN_AMOUNTS[planType] || null;
 }

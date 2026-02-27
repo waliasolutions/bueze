@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { getRoleBadgeVariant } from '@/config/roles';
 
 interface User {
   id: string;
@@ -32,17 +33,6 @@ const AVAILABLE_ROLES = [
   { value: 'admin', label: 'Administrator', description: 'Administrator mit erweiterten Rechten' },
   { value: 'super_admin', label: 'Super Administrator', description: 'Vollzugriff auf System und Benutzerverwaltung' },
 ];
-
-const getRoleBadgeVariant = (role: string) => {
-  switch (role) {
-    case 'super_admin':
-      return 'default';
-    case 'admin':
-      return 'secondary';
-    default:
-      return 'outline';
-  }
-};
 
 export default function UserManagement() {
   const [loading, setLoading] = useState(true);
