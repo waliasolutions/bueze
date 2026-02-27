@@ -93,6 +93,6 @@ serve(async (req) => {
     return successResponse({ success: true, message: 'Document expiry reminders processed', results });
   } catch (error) {
     console.error('Error in document-expiry-reminder:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });

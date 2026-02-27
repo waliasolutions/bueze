@@ -79,7 +79,7 @@ serve(async (req: Request) => {
     // Batch fetch handwerker profiles
     const handwerkerIds = [...new Set(
       unreviewedLeads
-        .map(l => (l.lead_proposals as { handwerker_id: string } | null)?.handwerker_id)
+        .map(l => ((l.lead_proposals as unknown as { handwerker_id: string }[])?.[0])?.handwerker_id)
         .filter((id): id is string => !!id)
     )];
     const { data: hwProfiles } = await supabase
@@ -92,7 +92,7 @@ serve(async (req: Request) => {
     const tokenExpiresAt = new Date();
     tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30);
     const tokenRecords = unreviewedLeads.map(lead => {
-      const proposal = lead.lead_proposals as { id: string; handwerker_id: string } | null;
+      const proposal = ((lead.lead_proposals as unknown as { id: string; handwerker_id: string }[]) ?? [])[0] ?? null;
       return {
         token: crypto.randomUUID(),
         resource_type: 'rating',
@@ -120,7 +120,7 @@ serve(async (req: Request) => {
       const client = clientMap.get(lead.owner_id);
       if (!client?.email) { skipped++; continue; }
 
-      const proposal = lead.lead_proposals as { handwerker_id: string } | null;
+      const proposal = ((lead.lead_proposals as unknown as { handwerker_id: string }[]) ?? [])[0] ?? null;
       const hw = proposal ? hwMap.get(proposal.handwerker_id) : null;
       const handwerkerName = hw?.company_name ||
         `${hw?.first_name || ''} ${hw?.last_name || ''}`.trim() ||
