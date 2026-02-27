@@ -29,7 +29,7 @@ const adminAuthCache = {
   userId: null as string | null,
   isAdmin: false,
   checkedAt: 0,
-  TTL: 5 * 60 * 1000, // 5 minutes
+  TTL: 30 * 1000, // 30 seconds — keep short to catch role revocations quickly
 };
 
 export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
@@ -185,6 +185,19 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
     ...state,
     refetch: checkAdminAuth,
   };
+
+  // Don't render children until auth check completes — prevents flash of admin content
+  if (state.isChecking || !state.hasChecked) {
+    return (
+      <AdminAuthContext.Provider value={value}>
+        {null}
+      </AdminAuthContext.Provider>
+    );
+  }
+
+  if (!state.isAuthorized) {
+    return null;
+  }
 
   return (
     <AdminAuthContext.Provider value={value}>

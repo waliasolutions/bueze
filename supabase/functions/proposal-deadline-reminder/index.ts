@@ -1,105 +1,19 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-const emailWrapper = (content: string) => `
-<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"></head>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #0066CC; color: white; padding: 20px; text-align: center;">
-    <h1 style="margin: 0;">BÜEZE.CH</h1>
-  </div>
-  ${content}
-  <div style="background: #f5f5f5; padding: 15px; text-align: center; margin-top: 30px; font-size: 12px; color: #666;">
-    <p>© 2025 BÜEZE.CH - Ihr schweizer Handwerkerportal</p>
-  </div>
-</body>
-</html>
-`;
-
-const clientReminderTemplate = (data: any) => {
-  const deadlineDate = new Date(data.deadline);
-  const formattedDeadline = deadlineDate.toLocaleDateString('de-CH', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
-  });
-
-  return emailWrapper(`
-    <div style="padding: 30px;">
-      <h2>Hallo ${data.clientName}</h2>
-      <p>Sie haben <strong>${data.proposalsCount} ${data.proposalsCount === 1 ? 'Offerte' : 'Offerten'}</strong> für Ihr Projekt erhalten:</p>
-      
-      <div style="background: #dbeafe; border-left: 4px solid #0066CC; padding: 15px; margin: 20px 0;">
-        <h3 style="margin: 0 0 10px 0; color: #1e40af;">${data.leadTitle}</h3>
-        <p style="margin: 0; color: #d97706; font-weight: bold;">⏰ Frist: ${formattedDeadline} (noch 2 Tage!)</p>
-      </div>
-
-      <p>Bitte überprüfen Sie die Offerten zeitnah in Ihrem Dashboard.</p>
-
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${data.dashboardLink}" style="background: #0066CC; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-          Offerten ansehen
-        </a>
-      </div>
-    </div>
-  `);
-};
-
-const handwerkerReminderTemplate = (data: any) => {
-  const deadlineDate = new Date(data.deadline);
-  const formattedDeadline = deadlineDate.toLocaleDateString('de-CH', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long'
-  });
-
-  return emailWrapper(`
-    <div style="padding: 30px;">
-      <h2>Letzte Chance, ${data.handwerkerName}!</h2>
-      <p>Die Frist für diese Anfrage läuft bald ab:</p>
-      
-      <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h3 style="margin: 0 0 15px 0; color: #0066CC;">${data.leadTitle}</h3>
-        <p style="margin: 5px 0;"><strong>Kategorie:</strong> ${data.category}</p>
-        <p style="margin: 5px 0;"><strong>Ort:</strong> ${data.city}</p>
-        <p style="margin: 5px 0;"><strong>Budget:</strong> CHF ${data.budgetMin?.toLocaleString()} - ${data.budgetMax?.toLocaleString()}</p>
-      </div>
-
-      <p style="color: #d97706; font-weight: bold;">⏰ Frist: ${formattedDeadline} (noch 2 Tage!)</p>
-
-      <p>Sie haben sich diese Anfrage angesehen, aber noch keine Offerte eingereicht.</p>
-
-      <div style="text-align: center; margin: 30px 0;">
-        <a href="${data.magicLink}" style="background: #f59e0b; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-          Jetzt Offerte einreichen
-        </a>
-      </div>
-    </div>
-  `);
-};
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
+import { sendEmail } from '../_shared/smtp2go.ts';
+import { proposalDeadlineClientTemplate, proposalDeadlineHandwerkerTemplate } from '../_shared/emailTemplates.ts';
+import { formatSwissDateLong } from '../_shared/dateFormatter.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     console.log('[proposal-deadline-reminder] Starting deadline reminder check...');
 
-    const smtp2goApiKey = Deno.env.get('SMTP2GO_API_KEY');
-    if (!smtp2goApiKey) {
-      throw new Error('SMTP2GO_API_KEY not configured');
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createSupabaseAdmin();
 
     // Find leads expiring in 2 days
     const twoDaysFromNow = new Date();
@@ -139,6 +53,8 @@ serve(async (req) => {
     let handwerkerEmailsSent = 0;
 
     for (const lead of expiringLeads || []) {
+      const formattedDeadline = formatSwissDateLong(lead.proposal_deadline);
+
       // Step 2: Fetch owner profile separately
       const { data: ownerProfile, error: ownerError } = await supabase
         .from('profiles')
@@ -159,35 +75,26 @@ serve(async (req) => {
           .eq('status', 'pending');
 
         if (proposals && proposals.length > 0) {
-          const clientEmailHtml = clientReminderTemplate({
+          const clientEmailHtml = proposalDeadlineClientTemplate({
             clientName: ownerProfile.full_name || 'Kunde',
             leadTitle: lead.title,
             proposalsCount: proposals.length,
-            deadline: lead.proposal_deadline,
-            dashboardLink: 'https://bueeze.ch/dashboard'
+            formattedDeadline,
+            dashboardLink: `${FRONTEND_URL}/dashboard`
           });
 
           console.log(`[proposal-deadline-reminder] Sending client reminder to ${ownerProfile.email}`);
 
-          const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Smtp2go-Api-Key': smtp2goApiKey,
-            },
-            body: JSON.stringify({
-              sender: 'noreply@bueeze.ch',
-              to: [ownerProfile.email],
-              subject: `Erinnerung: ${proposals.length} Offerten warten auf Ihre Antwort`,
-              html_body: clientEmailHtml,
-            }),
+          const result = await sendEmail({
+            to: ownerProfile.email,
+            subject: `Erinnerung: ${proposals.length} Offerten warten auf Ihre Antwort`,
+            htmlBody: clientEmailHtml,
           });
 
-          if (emailResponse.ok) {
+          if (result.success) {
             clientEmailsSent++;
           } else {
-            const errorData = await emailResponse.json();
-            console.error(`[proposal-deadline-reminder] Client email failed:`, errorData);
+            console.error(`[proposal-deadline-reminder] Client email failed:`, result.error);
           }
         }
       }
@@ -231,12 +138,12 @@ serve(async (req) => {
               expires_at: expiresAt.toISOString(),
             });
 
-            const magicLink = `https://bueeze.ch/opportunity/${lead.id}?token=${token}`;
+            const magicLink = `${FRONTEND_URL}/opportunity/${lead.id}?token=${token}`;
 
-            const handwerkerEmailHtml = handwerkerReminderTemplate({
+            const handwerkerEmailHtml = proposalDeadlineHandwerkerTemplate({
               handwerkerName: profile.full_name || 'Handwerker',
               leadTitle: lead.title,
-              deadline: lead.proposal_deadline,
+              formattedDeadline,
               magicLink,
               category: lead.category,
               city: lead.city,
@@ -246,25 +153,16 @@ serve(async (req) => {
 
             console.log(`[proposal-deadline-reminder] Sending handwerker reminder to ${profile.email}`);
 
-            const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Smtp2go-Api-Key': smtp2goApiKey,
-              },
-              body: JSON.stringify({
-                sender: 'noreply@bueeze.ch',
-                to: [profile.email],
-                subject: `Letzte Chance: Offerte für "${lead.title}" einreichen`,
-                html_body: handwerkerEmailHtml,
-              }),
+            const result = await sendEmail({
+              to: profile.email,
+              subject: `Letzte Chance: Offerte für "${lead.title}" einreichen`,
+              htmlBody: handwerkerEmailHtml,
             });
 
-            if (emailResponse.ok) {
+            if (result.success) {
               handwerkerEmailsSent++;
             } else {
-              const errorData = await emailResponse.json();
-              console.error(`[proposal-deadline-reminder] Handwerker email failed:`, errorData);
+              console.error(`[proposal-deadline-reminder] Handwerker email failed:`, result.error);
             }
           }
         }
@@ -273,26 +171,21 @@ serve(async (req) => {
 
     console.log(`[proposal-deadline-reminder] Complete: ${clientEmailsSent} clients, ${handwerkerEmailsSent} handwerkers`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Deadline reminders processed',
-        clientEmailsSent,
-        handwerkerEmailsSent,
-        leadsProcessed: expiringLeads?.length || 0
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    );
+    return successResponse({
+      success: true,
+      message: 'Deadline reminders processed',
+      clientEmailsSent,
+      handwerkerEmailsSent,
+      leadsProcessed: expiringLeads?.length || 0
+    });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('[proposal-deadline-reminder] Error:', error);
-    
+
     // Create admin notification for function failure
     try {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
+      const supabase = createSupabaseAdmin();
+
       await supabase.from('admin_notifications').insert({
         type: 'scheduled_function_error',
         title: 'Proposal Deadline Reminder fehlgeschlagen',
@@ -306,10 +199,7 @@ serve(async (req) => {
     } catch (notifError) {
       console.error('[proposal-deadline-reminder] Failed to create admin notification:', notifError);
     }
-    
-    return new Response(
-      JSON.stringify({ error: error.message, success: false }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    );
+
+    return errorResponse(error.message, 500);
   }
 });

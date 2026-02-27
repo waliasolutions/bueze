@@ -194,7 +194,7 @@ export default function SEOTools() {
             </CardHeader>
           </Card>
           
-          <Card className="cursor-pointer hover:border-brand-500 transition-colors" onClick={() => navigate('/admin/seo/gtm')}>
+          <Card className="cursor-pointer hover:border-brand-500 transition-colors" onClick={() => navigate('/admin/gtm')}>
             <CardHeader>
               <CardTitle className="text-lg">GTM Configuration</CardTitle>
               <CardDescription>Configure Google Tag Manager container ID for tracking</CardDescription>

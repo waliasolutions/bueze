@@ -398,7 +398,7 @@ export default function ResetPassword() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={8}
+                  minLength={PASSWORD_MIN_LENGTH}
                 />
               </div>
               <div className="space-y-2">
@@ -410,7 +410,7 @@ export default function ResetPassword() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  minLength={8}
+                  minLength={PASSWORD_MIN_LENGTH}
                 />
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>

@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper } from '../_shared/emailTemplates.ts';
+import { FRONTEND_URL, SUPPORT_EMAIL } from '../_shared/siteConfig.ts';
 
 // HTML template for credentials email
 const credentialsEmailTemplate = (data: {
@@ -38,7 +39,7 @@ const credentialsEmailTemplate = (data: {
       <p>Sobald Ihr Profil geprüft und freigeschaltet wurde, erhalten Sie eine weitere E-Mail und können dann alle aktiven Aufträge durchsuchen und Offerten abgeben.</p>
 
       <p style="text-align: center;">
-        <a href="https://bueeze.ch/auth" class="button">Jetzt anmelden</a>
+        <a href="${FRONTEND_URL}/auth" class="button">Jetzt anmelden</a>
       </p>
 
       <p style="font-size: 14px; color: #666;">
@@ -46,7 +47,7 @@ const credentialsEmailTemplate = (data: {
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);

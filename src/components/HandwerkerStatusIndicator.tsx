@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { FREE_TIER_PROPOSALS_LIMIT } from '@/config/subscriptionPlans';
 
 interface HandwerkerStatusIndicatorProps {
   userId: string;
@@ -122,7 +123,7 @@ export const HandwerkerStatusIndicator: React.FC<HandwerkerStatusIndicatorProps>
     const isUnlimited = subscription?.proposals_limit === -1;
     const remaining = isUnlimited 
       ? Infinity 
-      : (subscription?.proposals_limit || 5) - (subscription?.proposals_used_this_period || 0);
+      : (subscription?.proposals_limit || FREE_TIER_PROPOSALS_LIMIT) - (subscription?.proposals_used_this_period || 0);
 
     const isActive = subscription?.status === 'active';
     

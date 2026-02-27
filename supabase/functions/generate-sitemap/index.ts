@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -85,7 +86,7 @@ Deno.serve(async (req) => {
 
     if (error) throw error;
 
-    const baseUrl = 'https://bueeze.ch';
+    const baseUrl = FRONTEND_URL;
     const now = new Date().toISOString();
 
     // Define static routes (PUBLIC INDEXABLE PAGES ONLY)

@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { fetchClientProfile } from '../_shared/profileHelpers.ts';
 import { newMessageNotificationTemplate } from '../_shared/emailTemplates.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -63,7 +64,7 @@ serve(async (req) => {
       return successResponse({ success: true, message: 'No recipient email' });
     }
 
-    const conversationLink = `https://bueeze.ch/messages/${message.conversation_id}`;
+    const conversationLink = `${FRONTEND_URL}/messages/${message.conversation_id}`;
     const senderName = senderProfile?.fullName || 'Jemand';
     const recipientName = recipientProfile.fullName || 'Nutzer';
 

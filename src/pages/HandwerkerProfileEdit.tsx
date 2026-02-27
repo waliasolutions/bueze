@@ -155,12 +155,12 @@ const HandwerkerProfileEdit = () => {
         return;
       }
 
-      // Check if user is a handwerker (pending or approved)
+      // Check if user is a handwerker (pending, approved, or rejected — rejected can resubmit)
       const { data: profileData, error } = await supabase
         .from('handwerker_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .in('verification_status', ['pending', 'approved'])
+        .in('verification_status', ['pending', 'approved', 'rejected'])
         .maybeSingle();
 
       if (error) throw error;
@@ -697,9 +697,25 @@ const HandwerkerProfileEdit = () => {
 
       if (error) throw error;
 
+      // If profile was rejected, resubmit for review by setting status back to pending
+      if (profile.verification_status === 'rejected' && !silent) {
+        const { error: resubmitError } = await supabase
+          .from('handwerker_profiles')
+          .update({ verification_status: 'pending' })
+          .eq('id', profile.id);
+
+        if (!resubmitError) {
+          setProfile({ ...profile, verification_status: 'pending' });
+          toast({
+            title: 'Profil erneut eingereicht',
+            description: 'Ihr Profil wurde zur erneuten Prüfung eingereicht.',
+          });
+        }
+      }
+
       setLastSaved(new Date());
 
-      if (!silent) {
+      if (!silent && profile.verification_status !== 'rejected') {
         toast({
           title: 'Profil gespeichert',
           description: 'Ihre Änderungen wurden erfolgreich gespeichert.',
@@ -806,6 +822,17 @@ const HandwerkerProfileEdit = () => {
               </Button>
             </div>
           </div>
+
+          {/* Rejection banner — allow resubmission */}
+          {profile.verification_status === 'rejected' && (
+            <div className="mb-6 p-4 border border-red-300 bg-red-50 dark:bg-red-900/10 dark:border-red-800 rounded-lg">
+              <p className="font-medium text-red-800 dark:text-red-200">Ihr Profil wurde abgelehnt</p>
+              <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                Bitte aktualisieren Sie Ihr Profil und laden Sie fehlende Dokumente hoch.
+                Wenn Sie speichern, wird Ihr Profil automatisch zur erneuten Prüfung eingereicht.
+              </p>
+            </div>
+          )}
 
           {/* Show Preview or Edit Mode */}
           {isPreviewMode ? (

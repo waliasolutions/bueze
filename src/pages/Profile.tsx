@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,8 +19,9 @@ import { PaymentMethodCard } from '@/components/PaymentMethodCard';
 import { SubscriptionManagement } from '@/components/SubscriptionManagement';
 import { AddPaymentMethodDialog } from '@/components/AddPaymentMethodDialog';
 import { PaymentHistoryTable } from '@/components/PaymentHistoryTable';
-import { X, Receipt } from 'lucide-react';
+import { X, Receipt, Loader2 } from 'lucide-react';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SWISS_CANTONS } from '@/config/cantons';
 import ServiceAreaMap from '@/components/ServiceAreaMap';
 import { SUBSCRIPTION_PLANS } from '@/config/subscriptionPlans';
@@ -75,9 +76,23 @@ const Profile = () => {
   const [showAddPaymentDialog, setShowAddPaymentDialog] = useState(false);
   const [serviceAreaInput, setServiceAreaInput] = useState('');
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { isHandwerker: isHandwerkerRole, isAdmin } = useUserRole();
   const { activeView } = useViewMode();
+
+  // Handle checkout success redirect
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast({
+        title: 'Zahlung erfolgreich',
+        description: 'Ihr Abonnement wird in Kürze aktiviert. Dies kann einige Sekunden dauern.',
+      });
+      // Clean up URL params
+      searchParams.delete('success');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
   // Role-aware back navigation using activeView
   const handleBackNavigation = () => {
@@ -154,7 +169,7 @@ const Profile = () => {
       // Fetch user profile
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, email, phone, city, zip, canton, avatar_url')
         .eq('id', user.id)
         .single();
 
@@ -171,29 +186,26 @@ const Profile = () => {
         // Check if user is handwerker by checking handwerker_profiles table
         const { data: handwerkerData } = await supabase
           .from('handwerker_profiles')
-          .select('*')
+          .select('id, user_id, bio, hourly_rate_min, hourly_rate_max, categories, service_areas, languages, website, verification_status, company_name, first_name, last_name')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (handwerkerData) {
-
-          if (handwerkerData) {
-            setHandwerkerProfile(handwerkerData);
-            handwerkerForm.reset({
-              bio: handwerkerData.bio || '',
-              hourly_rate_min: handwerkerData.hourly_rate_min || 60,
-              hourly_rate_max: handwerkerData.hourly_rate_max || 120,
-              categories: handwerkerData.categories || [],
-              service_areas: handwerkerData.service_areas || [],
-              languages: handwerkerData.languages || ['de'],
-              website: handwerkerData.website || '',
-            });
-          }
+          setHandwerkerProfile(handwerkerData);
+          handwerkerForm.reset({
+            bio: handwerkerData.bio || '',
+            hourly_rate_min: handwerkerData.hourly_rate_min || 60,
+            hourly_rate_max: handwerkerData.hourly_rate_max || 120,
+            categories: handwerkerData.categories || [],
+            service_areas: handwerkerData.service_areas || [],
+            languages: handwerkerData.languages || ['de'],
+            website: handwerkerData.website || '',
+          });
 
           // Fetch subscription data
           const { data: subscriptionData } = await supabase
             .from('handwerker_subscriptions')
-            .select('*')
+            .select('id, user_id, plan_type, status, proposals_used_this_period, proposals_limit, current_period_start, current_period_end, pending_plan, updated_at')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -202,23 +214,15 @@ const Profile = () => {
             const plan = SUBSCRIPTION_PLANS[planType];
             
             setCurrentSubscription({
-              plan: {
-                id: plan.id,
-                name: plan.name,
-                displayName: plan.displayName,
-                monthlyPrice: plan.pricePerMonth,
-                yearlyPrice: plan.price,
-                competitors: 0, // Deprecated field
-                includedLeads: plan.proposalsLimit === -1 ? Infinity : plan.proposalsLimit,
-                extraLeadPrice: 0,
-                features: plan.features
-              },
+              plan,
               isActive: subscriptionData.status === 'active',
               currentPeriodStart: subscriptionData.current_period_start,
               currentPeriodEnd: subscriptionData.current_period_end,
-              usedLeads: subscriptionData.proposals_used_this_period || 0,
-              isYearly: plan.billingCycle !== 'monthly',
-              hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified)
+              usedProposals: subscriptionData.proposals_used_this_period || 0,
+              hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified),
+              pendingPlan: subscriptionData.pending_plan || null,
+              userId: user.id,
+              isApproved: handwerkerData.verification_status === 'approved',
             });
           }
 
@@ -352,9 +356,70 @@ const Profile = () => {
     navigate(`/checkout?plan=${planId}`);
   };
 
-  const handleCancelSubscription = () => {
-    // TODO: Implement proper cancellation flow
-    navigate('/profile?tab=subscription');
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelSubscription = async () => {
+    setCancelling(true);
+    try {
+      // Mark subscription for cancellation at period end (don't immediately downgrade)
+      const { error } = await supabase
+        .from('handwerker_subscriptions')
+        .update({
+          pending_plan: 'free',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      toast({
+        title: 'Kündigung vorgemerkt',
+        description: 'Ihr Abonnement bleibt bis zum Ende der Laufzeit aktiv.',
+      });
+
+      setShowCancelDialog(false);
+      fetchUserData();
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Das Abonnement konnte nicht gekündigt werden.',
+        variant: 'destructive',
+      });
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleUndoCancellation = async () => {
+    try {
+      const { error } = await supabase
+        .from('handwerker_subscriptions')
+        .update({
+          pending_plan: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      toast({
+        title: 'Kündigung zurückgenommen',
+        description: 'Ihr Abonnement wird wie gewohnt fortgesetzt.',
+      });
+
+      fetchUserData();
+    } catch (error) {
+      console.error('Error undoing cancellation:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Die Kündigung konnte nicht zurückgenommen werden.',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (loading) {
@@ -400,7 +465,7 @@ const Profile = () => {
             </div>
           </div>
 
-          <Tabs defaultValue="personal" className="space-y-6">
+          <Tabs defaultValue={searchParams.get('tab') || 'personal'} className="space-y-6">
             <TabsList className="w-full flex flex-wrap sm:inline-flex h-auto p-1 gap-1 overflow-x-auto">
               <TabsTrigger value="personal" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
                 <User className="h-4 w-4 sm:mr-2" />
@@ -768,8 +833,32 @@ const Profile = () => {
                   currentSubscription={currentSubscription}
                   availablePlans={[]}
                   onUpgradePlan={handleUpgradePlan}
-                  onCancelSubscription={handleCancelSubscription}
+                  onCancelSubscription={() => setShowCancelDialog(true)}
+                  onUndoCancellation={handleUndoCancellation}
                 />
+
+                <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Abonnement kündigen</DialogTitle>
+                      <DialogDescription>
+                        Möchten Sie Ihr Abonnement wirklich kündigen? Ihr Plan bleibt bis zum Ende der aktuellen Laufzeit aktiv. Danach werden Sie auf den kostenlosen Plan mit {SUBSCRIPTION_PLANS.free.proposalsLimit} Offerten/Monat umgestellt.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+                        Abbrechen
+                      </Button>
+                      <Button variant="destructive" onClick={handleCancelSubscription} disabled={cancelling}>
+                        {cancelling ? (
+                          <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Wird gekündigt...</>
+                        ) : (
+                          'Ja, zum Laufzeitende kündigen'
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>
             )}
 

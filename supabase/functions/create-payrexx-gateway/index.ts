@@ -1,24 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { PLAN_AMOUNTS, PLAN_GATEWAY_NAMES } from '../_shared/planLabels.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY')!;
 const PAYREXX_INSTANCE = Deno.env.get('PAYREXX_INSTANCE')!;
-
-// Plan amounts in Rappen (CHF cents)
-const PLAN_AMOUNTS: Record<string, number> = {
-  monthly: 9000,
-  '6_month': 51000,
-  annual: 96000,
-};
-
-// Plan display names
-const PLAN_NAMES: Record<string, string> = {
-  monthly: 'Monatliches Abo',
-  '6_month': '6-Monats-Abo',
-  annual: 'Jahres-Abo',
-};
 
 /**
  * Build query string from object
@@ -95,7 +82,7 @@ Deno.serve(async (req) => {
     }
 
     const amount = PLAN_AMOUNTS[planType];
-    const planName = PLAN_NAMES[planType];
+    const planName = PLAN_GATEWAY_NAMES[planType];
     const referenceId = `${userId}-${planType}-${Date.now()}`;
 
     // Build Payrexx Gateway request

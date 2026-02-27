@@ -1,298 +1,173 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
+import { sendEmail } from '../_shared/smtp2go.ts';
+import { ratingReminderTemplate } from '../_shared/emailTemplates.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Rating reminder email template
-const ratingReminderTemplate = (data: {
-  clientName: string;
-  projectTitle: string;
-  handwerkerName: string;
-  ratingLink: string;
-}) => `
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-      line-height: 1.6;
-      color: #333333;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #ffffff;
-    }
-    .header {
-      background: #0066CC;
-      color: white;
-      padding: 30px 20px;
-      text-align: center;
-    }
-    .header h1 {
-      margin: 0;
-      font-size: 28px;
-      font-weight: bold;
-    }
-    .content {
-      padding: 30px 20px;
-    }
-    .button {
-      display: inline-block;
-      background: #0066CC;
-      color: white !important;
-      padding: 14px 28px;
-      text-decoration: none;
-      border-radius: 6px;
-      margin: 20px 0;
-      font-weight: 600;
-    }
-    .info-box {
-      background: #f8f9fa;
-      border-left: 4px solid #0066CC;
-      padding: 15px;
-      margin: 20px 0;
-    }
-    .footer {
-      background: #f5f5f5;
-      padding: 20px;
-      text-align: center;
-      font-size: 12px;
-      color: #666666;
-      border-top: 1px solid #e0e0e0;
-    }
-    .footer a {
-      color: #0066CC;
-      text-decoration: none;
-    }
-    h2 {
-      color: #0066CC;
-      margin-top: 0;
-    }
-    .stars {
-      font-size: 24px;
-      color: #FFD700;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>BÜEZE.CH</h1>
-    </div>
-    <div class="content">
-      <h2>⭐ Wie war Ihre Erfahrung?</h2>
-      <p>Hallo ${data.clientName},</p>
-      <p>Vor einer Woche haben Sie <strong>${data.handwerkerName}</strong> für Ihr Projekt <strong>"${data.projectTitle}"</strong> ausgewählt.</p>
-      
-      <div class="info-box">
-        <p>Ihre Bewertung hilft anderen Kunden, den richtigen Handwerker zu finden, und unterstützt qualitätsbewusste Fachleute.</p>
-        <p class="stars">★★★★★</p>
-      </div>
-
-      <p style="text-align: center;">
-        <a href="${data.ratingLink}" class="button">Jetzt bewerten</a>
-      </p>
-
-      <p style="font-size: 14px; color: #666;">
-        Die Bewertung dauert nur 1-2 Minuten und ist anonym für andere Nutzer (nur Ihr Vorname wird angezeigt).
-      </p>
-    </div>
-    <div class="footer">
-      <p><strong>Büeze.ch GmbH</strong><br>
-      Industriestrasse 28 | 9487 Gamprin-Bendern | Liechtenstein</p>
-      <p><a href="https://bueeze.ch">www.bueeze.ch</a> | <a href="mailto:info@bueeze.ch">info@bueeze.ch</a></p>
-    </div>
-  </div>
-</body>
-</html>
-`;
-
-const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+serve(async (req: Request) => {
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const smtp2goApiKey = Deno.env.get("SMTP2GO_API_KEY");
-    
-    if (!smtp2goApiKey) {
-      throw new Error("SMTP2GO_API_KEY not configured");
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = createSupabaseAdmin();
 
     console.log("[send-rating-reminder] Starting rating reminder check...");
 
-    // Find accepted proposals from ~7 days ago that haven't been rated yet
+    // Find leads delivered 7-8 days ago (handwerker confirmed delivery)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const eightDaysAgo = new Date();
     eightDaysAgo.setDate(eightDaysAgo.getDate() - 8);
 
-    // Get proposals accepted between 7-8 days ago
-    const { data: proposals, error: proposalsError } = await supabase
-      .from('lead_proposals')
+    // Get delivered leads from 7-8 days ago with their accepted proposals
+    const { data: deliveredLeads, error: leadsError } = await supabase
+      .from('leads')
       .select(`
         id,
-        lead_id,
-        handwerker_id,
-        responded_at,
-        leads (
+        title,
+        owner_id,
+        delivered_at,
+        accepted_proposal_id,
+        lead_proposals!leads_accepted_proposal_id_fkey (
           id,
-          title,
-          owner_id
+          handwerker_id
         )
       `)
-      .eq('status', 'accepted')
-      .gte('responded_at', eightDaysAgo.toISOString())
-      .lt('responded_at', sevenDaysAgo.toISOString());
+      .eq('status', 'completed')
+      .not('delivered_at', 'is', null)
+      .not('accepted_proposal_id', 'is', null)
+      .gte('delivered_at', eightDaysAgo.toISOString())
+      .lt('delivered_at', sevenDaysAgo.toISOString());
 
-    if (proposalsError) {
-      console.error("[send-rating-reminder] Error fetching proposals:", proposalsError);
-      throw proposalsError;
+    if (leadsError) {
+      console.error("[send-rating-reminder] Error fetching delivered leads:", leadsError);
+      throw leadsError;
     }
 
-    console.log(`[send-rating-reminder] Found ${proposals?.length || 0} proposals to check for rating reminders`);
+    console.log(`[send-rating-reminder] Found ${deliveredLeads?.length || 0} delivered leads to check`);
+
+    if (!deliveredLeads || deliveredLeads.length === 0) {
+      return successResponse({ success: true, emailsSent: 0, skipped: 0, message: 'No delivered leads to process' });
+    }
+
+    // Batch check for existing reviews
+    const leadIds = deliveredLeads.map(l => l.id);
+    const { data: existingReviews } = await supabase
+      .from('reviews')
+      .select('lead_id')
+      .in('lead_id', leadIds);
+
+    const reviewedLeadIds = new Set(existingReviews?.map(r => r.lead_id) || []);
+
+    // Filter to unreviewed leads
+    const unreviewedLeads = deliveredLeads.filter(l => !reviewedLeadIds.has(l.id));
+    console.log(`[send-rating-reminder] ${unreviewedLeads.length} leads need rating reminders`);
+
+    if (unreviewedLeads.length === 0) {
+      return successResponse({ success: true, emailsSent: 0, skipped: leadIds.length, message: 'All leads already reviewed' });
+    }
+
+    // Batch fetch client profiles
+    const ownerIds = [...new Set(unreviewedLeads.map(l => l.owner_id))];
+    const { data: clientProfiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, first_name, email')
+      .in('id', ownerIds);
+    const clientMap = new Map((clientProfiles || []).map(p => [p.id, p]));
+
+    // Batch fetch handwerker profiles
+    const handwerkerIds = [...new Set(
+      unreviewedLeads
+        .map(l => (l.lead_proposals as { handwerker_id: string } | null)?.handwerker_id)
+        .filter((id): id is string => !!id)
+    )];
+    const { data: hwProfiles } = await supabase
+      .from('handwerker_profiles')
+      .select('user_id, first_name, last_name, company_name')
+      .in('user_id', handwerkerIds);
+    const hwMap = new Map((hwProfiles || []).map(p => [p.user_id, p]));
+
+    // Batch create magic tokens
+    const tokenExpiresAt = new Date();
+    tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30);
+    const tokenRecords = unreviewedLeads.map(lead => {
+      const proposal = lead.lead_proposals as { id: string; handwerker_id: string } | null;
+      return {
+        token: crypto.randomUUID(),
+        resource_type: 'rating',
+        resource_id: lead.id,
+        user_id: lead.owner_id,
+        expires_at: tokenExpiresAt.toISOString(),
+        metadata: {
+          lead_id: lead.id,
+          handwerker_id: proposal?.handwerker_id,
+          proposal_id: proposal?.id,
+        },
+      };
+    });
+
+    if (tokenRecords.length > 0) {
+      const { error: tokenError } = await supabase.from('magic_tokens').insert(tokenRecords);
+      if (tokenError) console.error('[send-rating-reminder] Batch token insert error:', tokenError.message);
+    }
+    const tokenMap = new Map(tokenRecords.map(t => [t.resource_id, t.token]));
 
     let emailsSent = 0;
-    let skipped = 0;
+    let skipped = reviewedLeadIds.size;
 
-    for (const proposal of proposals || []) {
-      const leadId = proposal.lead_id;
-      
-      // Check if a review already exists for this lead
-      const { data: existingReview } = await supabase
-        .from('reviews')
-        .select('id')
-        .eq('lead_id', leadId)
-        .maybeSingle();
+    for (const lead of unreviewedLeads) {
+      const client = clientMap.get(lead.owner_id);
+      if (!client?.email) { skipped++; continue; }
 
-      if (existingReview) {
-        console.log(`[send-rating-reminder] Review already exists for lead ${leadId}, skipping`);
-        skipped++;
-        continue;
-      }
-
-      // Get client details separately (no FK join)
-      const { data: clientProfile } = await supabase
-        .from('profiles')
-        .select('full_name, first_name, email')
-        .eq('id', proposal.leads?.owner_id)
-        .single();
-
-      if (!clientProfile?.email) {
-        console.log(`[send-rating-reminder] No email for client on lead ${leadId}, skipping`);
-        skipped++;
-        continue;
-      }
-
-      // Get handwerker details separately
-      const { data: handwerkerProfile } = await supabase
-        .from('handwerker_profiles')
-        .select('first_name, last_name, company_name')
-        .eq('user_id', proposal.handwerker_id)
-        .single();
-
-      const handwerkerName = handwerkerProfile?.company_name || 
-        `${handwerkerProfile?.first_name || ''} ${handwerkerProfile?.last_name || ''}`.trim() ||
+      const proposal = lead.lead_proposals as { handwerker_id: string } | null;
+      const hw = proposal ? hwMap.get(proposal.handwerker_id) : null;
+      const handwerkerName = hw?.company_name ||
+        `${hw?.first_name || ''} ${hw?.last_name || ''}`.trim() ||
         'Ihren Handwerker';
 
-      const clientName = clientProfile.first_name || clientProfile.full_name || 'Kunde';
-      const projectTitle = proposal.leads?.title || 'Ihr Projekt';
+      const token = tokenMap.get(lead.id);
+      const ratingLink = `${FRONTEND_URL}/dashboard?rating=${lead.id}${token ? `&token=${token}` : ''}`;
 
-      // Create magic token for rating link
-      const token = crypto.randomUUID();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 30); // 30 days to rate
-
-      await supabase.from('magic_tokens').insert({
-        token,
-        resource_type: 'rating',
-        resource_id: leadId,
-        user_id: proposal.leads?.owner_id,
-        expires_at: expiresAt.toISOString(),
-        metadata: {
-          lead_id: leadId,
-          handwerker_id: proposal.handwerker_id,
-          proposal_id: proposal.id
-        }
-      });
-
-      const ratingLink = `https://bueeze.ch/dashboard?rating=${leadId}`;
-
-      // Send email using SMTP2GO
       const emailHtml = ratingReminderTemplate({
-        clientName,
-        projectTitle,
+        clientName: client.first_name || client.full_name || 'Kunde',
+        projectTitle: lead.title || 'Ihr Projekt',
         handwerkerName,
-        ratingLink
+        ratingLink,
       });
 
       try {
-        console.log(`[send-rating-reminder] Sending reminder to ${clientProfile.email}`);
-
-        const emailResponse = await fetch('https://api.smtp2go.com/v3/email/send', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Smtp2go-Api-Key': smtp2goApiKey,
-          },
-          body: JSON.stringify({
-            sender: 'noreply@bueeze.ch',
-            to: [clientProfile.email],
-            subject: `⭐ Wie war ${handwerkerName}? Ihre Bewertung zählt!`,
-            html_body: emailHtml,
-          }),
+        const emailResult = await sendEmail({
+          to: client.email,
+          subject: `⭐ Wie war ${handwerkerName}? Ihre Bewertung zählt!`,
+          htmlBody: emailHtml,
         });
 
-        if (emailResponse.ok) {
-          console.log(`[send-rating-reminder] Rating reminder sent to ${clientProfile.email} for lead ${leadId}`);
+        if (emailResult.success) {
           emailsSent++;
         } else {
-          const errorData = await emailResponse.json();
-          console.error(`[send-rating-reminder] Failed to send email to ${clientProfile.email}:`, errorData);
+          console.error(`[send-rating-reminder] Email failed for ${client.email}:`, emailResult.error);
         }
       } catch (emailError) {
-        console.error(`[send-rating-reminder] Failed to send email to ${clientProfile.email}:`, emailError);
+        console.error(`[send-rating-reminder] Email error for ${client.email}:`, emailError);
       }
     }
 
     console.log(`[send-rating-reminder] Complete: ${emailsSent} emails sent, ${skipped} skipped`);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        emailsSent,
-        skipped,
-        message: `Sent ${emailsSent} rating reminder emails` 
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return successResponse({
+      success: true,
+      emailsSent,
+      skipped,
+      message: `Sent ${emailsSent} rating reminder emails`
+    });
   } catch (error: any) {
     console.error("[send-rating-reminder] Error:", error);
-    
+
     // Create admin notification for function failure
     try {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      
+      const supabase = createSupabaseAdmin();
+
       await supabase.from('admin_notifications').insert({
         type: 'scheduled_function_error',
         title: 'Rating Reminder fehlgeschlagen',
@@ -306,15 +181,7 @@ const handler = async (req: Request): Promise<Response> => {
     } catch (notifError) {
       console.error("[send-rating-reminder] Failed to create admin notification:", notifError);
     }
-    
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
-  }
-};
 
-serve(handler);
+    return errorResponse(error.message, 500);
+  }
+});

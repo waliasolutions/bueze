@@ -12,6 +12,7 @@ import PageLoader from "@/components/PageLoader";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { AdminSuspenseFallback } from "@/components/admin/AdminPageSkeleton";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
@@ -151,31 +152,31 @@ const App = () => {
                 
                 {/* Auth & User routes */}
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/profile" element={<Profile />} />
-                
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
                 {/* Handwerker routes */}
                 <Route path="/handwerker-onboarding" element={<HandwerkerOnboarding />} />
                 <Route path="/handwerker/onboarding" element={<Navigate to="/handwerker-onboarding" replace />} />
-                <Route path="/handwerker-dashboard" element={<HandwerkerDashboard />} />
-                <Route path="/handwerker-profile/edit" element={<HandwerkerProfileEdit />} />
+                <Route path="/handwerker-dashboard" element={<ProtectedRoute><HandwerkerDashboard /></ProtectedRoute>} />
+                <Route path="/handwerker-profile/edit" element={<ProtectedRoute><HandwerkerProfileEdit /></ProtectedRoute>} />
                 <Route path="/handwerker" element={<HandwerkerLanding />} />
-                
-                
+
+
                 {/* Lead management routes */}
                 <Route path="/submit-lead" element={<SubmitLead />} />
-                <Route path="/lead/:id" element={<LeadDetails />} />
-                <Route path="/lead/:id/edit" element={<EditLead />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/search" element={<BrowseLeads />} />
-                
+                <Route path="/lead/:id" element={<ProtectedRoute><LeadDetails /></ProtectedRoute>} />
+                <Route path="/lead/:id/edit" element={<ProtectedRoute><EditLead /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/search" element={<ProtectedRoute><BrowseLeads /></ProtectedRoute>} />
+
                 {/* Messaging routes */}
-                <Route path="/conversations" element={<ConversationsList />} />
-                <Route path="/messages/:conversationId" element={<Messages />} />
-                
+                <Route path="/conversations" element={<ProtectedRoute><ConversationsList /></ProtectedRoute>} />
+                <Route path="/messages/:conversationId" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+
                 {/* Proposal routes */}
-                <Route path="/opportunity/:leadId" element={<OpportunityView />} />
-                <Route path="/proposals/:proposalId" element={<ProposalReview />} />
-                <Route path="/proposals" element={<ProposalsManagement />} />
+                <Route path="/opportunity/:leadId" element={<ProtectedRoute><OpportunityView /></ProtectedRoute>} />
+                <Route path="/proposals/:proposalId" element={<ProtectedRoute><ProposalReview /></ProtectedRoute>} />
+                <Route path="/proposals" element={<ProtectedRoute><ProposalsManagement /></ProtectedRoute>} />
                 
                 {/* Category routes */}
                 <Route path="/kategorien" element={<KategorienLanding />} />
@@ -183,8 +184,8 @@ const App = () => {
                 <Route path="/category/:categorySlug" element={<CategoryLanding />} />
                 
                 {/* Utility routes */}
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/test-dashboard" element={<TestDashboard />} />
+                <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+                <Route path="/test-dashboard" element={<ProtectedRoute><TestDashboard /></ProtectedRoute>} />
                 <Route path="/magic" element={<MagicLinkHandler />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
                 

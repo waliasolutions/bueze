@@ -34,6 +34,8 @@ import {
   STORAGE_VERSIONS 
 } from "@/lib/localStorageVersioning";
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
+import { PASSWORD_MIN_LENGTH } from "@/lib/validationHelpers";
+import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
 
 type StepContent = 'contact' | 'services' | 'summary';
 
@@ -331,8 +333,8 @@ const HandwerkerOnboarding = () => {
       }
       if (!formData.password) {
         newErrors.password = "Passwort ist erforderlich";
-      } else if (formData.password.length < 6) {
-        newErrors.password = "Passwort muss mindestens 6 Zeichen lang sein";
+      } else if (formData.password.length < PASSWORD_MIN_LENGTH) {
+        newErrors.password = `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen lang sein`;
       }
       if (!formData.companyName.trim()) {
         newErrors.companyName = "Firmenname ist erforderlich";
@@ -619,7 +621,7 @@ const HandwerkerOnboarding = () => {
                 user_id: user.id,
                 pending_plan: selectedPlanParam,
                 plan_type: 'free',
-                proposals_limit: 5,
+                proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
                 proposals_used_this_period: 0,
               }, { onConflict: 'user_id' });
           }

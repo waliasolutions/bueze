@@ -22,6 +22,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getCantonLabel } from '@/config/cantons';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
+import { FREE_TIER_PROPOSALS_LIMIT } from '@/config/subscriptionPlans';
 
 interface PendingHandwerker {
   id: string;
@@ -92,6 +93,9 @@ const HandwerkerApprovals = () => {
   const [selectedHandwerkers, setSelectedHandwerkers] = useState<string[]>([]);
   const [approvalHistory, setApprovalHistory] = useState<ApprovalHistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectingHandwerker, setRejectingHandwerker] = useState<PendingHandwerker | null>(null);
   const [editingHandwerker, setEditingHandwerker] = useState<PendingHandwerker | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<PendingHandwerker>>({});
 
@@ -345,15 +349,23 @@ const HandwerkerApprovals = () => {
               await upsertUserRole(handwerker.user_id, 'handwerker');
             }
 
-            // Create subscription (if not exists)
-            await supabase
+            // Create subscription only if none exists (don't overwrite paid plans)
+            const { data: existingSub } = await supabase
               .from('handwerker_subscriptions')
-              .upsert({
-                user_id: handwerker.user_id,
-                plan_type: 'free',
-                proposals_limit: 5,
-                proposals_used_this_period: 0
-              }, { onConflict: 'user_id' });
+              .select('id')
+              .eq('user_id', handwerker.user_id)
+              .maybeSingle();
+
+            if (!existingSub) {
+              await supabase
+                .from('handwerker_subscriptions')
+                .insert({
+                  user_id: handwerker.user_id,
+                  plan_type: 'free',
+                  proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
+                  proposals_used_this_period: 0,
+                });
+            }
           }
 
           // Send approval email
@@ -411,18 +423,26 @@ const HandwerkerApprovals = () => {
         (async () => {
           try {
             const isAdminUser = await checkUserIsAdmin(userId);
-            
-            // Always create subscription
-            const subResult = await supabase
+
+            // Create subscription only if none exists (don't overwrite paid plans)
+            const { data: existingSub } = await supabase
               .from('handwerker_subscriptions')
-              .upsert({
-                user_id: userId,
-                plan_type: 'free',
-                proposals_limit: 5,
-                proposals_used_this_period: 0
-              }, { onConflict: 'user_id' });
-            
-            if (subResult.error) console.error('Subscription error (non-critical):', subResult.error);
+              .select('id')
+              .eq('user_id', userId)
+              .maybeSingle();
+
+            if (!existingSub) {
+              const subResult = await supabase
+                .from('handwerker_subscriptions')
+                .insert({
+                  user_id: userId,
+                  plan_type: 'free',
+                  proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
+                  proposals_used_this_period: 0,
+                });
+
+              if (subResult.error) console.error('Subscription error (non-critical):', subResult.error);
+            }
             
             // Only add handwerker role for non-admins
             if (!isAdminUser) {
@@ -468,9 +488,18 @@ const HandwerkerApprovals = () => {
     }
   };
 
-  const rejectHandwerker = async (handwerker: PendingHandwerker) => {
-    const reason = prompt('Grund für Ablehnung (optional):');
-    
+  const openRejectDialog = (handwerker: PendingHandwerker) => {
+    setRejectingHandwerker(handwerker);
+    setRejectReason('');
+    setRejectDialogOpen(true);
+  };
+
+  const confirmRejectHandwerker = async () => {
+    if (!rejectingHandwerker) return;
+    const handwerker = rejectingHandwerker;
+    const reason = rejectReason.trim();
+
+    setRejectDialogOpen(false);
     setApproving(handwerker.id);
     try {
       // Update verification status to rejected
@@ -487,7 +516,7 @@ const HandwerkerApprovals = () => {
 
       // Non-blocking: Send rejection email (fire-and-forget)
       supabase.functions.invoke('send-rejection-email', {
-        body: { 
+        body: {
           email: handwerker.email,
           firstName: handwerker.first_name,
           lastName: handwerker.last_name,
@@ -511,6 +540,7 @@ const HandwerkerApprovals = () => {
       });
     } finally {
       setApproving(null);
+      setRejectingHandwerker(null);
     }
   };
 
@@ -1062,7 +1092,7 @@ const HandwerkerApprovals = () => {
                           Freischalten
                         </Button>
                         <Button
-                          onClick={() => rejectHandwerker(handwerker)}
+                          onClick={() => openRejectDialog(handwerker)}
                           disabled={approving === handwerker.id}
                           variant="outline"
                           className="flex-1"
@@ -1294,6 +1324,38 @@ const HandwerkerApprovals = () => {
             </Button>
             <Button onClick={saveHandwerkerEdit}>
               Speichern
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rejection Reason Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Handwerker ablehnen</DialogTitle>
+            <DialogDescription>
+              {rejectingHandwerker && (
+                <>Möchten Sie <strong>{rejectingHandwerker.first_name} {rejectingHandwerker.last_name}</strong> ablehnen?</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="reject-reason">Grund für Ablehnung (optional)</Label>
+            <Textarea
+              id="reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="z.B. Unvollständige Dokumente, fehlende Versicherung..."
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button variant="destructive" onClick={confirmRejectHandwerker}>
+              Ablehnen
             </Button>
           </DialogFooter>
         </DialogContent>

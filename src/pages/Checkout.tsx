@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Check, ArrowLeft, Loader2, CreditCard, Smartphone, Clock, AlertCircle } from "lucide-react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -10,8 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  SUBSCRIPTION_PLANS, 
+import {
+  SUBSCRIPTION_PLANS,
+  FREE_TIER_PROPOSALS_LIMIT,
   SubscriptionPlanType,
   formatPrice,
 } from "@/config/subscriptionPlans";
@@ -32,6 +35,17 @@ export default function Checkout() {
 
   const plan = SUBSCRIPTION_PLANS[selectedPlan];
 
+  // Show toast if user cancelled payment
+  useEffect(() => {
+    if (searchParams.get('cancelled') === 'true') {
+      toast({
+        title: 'Zahlung abgebrochen',
+        description: 'Sie können den Vorgang jederzeit erneut starten.',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
   useEffect(() => {
     checkAuthAndApproval();
   }, []);
@@ -41,7 +55,7 @@ export default function Checkout() {
     
     if (!user) {
       // Not authenticated - redirect to auth
-      navigate("/auth?redirect=/checkout?plan=" + selectedPlan);
+      navigate("/auth", { state: { from: `/checkout?plan=${selectedPlan}` } });
       return;
     }
 
@@ -85,7 +99,7 @@ export default function Checkout() {
           user_id: userId,
           pending_plan: selectedPlan,
           plan_type: 'free',
-          proposals_limit: 5,
+          proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
           proposals_used_this_period: 0,
         }, { onConflict: 'user_id' });
 
@@ -120,7 +134,7 @@ export default function Checkout() {
 
     try {
       const successUrl = `${window.location.origin}/profile?tab=subscription&success=true`;
-      const cancelUrl = `${window.location.origin}/checkout?plan=${selectedPlan}`;
+      const cancelUrl = `${window.location.origin}/checkout?plan=${selectedPlan}&cancelled=true`;
 
       // Use Payrexx for all payments (Swiss payment methods)
       const { data, error } = await supabase.functions.invoke('create-payrexx-gateway', {
@@ -162,7 +176,8 @@ export default function Checkout() {
   if (approvalStatus === 'no_profile') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Header />
+        <div className="container mx-auto px-4 py-8 pt-24 max-w-2xl">
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
@@ -186,7 +201,7 @@ export default function Checkout() {
               <p className="text-muted-foreground mb-4">
                 Erstellen Sie Ihr Profil und wählen Sie dabei Ihren gewünschten Plan. Nach der Freischaltung können Sie das Abonnement abschliessen.
               </p>
-              <Button 
+              <Button
                 onClick={() => navigate(`/handwerker-onboarding?plan=${selectedPlan}`)}
                 className="w-full"
               >
@@ -195,6 +210,7 @@ export default function Checkout() {
             </CardContent>
           </Card>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -203,7 +219,8 @@ export default function Checkout() {
   if (approvalStatus === 'pending') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Header />
+        <div className="container mx-auto px-4 py-8 pt-24 max-w-2xl">
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
@@ -276,6 +293,7 @@ export default function Checkout() {
             </CardContent>
           </Card>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -283,7 +301,8 @@ export default function Checkout() {
   // Approved - show normal checkout flow
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <Header />
+      <div className="container mx-auto px-4 py-8 pt-24 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
           <Button
@@ -534,6 +553,7 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

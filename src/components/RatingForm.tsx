@@ -59,16 +59,20 @@ export const RatingForm: React.FC<RatingFormProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Check if this is a verified review
-      const { data: proposalData } = await supabase
-        .from('lead_proposals')
-        .select('status')
-        .eq('lead_id', leadId)
-        .eq('handwerker_id', handwerkerId)
-        .eq('status', 'accepted')
-        .maybeSingle();
+      // Verify the lead has been delivered by the handwerker before allowing review
+      const { data: leadData } = await supabase
+        .from('leads')
+        .select('delivered_at, accepted_proposal_id')
+        .eq('id', leadId)
+        .single();
 
-      const isVerified = !!proposalData;
+      if (!leadData?.delivered_at) {
+        setError('Bewertung erst möglich, nachdem der Handwerker den Auftrag als erledigt gemeldet hat.');
+        return;
+      }
+
+      // Check if this is a verified review (accepted proposal exists)
+      const isVerified = !!leadData.accepted_proposal_id;
 
       const { data: insertedReview, error: insertError } = await supabase
         .from('reviews')

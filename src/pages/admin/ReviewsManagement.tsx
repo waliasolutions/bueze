@@ -51,7 +51,7 @@ const ReviewsManagement = () => {
     try {
       const { data: reviewsData, error } = await supabase
         .from('reviews')
-        .select('*')
+        .select('id, rating, title, comment, created_at, is_public, is_verified, handwerker_response, response_at, reviewer_id, reviewed_id, lead_id')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

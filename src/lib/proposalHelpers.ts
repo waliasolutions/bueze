@@ -16,14 +16,49 @@ export interface ProposalActionResult {
  */
 export async function acceptProposal(proposalId: string): Promise<ProposalActionResult> {
   try {
-    // Get the proposal to find the lead
+    // Get the proposal and verify it's still pending
     const { data: proposal, error: proposalError } = await supabase
       .from('lead_proposals')
-      .select('lead_id')
+      .select('lead_id, status')
       .eq('id', proposalId)
       .single();
 
     if (proposalError) throw proposalError;
+
+    if (proposal.status !== 'pending') {
+      return {
+        success: false,
+        message: 'Diese Offerte wurde bereits bearbeitet.'
+      };
+    }
+
+    // Verify the lead is still active (prevents double-acceptance race condition)
+    const { data: lead, error: leadCheckError } = await supabase
+      .from('leads')
+      .select('status, accepted_proposal_id')
+      .eq('id', proposal.lead_id)
+      .single();
+
+    if (leadCheckError) throw leadCheckError;
+
+    if (lead.status === 'completed' || lead.accepted_proposal_id) {
+      return {
+        success: false,
+        message: 'Für diesen Auftrag wurde bereits eine Offerte angenommen.'
+      };
+    }
+
+    // Update lead status FIRST (acts as a lock — only one can succeed due to accepted_proposal_id)
+    const { error: leadError } = await supabase
+      .from('leads')
+      .update({
+        status: 'completed',
+        accepted_proposal_id: proposalId
+      })
+      .eq('id', proposal.lead_id)
+      .eq('status', 'active'); // Optimistic lock: only update if still active
+
+    if (leadError) throw leadError;
 
     // Update proposal status to accepted
     const { error: updateError } = await supabase
@@ -35,17 +70,6 @@ export async function acceptProposal(proposalId: string): Promise<ProposalAction
       .eq('id', proposalId);
 
     if (updateError) throw updateError;
-
-    // Update lead status to completed and set accepted proposal
-    const { error: leadError } = await supabase
-      .from('leads')
-      .update({
-        status: 'completed',
-        accepted_proposal_id: proposalId
-      })
-      .eq('id', proposal.lead_id);
-
-    if (leadError) throw leadError;
 
     // Reject all other pending proposals for this lead
     await supabase

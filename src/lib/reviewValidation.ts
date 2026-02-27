@@ -12,9 +12,8 @@ const PROFANITY_LIST = [
   'dumm', 'blödmann', 'blödian', 'saukerl', 'schwein', 'miststück'
 ];
 
-// Minimum review length
-export const MIN_REVIEW_LENGTH = 0; // No minimum - allow any length including empty
-export const MAX_REVIEW_LENGTH = 1000;
+const MAX_REVIEW_LENGTH = 1000;
+export { MAX_REVIEW_LENGTH };
 
 export interface ValidationResult {
   isValid: boolean;
@@ -86,7 +85,7 @@ export function detectProfanity(text: string): { hasProfanity: boolean; words: s
 /**
  * Detects personal information in text (phone numbers, emails)
  */
-export function detectPersonalInfo(text: string): { hasPersonalInfo: boolean; types: string[] } {
+function detectPersonalInfo(text: string): { hasPersonalInfo: boolean; types: string[] } {
   const types: string[] = [];
 
   // Swiss phone number patterns
@@ -170,19 +169,3 @@ export function detectSpam(text: string): { isSpam: boolean; reason?: string } {
   return { isSpam: false };
 }
 
-/**
- * Sanitizes text by removing detected personal information
- */
-export function sanitizePersonalInfo(text: string): string {
-  let sanitized = text;
-
-  // Remove phone numbers
-  sanitized = sanitized.replace(/\+41\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}/g, '[Telefonnummer entfernt]');
-  sanitized = sanitized.replace(/0041\s?\d{2}\s?\d{3}\s?\d{2}\s?\d{2}/g, '[Telefonnummer entfernt]');
-  sanitized = sanitized.replace(/0\d{2}\s?\d{3}\s?\d{2}\s?\d{2}/g, '[Telefonnummer entfernt]');
-
-  // Remove emails
-  sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[E-Mail entfernt]');
-
-  return sanitized;
-}

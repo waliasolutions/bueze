@@ -1,10 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
+import { FRONTEND_URL, EMAIL_SENDER } from '../_shared/siteConfig.ts';
 
 // Generate a secure random password
 function generateSecurePassword(length: number = 16): string {
@@ -17,10 +14,8 @@ function generateSecurePassword(length: number = 16): string {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     // Get Supabase URL and Service Role Key from environment
@@ -93,7 +88,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: 'Büeze.ch <noreply@bueeze.ch>',
+            from: EMAIL_SENDER,
             to: [userEmail],
             subject: 'Ihr Passwort wurde zurückgesetzt',
             html: `
@@ -106,7 +101,7 @@ serve(async (req) => {
                 <li>Neues Passwort: <code>${newPassword}</code></li>
               </ul>
               <p>Bitte ändern Sie Ihr Passwort nach der Anmeldung.</p>
-              <p>Sie können sich hier anmelden: <a href="https://bueeze.ch/auth">https://bueeze.ch/auth</a></p>
+              <p>Sie können sich hier anmelden: <a href="${FRONTEND_URL}/auth">${FRONTEND_URL}/auth</a></p>
               <p>Mit freundlichen Grüssen,<br>Ihr Büeze.ch Team</p>
             `,
           }),
@@ -124,10 +119,9 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Password reset successfully',
-        newPassword: newPassword // Return password so admin can share it if email fails
+      JSON.stringify({
+        success: true,
+        message: 'Password reset successfully. Das neue Passwort wurde per E-Mail gesendet.',
       }),
       {
         status: 200,

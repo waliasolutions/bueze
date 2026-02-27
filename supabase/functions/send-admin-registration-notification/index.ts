@@ -1,21 +1,10 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { format } from 'https://esm.sh/date-fns@3.6.0';
-import { toZonedTime } from 'https://esm.sh/date-fns-tz@3.2.0';
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { adminRegistrationNotificationTemplate } from '../_shared/emailTemplates.ts';
-
-const SWISS_TIMEZONE = 'Europe/Zurich';
-
-/**
- * Format date/time in Swiss timezone with automatic DST handling
- */
-function formatSwissDateTime(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const swissDate = toZonedTime(dateObj, SWISS_TIMEZONE);
-  return format(swissDate, 'dd.MM.yyyy HH:mm', { timeZone: SWISS_TIMEZONE });
-}
+import { formatSwissDateTime } from '../_shared/dateFormatter.ts';
+import { SUPPORT_EMAIL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -35,7 +24,7 @@ serve(async (req) => {
     // Fetch the handwerker profile
     const { data: profile, error: profileError } = await supabase
       .from('handwerker_profiles')
-      .select('*')
+      .select('id, first_name, last_name, email, phone_number, company_name, categories, service_areas, logo_url, business_address, created_at')
       .eq('id', profileId)
       .single();
 
@@ -67,10 +56,10 @@ serve(async (req) => {
     // Generate email HTML
     const emailHtml = adminRegistrationNotificationTemplate(emailData);
 
-    console.log('Sending email to info@bueeze.ch');
+    console.log('Sending admin notification email to:', SUPPORT_EMAIL);
 
     const result = await sendEmail({
-      to: 'info@bueeze.ch',
+      to: SUPPORT_EMAIL,
       subject: `Neue Handwerker-Registrierung: ${profile.first_name} ${profile.last_name}`,
       htmlBody: emailHtml,
     });

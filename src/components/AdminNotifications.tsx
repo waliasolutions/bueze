@@ -13,9 +13,9 @@ export const AdminNotifications = () => {
     switch (notification.type) {
       case 'new_handwerker_registration':
         if (notification.related_id) {
-          navigate(`/admin/handwerker?highlight=${notification.related_id}`);
+          navigate(`/admin/handwerkers?highlight=${notification.related_id}`);
         } else {
-          navigate('/admin/handwerker');
+          navigate('/admin/handwerkers');
         }
         break;
       case 'new_lead':

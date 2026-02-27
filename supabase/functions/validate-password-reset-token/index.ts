@@ -27,7 +27,7 @@ serve(async (req) => {
     // Find and validate token
     const { data: tokenData, error: tokenError } = await supabase
       .from('password_reset_tokens')
-      .select('*')
+      .select('id, user_id')
       .eq('token', token)
       .is('used_at', null)
       .gt('expires_at', new Date().toISOString())

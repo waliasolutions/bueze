@@ -25,7 +25,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Block in production environments
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const isProduction = Deno.env.get('ENVIRONMENT') === 'production' || supabaseUrl.includes('supabase.co');
+    if (isProduction) {
+      return new Response(JSON.stringify({ error: 'Test data functions disabled in production' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 

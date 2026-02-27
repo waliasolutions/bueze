@@ -1,18 +1,10 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper } from '../_shared/emailTemplates.ts';
-
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-// Plan display names
-const PLAN_NAMES: Record<string, string> = {
-  monthly: 'Monatlich (CHF 90)',
-  '6_month': '6 Monate (CHF 510)',
-  annual: 'Jährlich (CHF 960)',
-};
+import { PLAN_NAMES_WITH_PRICE } from '../_shared/planLabels.ts';
+import { FRONTEND_URL, SUPPORT_EMAIL } from '../_shared/siteConfig.ts';
 
 // HTML template for approval email - standard (no pending plan)
 const approvalEmailTemplate = (userName: string) => {
@@ -32,11 +24,11 @@ const approvalEmailTemplate = (userName: string) => {
       </div>
 
       <p style="text-align: center;">
-        <a href="https://bueeze.ch/handwerker-dashboard" class="button">Zum Handwerker-Dashboard</a>
+        <a href="${FRONTEND_URL}/handwerker-dashboard" class="button">Zum Handwerker-Dashboard</a>
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);
@@ -44,8 +36,8 @@ const approvalEmailTemplate = (userName: string) => {
 
 // HTML template for approval email with pending plan - includes payment CTA
 const approvalWithPlanEmailTemplate = (userName: string, planName: string, pendingPlan: string) => {
-  const paymentUrl = `https://bueeze.ch/checkout?plan=${pendingPlan}`;
-  const cancelUrl = `https://bueeze.ch/profile?tab=subscription&cancel_pending=true`;
+  const paymentUrl = `${FRONTEND_URL}/checkout?plan=${pendingPlan}`;
+  const cancelUrl = `${FRONTEND_URL}/profile?tab=subscription&cancel_pending=true`;
   
   return emailWrapper(`
     <div class="content">
@@ -77,7 +69,7 @@ const approvalWithPlanEmailTemplate = (userName: string, planName: string, pendi
       </div>
 
       <p style="text-align: center; margin-top: 20px;">
-        <a href="https://bueeze.ch/handwerker-dashboard" style="color: #0066CC; text-decoration: underline;">
+        <a href="${FRONTEND_URL}/handwerker-dashboard" style="color: #0066CC; text-decoration: underline;">
           Oder erstmal kostenlos starten (5 Offerten/Monat)
         </a>
       </p>
@@ -88,7 +80,7 @@ const approvalWithPlanEmailTemplate = (userName: string, planName: string, pendi
       </p>
 
       <p style="font-size: 14px; color: #666;">
-        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:info@bueeze.ch">info@bueeze.ch</a>
+        Bei Fragen stehen wir Ihnen gerne zur Verfügung unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>
       </p>
     </div>
   `);
@@ -106,7 +98,7 @@ serve(async (req) => {
     }
 
     // Create Supabase client to check for pending plan
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createSupabaseAdmin();
 
     // Check if user has a pending plan
     const { data: subscription } = await supabase
@@ -116,7 +108,7 @@ serve(async (req) => {
       .maybeSingle();
 
     const pendingPlan = subscription?.pending_plan;
-    const planName = pendingPlan ? PLAN_NAMES[pendingPlan] || pendingPlan : null;
+    const planName = pendingPlan ? PLAN_NAMES_WITH_PRICE[pendingPlan] || pendingPlan : null;
 
     // Choose appropriate email template
     let subject: string;

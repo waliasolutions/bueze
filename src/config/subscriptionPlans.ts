@@ -82,6 +82,9 @@ export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanType, SubscriptionPlan> 
 
 export const SUBSCRIPTION_PLAN_LIST = Object.values(SUBSCRIPTION_PLANS);
 
+/** SSOT: Free tier proposals limit. Use this instead of hardcoding 5. */
+export const FREE_TIER_PROPOSALS_LIMIT = SUBSCRIPTION_PLANS.free.proposalsLimit;
+
 /**
  * Get plan configuration by ID
  */

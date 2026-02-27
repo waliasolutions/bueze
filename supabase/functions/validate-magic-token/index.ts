@@ -1,50 +1,37 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { serve } from 'https://deno.land/std@0.190.0/http/server.ts';
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
     const { token } = await req.json();
-    
+
     if (!token) {
       throw new Error('Token is required');
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createSupabaseAdmin();
 
     // Fetch and validate token
     const { data: magicToken, error: tokenError } = await supabase
       .from('magic_tokens')
-      .select('*')
+      .select('id, user_id, resource_type, resource_id, expires_at, metadata')
       .eq('token', token)
       .is('used_at', null)
       .single();
 
     if (tokenError || !magicToken) {
-      return new Response(
-        JSON.stringify({ valid: false, error: 'Invalid or expired token' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
+      return errorResponse('Invalid or expired token', 401);
     }
 
     // Check expiry
     const now = new Date();
     const expiresAt = new Date(magicToken.expires_at);
     if (now > expiresAt) {
-      return new Response(
-        JSON.stringify({ valid: false, error: 'Token has expired' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      );
+      return errorResponse('Token has expired', 401);
     }
 
     // Mark token as used for sensitive actions
@@ -62,22 +49,16 @@ serve(async (req) => {
       userId: magicToken.user_id
     });
 
-    return new Response(
-      JSON.stringify({
-        valid: true,
-        userId: magicToken.user_id,
-        resourceType: magicToken.resource_type,
-        resourceId: magicToken.resource_id,
-        metadata: magicToken.metadata
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-    );
+    return successResponse({
+      valid: true,
+      userId: magicToken.user_id,
+      resourceType: magicToken.resource_type,
+      resourceId: magicToken.resource_id,
+      metadata: magicToken.metadata
+    });
 
   } catch (error) {
     console.error('Error validating magic token:', error);
-    return new Response(
-      JSON.stringify({ valid: false, error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    );
+    return errorResponse(error.message, 400);
   }
 });

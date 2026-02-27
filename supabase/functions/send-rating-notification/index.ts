@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { fetchClientProfile, fetchHandwerkerProfile } from '../_shared/profileHelpers.ts';
 import { ratingReceivedHandwerkerTemplate } from '../_shared/emailTemplates.ts';
+import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -51,7 +52,7 @@ serve(async (req) => {
     }
 
     const clientFirstName = (reviewerProfile?.fullName || 'Ein Kunde').split(' ')[0];
-    const profileLink = `https://bueeze.ch/handwerker-dashboard`;
+    const profileLink = `${FRONTEND_URL}/handwerker-dashboard`;
 
     console.log(`[send-rating-notification] Sending notification to ${handwerkerProfile.email}`);
 
