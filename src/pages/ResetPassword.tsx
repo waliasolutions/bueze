@@ -10,8 +10,6 @@ import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import logo from '@/assets/bueze-logo.webp';
 
-const EDGE_FUNCTION_URL = 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/validate-password-reset-token';
-
 export default function ResetPassword() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,18 +45,19 @@ export default function ResetPassword() {
           
           // Pre-validate token on page load for better UX
           try {
-            const response = await fetch(EDGE_FUNCTION_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token: tokenParam, validateOnly: true })
+            const { data, error: invokeError } = await supabase.functions.invoke('validate-password-reset-token', {
+              body: { token: tokenParam, validateOnly: true },
             });
-            
-            const data = await response.json();
+
             console.log('[ResetPassword] Token validation response:', data);
-            
+
             if (!isMounted) return;
-            
-            if (data.valid) {
+
+            if (invokeError) {
+              console.log('[ResetPassword] Token validation error:', invokeError);
+              setIsValidToken(false);
+              setTokenError(invokeError.message || 'Ungültiger oder abgelaufener Link');
+            } else if (data.valid) {
               console.log('[ResetPassword] Token is valid, showing password form');
               setCustomToken(tokenParam);
               setUseCustomFlow(true);
@@ -208,19 +207,16 @@ export default function ResetPassword() {
         console.log('[ResetPassword] Submitting password reset via custom token flow');
         
         // Custom token flow - call edge function
-        const response = await fetch(EDGE_FUNCTION_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: customToken, newPassword: password })
+        const { data, error: invokeError } = await supabase.functions.invoke('validate-password-reset-token', {
+          body: { token: customToken, newPassword: password },
         });
 
-        const data = await response.json();
-        console.log('[ResetPassword] Password reset response:', { success: data.success, error: data.error });
+        console.log('[ResetPassword] Password reset response:', { success: data?.success, error: invokeError });
 
-        if (!response.ok || !data.success) {
+        if (invokeError || !data?.success) {
           toast({
             title: 'Fehler',
-            description: data.error || 'Ungültiger oder abgelaufener Link.',
+            description: data?.error || invokeError?.message || 'Ungültiger oder abgelaufener Link.',
             variant: 'destructive',
           });
           return;

@@ -10,7 +10,7 @@ import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper, safe } from '../_shared/emailTemplates.ts';
 import { getPlanName, FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
-import { addDays, startOfDaySwiss, endOfDaySwiss } from '../_shared/dateFormatter.ts';
+import { addDays, startOfDaySwiss, endOfDaySwiss, formatSwissDate } from '../_shared/dateFormatter.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -138,7 +138,7 @@ serve(async (req) => {
         if (userProfile?.email) {
           const name = safe(profile?.first_name, 'Handwerker');
           const planName = getPlanName(sub.plan_type);
-          const expiryDate = new Date(sub.current_period_end).toLocaleDateString('de-CH');
+          const expiryDate = formatSwissDate(sub.current_period_end);
 
           await sendEmail({
             to: userProfile.email,

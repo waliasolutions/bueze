@@ -208,22 +208,15 @@ export default function AdminLeadsManagement() {
   const handleRenotifyHandwerkers = async (leadId: string) => {
     setRenotifyLoading(leadId);
     try {
-      const response = await fetch(
-        'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-lead-notification',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leadId })
-        }
-      );
+      const { data, error: invokeError } = await supabase.functions.invoke('send-lead-notification', {
+        body: { leadId },
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to re-notify');
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to re-notify');
       }
 
-      if (data.isOrphanLead) {
+      if (data?.isOrphanLead) {
         toast.warning(`Weiterhin keine passenden Handwerker gefunden. ${data.matchingHandwerkersCount || 0} Matches.`);
       } else {
         toast.success(`${data.successCount || 0} Handwerker erneut benachrichtigt.`);

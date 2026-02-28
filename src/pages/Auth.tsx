@@ -227,19 +227,12 @@ export default function Auth() {
     setIsResetting(true);
 
     try {
-      const response = await fetch(
-        'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-password-reset',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: resetEmail })
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email: resetEmail },
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to send reset email');
+      if (error) {
+        throw new Error(error.message || 'Failed to send reset email');
       }
 
       toast({

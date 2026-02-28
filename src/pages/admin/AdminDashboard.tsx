@@ -132,20 +132,10 @@ const AdminDashboard = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session found');
 
-      const response = await fetch(
-        'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/reset-test-data',
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const { data: result, error: invokeError } = await supabase.functions.invoke('reset-test-data');
 
-      const result = await response.json();
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to reset test data');
+      if (invokeError || !result?.success) {
+        throw new Error(result?.error || invokeError?.message || 'Failed to reset test data');
       }
 
       toast({ title: 'Testdaten gelöscht', description: result.message });

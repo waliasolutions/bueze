@@ -9,6 +9,7 @@ import { SubscriptionPlanType } from './subscriptionPlans';
 export const PAYREXX_INSTANCE = 'wsolutions';
 
 // Amount in Rappen (CHF cents) for each plan
+// NOTE: Must match SSOT prices in src/config/subscriptionPlans.ts (× 100 for Rappen)
 export const PAYREXX_PLAN_AMOUNTS: Record<Exclude<SubscriptionPlanType, 'free'>, number> = {
   monthly: 9000, // CHF 90.00
   '6_month': 51000, // CHF 510.00
