@@ -637,10 +637,11 @@ const HandwerkerOnboarding = () => {
       });
       
       navigate("/handwerker-dashboard");
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.details || error?.hint || '';
       toast({
         title: "Fehler",
-        description: error instanceof Error ? error.message : "Profil konnte nicht gespeichert werden.",
+        description: errorMessage || "Profil konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {

@@ -724,9 +724,11 @@ const HandwerkerProfileEdit = () => {
     } catch (error: any) {
       console.error('Error saving profile:', error);
       if (!silent) {
+        // Extract the most useful error detail from Supabase/PostgREST errors
+        const errorMessage = error?.message || error?.details || error?.hint || '';
         toast({
           title: 'Fehler beim Speichern',
-          description: error.message || 'Profil konnte nicht gespeichert werden.',
+          description: errorMessage || 'Profil konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.',
           variant: 'destructive',
         });
       }
