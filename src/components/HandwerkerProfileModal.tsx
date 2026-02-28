@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getLanguageLabel } from '@/config/languages';
 import { StarRating } from '@/components/ui/star-rating';
 import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
 import { supabase } from '@/integrations/supabase/client';
@@ -248,7 +249,7 @@ export function HandwerkerProfileModal({ handwerkerId, open, onOpenChange }: Han
                   <div className="bg-muted/50 rounded-lg p-3">
                     <p className="text-xs text-muted-foreground">Sprachen</p>
                     <p className="font-medium">
-                      {profile.languages.map(l => l === 'de' ? 'Deutsch' : l === 'fr' ? 'Französisch' : l === 'it' ? 'Italienisch' : l === 'en' ? 'Englisch' : l).join(', ')}
+                      {profile.languages.map(l => getLanguageLabel(l)).join(', ')}
                     </p>
                   </div>
                 )}

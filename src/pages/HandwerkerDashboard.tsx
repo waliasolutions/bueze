@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDate, formatDateTime } from "@/lib/swissTime";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1528,16 +1529,12 @@ const HandwerkerDashboard = () => {
                               {/* View tracking + submission date */}
                               <div className="flex items-center gap-4 pt-2 border-t text-xs text-muted-foreground">
                                 <span>
-                                  Gesendet: {new Date(proposal.submitted_at).toLocaleDateString('de-CH', {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
+                                  Gesendet: {formatDate(proposal.submitted_at)}
                                 </span>
                                 {proposal.client_viewed_at ? (
                                   <span className="flex items-center gap-1 text-green-600">
                                     <Eye className="h-3 w-3" />
-                                    Gesehen am {new Date(proposal.client_viewed_at).toLocaleDateString('de-CH')}
+                                    Gesehen am {formatDate(proposal.client_viewed_at)}
                                   </span>
                                 ) : (
                                   <span className="flex items-center gap-1">
@@ -1673,7 +1670,7 @@ const HandwerkerDashboard = () => {
                               {proposal.status === 'accepted' && proposal.leads?.delivered_at && (
                                 <div className="mt-3 flex items-center gap-2 text-sm text-green-700">
                                   <CheckCircle className="h-4 w-4" />
-                                  <span>Erledigt am {new Date(proposal.leads.delivered_at).toLocaleDateString('de-CH')}</span>
+                                  <span>Erledigt am {formatDate(proposal.leads.delivered_at)}</span>
                                 </div>
                               )}
                             </div>
@@ -1767,19 +1764,11 @@ const HandwerkerDashboard = () => {
                     {/* Metadata */}
                     <div className="pt-3 border-t text-xs text-muted-foreground space-y-1">
                       <p>
-                        Erstellt: {new Date(viewingProposalLead.created_at).toLocaleDateString('de-CH', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
+                        Erstellt: {formatDate(viewingProposalLead.created_at)}
                       </p>
                       {viewingProposalLead.proposal_deadline && (
                         <p>
-                          Angebotsfrist: {new Date(viewingProposalLead.proposal_deadline).toLocaleDateString('de-CH', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
+                          Angebotsfrist: {formatDate(viewingProposalLead.proposal_deadline)}
                         </p>
                       )}
                     </div>

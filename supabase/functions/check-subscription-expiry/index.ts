@@ -10,6 +10,7 @@ import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper, safe } from '../_shared/emailTemplates.ts';
 import { getPlanName, FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
+import { addDays, startOfDaySwiss, endOfDaySwiss } from '../_shared/dateFormatter.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -18,14 +19,12 @@ serve(async (req) => {
   try {
     const supabase = createSupabaseAdmin();
     const now = new Date().toISOString();
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    const sevenDaysFromNow = addDays(new Date(), 7);
 
     console.log('[check-subscription-expiry] Starting subscription expiry check...');
 
     // 1. Downgrade expired paid subscriptions to free (keep status 'active' to avoid unique constraint issues)
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    const thirtyDaysFromNow = addDays(new Date(), 30);
 
     const { data: expired, error: expireError } = await supabase
       .from('handwerker_subscriptions')
@@ -105,11 +104,9 @@ serve(async (req) => {
       }
     }
 
-    // 2. Send warning emails 7 days before expiry (only if not already warned)
-    const sevenDaysStart = new Date(sevenDaysFromNow);
-    sevenDaysStart.setHours(0, 0, 0, 0);
-    const sevenDaysEnd = new Date(sevenDaysFromNow);
-    sevenDaysEnd.setHours(23, 59, 59, 999);
+    // 2. Send warning emails 7 days before expiry (DST-safe via dateFormatter)
+    const sevenDaysStart = startOfDaySwiss(sevenDaysFromNow);
+    const sevenDaysEnd = endOfDaySwiss(sevenDaysFromNow);
 
     const { data: expiring, error: warningError } = await supabase
       .from('handwerker_subscriptions')

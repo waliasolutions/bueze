@@ -58,12 +58,8 @@ const categories = Object.values(majorCategories).map(cat => ({
 }));
 
 
-const languages = [
-  { value: 'de', label: 'Deutsch' },
-  { value: 'fr', label: 'Französisch' },
-  { value: 'it', label: 'Italienisch' },
-  { value: 'en', label: 'Englisch' },
-];
+// SSOT: import from config/languages.ts
+import { SUPPORTED_LANGUAGES as languages } from '@/config/languages';
 
 const Profile = () => {
   const [user, setUser] = useState<any>(null);

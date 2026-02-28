@@ -4,6 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { ratingReminderTemplate } from '../_shared/emailTemplates.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
+import { addDays } from '../_shared/dateFormatter.ts';
 
 serve(async (req: Request) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -14,11 +15,9 @@ serve(async (req: Request) => {
 
     console.log("[send-rating-reminder] Starting rating reminder check...");
 
-    // Find leads delivered 7-8 days ago (handwerker confirmed delivery)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const eightDaysAgo = new Date();
-    eightDaysAgo.setDate(eightDaysAgo.getDate() - 8);
+    // Find leads delivered 7-8 days ago (DST-safe via dateFormatter)
+    const sevenDaysAgo = addDays(new Date(), -7);
+    const eightDaysAgo = addDays(new Date(), -8);
 
     // Get delivered leads from 7-8 days ago with their accepted proposals
     const { data: deliveredLeads, error: leadsError } = await supabase

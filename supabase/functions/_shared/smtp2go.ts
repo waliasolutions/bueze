@@ -28,16 +28,28 @@ export function getSmtp2goApiKey(): string {
   return apiKey;
 }
 
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 2000, 4000]; // exponential backoff
+
 /**
- * Send an email using SMTP2GO API
+ * Send an email using SMTP2GO API with retry on transient failures.
+ * Retries up to 3 times with exponential backoff (1s, 2s, 4s).
  * @param options - Email options
  * @returns EmailResult with success status and response data
  */
 export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   const apiKey = getSmtp2goApiKey();
-  
+
   const recipients = Array.isArray(options.to) ? options.to : [options.to];
-  
+
+  // Basic email format validation
+  for (const email of recipients) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      console.error(`Invalid email address: ${email}`);
+      return { success: false, error: `Ungültige E-Mail-Adresse: ${email}` };
+    }
+  }
+
   const payload: Record<string, unknown> = {
     sender: EMAIL_SENDER,
     to: recipients,
@@ -51,39 +63,51 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     payload.text_body = options.textBody;
   }
 
-  try {
-    const response = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': apiKey,
-      },
-      body: JSON.stringify(payload),
-    });
+  let lastError: string | undefined;
 
-    const data = await response.json();
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch('https://api.smtp2go.com/v3/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Smtp2go-Api-Key': apiKey,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    if (!response.ok) {
-      console.error('SMTP2GO email sending failed:', data);
-      return {
-        success: false,
-        error: `Email sending failed: ${JSON.stringify(data)}`,
-        data,
-      };
+      const data = await response.json();
+
+      if (!response.ok) {
+        // 4xx errors are permanent — don't retry
+        if (response.status >= 400 && response.status < 500) {
+          console.error('SMTP2GO email sending failed (permanent):', data);
+          return {
+            success: false,
+            error: `Email sending failed: ${JSON.stringify(data)}`,
+            data,
+          };
+        }
+        // 5xx errors are transient — retry
+        lastError = `Email sending failed (${response.status}): ${JSON.stringify(data)}`;
+        console.warn(`SMTP2GO attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`, lastError);
+      } else {
+        console.log(`Email sent successfully to ${recipients.join(', ')}`);
+        return { success: true, data };
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : 'Unknown error sending email';
+      console.warn(`SMTP2GO attempt ${attempt + 1}/${MAX_RETRIES + 1} error:`, lastError);
     }
 
-    console.log(`Email sent successfully to ${recipients.join(', ')}`);
-    return {
-      success: true,
-      data,
-    };
-  } catch (error) {
-    console.error('Error sending email:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error sending email',
-    };
+    // Wait before retrying (skip delay after last attempt)
+    if (attempt < MAX_RETRIES) {
+      await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt]));
+    }
   }
+
+  console.error(`SMTP2GO email sending failed after ${MAX_RETRIES + 1} attempts:`, lastError);
+  return { success: false, error: lastError || 'Email sending failed after retries' };
 }
 
 /**
