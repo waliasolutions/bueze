@@ -39,8 +39,9 @@ serve(async (req) => {
     }
     
     // Also check auth.users directly in case profile doesn't exist
-    const { data: authCheck } = await supabase.auth.admin.getUserByEmail(email);
-    if (authCheck?.user) {
+    const { data: authList } = await supabase.auth.admin.listUsers();
+    const existingAuthUser = authList?.users?.find(u => u.email === email);
+    if (existingAuthUser) {
       console.log('Auth user already exists:', email);
       return successResponse({ success: true, message: 'User already exists', created: false });
     }
@@ -92,6 +93,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in guest-user-auto-create:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });

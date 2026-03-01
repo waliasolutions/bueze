@@ -759,6 +759,20 @@ const SubmitLead = () => {
                             />
                           </div>
 
+                          {loginEmail.trim().toLowerCase() !== (form.getValues('contactEmail') || '').trim().toLowerCase() && loginEmail.trim() !== '' && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => {
+                                form.setValue('contactEmail', loginEmail.trim());
+                                setShowLoginForm(false);
+                              }}
+                            >
+                              Mit «{loginEmail.trim()}» registrieren
+                            </Button>
+                          )}
+
                           <div>
                             <FormLabel>Passwort</FormLabel>
                             <Input

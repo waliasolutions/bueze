@@ -111,7 +111,7 @@ async function submitUrlToGoogle(url: string, accessToken: string) {
       url, 
       status: 500, 
       success: false,
-      error: error.message 
+      error: (error as Error).message 
     };
   }
 }
@@ -181,7 +181,7 @@ serve(async (req) => {
     console.error('Error in submit-to-indexing:', error);
     return new Response(JSON.stringify({ 
       success: false,
-      error: error.message 
+      error: (error as Error).message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

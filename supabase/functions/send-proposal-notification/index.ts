@@ -116,6 +116,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in send-proposal-notification:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });

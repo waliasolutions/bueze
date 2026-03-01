@@ -56,6 +56,7 @@ const HandwerkerOnboarding = () => {
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [emailChanged, setEmailChanged] = useState(false);
   
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -695,7 +696,16 @@ const HandwerkerOnboarding = () => {
                       id="loginEmail"
                       type="email"
                       value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
+                      onChange={(e) => {
+                        const newEmail = e.target.value;
+                        setLoginEmail(newEmail);
+                        // If user changes email, show hint to register with new email
+                        if (newEmail.trim().toLowerCase() !== formData.email.trim().toLowerCase()) {
+                          setEmailChanged(true);
+                        } else {
+                          setEmailChanged(false);
+                        }
+                      }}
                       className="h-12"
                     />
                   </div>
@@ -724,15 +734,33 @@ const HandwerkerOnboarding = () => {
                       'Anmelden'
                     )}
                   </Button>
-                  <div className="flex items-center justify-between text-sm">
-                    <button
+                  {emailChanged && (
+                    <Button
                       type="button"
-                      onClick={() => setShowLoginForm(false)}
-                      className="text-muted-foreground hover:text-primary"
+                      variant="outline"
+                      className="w-full h-12"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, email: loginEmail.trim() }));
+                        setShowLoginForm(false);
+                        setEmailChanged(false);
+                      }}
+                    >
+                      Mit «{loginEmail.trim()}» registrieren
+                    </Button>
+                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowLoginForm(false);
+                        setEmailChanged(false);
+                      }}
                     >
                       Andere E-Mail verwenden
-                    </button>
-                    <a href="/auth?mode=reset" className="text-primary hover:underline">
+                    </Button>
+                    <a href="/auth?mode=reset" className="text-primary hover:underline text-sm">
                       Passwort vergessen?
                     </a>
                   </div>

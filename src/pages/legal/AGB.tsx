@@ -180,7 +180,19 @@ const AGB = () => {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">7. Haftungsausschluss</h2>
+                <h2 className="text-2xl font-bold mb-4">7. Bewertungen</h2>
+                <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                  <li>Bewertungen können ausschliesslich nach vollständiger Erledigung und Abschluss eines vermittelten Auftrags abgegeben werden.</li>
+                  <li>Es darf ausschliesslich die erbrachte handwerkliche Leistung bewertet werden; persönliche Angriffe, diskriminierende Äusserungen oder sachfremde Inhalte sind unzulässig.</li>
+                  <li>Pro abgeschlossenem Auftrag kann der Auftraggeber eine Bewertung abgeben (1–5 Sterne, optionaler Kommentar).</li>
+                  <li>Der bewertete Handwerker hat das Recht, auf eine Bewertung zu antworten.</li>
+                  <li>Bewertungen werden öffentlich angezeigt; dabei wird aus Datenschutzgründen nur der Vorname des Auftraggebers angezeigt.</li>
+                  <li>BÜEZE.CH behält sich das Recht vor, Bewertungen zu entfernen, die gegen diese AGB oder geltendes Recht verstossen.</li>
+                </ul>
+              </section>
+
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">8. Haftungsausschluss</h2>
                 <p className="text-ink-700 mb-4">
                   BÜEZE.CH haftet nicht für:
                 </p>
@@ -195,7 +207,7 @@ const AGB = () => {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">8. Datenschutz</h2>
+                <h2 className="text-2xl font-bold mb-4">9. Datenschutz</h2>
                 <p className="text-ink-700 mb-4">
                   Der Schutz personenbezogener Daten hat für BÜEZE.CH oberste Priorität.
                   Alle Daten werden gemäss dem Schweizer Datenschutzgesetz (DSG) verarbeitet.
@@ -204,7 +216,7 @@ const AGB = () => {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">9. Geistiges Eigentum</h2>
+                <h2 className="text-2xl font-bold mb-4">10. Geistiges Eigentum</h2>
                 <p className="text-ink-700 mb-4">
                   Alle Inhalte, Texte, Logos, Designs und Softwareelemente der Plattform sind Eigentum der Büeze.ch GmbH oder entsprechend lizenziert.
                   Jegliche Nutzung ausserhalb der Plattform bedarf der schriftlichen Zustimmung.
@@ -212,7 +224,7 @@ const AGB = () => {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">10. Änderungen der AGB</h2>
+                <h2 className="text-2xl font-bold mb-4">11. Änderungen der AGB</h2>
                 <p className="text-ink-700 mb-4">
                   BÜEZE.CH behält sich das Recht vor, diese AGB jederzeit zu ändern.
                   Änderungen werden auf der Website veröffentlicht und gelten ab dem Veröffentlichungsdatum als akzeptiert.
@@ -220,7 +232,7 @@ const AGB = () => {
               </section>
 
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">11. Anwendbares Recht und Gerichtsstand</h2>
+                <h2 className="text-2xl font-bold mb-4">12. Anwendbares Recht und Gerichtsstand</h2>
                 <p className="text-ink-700 mb-4">
                   Es gilt ausschliesslich liechtensteinisches Recht.
                   Gerichtsstand ist Gamprin-Bendern, Liechtenstein.

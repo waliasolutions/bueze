@@ -157,7 +157,7 @@ serve(async (req) => {
             console.log(`Found existing homeowner: ${homeowner.email}`);
           }
         } else if (authData) {
-          userId = authData.user.id;
+          userId = authData.user!.id;
           results.homeownersCreated++;
           console.log(`Created homeowner: ${homeowner.email}`);
         } else if (createError) {
@@ -180,7 +180,7 @@ serve(async (req) => {
           }, { onConflict: 'user_id, role' });
         }
       } catch (error) {
-        results.errors.push(`Homeowner ${homeowner.email}: ${error.message}`);
+        results.errors.push(`Homeowner ${homeowner.email}: ${(error as Error).message}`);
       }
     }
 
@@ -209,7 +209,7 @@ serve(async (req) => {
             console.log(`Found existing handwerker: ${handwerker.email}`);
           }
         } else if (authData) {
-          userId = authData.user.id;
+          userId = authData.user!.id;
           results.handwerkersCreated++;
           console.log(`Created handwerker: ${handwerker.email}`);
         } else if (createError) {
@@ -263,7 +263,7 @@ serve(async (req) => {
         }
       } catch (error) {
         console.error(`Error creating handwerker ${handwerker.email}:`, error);
-        results.errors.push(`Handwerker ${handwerker.email}: ${error.message || JSON.stringify(error)}`);
+        results.errors.push(`Handwerker ${handwerker.email}: ${(error as Error).message || JSON.stringify(error)}`);
       }
     }
 
@@ -328,7 +328,7 @@ serve(async (req) => {
           }
         } catch (error) {
           console.error(`Error creating lead ${i + 1}:`, error);
-          results.errors.push(`Lead ${i + 1}: ${error.message || JSON.stringify(error)}`);
+          results.errors.push(`Lead ${i + 1}: ${(error as Error).message || JSON.stringify(error)}`);
         }
       }
     }
@@ -354,7 +354,7 @@ serve(async (req) => {
 
             results.proposalsCreated++;
           } catch (error) {
-            results.errors.push(`Proposal: ${error.message}`);
+            results.errors.push(`Proposal: ${(error as Error).message}`);
           }
         }
       }
@@ -379,7 +379,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        error: error.message 
+        error: (error as Error).message 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

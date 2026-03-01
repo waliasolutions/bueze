@@ -112,7 +112,8 @@ serve(async (req) => {
         if (!records || records.length === 0) return 0;
 
         // Find orphaned IDs
-        const orphanedIds = records
+        const typedRecords = records as Record<string, any>[];
+        const orphanedIds = typedRecords
           .filter(r => r[userIdColumn] && !authUserIds.has(r[userIdColumn]))
           .map(r => r[userIdColumn]);
 

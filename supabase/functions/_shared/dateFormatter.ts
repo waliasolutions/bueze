@@ -12,7 +12,7 @@ export const SWISS_TIMEZONE = 'Europe/Zurich';
 export function formatSwissDateTime(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const swissDate = toZonedTime(dateObj, SWISS_TIMEZONE);
-  return format(swissDate, 'dd.MM.yyyy HH:mm', { timeZone: SWISS_TIMEZONE });
+  return format(swissDate, 'dd.MM.yyyy HH:mm');
 }
 
 /**
@@ -21,7 +21,7 @@ export function formatSwissDateTime(date: Date | string): string {
 export function formatSwissDate(date: Date | string): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const swissDate = toZonedTime(dateObj, SWISS_TIMEZONE);
-  return format(swissDate, 'dd.MM.yyyy', { timeZone: SWISS_TIMEZONE });
+  return format(swissDate, 'dd.MM.yyyy');
 }
 
 /**

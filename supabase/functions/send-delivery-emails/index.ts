@@ -40,7 +40,8 @@ serve(async (req) => {
       throw new Error(`Delivered lead not found: ${leadError?.message || 'no data'}`);
     }
 
-    const proposal = lead.lead_proposals as { id: string; handwerker_id: string } | null;
+    const proposals = lead.lead_proposals as unknown as { id: string; handwerker_id: string }[] | null;
+    const proposal = proposals?.[0] ?? null;
     if (!proposal) {
       throw new Error('No accepted proposal found for this lead');
     }
@@ -126,6 +127,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('[send-delivery-emails] Error:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });

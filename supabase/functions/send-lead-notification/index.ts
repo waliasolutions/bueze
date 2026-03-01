@@ -358,6 +358,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('[send-lead-notification] Error:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });

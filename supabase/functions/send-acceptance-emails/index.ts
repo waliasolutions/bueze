@@ -164,6 +164,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in send-acceptance-emails:', error);
-    return errorResponse(error);
+    return errorResponse(error as Error);
   }
 });
