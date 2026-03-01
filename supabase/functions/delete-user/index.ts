@@ -52,10 +52,28 @@ serve(async (req) => {
     }
 
     deletedBy = caller.id;
-    const { userId, email } = await req.json();
-    
+    const body = await req.json();
+    let { userId, email } = body;
+
     // ============================================
-    // GUEST REGISTRATION DELETION (by email only)
+    // EMAIL-ONLY LOOKUP: resolve to userId if a full user exists
+    // ============================================
+    if (!userId && email) {
+      const { data: profileByEmail } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (profileByEmail?.id) {
+        // Registered user found → treat as full deletion
+        console.log(`[DELETE-USER] Resolved email ${email} to userId ${profileByEmail.id}`);
+        userId = profileByEmail.id;
+      }
+    }
+
+    // ============================================
+    // GUEST REGISTRATION DELETION (by email only, no auth user)
     // ============================================
     if (!userId && email) {
       console.log(`[DELETE-USER] Deleting guest registration by email: ${email}`);
