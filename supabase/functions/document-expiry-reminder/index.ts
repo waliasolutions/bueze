@@ -3,6 +3,7 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper } from '../_shared/emailTemplates.ts';
+import { formatSwissDate } from '../_shared/dateFormatter.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
@@ -51,27 +52,46 @@ serve(async (req) => {
 
       const userName = doc.company_name || `${doc.first_name || ''} ${doc.last_name || ''}`.trim() || 'Handwerker';
       const documentLabel = DOCUMENT_TYPE_LABELS[doc.document_type] || doc.document_name;
-      const expiryDate = new Date(doc.expiry_date).toLocaleDateString('de-CH');
+      const expiryDate = formatSwissDate(doc.expiry_date);
 
-      let subject = '', urgencyText = '';
+      let subject = '', urgencyText = '', urgencyColor = '#333';
       if (reminderType === 'expired') {
         subject = `⚠️ Ihr ${documentLabel} ist abgelaufen`;
         urgencyText = `Ihr ${documentLabel} ist am ${expiryDate} abgelaufen. Bitte laden Sie umgehend ein aktuelles Dokument hoch.`;
+        urgencyColor = '#d32f2f';
       } else if (reminderType === '7') {
         subject = `🚨 Dringend: Ihr ${documentLabel} läuft in 7 Tagen ab`;
         urgencyText = `Ihr ${documentLabel} läuft am ${expiryDate} ab – das ist in nur 7 Tagen!`;
+        urgencyColor = '#e65100';
       } else if (reminderType === '14') {
         subject = `⏰ Erinnerung: Ihr ${documentLabel} läuft in 14 Tagen ab`;
         urgencyText = `Ihr ${documentLabel} läuft am ${expiryDate} ab.`;
+        urgencyColor = '#f57c00';
       } else {
         subject = `📋 Ihr ${documentLabel} läuft in 30 Tagen ab`;
         urgencyText = `Ihr ${documentLabel} läuft am ${expiryDate} ab.`;
       }
 
+      const profileEditLink = `${FRONTEND_URL}/handwerker-profile/edit`;
+      const htmlBody = emailWrapper(`
+        <div class="content">
+          <h2 style="color: ${urgencyColor};">${reminderType === 'expired' ? '⚠️ Dokument abgelaufen' : '📋 Dokument-Erinnerung'}</h2>
+          <p>Hallo ${userName},</p>
+          <p>${urgencyText}</p>
+          <div class="info-box">
+            <p><strong>Dokument:</strong> ${documentLabel}</p>
+            <p><strong>Ablaufdatum:</strong> ${expiryDate}</p>
+          </div>
+          <p>Bitte aktualisieren Sie Ihr Dokument in Ihrem Profil.</p>
+          <a href="${profileEditLink}" class="button">Dokument aktualisieren</a>
+          <p style="font-size: 12px; color: #999; margin-top: 24px;">Falls der Button nicht funktioniert, kopieren Sie diesen Link: ${profileEditLink}</p>
+        </div>
+      `);
+
       const result = await sendEmail({
         to: doc.email,
         subject,
-        textBody: `Hallo ${userName},\n\n${urgencyText}\n\nBitte aktualisieren Sie Ihr Dokument: ${FRONTEND_URL}/handwerker-profile/edit\n\nIhr Büeze.ch Team`,
+        htmlBody,
       });
 
       if (result.success) {

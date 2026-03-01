@@ -3,7 +3,7 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { proposalDeadlineClientTemplate, proposalDeadlineHandwerkerTemplate } from '../_shared/emailTemplates.ts';
-import { formatSwissDateLong } from '../_shared/dateFormatter.ts';
+import { formatSwissDateLong, addDays, startOfDaySwiss, endOfDaySwiss } from '../_shared/dateFormatter.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 serve(async (req) => {
@@ -15,13 +15,10 @@ serve(async (req) => {
 
     const supabase = createSupabaseAdmin();
 
-    // Find leads expiring in 2 days
-    const twoDaysFromNow = new Date();
-    twoDaysFromNow.setDate(twoDaysFromNow.getDate() + 2);
-    twoDaysFromNow.setHours(23, 59, 59, 999);
-
-    const twoDaysStart = new Date(twoDaysFromNow);
-    twoDaysStart.setHours(0, 0, 0, 0);
+    // Find leads expiring in 2 days (DST-safe via dateFormatter helpers)
+    const twoDaysFromNow = addDays(new Date(), 2);
+    const twoDaysStart = startOfDaySwiss(twoDaysFromNow);
+    const twoDaysEnd = endOfDaySwiss(twoDaysFromNow);
 
     // Step 1: Fetch expiring leads (basic data only - no FK join)
     const { data: expiringLeads, error: leadsError } = await supabase
@@ -40,7 +37,7 @@ serve(async (req) => {
       `)
       .eq('status', 'active')
       .gte('proposal_deadline', twoDaysStart.toISOString())
-      .lte('proposal_deadline', twoDaysFromNow.toISOString());
+      .lte('proposal_deadline', twoDaysEnd.toISOString());
 
     if (leadsError) {
       console.error('[proposal-deadline-reminder] Error fetching expiring leads:', leadsError);

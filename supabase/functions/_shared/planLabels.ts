@@ -1,5 +1,7 @@
 // Shared plan labels and amounts for edge functions
-// SSOT for subscription plan display names and pricing
+// NOTE: Prices must match the SSOT in src/config/subscriptionPlans.ts (frontend)
+// and src/config/payrexx.ts. If prices change, update all three files.
+// Edge functions cannot import frontend modules, so this duplication is intentional.
 
 export const PLAN_AMOUNTS: Record<string, number> = {
   monthly: 9000,

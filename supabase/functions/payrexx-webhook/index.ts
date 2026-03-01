@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { PLAN_AMOUNTS, FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
+import { addMonths } from '../_shared/dateFormatter.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -159,8 +160,7 @@ Deno.serve(async (req) => {
       const planConfig = PLAN_CONFIGS[planType];
 
       const now = new Date();
-      const periodEnd = new Date(now);
-      periodEnd.setMonth(periodEnd.getMonth() + planConfig.periodMonths);
+      const periodEnd = addMonths(now, planConfig.periodMonths);
 
       // Update or create subscription
       const { error: subError } = await supabase

@@ -639,10 +639,10 @@ const HandwerkerOnboarding = () => {
       
       navigate("/handwerker-dashboard");
     } catch (error: any) {
-      const errMsg = error?.message || "Profil konnte nicht gespeichert werden.";
+      const errorMessage = error?.message || error?.details || error?.hint || '';
       toast({
         title: "Fehler",
-        description: errMsg,
+        description: errorMessage || "Profil konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
     } finally {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { isPast } from '@/lib/swissTime';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -234,9 +235,9 @@ const OpportunityView = () => {
     );
   }
 
-  const isExpired = lead.proposal_deadline && new Date(lead.proposal_deadline) < new Date();
-  const daysUntilDeadline = lead.proposal_deadline 
-    ? Math.ceil((new Date(lead.proposal_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+  const isExpired = lead.proposal_deadline && isPast(lead.proposal_deadline);
+  const daysUntilDeadline = lead.proposal_deadline
+    ? Math.ceil((new Date(lead.proposal_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
   return (

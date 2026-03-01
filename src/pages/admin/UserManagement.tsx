@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff, MailX } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { getRoleBadgeVariant } from '@/config/roles';
@@ -50,6 +50,11 @@ export default function UserManagement() {
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const [emailToDelete, setEmailToDelete] = useState('');
+  const [emailLookupResult, setEmailLookupResult] = useState<{ found: boolean; name?: string; type: 'registered' | 'guest' | 'none' } | null>(null);
+  const [emailLookupLoading, setEmailLookupLoading] = useState(false);
+  const [emailDeleteLoading, setEmailDeleteLoading] = useState(false);
+  const [emailDeleteDialogOpen, setEmailDeleteDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isChecking, hasChecked, isAuthorized } = useAdminAuth();
@@ -316,6 +321,84 @@ export default function UserManagement() {
     setIsEditDialogOpen(true);
   };
 
+  const handleEmailLookup = async () => {
+    const email = emailToDelete.trim().toLowerCase();
+    if (!email) return;
+    setEmailLookupLoading(true);
+    setEmailLookupResult(null);
+    try {
+      // Check registered users (profiles table)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (profile) {
+        setEmailLookupResult({ found: true, name: profile.full_name || email, type: 'registered' });
+        return;
+      }
+
+      // Check guest handwerker registrations
+      const { data: guestProfile } = await supabase
+        .from('handwerker_profiles')
+        .select('id, email, company_name, first_name, last_name')
+        .eq('email', email)
+        .is('user_id', null)
+        .maybeSingle();
+
+      if (guestProfile) {
+        const name = guestProfile.company_name ||
+          `${guestProfile.first_name || ''} ${guestProfile.last_name || ''}`.trim() || email;
+        setEmailLookupResult({ found: true, name, type: 'guest' });
+        return;
+      }
+
+      setEmailLookupResult({ found: false, type: 'none' });
+    } catch (error) {
+      console.error('Email lookup error:', error);
+      toast({ title: 'Fehler', description: 'Suche fehlgeschlagen.', variant: 'destructive' });
+    } finally {
+      setEmailLookupLoading(false);
+    }
+  };
+
+  const handleDeleteByEmail = async () => {
+    const email = emailToDelete.trim().toLowerCase();
+    if (!email) return;
+    setEmailDeleteLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { email },
+      });
+
+      if (error) throw error;
+
+      const verified = data?.verified ?? false;
+      toast({
+        title: verified ? 'E-Mail-Adresse freigegeben' : 'Gelöscht (mit Warnungen)',
+        description: verified
+          ? `${email} wurde vollständig entfernt und kann neu registriert werden.`
+          : `${email} entfernt, aber einige Datensätze könnten verblieben sein.`,
+        variant: verified ? 'default' : 'destructive',
+      });
+
+      setEmailToDelete('');
+      setEmailLookupResult(null);
+      setEmailDeleteDialogOpen(false);
+      await loadUsers();
+    } catch (error: any) {
+      console.error('Delete by email error:', error);
+      toast({
+        title: 'Fehler beim Löschen',
+        description: error.message || 'E-Mail-Adresse konnte nicht freigegeben werden.',
+        variant: 'destructive',
+      });
+    } finally {
+      setEmailDeleteLoading(false);
+    }
+  };
+
   if (isChecking && !hasChecked) return <PageSkeleton />;
   if (!isAuthorized) return null;
 
@@ -516,6 +599,130 @@ export default function UserManagement() {
               )}
             </CardContent>
           </Card>
+
+        {/* Delete by Email Card */}
+        <Card className="mt-8 border-destructive/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <MailX className="h-5 w-5" />
+              E-Mail-Adresse freigeben
+            </CardTitle>
+            <CardDescription>
+              Entfernt einen Kontakt vollständig aus dem System, damit die E-Mail-Adresse neu registriert werden kann.
+              Funktioniert auch für unvollständige Registrierungen und Gast-Profile.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="kontakt@beispiel.ch"
+                value={emailToDelete}
+                onChange={(e) => {
+                  setEmailToDelete(e.target.value);
+                  setEmailLookupResult(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleEmailLookup()}
+                className="max-w-sm"
+              />
+              <Button
+                variant="outline"
+                onClick={handleEmailLookup}
+                disabled={!emailToDelete.trim() || emailLookupLoading}
+              >
+                {emailLookupLoading
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Search className="h-4 w-4" />}
+                <span className="ml-1">Suchen</span>
+              </Button>
+            </div>
+
+            {emailLookupResult && (
+              <div className={`rounded-md border p-4 space-y-3 ${
+                emailLookupResult.found ? 'border-amber-300 bg-amber-50' : 'border-muted bg-muted/30'
+              }`}>
+                {emailLookupResult.found ? (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-amber-900">Kontakt gefunden</p>
+                        <p className="text-sm text-amber-800">
+                          <strong>{emailLookupResult.name}</strong> — {emailToDelete.trim()}
+                        </p>
+                        <p className="text-xs text-amber-700 mt-1">
+                          Typ: {emailLookupResult.type === 'registered' ? 'Registrierter Benutzer (inkl. Auth-Konto)' : 'Gast-Handwerkerprofil (ohne Auth-Konto)'}
+                        </p>
+                      </div>
+                    </div>
+                    <AlertDialog open={emailDeleteDialogOpen} onOpenChange={setEmailDeleteDialogOpen}>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Kontakt hart löschen
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            Kontakt unwiderruflich löschen?
+                          </AlertDialogTitle>
+                          <AlertDialogDescription className="space-y-3">
+                            <div className="rounded-md bg-destructive/10 p-3 border border-destructive/20">
+                              <p className="font-semibold text-destructive">ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!</p>
+                            </div>
+                            <p>
+                              Die E-Mail-Adresse <strong>{emailToDelete.trim()}</strong> und alle zugehörigen Daten werden permanent gelöscht.
+                            </p>
+                            {emailLookupResult.type === 'registered' && (
+                              <ul className="list-disc list-inside text-sm space-y-1">
+                                <li>Auth-Konto (E-Mail wird sofort freigegeben)</li>
+                                <li>Benutzerprofil und alle persönlichen Daten</li>
+                                <li>Nachrichten, Aufträge und Offerten</li>
+                                <li>Handwerker-Profil, Dokumente und Abonnements</li>
+                              </ul>
+                            )}
+                            {emailLookupResult.type === 'guest' && (
+                              <ul className="list-disc list-inside text-sm space-y-1">
+                                <li>Gast-Handwerkerprofil</li>
+                                <li>Hochgeladene Dokumente</li>
+                                <li>Freigabe-Verlauf</li>
+                              </ul>
+                            )}
+                            <p className="text-sm font-medium text-green-700 bg-green-50 rounded p-2">
+                              ✓ Die E-Mail-Adresse kann danach erneut registriert werden.
+                            </p>
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={handleDeleteByEmail}
+                            disabled={emailDeleteLoading}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {emailDeleteLoading
+                              ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Wird gelöscht...</>
+                              : 'Ja, endgültig löschen'
+                            }
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-3 text-muted-foreground">
+                    <Search className="h-5 w-5 flex-shrink-0" />
+                    <p className="text-sm">
+                      Kein Kontakt mit <strong>{emailToDelete.trim()}</strong> gefunden. Die E-Mail-Adresse ist bereits frei.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Edit User Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
