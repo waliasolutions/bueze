@@ -59,44 +59,26 @@ export function NotificationDropdown<T extends BaseNotification>({
 
   const fetchNotifications = useCallback(async () => {
     try {
-      // Use explicit any to avoid Supabase type recursion issues
-      let data: any[] | null = null;
-      let error: any = null;
+      // All three notification tables share identical schemas, so we cast
+      // to avoid Supabase's per-table type narrowing while keeping a single query
+      let query = (supabase.from(tableName as any) as any)
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-      if (tableName === 'admin_notifications') {
-        const result = await supabase
-          .from('admin_notifications')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(20);
-        data = result.data;
-        error = result.error;
-      } else if (tableName === 'client_notifications' && userId) {
-        const result = await supabase
-          .from('client_notifications')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        data = result.data;
-        error = result.error;
-      } else if (tableName === 'handwerker_notifications' && userId) {
-        const result = await supabase
-          .from('handwerker_notifications')
-          .select('*')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(20);
-        data = result.data;
-        error = result.error;
+      // Admin notifications are global; client/handwerker filter by user
+      if (tableName !== 'admin_notifications' && userId) {
+        query = query.eq('user_id', userId);
       }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error(`Error fetching ${tableName}:`, error);
         return;
       }
 
-      const mapped = (data || []).map(n => ({
+      const mapped = (data || []).map((n: any) => ({
         ...n,
         metadata: n.metadata as Record<string, unknown> | null
       })) as T[];
@@ -154,14 +136,9 @@ export function NotificationDropdown<T extends BaseNotification>({
 
   const markAsRead = async (notificationId: string) => {
     try {
-      // Use explicit table references to avoid type issues
-      if (tableName === 'admin_notifications') {
-        await supabase.from('admin_notifications').update({ read: true }).eq('id', notificationId);
-      } else if (tableName === 'client_notifications') {
-        await supabase.from('client_notifications').update({ read: true }).eq('id', notificationId);
-      } else if (tableName === 'handwerker_notifications') {
-        await supabase.from('handwerker_notifications').update({ read: true }).eq('id', notificationId);
-      }
+      await (supabase.from(tableName as any) as any)
+        .update({ read: true })
+        .eq('id', notificationId);
 
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
@@ -177,14 +154,9 @@ export function NotificationDropdown<T extends BaseNotification>({
       const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
       if (unreadIds.length === 0) return;
 
-      // Use explicit table references
-      if (tableName === 'admin_notifications') {
-        await supabase.from('admin_notifications').update({ read: true }).in('id', unreadIds);
-      } else if (tableName === 'client_notifications') {
-        await supabase.from('client_notifications').update({ read: true }).in('id', unreadIds);
-      } else if (tableName === 'handwerker_notifications') {
-        await supabase.from('handwerker_notifications').update({ read: true }).in('id', unreadIds);
-      }
+      await (supabase.from(tableName as any) as any)
+        .update({ read: true })
+        .in('id', unreadIds);
 
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);

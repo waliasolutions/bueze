@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
-
-const CANONICAL_DOMAIN = 'https://bueeze.ch';
+import { SITE_URL } from '@/config/siteConfig';
 
 interface DynamicHelmetProps {
   title?: string;
@@ -82,7 +81,7 @@ export const DynamicHelmet: React.FC<DynamicHelmetProps> = ({
     const cleanPath = currentPath.endsWith('/') && currentPath !== '/' 
       ? currentPath.slice(0, -1) 
       : currentPath;
-    const finalCanonical = canonical || `${CANONICAL_DOMAIN}${cleanPath}`;
+    const finalCanonical = canonical || `${SITE_URL}${cleanPath}`;
 
     // Always set canonical link
     let linkElement = document.querySelector('link[rel="canonical"]');

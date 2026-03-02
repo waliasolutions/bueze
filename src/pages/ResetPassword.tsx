@@ -26,44 +26,30 @@ export default function ResetPassword() {
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     let isMounted = true;
-    
-    // Debug logging for production troubleshooting
-    console.log('[ResetPassword] Component mounted');
-    console.log('[ResetPassword] window.location.search:', window.location.search);
-    console.log('[ResetPassword] window.location.hash:', window.location.hash);
-    
+
     const initializeTokenValidation = async () => {
       try {
         // Parse token directly from URL (more reliable than useSearchParams with lazy loading)
         const urlParams = new URLSearchParams(window.location.search);
         const tokenParam = urlParams.get('token');
-        
-        console.log('[ResetPassword] Parsed token:', tokenParam ? 'present' : 'missing');
-        
+
         if (tokenParam) {
-          console.log('[ResetPassword] Using custom token flow - validating token immediately');
-          
           // Pre-validate token on page load for better UX
           try {
             const { data, error: invokeError } = await supabase.functions.invoke('validate-password-reset-token', {
               body: { token: tokenParam, validateOnly: true },
             });
 
-            console.log('[ResetPassword] Token validation response:', data);
-
             if (!isMounted) return;
 
             if (invokeError) {
-              console.log('[ResetPassword] Token validation error:', invokeError);
               setIsValidToken(false);
               setTokenError(invokeError.message || 'Ungültiger oder abgelaufener Link');
             } else if (data.valid) {
-              console.log('[ResetPassword] Token is valid, showing password form');
               setCustomToken(tokenParam);
               setUseCustomFlow(true);
               setIsValidToken(true);
             } else {
-              console.log('[ResetPassword] Token is invalid or expired');
               setIsValidToken(false);
               setTokenError(data.error || 'Ungültiger oder abgelaufener Link');
             }
@@ -75,26 +61,22 @@ export default function ResetPassword() {
             setUseCustomFlow(true);
             setIsValidToken(true);
           }
-          
+
           if (isMounted) setIsLoading(false);
           return;
         }
-        
+
         // Legacy Supabase flow - check URL hash for recovery tokens
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const hasRecoveryParams = hashParams.has('access_token') || 
+        const hasRecoveryParams = hashParams.has('access_token') ||
                                   (hashParams.has('type') && hashParams.get('type') === 'recovery');
-        
-        console.log('[ResetPassword] Has recovery params in hash:', hasRecoveryParams);
-        
+
         // Listen for PASSWORD_RECOVERY event
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           // Defer async operations per Supabase best practices
           setTimeout(() => {
             if (!isMounted) return;
-            
-            console.log('[ResetPassword] Auth state change:', event);
-            
+
             if (event === 'PASSWORD_RECOVERY') {
               setIsValidToken(true);
               setIsLoading(false);
@@ -108,34 +90,32 @@ export default function ResetPassword() {
 
         // Check for existing session (handles case where event already fired)
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (!isMounted) {
           subscription.unsubscribe();
           return;
         }
-        
+
         if (session?.user) {
-          console.log('[ResetPassword] Existing session found');
           setIsValidToken(true);
           setIsLoading(false);
           return;
         }
-        
+
         // If URL had recovery params but no session yet, wait a bit for Supabase to process
         if (hasRecoveryParams) {
           // Give Supabase time to process the token exchange
           timeoutId = setTimeout(async () => {
             if (!isMounted) return;
-            
+
             // Final check before declaring invalid
             const { data: { session: finalSession } } = await supabase.auth.getSession();
-            
+
             if (!isMounted) return;
-            
+
             if (finalSession?.user) {
               setIsValidToken(true);
             } else {
-              console.log('[ResetPassword] No session after timeout, showing invalid');
               setIsValidToken(false);
               setTokenError('Ungültiger oder abgelaufener Link');
               toast({
@@ -149,7 +129,6 @@ export default function ResetPassword() {
           }, 2000);
         } else {
           // No recovery params in URL and no session - invalid access
-          console.log('[ResetPassword] No token or recovery params found');
           setIsValidToken(false);
           setTokenError('Kein Token gefunden');
           setIsLoading(false);
@@ -204,14 +183,10 @@ export default function ResetPassword() {
 
     try {
       if (useCustomFlow && customToken) {
-        console.log('[ResetPassword] Submitting password reset via custom token flow');
-        
         // Custom token flow - call edge function
         const { data, error: invokeError } = await supabase.functions.invoke('validate-password-reset-token', {
           body: { token: customToken, newPassword: password },
         });
-
-        console.log('[ResetPassword] Password reset response:', { success: data?.success, error: invokeError });
 
         if (invokeError || !data?.success) {
           toast({
@@ -227,14 +202,12 @@ export default function ResetPassword() {
           title: 'Passwort aktualisiert',
           description: 'Ihr Passwort wurde erfolgreich geändert. Sie werden zur Login-Seite weitergeleitet.',
         });
-        
+
         // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/auth');
         }, 3000);
       } else {
-        console.log('[ResetPassword] Submitting password reset via Supabase flow');
-        
         // Legacy Supabase flow
         const { error } = await supabase.auth.updateUser({
           password: password
@@ -253,7 +226,7 @@ export default function ResetPassword() {
             title: 'Passwort aktualisiert',
             description: 'Ihr Passwort wurde erfolgreich geändert. Sie werden zur Login-Seite weitergeleitet.',
           });
-          
+
           // Redirect to login after 3 seconds
           setTimeout(() => {
             navigate('/auth');
@@ -316,8 +289,8 @@ export default function ResetPassword() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
-                onClick={() => navigate('/auth')} 
+              <Button
+                onClick={() => navigate('/auth')}
                 className="w-full"
               >
                 Jetzt anmelden
@@ -340,8 +313,8 @@ export default function ResetPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={() => navigate('/auth')} 
+            <Button
+              onClick={() => navigate('/auth')}
               className="w-full"
             >
               Zur Login-Seite
@@ -370,9 +343,9 @@ export default function ResetPassword() {
         <Card className="border-2">
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 relative mb-2">
-              <img 
-                src={logo} 
-                alt="Büeze.ch Logo" 
+              <img
+                src={logo}
+                alt="Büeze.ch Logo"
                 className="w-full h-full object-contain"
                 loading="eager"
                 decoding="async"

@@ -41,6 +41,10 @@ export const QUERY_KEYS = {
   // Admin
   ADMIN_STATS: 'adminStats',
   PENDING_APPROVALS: 'pendingApprovals',
+
+  // Page Content (CMS)
+  PAGE_CONTENT: (pageKey: string) => ['page-content', pageKey] as const,
+  PAGE_CONTENT_ALL: (contentType?: string) => ['page-content-all', contentType] as const,
 } as const;
 
 /**
@@ -182,6 +186,30 @@ export async function invalidateHandwerkerQueries(
   // Invalidate pending approvals for admin
   invalidations.push(
     queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.PENDING_APPROVALS] })
+  );
+
+  await Promise.all(invalidations);
+}
+
+/**
+ * Invalidate queries after page content mutation (CMS)
+ */
+export async function invalidatePageContentQueries(
+  queryClient: QueryClient,
+  pageKey?: string,
+  contentType?: string
+): Promise<void> {
+  const invalidations: Promise<void>[] = [];
+
+  if (pageKey) {
+    invalidations.push(
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.PAGE_CONTENT(pageKey) })
+    );
+  }
+
+  // Always invalidate the "all" list since any change may affect it
+  invalidations.push(
+    queryClient.invalidateQueries({ queryKey: ['page-content-all'] })
   );
 
   await Promise.all(invalidations);
