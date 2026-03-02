@@ -501,7 +501,6 @@ const ProposalsManagement = () => {
                                 
                                 // Fallback: Create conversation if not exists
                                 if (!conversation) {
-                                  console.log('[ProposalsManagement] Creating fallback conversation for accepted proposal');
                                   const { data: newConversation, error } = await supabase
                                     .from('conversations')
                                     .insert({

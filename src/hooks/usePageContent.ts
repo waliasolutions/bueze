@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { QUERY_KEYS } from '@/lib/queryInvalidation';
 
 interface PageContent {
   id: string;
@@ -32,7 +33,7 @@ function normalizeSeoData(seo: any): any {
 
 export const usePageContent = (pageKey: string) => {
   const { data: content, isLoading: loading, error, refetch } = useQuery({
-    queryKey: ['page-content', pageKey],
+    queryKey: QUERY_KEYS.PAGE_CONTENT(pageKey),
     queryFn: async () => {
       const { data, error } = await supabase
         .from('page_content')
@@ -64,7 +65,7 @@ export const usePageContent = (pageKey: string) => {
 
 export const useAllPageContent = (contentType?: string) => {
   const { data: contents, isLoading: loading, error, refetch } = useQuery({
-    queryKey: ['page-content-all', contentType],
+    queryKey: QUERY_KEYS.PAGE_CONTENT_ALL(contentType),
     queryFn: async () => {
       let query = supabase
         .from('page_content')
