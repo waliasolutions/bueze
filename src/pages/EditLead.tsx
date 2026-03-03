@@ -133,7 +133,6 @@ const EditLead = () => {
           category: data.category as any,
           urgency: data.urgency as any,
           canton: data.canton as any,
-          updated_at: new Date().toISOString(),
           ...(coordinates.lat && coordinates.lng ? { lat: coordinates.lat, lng: coordinates.lng } : {}),
         })
         .eq('id', id);

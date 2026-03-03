@@ -12,11 +12,12 @@ export interface ProposalActionResult {
 }
 
 /**
- * Accept a proposal - updates proposal status, lead status, rejects other proposals, sends emails
+ * Accept a proposal - atomic RPC that updates lead, accepts proposal, rejects others in one transaction.
+ * Uses proposal_id as natural idempotency key (safe for double-clicks / network retries).
  */
 export async function acceptProposal(proposalId: string): Promise<ProposalActionResult> {
   try {
-    // Get the proposal and verify it's still pending
+    // Get the proposal's lead_id (needed for the RPC call)
     const { data: proposal, error: proposalError } = await supabase
       .from('lead_proposals')
       .select('lead_id, status')
@@ -32,54 +33,28 @@ export async function acceptProposal(proposalId: string): Promise<ProposalAction
       };
     }
 
-    // Verify the lead is still active (prevents double-acceptance race condition)
-    const { data: lead, error: leadCheckError } = await supabase
-      .from('leads')
-      .select('status, accepted_proposal_id')
-      .eq('id', proposal.lead_id)
-      .single();
+    // Atomic RPC: updates lead + accepts proposal + rejects others in single transaction
+    const { data: result, error: rpcError } = await supabase.rpc('accept_proposal_atomic', {
+      p_proposal_id: proposalId,
+      p_lead_id: proposal.lead_id,
+    });
 
-    if (leadCheckError) throw leadCheckError;
+    if (rpcError) throw rpcError;
 
-    if (lead.status === 'completed' || lead.accepted_proposal_id) {
+    if (!result.success) {
+      const errorMessages: Record<string, string> = {
+        lead_not_active: 'Für diesen Auftrag wurde bereits eine Offerte angenommen.',
+        lead_not_found: 'Der Auftrag wurde nicht gefunden.',
+        proposal_not_pending: 'Diese Offerte wurde bereits bearbeitet.',
+        proposal_not_found: 'Die Offerte wurde nicht gefunden.',
+      };
       return {
         success: false,
-        message: 'Für diesen Auftrag wurde bereits eine Offerte angenommen.'
+        message: errorMessages[result.error] || 'Offerte konnte nicht angenommen werden',
       };
     }
 
-    // Update lead status FIRST (acts as a lock — only one can succeed due to accepted_proposal_id)
-    const { error: leadError } = await supabase
-      .from('leads')
-      .update({
-        status: 'completed',
-        accepted_proposal_id: proposalId
-      })
-      .eq('id', proposal.lead_id)
-      .eq('status', 'active'); // Optimistic lock: only update if still active
-
-    if (leadError) throw leadError;
-
-    // Update proposal status to accepted
-    const { error: updateError } = await supabase
-      .from('lead_proposals')
-      .update({
-        status: 'accepted',
-        responded_at: new Date().toISOString()
-      })
-      .eq('id', proposalId);
-
-    if (updateError) throw updateError;
-
-    // Reject all other pending proposals for this lead
-    await supabase
-      .from('lead_proposals')
-      .update({ status: 'rejected', responded_at: new Date().toISOString() })
-      .eq('lead_id', proposal.lead_id)
-      .neq('id', proposalId)
-      .eq('status', 'pending');
-
-    // Trigger acceptance emails and conversation creation
+    // Trigger acceptance emails and conversation creation (fire-and-forget, outside transaction)
     try {
       await supabase.functions.invoke('send-acceptance-emails', {
         body: { proposalId }
@@ -91,7 +66,9 @@ export async function acceptProposal(proposalId: string): Promise<ProposalAction
 
     return {
       success: true,
-      message: 'Offerte angenommen! Beide Parteien wurden benachrichtigt.'
+      message: result.idempotent
+        ? 'Diese Offerte wurde bereits angenommen.'
+        : 'Offerte angenommen! Beide Parteien wurden benachrichtigt.'
     };
   } catch (error) {
     console.error('Error accepting proposal:', error);

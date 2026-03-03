@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { acceptProposal, rejectProposal } from '@/lib/proposalHelpers';
+import { useAcceptProposal, useRejectProposal } from '@/hooks/useProposalMutations';
 
 const ProposalReview = () => {
   const { proposalId } = useParams();
@@ -16,7 +16,26 @@ const ProposalReview = () => {
   const { toast } = useToast();
   const [proposal, setProposal] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [responding, setResponding] = useState(false);
+
+  const acceptMutation = useAcceptProposal({
+    onAcceptSuccess: (message) => {
+      toast({ title: 'Offerte angenommen!', description: message });
+      navigate('/dashboard');
+    },
+    onAcceptError: (message) => {
+      toast({ title: 'Fehler', description: message, variant: 'destructive' });
+    },
+  });
+
+  const rejectMutation = useRejectProposal({
+    onRejectSuccess: (message) => {
+      toast({ title: 'Offerte abgelehnt', description: message });
+      navigate('/dashboard');
+    },
+    onRejectError: (message) => {
+      toast({ title: 'Fehler', description: message, variant: 'destructive' });
+    },
+  });
 
   useEffect(() => {
     fetchProposal();
@@ -73,43 +92,17 @@ const ProposalReview = () => {
     }
   };
 
-  const handleAccept = async () => {
+  const handleAccept = () => {
     if (!proposalId) return;
-    setResponding(true);
-    
-    const result = await acceptProposal(proposalId);
-    
-    toast({
-      title: result.success ? 'Offerte angenommen!' : 'Fehler',
-      description: result.message,
-      variant: result.success ? 'default' : 'destructive'
-    });
-
-    if (result.success) {
-      setTimeout(() => navigate('/dashboard'), 2000);
-    }
-    
-    setResponding(false);
+    acceptMutation.mutate(proposalId);
   };
 
-  const handleReject = async () => {
+  const handleReject = () => {
     if (!proposalId) return;
-    setResponding(true);
-    
-    const result = await rejectProposal(proposalId);
-    
-    toast({
-      title: result.success ? 'Offerte abgelehnt' : 'Fehler',
-      description: result.message,
-      variant: result.success ? 'default' : 'destructive'
-    });
-
-    if (result.success) {
-      setTimeout(() => navigate('/dashboard'), 2000);
-    }
-    
-    setResponding(false);
+    rejectMutation.mutate(proposalId);
   };
+
+  const responding = acceptMutation.isPending || rejectMutation.isPending;
 
   if (loading) {
     return (

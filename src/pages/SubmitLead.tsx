@@ -476,6 +476,27 @@ const SubmitLead = () => {
         throw new Error('Nicht angemeldet. Bitte laden Sie die Seite neu.');
       }
 
+      // Soft duplicate check: warn if same category + zip in last 24h
+      const { data: dupes } = await supabase
+        .from('leads')
+        .select('id, title')
+        .eq('owner_id', user.id)
+        .eq('category', data.category as any)
+        .eq('zip', data.zip)
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .limit(1);
+
+      if (dupes && dupes.length > 0) {
+        const confirmed = window.confirm(
+          `Sie haben in den letzten 24 Stunden bereits einen ähnlichen Auftrag erstellt ("${dupes[0].title}"). Möchten Sie trotzdem fortfahren?`
+        );
+        if (!confirmed) {
+          setIsSubmitting(false);
+          clearTimeout(timeoutId);
+          return;
+        }
+      }
+
       const requestId = getOrCreateRequestId('create-lead');
       logWithCorrelation('Creating lead', { requestId, mediaCount: uploadedUrls.length });
 

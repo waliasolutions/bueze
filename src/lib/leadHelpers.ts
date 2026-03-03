@@ -30,7 +30,7 @@ export async function updateLeadStatus(
   try {
     const { error } = await supabase
       .from('leads')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update({ status: newStatus })
       .eq('id', leadId)
       .eq('owner_id', userId); // RLS enforcement
 

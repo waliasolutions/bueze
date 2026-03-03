@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { formatDate, formatDateTime } from "@/lib/swissTime";
+import { formatDate, formatDateTime, formatTimeAgo } from "@/lib/swissTime";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -1026,6 +1026,114 @@ const HandwerkerDashboard = () => {
                   </CardContent>
                 </Card>
               )}
+            </div>
+          )}
+
+          {/* Action Needed / Growth Tips Section */}
+          {(() => {
+            const hasNewLeads = leads.length > 0;
+            const hasPendingProposals = pendingProposalsCount > 0;
+            const hasActions = hasNewLeads || hasPendingProposals || dashboardStats.unreadMessages > 0;
+
+            if (hasActions) {
+              return (
+                <Card className="mb-6 border-blue-200 bg-blue-50/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5 text-blue-600" />
+                      Handlungsbedarf
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {hasNewLeads && (
+                      <button
+                        onClick={() => setActiveTab('leads')}
+                        className="flex items-center gap-3 w-full text-left p-2 rounded-md hover:bg-blue-100/50 transition-colors"
+                      >
+                        <Search className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                        <span className="text-sm">
+                          <strong>{leads.length}</strong> verfügbare Aufträge in Ihrem Bereich
+                        </span>
+                      </button>
+                    )}
+                    {hasPendingProposals && (
+                      <button
+                        onClick={() => setActiveTab('proposals')}
+                        className="flex items-center gap-3 w-full text-left p-2 rounded-md hover:bg-blue-100/50 transition-colors"
+                      >
+                        <FileText className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                        <span className="text-sm">
+                          <strong>{pendingProposalsCount}</strong> ausstehende Offerten
+                        </span>
+                      </button>
+                    )}
+                    {dashboardStats.unreadMessages > 0 && (
+                      <button
+                        onClick={() => navigate('/conversations')}
+                        className="flex items-center gap-3 w-full text-left p-2 rounded-md hover:bg-blue-100/50 transition-colors"
+                      >
+                        <MessageSquare className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="text-sm">
+                          <strong>{dashboardStats.unreadMessages}</strong> ungelesene Nachrichten
+                        </span>
+                      </button>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            }
+
+            // Growth Tips when no pending actions
+            const growthTips = [
+              'Aktualisieren Sie Ihr Profil mit neuen Fotos – Handwerker mit Fotos erhalten 40% mehr Anfragen.',
+              'Erweitern Sie Ihre Dienstleistungskategorien, um mehr passende Aufträge zu sehen.',
+              'Bitten Sie zufriedene Kunden um eine Bewertung – Top-bewertete Handwerker erhalten bevorzugte Sichtbarkeit.',
+            ];
+            const tipIndex = Math.floor(Date.now() / (1000 * 60 * 60)) % growthTips.length; // Rotates hourly
+
+            return (
+              <Card className="mb-6 border-emerald-200 bg-emerald-50/50">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-full bg-emerald-100 flex-shrink-0">
+                      <Star className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-emerald-900">Wachstumstipp</p>
+                      <p className="text-sm text-emerald-700 mt-0.5">{growthTips[tipIndex]}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+          {/* Quick Resume: Recent Proposals */}
+          {proposals.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">Zuletzt eingereicht</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {proposals.slice(0, 3).map((proposal) => (
+                  <Card
+                    key={proposal.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => {
+                      setActiveTab('proposals');
+                      setViewingProposalLead(proposal as any);
+                    }}
+                  >
+                    <CardContent className="pt-3 pb-3 px-4">
+                      <p className="text-sm font-medium truncate">{(proposal as any).leads?.title || 'Auftrag'}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <ProposalStatusBadge status={proposal.status} />
+                        <span className="text-xs text-muted-foreground">
+                          {formatTimeAgo(proposal.submitted_at || proposal.created_at)}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
 
