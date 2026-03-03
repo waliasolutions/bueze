@@ -32,6 +32,7 @@ import {
   CheckCheck,
   Trash2,
   Loader2,
+  Crown,
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -47,7 +48,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { FREE_TIER_PROPOSALS_LIMIT } from '@/config/subscriptionPlans';
+import { FREE_TIER_PROPOSALS_LIMIT, SUBSCRIPTION_PLAN_LIST, SUBSCRIPTION_PLANS, formatPricePerMonth, type SubscriptionPlanType } from '@/config/subscriptionPlans';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 interface Handwerker {
   id: string;
@@ -95,6 +98,11 @@ export default function HandwerkerManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+
+  // Subscription management dialog state
+  const [managingSubscription, setManagingSubscription] = useState<Handwerker | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanType>('free');
+  const [subActionLoading, setSubActionLoading] = useState(false);
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -384,6 +392,83 @@ export default function HandwerkerManagement() {
       });
     } finally {
       setDeleteLoading(null);
+    }
+  };
+
+  // Subscription management
+  const openSubscriptionDialog = (handwerker: Handwerker) => {
+    const sub = handwerker.user_id ? subscriptions.get(handwerker.user_id) : null;
+    setSelectedPlan((sub?.plan_type as SubscriptionPlanType) || 'free');
+    setManagingSubscription(handwerker);
+  };
+
+  const getPeriodEnd = (planType: SubscriptionPlanType): string => {
+    const now = new Date();
+    switch (planType) {
+      case 'monthly': return new Date(new Date(now).setMonth(now.getMonth() + 1)).toISOString();
+      case '6_month': return new Date(new Date(now).setMonth(now.getMonth() + 6)).toISOString();
+      case 'annual': return new Date(new Date(now).setFullYear(now.getFullYear() + 1)).toISOString();
+      default: return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    }
+  };
+
+  const handleChangePlan = async () => {
+    if (!managingSubscription?.user_id) return;
+    setSubActionLoading(true);
+
+    try {
+      const { data: { user: adminUser } } = await supabase.auth.getUser();
+      const userId = managingSubscription.user_id;
+      const currentSub = subscriptions.get(userId);
+      const currentPlan = currentSub?.plan_type || 'free';
+      const plan = SUBSCRIPTION_PLANS[selectedPlan];
+      const now = new Date().toISOString();
+
+      // Upsert subscription with new plan
+      const { error } = await supabase
+        .from('handwerker_subscriptions')
+        .upsert({
+          user_id: userId,
+          plan_type: selectedPlan,
+          status: 'active',
+          proposals_limit: plan.proposalsLimit,
+          proposals_used_this_period: 0,
+          current_period_start: now,
+          current_period_end: getPeriodEnd(selectedPlan),
+          pending_plan: null,
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      // Audit log
+      await supabase.from('audit_log').insert({
+        action: 'admin_plan_change',
+        entity_type: 'handwerker_subscription',
+        actor_id: adminUser?.id,
+        metadata: {
+          handwerker_user_id: userId,
+          from_plan: currentPlan,
+          to_plan: selectedPlan,
+          handwerker_name: `${managingSubscription.first_name} ${managingSubscription.last_name}`,
+        },
+      });
+
+      toast({
+        title: 'Abo aktualisiert',
+        description: `${managingSubscription.first_name} ${managingSubscription.last_name}: ${plan.displayName}`,
+      });
+
+      setManagingSubscription(null);
+      fetchSubscriptions();
+    } catch (error: any) {
+      console.error('Error changing plan:', error);
+      toast({
+        title: 'Fehler',
+        description: error.message || 'Abo konnte nicht geändert werden',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubActionLoading(false);
     }
   };
 
@@ -706,6 +791,17 @@ export default function HandwerkerManagement() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
+                            {h.verification_status === 'approved' && h.user_id && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openSubscriptionDialog(h)}
+                                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                title="Abo verwalten"
+                              >
+                                <Crown className="h-4 w-4" />
+                              </Button>
+                            )}
                             {h.verification_status === 'pending' && (
                               <>
                                 <Button
@@ -799,6 +895,97 @@ export default function HandwerkerManagement() {
           onOpenChange={(open) => !open && setSelectedHandwerkerId(null)}
         />
       )}
+
+      {/* Subscription Management Dialog */}
+      <Dialog open={!!managingSubscription} onOpenChange={(open) => !open && setManagingSubscription(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Abo verwalten</DialogTitle>
+            <DialogDescription>
+              {managingSubscription?.first_name} {managingSubscription?.last_name}
+              {managingSubscription?.company_name && ` (${managingSubscription.company_name})`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {managingSubscription?.user_id && (() => {
+            const sub = subscriptions.get(managingSubscription.user_id);
+            const currentPlan = sub ? SUBSCRIPTION_PLANS[sub.plan_type as SubscriptionPlanType] : null;
+            return (
+              <div className="space-y-4">
+                {/* Current plan info */}
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm font-medium">Aktuelles Abo</p>
+                  <p className="text-lg font-bold">
+                    {currentPlan?.displayName || 'Kein Abo'}
+                  </p>
+                  {sub && (
+                    <p className="text-sm text-muted-foreground">
+                      {sub.proposals_limit === -1
+                        ? 'Unbegrenzte Offerten'
+                        : `${sub.proposals_used_this_period}/${sub.proposals_limit} Offerten`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Plan selection */}
+                <div className="space-y-2">
+                  <Label>Neues Abo auswählen</Label>
+                  <div className="space-y-2">
+                    {SUBSCRIPTION_PLAN_LIST.map((plan) => (
+                      <label
+                        key={plan.id}
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selectedPlan === plan.id
+                            ? 'border-primary bg-primary/5'
+                            : 'border-border hover:bg-muted/50'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="plan"
+                          value={plan.id}
+                          checked={selectedPlan === plan.id}
+                          onChange={() => setSelectedPlan(plan.id)}
+                          className="accent-primary"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{plan.displayName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatPricePerMonth(plan)}
+                            {plan.proposalsLimit === -1 ? ' — Unbegrenzt' : ` — ${plan.proposalsLimit} Offerten/Monat`}
+                          </p>
+                        </div>
+                        {plan.savings && (
+                          <Badge variant="secondary" className="text-xs">{plan.savings}</Badge>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManagingSubscription(null)}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={handleChangePlan}
+              disabled={subActionLoading || (managingSubscription?.user_id ? subscriptions.get(managingSubscription.user_id)?.plan_type === selectedPlan : false)}
+            >
+              {subActionLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Speichert...
+                </>
+              ) : (
+                'Abo ändern'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
