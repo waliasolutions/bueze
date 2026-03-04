@@ -1,50 +1,59 @@
 
 
-# Fix Payrexx 403 "API secret is not correct" — Permanent Solution
+# Refined Plan: Checkout Streamlining, Cache Leak Fix, Test Mode Clarity
 
-## Root Cause Analysis
+## 1. Cross-Account Cache Leak Fix (App.tsx)
 
-The logs reveal a critical mismatch:
+**Approach:** Instead of a separate component, add an `onAuthStateChange` listener directly inside the existing `App` component (where `queryClient` is already in scope). This keeps architecture flat per your suggestion.
 
-1. **SignatureCheck passes** (HTTP 200, `"status":"success"`) — the API key is valid for signature verification
-2. **Gateway creation fails** (HTTP 403, "The API secret is not correct") — the same key is rejected when creating a gateway
-3. **Simulation mode never activates** — despite `PAYREXX_TEST_MODE` being set as a secret, the function does not log any simulation fallback messages, meaning the env var is either not being read correctly or the edge function is using a cached boot without the secret
+**On `SIGNED_OUT`:**
+- `queryClient.clear()` — wipe all React Query cache
+- `roleCache.clear()` (from `useUserRole.ts`) — already happens there, but double-ensuring
+- `sessionStorage.clear()` — already done in `UserDropdown.handleSignOut`, but this catches programmatic sign-outs and browser-level session expiry too
 
-The current code only enters simulation mode via the `PAYREXX_TEST_MODE` env var or when `SignatureCheck` itself fails with "API is not included in your license." Since SignatureCheck passes, the only path to simulation is the env var — which is failing silently.
+**On `SIGNED_IN`:**
+- `queryClient.clear()` — ensures fresh data for the new user (fail-safe)
 
-## Plan
+This is ~15 lines added to the existing `useEffect` in `App`.
 
-### 1. Make simulation mode self-healing on auth errors (edge function change)
+**Security note:** `localStorage` items like cookie consent and onboarding drafts are non-sensitive and user-agnostic, so they don't need clearing. The sensitive items (role cache, query cache, session storage view mode) are all covered.
 
-In `supabase/functions/create-payrexx-gateway/index.ts`:
+## 2. Checkout Streamlining (Checkout.tsx)
 
-- After the Gateway API call fails, detect the specific Payrexx auth error pattern (`"The API secret is not correct"` or HTTP 403 with `status: "error"`)
-- When detected, auto-simulate the payment (return `successUrl` with `testMode: true`) regardless of the `PAYREXX_TEST_MODE` env var
-- Log clearly when this auto-simulation triggers so it's visible in dashboards
-- Keep the existing `PAYREXX_TEST_MODE` env var logic as an explicit override, but add the auth-error fallback as a safety net
+**"Summary-First" pattern** for the approved checkout view (lines 314-570):
 
-The change is localized to the error handling block (around lines 252-276). Instead of only checking `simulationMode`, also check if the error is an auth/credential error and auto-simulate.
+- **When plan is pre-selected via URL param:** Replace the full RadioGroup card with a compact "receipt item" banner:
+  ```
+  ┌─────────────────────────────────────────┐
+  │  ✓ Monthly Pro Plan      CHF 49/Monat   │
+  │    Enthält 15 Offerten · Priorität       │
+  │                        [Plan ändern ▾]   │
+  └─────────────────────────────────────────┘
+  ```
+- **"Plan ändern" link:** Opens a `Collapsible` accordion (already available via Radix) that reveals the existing RadioGroup options. The payment button stays visible below.
+- **Remove numbered steps:** No "1." / "2." — single flow. Payment methods info merges into the order summary sidebar instead of a separate card.
+- **Payment button stays in the sticky sidebar** (already there), so it's always accessible.
 
-### 2. Add diagnostic logging for PAYREXX_TEST_MODE at boot
+**Key behavior:**
+- `planFromUrl` boolean tracks if plan came from URL params
+- If `planFromUrl` is true → show collapsed summary
+- If user clicks "Plan ändern" → expand RadioGroup via Collapsible
+- If no URL param → show full RadioGroup (direct `/checkout` navigation)
 
-Add a single log line at the top of the request handler that logs the resolved value of `PAYREXX_TEST_MODE` so we can always confirm in logs whether the env var was picked up.
+## 3. Test Mode Toast Clarity (Checkout.tsx)
 
-### 3. No frontend changes needed
+Add a visible `Alert` banner at the top of the checkout page when the response includes `testMode: true`. Currently the toast fires and disappears. Instead:
 
-The Checkout page already handles `testMode: true` responses correctly (shows toast, redirects to success URL).
+- Keep the existing toast for immediate feedback
+- After redirect to success page, the success page should show a subtle "Testmodus" badge (this is already handled by the `?success=true` param flow)
+- No additional change needed beyond what's already in place — the toast at line 158-161 already provides clarity
 
-## Technical Detail
+**Optional enhancement:** Add a console.info in the edge function response handler so QA testers can see it in DevTools. Minimal code, high clarity.
 
-```text
-Current flow:
-  SignatureCheck → pass → credCheck.valid=true
-  simulationMode = PAYREXX_TEST_MODE || false → false (env var not read)
-  Gateway POST → 403 "API secret not correct"
-  simulationMode is false → return raw 403 error to client
+## Files Changed
 
-Fixed flow:
-  SignatureCheck → pass
-  Gateway POST → 403 "API secret not correct"  
-  Detect auth error → auto-simulate → return successUrl + testMode:true
-```
+1. **`src/App.tsx`** — Add auth state listener for `queryClient.clear()` + `sessionStorage.clear()` on sign-out/sign-in
+2. **`src/pages/Checkout.tsx`** — Redesign approved checkout: summary-first pattern with collapsible plan selector, remove numbered steps, merge payment info into sidebar
+
+No edge function changes. No new files.
 
