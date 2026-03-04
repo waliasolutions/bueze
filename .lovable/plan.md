@@ -1,41 +1,49 @@
 
 
-# Admin Subscription Upgrade for Handwerker
+# Fix: Admin Abo Dropdown + Handwerker Subscription Access
 
-## Current State
-- The `HandwerkerManagement.tsx` page shows a subscription badge per handwerker (e.g. "Free (2/5)" or "Premium (3/-1)") but provides **no way to change the plan**.
-- The SSOT for plans is `src/config/subscriptionPlans.ts` with 4 tiers: `free`, `monthly`, `6_month`, `annual`.
-- The `getSubscriptionBadge` function (line 454) only displays — no edit capability.
-- Subscriptions are stored in `handwerker_subscriptions` table with `plan_type`, `proposals_limit`, `proposals_used_this_period`, etc.
+## Problem 1: Admin can't change Handwerker plans
+The `handwerker_subscriptions` table has two RLS policies that check `get_user_role(auth.uid()) = 'admin'`:
+- "Admins can manage all subscriptions" (ALL)
+- "Admins can view all subscriptions" (SELECT)
 
-## Plan
+The `get_user_role()` function returns only ONE role via `LIMIT 1`. If the logged-in user has `super_admin` role, the equality check `= 'admin'` fails silently — the admin sees no subscription data and updates are rejected.
 
-### Add a plan change dropdown to the Abo column in HandwerkerManagement
+**Fix**: Database migration to replace both policies with `has_role()` checks that cover both `admin` and `super_admin`, matching the pattern used on other tables (leads, handwerker_profiles, etc.).
 
-**Single change in `src/pages/admin/HandwerkerManagement.tsx`:**
+```sql
+DROP POLICY "Admins can manage all subscriptions" ON handwerker_subscriptions;
+DROP POLICY "Admins can view all subscriptions" ON handwerker_subscriptions;
 
-1. **Import** `SUBSCRIPTION_PLANS, SUBSCRIPTION_PLAN_LIST, type SubscriptionPlanType, getProposalLimit` from `@/config/subscriptionPlans` (partially imported already — `FREE_TIER_PROPOSALS_LIMIT`).
+CREATE POLICY "Admins can manage all subscriptions" ON handwerker_subscriptions
+  FOR ALL TO authenticated
+  USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin'))
+  WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin'));
 
-2. **Replace the static `getSubscriptionBadge`** with an interactive `Select` dropdown that:
-   - Shows the current plan name (from SSOT `displayName`) and usage
-   - Allows admin to pick any of the 4 tiers
-   - On change, calls `updateHandwerkerPlan(userId, newPlanType)` which:
-     - Updates `handwerker_subscriptions` with new `plan_type` and `proposals_limit` (from SSOT `getProposalLimit()`)
-     - For paid plans, sets `proposals_limit = -1` (unlimited)
-     - For free tier, sets `proposals_limit = FREE_TIER_PROPOSALS_LIMIT`
-     - Resets `proposals_used_this_period = 0` and sets new period dates
-     - Shows success toast with plan name
-   - Uses the SSOT plan config for labels, limits — no hardcoded values
+CREATE POLICY "Admins can view all subscriptions" ON handwerker_subscriptions
+  FOR SELECT TO authenticated
+  USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin'));
+```
 
-3. **Only show the dropdown for approved handwerkers** — pending/rejected handwerkers keep the static badge.
+## Problem 2: Handwerker can't find subscription upgrade in logged-in area
+The `SubscriptionManagement` component already exists at `/profile` (subscription tab), but:
+- The handwerker navigation in `src/config/navigation.ts` has no link to `/profile`
+- The HandwerkerDashboard Profile tab has no link to subscription management
 
-### SSOT/DRY compliance
-- All plan names, limits, and pricing come from `subscriptionPlans.ts` — zero hardcoded values
-- Reuses existing `Select` component from shadcn/ui
-- No new components needed — this is a localized enhancement to the existing table cell
+**Fix**: Add "Abo verwalten" nav item to the handwerker navigation in `src/config/navigation.ts`, linking to `/profile` with the subscription tab context. This is the SSOT for navigation.
 
-### Files modified
+```typescript
+// Add to handwerker navigation array:
+{ label: 'Abo verwalten', href: '/profile?tab=subscription', icon: Crown },
+```
+
+Then ensure `Profile.tsx` reads the `tab` query param to auto-select the subscription tab when arriving via this link.
+
+## Files Modified
+
 | File | Change |
 |------|--------|
-| `src/pages/admin/HandwerkerManagement.tsx` | Add plan change dropdown + `updateHandwerkerPlan` function |
+| Migration SQL | Fix RLS policies on `handwerker_subscriptions` to use `has_role()` |
+| `src/config/navigation.ts` | Add "Abo verwalten" link for handwerker role |
+| `src/pages/Profile.tsx` | Read `tab` query param to auto-select subscription tab |
 
