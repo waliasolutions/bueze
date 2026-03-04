@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { FREE_TIER_PROPOSALS_LIMIT } from '@/config/subscriptionPlans';
+import { FREE_TIER_PROPOSALS_LIMIT, SUBSCRIPTION_PLAN_LIST, SUBSCRIPTION_PLANS, type SubscriptionPlanType, getProposalLimit } from '@/config/subscriptionPlans';
 
 interface Handwerker {
   id: string;
@@ -451,15 +451,72 @@ export default function HandwerkerManagement() {
     }
   };
 
-  const getSubscriptionBadge = (userId: string | null) => {
+  const updateHandwerkerPlan = async (userId: string, newPlanType: SubscriptionPlanType) => {
+    const newLimit = getProposalLimit(newPlanType);
+    const planName = SUBSCRIPTION_PLANS[newPlanType].displayName;
+    const now = new Date().toISOString();
+    const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { error } = await supabase
+      .from('handwerker_subscriptions')
+      .update({
+        plan_type: newPlanType,
+        proposals_limit: newLimit,
+        proposals_used_this_period: 0,
+        current_period_start: now,
+        current_period_end: periodEnd,
+        pending_plan: null,
+      })
+      .eq('user_id', userId);
+
+    if (error) {
+      toast({ title: 'Fehler', description: `Plan konnte nicht geändert werden: ${error.message}`, variant: 'destructive' });
+      return;
+    }
+
+    // Update local state
+    setSubscriptions(prev => {
+      const updated = new Map(prev);
+      const existing = updated.get(userId);
+      if (existing) {
+        updated.set(userId, { ...existing, plan_type: newPlanType, proposals_limit: newLimit, proposals_used_this_period: 0 });
+      }
+      return updated;
+    });
+
+    toast({ title: 'Plan geändert', description: `Abo wurde auf "${planName}" geändert.` });
+  };
+
+  const getSubscriptionBadge = (userId: string | null, verificationStatus?: string) => {
     if (!userId) return null;
     const sub = subscriptions.get(userId);
     if (!sub) return <Badge variant="outline">Kein Abo</Badge>;
-    
-    const isPaid = sub.plan_type !== 'free';
+
+    const currentPlanType = (sub.plan_type || 'free') as SubscriptionPlanType;
+
+    // Interactive dropdown only for approved handwerkers
+    if (verificationStatus === 'approved') {
+      return (
+        <Select value={currentPlanType} onValueChange={(value) => updateHandwerkerPlan(userId, value as SubscriptionPlanType)}>
+          <SelectTrigger className="h-7 w-[130px] text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SUBSCRIPTION_PLAN_LIST.map((plan) => (
+              <SelectItem key={plan.id} value={plan.id} className="text-xs">
+                {plan.displayName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+
+    // Static badge for pending/rejected
+    const isPaid = currentPlanType !== 'free';
     return (
       <Badge variant={isPaid ? 'default' : 'secondary'}>
-        {isPaid ? 'Premium' : 'Free'} ({sub.proposals_used_this_period}/{sub.proposals_limit})
+        {SUBSCRIPTION_PLANS[currentPlanType]?.displayName || currentPlanType} ({sub.proposals_used_this_period}/{sub.proposals_limit})
       </Badge>
     );
   };
@@ -695,7 +752,7 @@ export default function HandwerkerManagement() {
                           </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(h.verification_status)}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{getSubscriptionBadge(h.user_id)}</TableCell>
+                        <TableCell className="hidden sm:table-cell">{getSubscriptionBadge(h.user_id, h.verification_status)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             {h.verification_status !== 'pending' && (
