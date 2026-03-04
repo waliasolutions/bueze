@@ -1,11 +1,9 @@
 // Shared CORS headers and helpers for Supabase Edge Functions
 // SSOT for CORS configuration across all functions
 
-const ALLOWED_ORIGIN = Deno.env.get('FRONTEND_URL') || 'https://bueeze.ch';
-
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 /**
