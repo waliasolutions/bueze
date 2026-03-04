@@ -30,7 +30,6 @@ export const roleNavigation: Record<'handwerker' | 'client', NavItem[]> = {
   client: [
     { label: 'Meine Aufträge', href: '/dashboard', icon: ClipboardList },
     { label: 'Auftrag erstellen', href: '/submit-lead', icon: Plus },
-    { label: 'Handwerker finden', href: '/handwerker-verzeichnis', icon: Users },
     { label: 'Nachrichten', href: '/conversations', icon: MessageSquare },
     { label: 'Profil', href: '/profile', icon: User },
   ],
