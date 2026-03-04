@@ -1,9 +1,11 @@
 /**
  * Single Source of Truth for Category Labels
- * All category-related labels should reference this file
+ * All category-related labels should reference this file.
+ * Resolves both major category IDs and subcategory enum values.
  */
 
 import { majorCategories } from './majorCategories';
+import { subcategoryLabels } from './subcategoryLabels';
 
 // Generate category labels from majorCategories SSOT
 export const categoryLabels: Record<string, string> = Object.values(majorCategories).reduce(
@@ -15,8 +17,9 @@ export const categoryLabels: Record<string, string> = Object.values(majorCategor
 );
 
 /**
- * Get category label by key
+ * Get human-readable label for any category key (major or subcategory).
+ * Checks major categories first, then subcategories, then returns the raw key as fallback.
  */
 export function getCategoryLabel(category: string): string {
-  return categoryLabels[category] || category;
+  return categoryLabels[category] || subcategoryLabels[category]?.label || category;
 }

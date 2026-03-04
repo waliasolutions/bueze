@@ -8,7 +8,7 @@ import { StarRating } from '@/components/ui/star-rating';
 import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Globe, Clock, Building2, Briefcase } from 'lucide-react';
-import { categoryLabels } from '@/config/categoryLabels';
+import { getCategoryLabel } from '@/config/categoryLabels';
 import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
 
 interface HandwerkerProfile {
@@ -106,9 +106,7 @@ export function HandwerkerProfileModal({ handwerkerId, open, onOpenChange }: Han
     return parts.join(' ');
   };
 
-  const getCategoryLabel = (category: string) => {
-    return categoryLabels[category as keyof typeof categoryLabels] || category;
-  };
+  // getCategoryLabel imported from SSOT @/config/categoryLabels
 
   const formatServiceAreas = () => {
     if (!profile?.service_areas || profile.service_areas.length === 0) return null;
