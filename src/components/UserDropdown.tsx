@@ -21,6 +21,7 @@ import type { UserProfileBasic } from '@/types/entities';
 
 export const UserDropdown = () => {
   const [profile, setProfile] = useState<UserProfileBasic | null>(null);
+  const [hasHandwerkerProfile, setHasHandwerkerProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,13 +36,23 @@ export const UserDropdown = () => {
       }
       
       try {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
+        const [{ data: profileData }, { data: hwProfile }] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single(),
+          supabase
+            .from('handwerker_profiles')
+            .select('id, verification_status')
+            .eq('user_id', userId)
+            .maybeSingle(),
+        ]);
         
         setProfile(profileData);
+        setHasHandwerkerProfile(
+          !!hwProfile && ['pending', 'approved'].includes(hwProfile.verification_status || '')
+        );
       } catch (error) {
         console.error('Error fetching profile:', error);
       } finally {
@@ -102,7 +113,7 @@ export const UserDropdown = () => {
         default: return 'Administrator';
       }
     }
-    if (isHandwerker) return 'Handwerker';
+    if (isHandwerker || hasHandwerkerProfile) return 'Handwerker';
     return 'Kunde';
   };
 
@@ -116,9 +127,10 @@ export const UserDropdown = () => {
   }
 
   // Get navigation items based on activeView (for admins) or real role
+  const effectiveHandwerker = isHandwerker || hasHandwerkerProfile;
   const navItems = isAdmin
     ? (activeView === 'handwerker' ? roleNavigation.handwerker : roleNavigation.client)
-    : (isHandwerker ? roleNavigation.handwerker : roleNavigation.client);
+    : (effectiveHandwerker ? roleNavigation.handwerker : roleNavigation.client);
 
   return (
     <DropdownMenu>
