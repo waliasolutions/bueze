@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Star, Search, Shield, Mail, Phone, ArrowLeft } from 'lucide-react';
-import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
+import { SWISS_CANTONS, CANTON_CODES, getCantonLabel } from '@/config/cantons';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
@@ -79,7 +79,7 @@ const HandwerkerVerzeichnis = () => {
       hw.last_name?.toLowerCase().includes(term) ||
       hw.business_city?.toLowerCase().includes(term);
 
-    const matchesCanton = filterCanton === 'all' || hw.business_canton === filterCanton;
+    const matchesCanton = filterCanton === 'all' || hw.business_canton === filterCanton || (hw.service_areas || []).includes(filterCanton);
     const matchesCategory = filterCategory === 'all' || hw.categories?.includes(filterCategory);
 
     return matchesSearch && matchesCanton && matchesCategory;
@@ -101,9 +101,17 @@ const HandwerkerVerzeichnis = () => {
     setShowResults(true);
   };
 
-  const availableCantons = useMemo(() =>
-    new Set(handwerkers.map(hw => hw.business_canton).filter(Boolean) as string[]),
-  [handwerkers]);
+  const availableCantons = useMemo(() => {
+    const validCodes = new Set(CANTON_CODES);
+    const result = new Set<string>();
+    handwerkers.forEach(hw => {
+      if (hw.business_canton) result.add(hw.business_canton);
+      (hw.service_areas || []).forEach(area => {
+        if (area.length === 2 && validCodes.has(area as typeof CANTON_CODES[number])) result.add(area);
+      });
+    });
+    return result;
+  }, [handwerkers]);
 
   const availableCategories = useMemo(() =>
     new Set(handwerkers.flatMap(hw => hw.categories || [])),
