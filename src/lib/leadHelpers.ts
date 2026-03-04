@@ -1,10 +1,49 @@
 /**
  * Lead Management Helper Functions
- * Handles lead status updates and analytics
+ * Handles lead status updates, analytics, and matching logic (SSOT)
  */
 
 import { supabase } from '@/integrations/supabase/client';
 import { LeadStatusType } from '@/config/leadStatuses';
+import { majorCategories } from '@/config/majorCategories';
+import type { LeadListItem } from '@/types/entities';
+
+// =============================================================================
+// Lead-to-Handwerker Matching Helpers (SSOT)
+// Used by HandwerkerDashboard and BrowseLeads
+// =============================================================================
+
+/**
+ * Check if a lead matches a handwerker's categories.
+ * Supports major-to-subcategory mapping in both directions.
+ */
+export function checkCategoryMatch(lead: LeadListItem, categories: string[]): boolean {
+  if (categories.length === 0) return false;
+  if (categories.includes(lead.category)) return true;
+
+  // Check if lead's category is a major category and handwerker has a subcategory from it
+  const leadMajorCat = Object.values(majorCategories).find(mc => mc.id === lead.category);
+  if (leadMajorCat && categories.some(hwCat => leadMajorCat.subcategories.includes(hwCat))) {
+    return true;
+  }
+
+  // Check if handwerker's category is a major category and lead has a subcategory from it
+  const handwerkerMajorCats = categories
+    .map(cat => Object.values(majorCategories).find(mc => mc.id === cat))
+    .filter(Boolean);
+  return handwerkerMajorCats.some(mc => mc?.subcategories.includes(lead.category));
+}
+
+/**
+ * Check if a lead matches a handwerker's service areas.
+ * Matches by canton code (2 chars) or postal code (4+ chars).
+ */
+export function checkServiceAreaMatch(lead: LeadListItem, serviceAreas: string[]): boolean {
+  if (serviceAreas.length === 0) return false;
+  const cantons = serviceAreas.filter(area => area.length === 2);
+  const postalCodes = serviceAreas.filter(area => area.length >= 4);
+  return cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
+}
 
 export interface LeadUpdateResult {
   success: boolean;

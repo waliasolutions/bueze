@@ -4,7 +4,6 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { logWithCorrelation, captureException } from '@/lib/errorTracking';
 import { trackError } from '@/lib/errorCategories';
-import { calculatePagination } from '@/lib/fetchHelpers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,55 +11,56 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, X } from 'lucide-react';
-import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
+import { MapPin, Clock, Coins, X, Filter, Globe } from 'lucide-react';
+import { formatTimeAgo, formatBudget } from '@/lib/swissTime';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { majorCategories } from '@/config/majorCategories';
 import { EmptyState } from '@/components/ui/empty-state';
-import type { LeadListItem } from '@/types/entities';
+import type { LeadListItem, HandwerkerProfileBasic } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor, URGENCY_LEVELS } from '@/config/urgencyLevels';
+import { checkCategoryMatch, checkServiceAreaMatch } from '@/lib/leadHelpers';
 
 
 const BrowseLeads = () => {
-  const [leads, setLeads] = useState<LeadListItem[]>([]);
+  const [allLeads, setAllLeads] = useState<LeadListItem[]>([]);
   const [filteredLeads, setFilteredLeads] = useState<LeadListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMajorCategory, setSelectedMajorCategory] = useState('all');
   const [selectedCanton, setSelectedCanton] = useState('all');
   const [selectedUrgency, setSelectedUrgency] = useState('all');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const pageSize = 50;
+  const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfileBasic | null>(null);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [showAllRegions, setShowAllRegions] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     logWithCorrelation('BrowseLeads: Page loaded');
-    fetchLeads();
-    checkUserSubscription();
+    initPage();
   }, []);
 
+  // Re-apply filters when toggle/filter state changes
   useEffect(() => {
-    filterLeads();
-    setCurrentPage(1); // Reset pagination when filters change
-  }, [leads, searchTerm, selectedMajorCategory, selectedCanton, selectedUrgency]);
+    applyFilters();
+  }, [allLeads, searchTerm, selectedMajorCategory, selectedCanton, selectedUrgency, showAllCategories, showAllRegions]);
 
-  const checkUserSubscription = async () => {
+  const initPage = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) return;
+      if (!user) {
+        navigate('/auth');
+        return;
+      }
 
-      // Check if user has an approved handwerker profile
+      // Fetch handwerker profile
       const { data: profile } = await supabase
         .from('handwerker_profiles')
-        .select('is_verified, verification_status')
+        .select('id, first_name, last_name, email, phone_number, company_name, bio, categories, service_areas, hourly_rate_min, hourly_rate_max, verification_status, is_verified')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      // If not verified, show message and redirect
       if (!profile || !profile.is_verified || profile.verification_status !== 'approved') {
         toast({
           title: 'Profil nicht freigeschaltet',
@@ -72,103 +72,74 @@ const BrowseLeads = () => {
         return;
       }
 
-      // TODO: Re-enable after types regenerate - DEMO MODE: Mock subscription access for pitch
-      // setSubscriptionAccess({ 
-      //   canViewLead: true, 
-      //   canPurchaseLead: true, 
-      //   isUnlimited: true, 
-      //   remainingViews: 999, 
-      //   requiresUpgrade: false,
-      //   leadPrice: 20,
-      //   planType: 'annual' 
-      // });
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-    }
-  };
+      setHandwerkerProfile(profile);
 
-  const fetchLeads = async () => {
-    try {
-      logWithCorrelation('BrowseLeads: Fetching leads with pagination', { 
-        page: currentPage, 
-        pageSize 
-      });
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/auth');
-        return;
-      }
+      // Fetch leads and existing proposals in parallel
+      const [leadsResult, proposalsResult] = await Promise.all([
+        supabase.from('leads').select('*').eq('status', 'active').order('created_at', { ascending: false }),
+        supabase.from('lead_proposals').select('lead_id').eq('handwerker_id', user.id),
+      ]);
 
-      // Calculate pagination range
-      const { from, to } = calculatePagination({ page: currentPage, pageSize });
+      if (leadsResult.error) throw leadsResult.error;
 
-      // Fetch with retry and timeout - show all for demo
-      const { data: leadsData, error } = await supabase
-        .from('leads')
-        .select('*', { count: 'exact' })
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .range(from, to);
+      // Exclude already-proposed leads and leads at max proposals
+      const proposedLeadIds = new Set(proposalsResult.data?.map(p => p.lead_id) || []);
+      const availableLeads = (leadsResult.data || []).filter(lead =>
+        !proposedLeadIds.has(lead.id) &&
+        (lead.proposals_count || 0) < (lead.max_purchases || 5)
+      );
 
-      if (error) {
-        throw error;
-      }
-
-      // All active leads are visible to handwerkers
-      const availableLeads = leadsData || [];
-
-      logWithCorrelation('BrowseLeads: Leads fetched', { 
-        count: availableLeads.length,
-        page: currentPage
-      });
-      
-      setLeads(availableLeads);
-      setTotalCount(availableLeads.length);
+      setAllLeads(availableLeads);
     } catch (error) {
       const categorized = trackError(error);
-      captureException(error as Error, { 
-        context: 'fetchLeads',
-        category: categorized.category,
-        page: currentPage
-      });
-      logWithCorrelation('BrowseLeads: Error fetching leads', categorized);
+      captureException(error as Error, { context: 'BrowseLeads:initPage', category: categorized.category });
       toast({
-        title: "Fehler",
-        description: "Beim Laden der Aufträge ist ein Fehler aufgetreten.",
-        variant: "destructive",
+        title: 'Fehler',
+        description: 'Beim Laden der Aufträge ist ein Fehler aufgetreten.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const filterLeads = () => {
-    let filtered = leads;
+  const applyFilters = () => {
+    let filtered = allLeads;
 
+    // Profile-based matching (default: only matching leads)
+    if (handwerkerProfile) {
+      const categories = handwerkerProfile.categories || [];
+      const serviceAreas = handwerkerProfile.service_areas || [];
+
+      if (!showAllCategories && categories.length > 0) {
+        filtered = filtered.filter(lead => checkCategoryMatch(lead, categories));
+      }
+      if (!showAllRegions && serviceAreas.length > 0) {
+        filtered = filtered.filter(lead => checkServiceAreaMatch(lead, serviceAreas));
+      }
+    }
+
+    // Manual filters (search, category dropdown, canton, urgency)
     if (searchTerm) {
-      filtered = filtered.filter(lead => 
-        lead.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.city.toLowerCase().includes(searchTerm.toLowerCase())
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(lead =>
+        lead.title.toLowerCase().includes(term) ||
+        lead.description.toLowerCase().includes(term) ||
+        lead.city.toLowerCase().includes(term)
       );
     }
 
-    // Filter by major category — check both direct match and subcategories
-    if (selectedMajorCategory && selectedMajorCategory !== 'all') {
+    if (selectedMajorCategory !== 'all') {
       const majorCat = majorCategories[selectedMajorCategory];
-      const validCategories = majorCat
-        ? [majorCat.id, ...majorCat.subcategories]
-        : [selectedMajorCategory];
+      const validCategories = majorCat ? [majorCat.id, ...majorCat.subcategories] : [selectedMajorCategory];
       filtered = filtered.filter(lead => validCategories.includes(lead.category));
     }
 
-    if (selectedCanton && selectedCanton !== 'all') {
+    if (selectedCanton !== 'all') {
       filtered = filtered.filter(lead => lead.canton === selectedCanton);
     }
 
-    if (selectedUrgency && selectedUrgency !== 'all') {
+    if (selectedUrgency !== 'all') {
       filtered = filtered.filter(lead => lead.urgency === selectedUrgency);
     }
 
@@ -188,7 +159,12 @@ const BrowseLeads = () => {
     navigate(`/opportunity/${leadId}`);
   };
 
-  // formatBudget imported from swissTime.ts (SSOT)
+  // Count how many leads match profile vs total
+  const matchingCount = handwerkerProfile ? allLeads.filter(lead => {
+    const catMatch = (handwerkerProfile.categories || []).length === 0 || checkCategoryMatch(lead, handwerkerProfile.categories || []);
+    const areaMatch = (handwerkerProfile.service_areas || []).length === 0 || checkServiceAreaMatch(lead, handwerkerProfile.service_areas || []);
+    return catMatch && areaMatch;
+  }).length : allLeads.length;
 
   if (loading) {
     return (
@@ -223,33 +199,37 @@ const BrowseLeads = () => {
             </p>
           </div>
 
-          {/* TODO: Re-enable after types regenerate - Subscription Status Banner */}
-          {/* {subscriptionAccess && !subscriptionAccess.isUnlimited && (
-            <Alert className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>
-                {subscriptionAccess.requiresUpgrade ? 'Upgrade erforderlich' : 'Ansichten verbleibend'}
-              </AlertTitle>
-              <AlertDescription className="flex items-center justify-between">
-                <span>
-                  {subscriptionAccess.requiresUpgrade
-                    ? 'Sie haben Ihr Anzeigelimit erreicht. Upgraden Sie für unbegrenzten Zugriff.'
-                    : `Sie haben noch ${subscriptionAccess.remainingViews} Ansicht${subscriptionAccess.remainingViews !== 1 ? 'en' : ''} in diesem Monat.`}
-                </span>
-                {subscriptionAccess.requiresUpgrade && (
-                  <Button size="sm" onClick={() => navigate('/checkout')}>
-                    <Crown className="h-4 w-4 mr-2" />
-                    Jetzt upgraden
-                  </Button>
-                )}
-              </AlertDescription>
-            </Alert>
-          )} */}
+          {/* Profile Matching Toggles */}
+          {handwerkerProfile && (
+            <div className="mb-4 flex flex-wrap gap-2 items-center">
+              <span className="text-sm text-muted-foreground mr-1">
+                <Filter className="h-4 w-4 inline mr-1" />
+                Profil-Filter:
+              </span>
+              <Button
+                variant={showAllCategories ? 'outline' : 'default'}
+                size="sm"
+                onClick={() => setShowAllCategories(!showAllCategories)}
+              >
+                {showAllCategories ? 'Nur meine Kategorien' : 'Alle Kategorien'}
+              </Button>
+              <Button
+                variant={showAllRegions ? 'outline' : 'default'}
+                size="sm"
+                onClick={() => setShowAllRegions(!showAllRegions)}
+              >
+                <Globe className="h-4 w-4 mr-1" />
+                {showAllRegions ? 'Nur meine Region' : 'Alle Regionen'}
+              </Button>
+              <span className="text-xs text-muted-foreground ml-2">
+                {matchingCount} passend / {allLeads.length} total
+              </span>
+            </div>
+          )}
 
           {/* Compact Filter Bar */}
           <div className="mb-6 p-4 bg-muted/30 rounded-lg border">
             <div className="flex flex-col sm:flex-row gap-3">
-              {/* Search Input */}
               <div className="flex-1">
                 <Input
                   placeholder="Suche..."
@@ -259,7 +239,6 @@ const BrowseLeads = () => {
                 />
               </div>
               
-              {/* Filters in a row */}
               <div className="flex flex-wrap gap-2">
                 <Select value={selectedMajorCategory} onValueChange={setSelectedMajorCategory}>
                   <SelectTrigger className="w-[160px]">
@@ -310,43 +289,30 @@ const BrowseLeads = () => {
               </div>
             </div>
             
-            {/* Active Filters - inline badges */}
             {hasActiveFilters && (
               <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
                 {selectedMajorCategory !== 'all' && (
                   <Badge variant="secondary" className="gap-1">
                     {Object.values(majorCategories).find(c => c.id === selectedMajorCategory)?.label}
-                    <X 
-                      className="h-3 w-3 cursor-pointer" 
-                      onClick={() => setSelectedMajorCategory('all')}
-                    />
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedMajorCategory('all')} />
                   </Badge>
                 )}
                 {selectedCanton !== 'all' && (
                   <Badge variant="secondary" className="gap-1">
                     {SWISS_CANTONS.find(c => c.value === selectedCanton)?.label}
-                    <X 
-                      className="h-3 w-3 cursor-pointer" 
-                      onClick={() => setSelectedCanton('all')}
-                    />
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCanton('all')} />
                   </Badge>
                 )}
                 {selectedUrgency !== 'all' && (
                   <Badge variant="secondary" className="gap-1">
                     {getUrgencyLabel(selectedUrgency)}
-                    <X 
-                      className="h-3 w-3 cursor-pointer" 
-                      onClick={() => setSelectedUrgency('all')}
-                    />
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedUrgency('all')} />
                   </Badge>
                 )}
                 {searchTerm && (
                   <Badge variant="secondary" className="gap-1">
                     "{searchTerm}"
-                    <X 
-                      className="h-3 w-3 cursor-pointer" 
-                      onClick={() => setSearchTerm('')}
-                    />
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchTerm('')} />
                   </Badge>
                 )}
               </div>
@@ -358,11 +324,6 @@ const BrowseLeads = () => {
             <div className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{filteredLeads.length}</span> {filteredLeads.length === 1 ? 'Auftrag' : 'Aufträge'} gefunden
             </div>
-            {filteredLeads.length > 0 && (
-              <div className="text-sm text-muted-foreground">
-                Zeige {Math.min(filteredLeads.length, pageSize)} von {filteredLeads.length}
-              </div>
-            )}
           </div>
 
           {filteredLeads.length === 0 ? (
@@ -371,10 +332,15 @@ const BrowseLeads = () => {
               title="Keine Aufträge gefunden"
               description={hasActiveFilters 
                 ? 'Versuchen Sie andere Filter oder setzen Sie die Suche zurück.'
-                : 'Zurzeit gibt es keine verfügbaren Aufträge.'}
+                : (!showAllCategories || !showAllRegions)
+                  ? 'Keine passenden Aufträge für Ihr Profil. Versuchen Sie "Alle Kategorien" oder "Alle Regionen".'
+                  : 'Zurzeit gibt es keine verfügbaren Aufträge.'}
               action={hasActiveFilters ? {
                 label: 'Alle Filter zurücksetzen',
                 onClick: clearFilters,
+              } : (!showAllCategories || !showAllRegions) ? {
+                label: 'Alle Aufträge anzeigen',
+                onClick: () => { setShowAllCategories(true); setShowAllRegions(true); },
               } : undefined}
             />
           ) : (

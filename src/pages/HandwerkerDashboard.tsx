@@ -32,6 +32,7 @@ import { majorCategories } from "@/config/majorCategories";
 import { getCategoryLabel } from "@/config/categoryLabels";
 import { getCantonLabel, SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
+import { checkCategoryMatch, checkServiceAreaMatch } from "@/lib/leadHelpers";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic, ReviewForHandwerker } from "@/types/entities";
@@ -273,31 +274,7 @@ const HandwerkerDashboard = () => {
     }
   };
 
-  // Helper function to check if lead matches handwerker's categories
-  const checkCategoryMatch = (lead: LeadListItem, categories: string[]) => {
-    if (categories.length === 0) return false; // No categories set = no matches
-    if (categories.includes(lead.category)) return true;
-    
-    // Check if lead's category is a major category and handwerker has a subcategory from it
-    const leadMajorCat = Object.values(majorCategories).find(mc => mc.id === lead.category);
-    if (leadMajorCat && categories.some(hwCat => leadMajorCat.subcategories.includes(hwCat))) {
-      return true;
-    }
-    
-    // Check if handwerker's category is a major category and lead has a subcategory from it
-    const handwerkerMajorCats = categories
-      .map(cat => Object.values(majorCategories).find(mc => mc.id === cat))
-      .filter(Boolean);
-    return handwerkerMajorCats.some(mc => mc?.subcategories.includes(lead.category));
-  };
-
-  // Helper function to check if lead matches handwerker's service areas
-  const checkServiceAreaMatch = (lead: LeadListItem, serviceAreas: string[]) => {
-    if (serviceAreas.length === 0) return false; // No service areas set = no matches
-    const cantons = serviceAreas.filter(area => area.length === 2);
-    const postalCodes = serviceAreas.filter(area => area.length >= 4);
-    return cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
-  };
+  // checkCategoryMatch and checkServiceAreaMatch imported from @/lib/leadHelpers (SSOT)
 
   // Removed duplicate fetchHandwerkerProfile - use checkAuth instead
   const fetchLeads = async (
@@ -1539,7 +1516,7 @@ const HandwerkerDashboard = () => {
                                 ) : (
                                   <span className="flex items-center gap-1">
                                     <EyeOff className="h-3 w-3" />
-                                    Noch nicht angesehen
+                                    Vom Kunden noch nicht angesehen
                                   </span>
                                 )}
                               </div>
