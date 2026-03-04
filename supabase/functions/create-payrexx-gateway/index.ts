@@ -6,8 +6,30 @@ import { getErrorMessage } from '../_shared/errorUtils.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY')!;
-const PAYREXX_INSTANCE = Deno.env.get('PAYREXX_INSTANCE')!;
+const PAYREXX_INSTANCE_RAW = Deno.env.get('PAYREXX_INSTANCE')!;
 const PAYREXX_TEST_MODE = Deno.env.get('PAYREXX_TEST_MODE') === 'true';
+
+/**
+ * Normalizes Payrexx instance input to the expected value (subdomain only).
+ * Accepts values like:
+ * - wsolutions
+ * - wsolutions.payrexx.com
+ * - https://wsolutions.payrexx.com
+ */
+function normalizePayrexxInstance(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return trimmed;
+
+  const withoutProtocol = trimmed
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/+$/, '');
+
+  const host = withoutProtocol.split('/')[0];
+  const match = host.match(/^([a-z0-9-]+)\.payrexx\.com$/i);
+  return match?.[1] ?? host;
+}
+
+const PAYREXX_INSTANCE = normalizePayrexxInstance(PAYREXX_INSTANCE_RAW);
 
 /**
  * Generate HMAC-SHA256 signature for Payrexx API
@@ -38,7 +60,7 @@ async function verifyApiCredentials(): Promise<{ valid: boolean; detail: string 
   try {
     // Payrexx docs: sign an empty string for SignatureCheck
     const signature = await generateSignature('', PAYREXX_API_KEY);
-    const url = `https://api.payrexx.com/v1.0/SignatureCheck/?instance=${PAYREXX_INSTANCE}&ApiSignature=${encodeURIComponent(signature)}`;
+    const url = `https://api.payrexx.com/v1.0/SignatureCheck/?instance=${encodeURIComponent(PAYREXX_INSTANCE)}&ApiSignature=${encodeURIComponent(signature)}`;
 
     console.log(`[SignatureCheck] Calling ${url.substring(0, 80)}…`);
     const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
@@ -68,18 +90,28 @@ Deno.serve(async (req) => {
   try {
     // --- Step 0: Verify Payrexx credentials (diagnostic) ---
     const credCheck = await verifyApiCredentials();
+    console.log(`[Payrexx credentials] instanceRaw=${PAYREXX_INSTANCE_RAW} instanceNormalized=${PAYREXX_INSTANCE}`);
     console.log(`[Payrexx credentials] valid=${credCheck.valid} — ${credCheck.detail}`);
+
+    const payrexxApiUnavailable =
+      !credCheck.valid && credCheck.detail.includes('API is not included in your license');
+    const simulationMode = PAYREXX_TEST_MODE || payrexxApiUnavailable;
 
     if (!credCheck.valid) {
       console.error(`[Payrexx credentials] INVALID: ${credCheck.detail}`);
-      // In test mode we continue anyway; in production we abort early
-      if (!PAYREXX_TEST_MODE) {
-        return errorResponse(
-          'Payrexx API-Schlüssel oder Instanzname ungültig. Bitte prüfen Sie die Konfiguration.',
-          502,
+      if (!simulationMode) {
+        return new Response(
+          JSON.stringify({
+            error: `Payrexx-Konfiguration ungültig: ${credCheck.detail}`,
+            success: false,
+          }),
+          {
+            status: 502,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       }
-      console.warn('[Payrexx credentials] TEST_MODE active — continuing despite invalid credentials');
+      console.warn('[Payrexx credentials] Simulation mode active — continuing despite invalid credentials');
     }
 
     // --- Step 1: Authenticate user ---
@@ -142,7 +174,7 @@ Deno.serve(async (req) => {
       cancelRedirectUrl: cancelUrl,
     };
 
-    const payrexxUrl = `https://api.payrexx.com/v1.0/Gateway/?instance=${PAYREXX_INSTANCE}`;
+    const payrexxUrl = `https://api.payrexx.com/v1.0/Gateway/?instance=${encodeURIComponent(PAYREXX_INSTANCE)}`;
 
     const createGatewayRequest = async (params: Record<string, string>, mode: 'primary' | 'fallback') => {
       const formData = new URLSearchParams();
@@ -192,7 +224,7 @@ Deno.serve(async (req) => {
 
     // --- Step 4: Handle Payrexx response ---
     if (!payrexxResult.data) {
-      if (PAYREXX_TEST_MODE) {
+      if (simulationMode) {
         console.warn('PAYREXX_TEST_MODE: JSON parse failed, returning successUrl as test fallback');
         return successResponse({
           url: successUrl,
@@ -217,7 +249,7 @@ Deno.serve(async (req) => {
     if (payrexxResult.data.status !== 'success' || !payrexxResult.data.data?.[0]?.link) {
       console.error('Payrexx API error:', JSON.stringify(payrexxResult.data));
 
-      if (PAYREXX_TEST_MODE) {
+      if (simulationMode) {
         console.warn('PAYREXX_TEST_MODE: API returned error, returning successUrl as test fallback');
         return successResponse({
           url: successUrl,
@@ -255,7 +287,12 @@ Deno.serve(async (req) => {
   } catch (error) {
     const msg = getErrorMessage(error);
     console.error(`Fatal error in create-payrexx-gateway: ${msg}`);
-    // Use 502 so the real error reaches the client (errorResponse sanitizes 500s)
-    return errorResponse(msg, 502);
+    return new Response(
+      JSON.stringify({ error: msg, success: false }),
+      {
+        status: 502,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
