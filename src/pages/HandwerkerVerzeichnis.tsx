@@ -8,16 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Star, Search, Mail, Phone, ArrowLeft } from 'lucide-react';
+import { MapPin, Star, Search, Mail, Phone, ArrowLeft, Eye } from 'lucide-react';
 import { SWISS_CANTONS, CANTON_CODES, getCantonLabel } from '@/config/cantons';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
+import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 
 interface PublicHandwerker {
   id: string;
+  user_id: string | null;
   company_name: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -42,6 +44,14 @@ const HandwerkerVerzeichnis = () => {
   const [filterCanton, setFilterCanton] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [showResults, setShowResults] = useState(false);
+  const [selectedHandwerkerId, setSelectedHandwerkerId] = useState<string | null>(null);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+
+  const handleCardClick = (userId: string | null) => {
+    if (!userId) return;
+    setSelectedHandwerkerId(userId);
+    setProfileModalOpen(true);
+  };
 
   useEffect(() => {
     fetchHandwerkers();
@@ -58,7 +68,7 @@ const HandwerkerVerzeichnis = () => {
     try {
       const { data, error } = await supabase
         .from('handwerker_profiles_public')
-        .select('id, company_name, first_name, last_name, business_city, business_canton, business_address, business_zip, email, phone_number, categories, bio, logo_url, is_verified, languages, service_areas')
+        .select('id, user_id, company_name, first_name, last_name, business_city, business_canton, business_address, business_zip, email, phone_number, categories, bio, logo_url, is_verified, languages, service_areas')
         .eq('verification_status', 'approved')
         .eq('is_verified', true);
 
@@ -162,8 +172,17 @@ const HandwerkerVerzeichnis = () => {
               onFilterCantonChange={setFilterCanton}
               onFilterCategoryChange={setFilterCategory}
               onBackToBrowse={handleBackToBrowse}
+              onCardClick={handleCardClick}
             />
           )}
+          <HandwerkerProfileModal
+            handwerkerId={selectedHandwerkerId}
+            open={profileModalOpen}
+            onOpenChange={(open) => {
+              setProfileModalOpen(open);
+              if (!open) setSelectedHandwerkerId(null);
+            }}
+          />
         </div>
       </main>
       <Footer />
@@ -274,13 +293,14 @@ interface ResultsLayerProps {
   onFilterCantonChange: (v: string) => void;
   onFilterCategoryChange: (v: string) => void;
   onBackToBrowse: () => void;
+  onCardClick: (userId: string | null) => void;
 }
 
 const ResultsLayer = ({
   loading, searchTerm, filterCanton, filterCategory,
   filteredHandwerkers, handwerkers,
   onSearchTermChange, onFilterCantonChange, onFilterCategoryChange,
-  onBackToBrowse
+  onBackToBrowse, onCardClick
 }: ResultsLayerProps) => {
   const allCategories = [...new Set(handwerkers.flatMap(hw => hw.categories || []))].sort();
 
@@ -374,7 +394,11 @@ const ResultsLayer = ({
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredHandwerkers.map(hw => (
-            <Card key={hw.id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={hw.id}
+              className="hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => onCardClick(hw.user_id)}
+            >
               <CardContent className="pt-6">
                 <div className="flex items-start gap-3 mb-3">
                   {hw.logo_url ? (
@@ -410,21 +434,20 @@ const ResultsLayer = ({
 
                 <div className="space-y-1 mb-3">
                   {hw.email && (
-                    <a href={`mailto:${hw.email}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <a href={`mailto:${hw.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                       <Mail className="h-3 w-3 shrink-0" />
                       <span className="truncate">{hw.email}</span>
                     </a>
                   )}
                   {hw.phone_number && (
-                    <a href={`tel:${hw.phone_number}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <a href={`tel:${hw.phone_number}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                       <Phone className="h-3 w-3 shrink-0" />
                       {hw.phone_number}
                     </a>
                   )}
                 </div>
 
-
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 mb-3">
                   {(hw.categories || []).slice(0, 3).map(cat => (
                     <Badge key={cat} variant="secondary" className="text-xs">
                       {getCategoryLabel(cat)}
@@ -436,6 +459,11 @@ const ResultsLayer = ({
                     </Badge>
                   )}
                 </div>
+
+                <p className="text-xs text-muted-foreground flex items-center gap-1 hover:text-primary transition-colors">
+                  <Eye className="h-3 w-3" />
+                  Profil ansehen
+                </p>
               </CardContent>
             </Card>
           ))}
