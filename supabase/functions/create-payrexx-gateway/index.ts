@@ -1,11 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { PLAN_AMOUNTS, PLAN_GATEWAY_NAMES } from '../_shared/planLabels.ts';
+import { getErrorMessage } from '../_shared/errorUtils.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY')!;
 const PAYREXX_INSTANCE = Deno.env.get('PAYREXX_INSTANCE')!;
+const PAYREXX_TEST_MODE = Deno.env.get('PAYREXX_TEST_MODE') === 'true';
 
 /**
  * Build query string from object
@@ -113,6 +115,8 @@ Deno.serve(async (req) => {
     });
     formData.append('ApiSignature', signature);
 
+    console.log(`Creating Payrexx gateway for user ${userId}, plan ${planType}, amount ${amount}`);
+
     const payrexxResponse = await fetch(payrexxUrl, {
       method: 'POST',
       headers: {
@@ -121,11 +125,66 @@ Deno.serve(async (req) => {
       body: formData.toString(),
     });
 
-    const payrexxData = await payrexxResponse.json();
+    // Defensive response parsing
+    const contentType = payrexxResponse.headers.get('content-type') || '';
+    const responseText = await payrexxResponse.text();
+
+    console.log(`Payrexx response status: ${payrexxResponse.status}, content-type: ${contentType}`);
+    console.log(`Payrexx response body (first 500 chars): ${responseText.substring(0, 500)}`);
+
+    if (!contentType.includes('application/json')) {
+      console.error('Payrexx returned non-JSON response:', responseText.substring(0, 1000));
+
+      if (PAYREXX_TEST_MODE) {
+        console.warn('PAYREXX_TEST_MODE: Returning successUrl as test fallback');
+        return successResponse({
+          url: successUrl,
+          gatewayId: `test-${Date.now()}`,
+          referenceId: referenceId,
+          testMode: true,
+        });
+      }
+
+      return errorResponse(
+        `Payrexx API hat ein unerwartetes Format zurückgegeben (${payrexxResponse.status}). Bitte kontaktieren Sie den Support.`,
+        502
+      );
+    }
+
+    let payrexxData;
+    try {
+      payrexxData = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error('Failed to parse Payrexx JSON:', parseErr);
+
+      if (PAYREXX_TEST_MODE) {
+        console.warn('PAYREXX_TEST_MODE: JSON parse failed, returning successUrl as test fallback');
+        return successResponse({
+          url: successUrl,
+          gatewayId: `test-${Date.now()}`,
+          referenceId: referenceId,
+          testMode: true,
+        });
+      }
+
+      return errorResponse('Payrexx-Antwort konnte nicht verarbeitet werden', 502);
+    }
 
     if (payrexxData.status !== 'success' || !payrexxData.data?.[0]?.link) {
-      console.error('Payrexx API error:', payrexxData);
-      return errorResponse(payrexxData.message || 'Failed to create payment gateway', 500);
+      console.error('Payrexx API error:', JSON.stringify(payrexxData));
+
+      if (PAYREXX_TEST_MODE) {
+        console.warn('PAYREXX_TEST_MODE: API returned error, returning successUrl as test fallback');
+        return successResponse({
+          url: successUrl,
+          gatewayId: `test-${Date.now()}`,
+          referenceId: referenceId,
+          testMode: true,
+        });
+      }
+
+      const apiMessage = payrexxData.message || 'Gateway-Erstellung fehlgeschlagen';
+      return errorResponse(apiMessage, 500);
     }
 
     const gatewayLink = payrexxData.data[0].link;
@@ -141,6 +200,6 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error creating Payrexx gateway:', error);
-    return errorResponse(error instanceof Error ? error.message : 'Internal server error', 500);
+    return errorResponse(getErrorMessage(error), 500);
   }
 });
