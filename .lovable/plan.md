@@ -1,29 +1,39 @@
 
 
-# Fix: Handwerker Status Toggle Violates Check Constraint
+# Changes Overview
 
-## Problem
-The `handwerker_profiles` table has a CHECK constraint that only allows these `verification_status` values: `pending`, `approved`, `rejected`, `needs_review`.
+Four changes across two files.
 
-The admin "Deaktivieren/Reaktivieren" toggle tries to set `verification_status = 'inactive'`, which violates this constraint.
+## 1. HandwerkerVerzeichnis card cleanup (`src/pages/HandwerkerVerzeichnis.tsx`)
 
-## Solution
-Add `'inactive'` to the CHECK constraint so admins can deactivate/reactivate handwerkers.
+- **Remove bio/description block** (lines 429-433): Delete the `hw.bio` paragraph entirely.
+- **Always show full company name** (line 392-393): Remove `truncate` class from `h3` so company names always display in full.
+- **Remove Shield icon** (lines 403-405): Delete the verified shield icon since all listed profiles are already filtered to `is_verified = true`. Also remove `Shield` from the lucide import.
 
-### Database Migration
-```sql
-ALTER TABLE handwerker_profiles 
-  DROP CONSTRAINT handwerker_profiles_verification_status_check;
+## 2. Navigation: "Für Handwerker" dropdown with "Preise" (`src/components/Header.tsx`)
 
-ALTER TABLE handwerker_profiles 
-  ADD CONSTRAINT handwerker_profiles_verification_status_check 
-  CHECK (verification_status = ANY (ARRAY['pending', 'approved', 'rejected', 'needs_review', 'inactive']));
+Currently "Für Handwerker" and "Preise" are separate top-level nav items. Changes:
+
+- **Merge into dropdown**: Remove "Preise" as a standalone nav item. Turn "Für Handwerker" into a dropdown menu containing:
+  - "Übersicht" → `/handwerker`
+  - "Preise" → `/pricing`
+- **Visual encirclement**: Add a border/ring style to the "Für Handwerker" trigger button (e.g. `border border-brand-600 rounded-full px-3 py-1`) to visually distinguish it.
+- **Desktop**: Use existing `DropdownMenu` component (already imported).
+- **Mobile**: Render both sub-links indented under "Für Handwerker" heading in the slide-out menu.
+- **SSOT**: Define the dropdown items as a structure in `navItems` (e.g. `children` array) so both desktop and mobile menus render from the same data.
+
+### navItems structure change
+```ts
+const navItems = [
+  { label: 'So funktioniert es', href: '/#how-it-works' },
+  { label: 'Kategorien', href: '/kategorien' },
+  { label: 'Handwerker finden', href: '/handwerker-verzeichnis' },
+  { label: 'Für Handwerker', href: '/handwerker', highlight: true, children: [
+    { label: 'Übersicht', href: '/handwerker' },
+    { label: 'Preise', href: '/pricing' },
+  ]},
+];
 ```
 
-### No code changes needed
-The frontend code in `HandwerkerManagement.tsx` already handles `inactive` correctly (toggle logic, tab counts, UI badges). Only the database constraint needs updating.
-
-| Change | Target |
-|--------|--------|
-| Update CHECK constraint | `handwerker_profiles.verification_status` |
+Both desktop and mobile rendering loops will check for `children` to render a dropdown or nested list respectively.
 
