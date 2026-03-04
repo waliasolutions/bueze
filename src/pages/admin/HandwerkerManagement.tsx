@@ -16,12 +16,14 @@ import { getCategoryLabel } from '@/config/categoryLabels';
 import { getCantonLabel } from '@/config/cantons';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
+import { HandwerkerEditDialog } from '@/components/admin/HandwerkerEditDialog';
 import {
   Search,
   CheckCircle,
   XCircle,
   Clock,
   Eye,
+  Pencil,
   Mail,
   Phone,
   Building2,
@@ -71,6 +73,8 @@ interface Handwerker {
   portfolio_urls: string[];
   business_canton: string | null;
   business_city: string | null;
+  business_address: string | null;
+  business_zip: string | null;
 }
 
 interface Subscription {
@@ -95,6 +99,7 @@ export default function HandwerkerManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [editingHandwerker, setEditingHandwerker] = useState<Handwerker | null>(null);
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -799,6 +804,14 @@ export default function HandwerkerManagement() {
                         <TableCell className="hidden sm:table-cell">{getSubscriptionBadge(h.user_id, h.verification_status)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingHandwerker(h)}
+                              title="Bearbeiten"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             {h.verification_status !== 'pending' && (
                               <Button
                                 variant="ghost"
@@ -922,6 +935,14 @@ export default function HandwerkerManagement() {
           onOpenChange={(open) => !open && setSelectedHandwerkerId(null)}
         />
       )}
+
+      {/* Edit Dialog */}
+      <HandwerkerEditDialog
+        handwerker={editingHandwerker}
+        open={!!editingHandwerker}
+        onOpenChange={(open) => !open && setEditingHandwerker(null)}
+        onSaved={fetchHandwerkers}
+      />
     </AdminLayout>
   );
 }
