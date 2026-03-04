@@ -1,74 +1,48 @@
 
+# Fix Handwerker Deactivation, Tab Default, and Deletion
 
-# Fix Payments & Subscriptions: Auto-Renewal, Cancellation, Grace Period
+## Issues Found
 
-## Changes
+### 1. Deactivation Error
+The `toggleInactive` function (line 441-462) sets `verification_status: 'inactive'`, but the `handwerker_profiles` table has no CHECK constraint blocking this — it's a free text column. The error is likely surfaced generically ("Fehler") without showing the actual error message. The toast at line 458 says `{ title: 'Fehler', variant: 'destructive' }` with no `description`, hiding the root cause. Need to surface the actual error.
 
-### 1. Migration: Add `renewal_reminder_sent` + performance index
+After investigation, this may also relate to the `is_verified` being set to `false` while the profile is still `approved` — causing a mismatch for RLS policies that check both `is_verified = true AND verification_status = 'approved'`. When toggling back from inactive to approved, the function correctly sets `is_verified: true`, so the issue is more likely an RLS update policy problem. The admin RLS policy for updates uses `EXISTS(SELECT 1 FROM user_roles WHERE ...)` — this should work. Let me check if the admin's session is valid.
 
-```sql
-ALTER TABLE handwerker_subscriptions 
-ADD COLUMN IF NOT EXISTS renewal_reminder_sent BOOLEAN DEFAULT false;
+Actually, the most likely cause: the update query succeeds but the subsequent `fetchHandwerkers()` fails or the toast doesn't show success. Need to add proper error description to the catch block.
 
-CREATE INDEX IF NOT EXISTS idx_subs_expiry_logic 
-ON handwerker_subscriptions (current_period_end, pending_plan, renewal_reminder_sent);
-```
+### 2. Dashboard Card Shows "Ausstehend" First
+The `activeTab` state defaults to `'pending'` (line 90). When the admin page loads, the "Ausstehend" tab is selected. Clicking the "Aktiv" stat card correctly switches the tab. However, the user's complaint is likely that on **page load**, the default tab is "Ausstehend" even when clicking from a stat card link. The fix: default `activeTab` to `'all'` or persist the tab from the URL.
 
-### 2. Rewrite `check-subscription-expiry` with two-path logic
+### 3. Deletion Fails
+The `delete-user` edge function deletes `handwerker_profiles` (line 343-348), and `handwerker_service_areas` has `ON DELETE CASCADE` on `handwerker_profiles(id)`, so that should cascade. However, there's a missing cleanup for `handwerker_service_areas` by `user_id` lookup and the `handwerker_approval_history` might have FK issues. The delete button also uses an `AlertDialog` — the `AlertDialogAction` at line 888 calls `deleteHandwerker(h)`. The error might be that `data?.error` at line 353 catches the edge function's error response format incorrectly.
 
-**File: `supabase/functions/check-subscription-expiry/index.ts`**
+Looking at the edge function: it uses `successResponse` and `errorResponse` from cors.ts. The frontend checks `if (data?.error)` at line 353 — but `errorResponse` returns the error in the HTTP response body, while `supabase.functions.invoke` puts non-2xx responses in the `error` parameter, not `data`. So the error handling might be misaligned.
 
-Split into three query paths:
+## Plan
 
-**Path A — Cancelled subs** (`pending_plan = 'free'` AND `current_period_end < now`):
-- Downgrade to free immediately (current behavior)
-- Send "Abonnement beendet" email
-- Clear `pending_plan` and `renewal_reminder_sent`
+### A. Fix deactivation error handling
+**File: `src/pages/admin/HandwerkerManagement.tsx`**
+- Add descriptive error messages in `toggleInactive` catch block
+- Surface the actual Supabase error message in the toast
 
-**Path B — Non-cancelled, within grace period** (`pending_plan IS NULL` AND `current_period_end < now` AND `current_period_end + 7 days > now` AND `renewal_reminder_sent = false`):
-- Do NOT downgrade yet
-- Generate a Payrexx checkout URL via `create-payrexx-gateway` invocation (passing `referenceId = {userId}-{planType}-{timestamp}` so webhook can identify the subscription)
-- Send "Verlängerung erforderlich" email with direct payment link
-- Set `renewal_reminder_sent = true`
+### B. Fix default tab to 'all'
+**File: `src/pages/admin/HandwerkerManagement.tsx`**
+- Change `useState('pending')` to `useState('all')` for `activeTab` — shows all handwerkers by default, matching the "Gesamt" card
 
-**Path C — Non-cancelled, grace period expired** (`pending_plan IS NULL` AND `current_period_end + 7 days < now`):
-- Downgrade to free
-- Send "Abonnement abgelaufen" email
-- Reset `renewal_reminder_sent = false`
+### C. Fix deletion error handling
+**File: `src/pages/admin/HandwerkerManagement.tsx`**
+- Fix `deleteHandwerker` to properly handle edge function error responses
+- The `supabase.functions.invoke` returns `{ data, error }` — when the edge function returns a non-2xx status, `error` contains the error and `data` is null. The current code checks `data?.error` which only catches edge function errors returned as 200 with error in body
+- Also add `handwerker_service_areas` deletion to the delete-user edge function (before handwerker_profiles deletion) as a safety measure, even though CASCADE should handle it
 
-**7-day warning emails** (existing logic, refined):
-- If `pending_plan = 'free'`: "Ihr Abo endet am X, danach kostenloser Plan"
-- If `pending_plan IS NULL`: "Ihr Abo wird am X verlängert. Bitte erneuern Sie rechtzeitig." with checkout link
-
-### 3. Update `payrexx-webhook` to reset renewal flag
-
-**File: `supabase/functions/payrexx-webhook/index.ts`**
-
-In the `status === 'confirmed'` block, add to the upsert:
-```
-renewal_reminder_sent: false,
-payment_reminder_1_sent: false,
-payment_reminder_2_sent: false,
-```
-
-### 4. Grace period banner in HandwerkerDashboard
-
-**File: `src/pages/HandwerkerDashboard.tsx`**
-
-Add a warning banner when the user's subscription `current_period_end < now` AND `plan_type !== 'free'` (meaning they're in the grace period):
-
-> "Ihre Abonnement-Verlängerung steht aus. Bitte schliessen Sie die Zahlung innerhalb von X Tagen ab, um den Zugang zu behalten."
-
-With a "Jetzt erneuern" button linking to `/checkout`.
+### D. Add `handwerker_service_areas` cleanup to delete-user
+**File: `supabase/functions/delete-user/index.ts`**
+- Add deletion of `handwerker_service_areas` before `handwerker_profiles` deletion (both in guest and full user paths)
+- This is a belt-and-suspenders approach since CASCADE exists, but ensures reliability
 
 ## Summary
 
 | File | Change |
 |------|--------|
-| Migration SQL | Add `renewal_reminder_sent` column + index |
-| `check-subscription-expiry/index.ts` | Three-path logic: cancelled→downgrade, grace→email+wait, grace expired→downgrade |
-| `payrexx-webhook/index.ts` | Reset `renewal_reminder_sent` on confirmed payment |
-| `HandwerkerDashboard.tsx` | Grace period warning banner |
-
-Deploy: `check-subscription-expiry` and `payrexx-webhook` edge functions.
-
+| `src/pages/admin/HandwerkerManagement.tsx` | Fix error messages in toggleInactive; change default tab to 'all'; fix deleteHandwerker error handling |
+| `supabase/functions/delete-user/index.ts` | Add handwerker_service_areas cleanup before profile deletion |
