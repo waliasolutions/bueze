@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Star, Search, Shield } from 'lucide-react';
+import { MapPin, Star, Search, Shield, Mail, Phone } from 'lucide-react';
 import { SWISS_CANTONS } from '@/config/cantons';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
@@ -21,6 +21,10 @@ interface PublicHandwerker {
   last_name: string | null;
   business_city: string | null;
   business_canton: string | null;
+  business_address: string | null;
+  business_zip: string | null;
+  email: string | null;
+  phone_number: string | null;
   categories: string[];
   bio: string | null;
   logo_url: string | null;
@@ -44,7 +48,7 @@ const HandwerkerVerzeichnis = () => {
     try {
       const { data, error } = await supabase
         .from('handwerker_profiles_public')
-        .select('id, company_name, first_name, last_name, business_city, business_canton, categories, bio, logo_url, is_verified, languages, service_areas')
+        .select('id, company_name, first_name, last_name, business_city, business_canton, business_address, business_zip, email, phone_number, categories, bio, logo_url, is_verified, languages, service_areas')
         .eq('verification_status', 'approved')
         .eq('is_verified', true);
 
@@ -172,13 +176,35 @@ const HandwerkerVerzeichnis = () => {
                         {hw.business_city && (
                           <p className="text-sm text-muted-foreground flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            {hw.business_city}
+                            {hw.business_zip && `${hw.business_zip} `}{hw.business_city}
                             {hw.business_canton && `, ${hw.business_canton}`}
                           </p>
                         )}
                       </div>
                       {hw.is_verified && (
                         <Shield className="h-5 w-5 text-primary shrink-0" />
+                      )}
+                    </div>
+
+                    {hw.business_address && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {hw.business_address}
+                      </p>
+                    )}
+
+                    {/* Contact details */}
+                    <div className="space-y-1 mb-3">
+                      {hw.email && (
+                        <a href={`mailto:${hw.email}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                          <Mail className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{hw.email}</span>
+                        </a>
+                      )}
+                      {hw.phone_number && (
+                        <a href={`tel:${hw.phone_number}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                          <Phone className="h-3 w-3 shrink-0" />
+                          {hw.phone_number}
+                        </a>
                       )}
                     </div>
 

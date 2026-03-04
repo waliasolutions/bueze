@@ -438,6 +438,29 @@ export default function HandwerkerManagement() {
     setSelectedIds(newSet);
   };
 
+  const toggleInactive = async (handwerker: Handwerker) => {
+    setActionLoading(handwerker.id);
+    try {
+      const newStatus = handwerker.verification_status === 'inactive' ? 'approved' : 'inactive';
+      const { error } = await supabase
+        .from('handwerker_profiles')
+        .update({ 
+          verification_status: newStatus,
+          is_verified: newStatus === 'approved',
+        })
+        .eq('id', handwerker.id);
+
+      if (error) throw error;
+      toast({ title: newStatus === 'inactive' ? 'Handwerker deaktiviert' : 'Handwerker reaktiviert' });
+      fetchHandwerkers();
+    } catch (error) {
+      console.error('Error toggling inactive:', error);
+      toast({ title: 'Fehler', variant: 'destructive' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -446,6 +469,8 @@ export default function HandwerkerManagement() {
         return <Badge className="bg-green-600 hover:bg-green-700"><CheckCircle className="mr-1 h-3 w-3" />Aktiv</Badge>;
       case 'rejected':
         return <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Abgelehnt</Badge>;
+      case 'inactive':
+        return <Badge variant="outline" className="border-amber-500 text-amber-600"><Clock className="mr-1 h-3 w-3" />Inaktiv</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -526,6 +551,7 @@ export default function HandwerkerManagement() {
     all: handwerkers.length,
     pending: handwerkers.filter((h) => h.verification_status === 'pending').length,
     approved: handwerkers.filter((h) => h.verification_status === 'approved').length,
+    inactive: handwerkers.filter((h) => h.verification_status === 'inactive').length,
     rejected: handwerkers.filter((h) => h.verification_status === 'rejected').length,
   };
 
@@ -563,10 +589,20 @@ export default function HandwerkerManagement() {
             <p className="text-2xl font-bold text-green-600">{counts.approved}</p>
           </CardContent>
         </Card>
-        <Card className="cursor-pointer hover:border-primary border-l-4 border-l-red-500" onClick={() => setActiveTab('rejected')}>
+        <Card className="cursor-pointer hover:border-primary border-l-4 border-l-amber-500" onClick={() => setActiveTab('inactive')}>
           <CardContent className="pt-4">
-            <p className="text-sm text-muted-foreground">Abgelehnt</p>
-            <p className="text-2xl font-bold text-red-600">{counts.rejected}</p>
+            <p className="text-sm text-muted-foreground">Inaktiv</p>
+            <p className="text-2xl font-bold text-amber-600">{counts.inactive}</p>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="grid grid-cols-1 gap-4 mb-6">
+        <Card className="cursor-pointer hover:border-primary border-l-4 border-l-red-500" onClick={() => setActiveTab('rejected')}>
+          <CardContent className="pt-4 flex items-center gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Abgelehnt</p>
+              <p className="text-2xl font-bold text-red-600">{counts.rejected}</p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -640,10 +676,11 @@ export default function HandwerkerManagement() {
 
       {/* Tabs & Table */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 flex-wrap">
           <TabsTrigger value="all">Alle ({counts.all})</TabsTrigger>
           <TabsTrigger value="pending">Ausstehend ({counts.pending})</TabsTrigger>
           <TabsTrigger value="approved">Aktiv ({counts.approved})</TabsTrigger>
+          <TabsTrigger value="inactive">Inaktiv ({counts.inactive})</TabsTrigger>
           <TabsTrigger value="rejected">Abgelehnt ({counts.rejected})</TabsTrigger>
         </TabsList>
 
@@ -792,6 +829,26 @@ export default function HandwerkerManagement() {
                                   <XCircle className="h-4 w-4" />
                                 </Button>
                               </>
+                            )}
+                            {(h.verification_status === 'approved' || h.verification_status === 'inactive') && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleInactive(h)}
+                                disabled={actionLoading === h.id}
+                                className={h.verification_status === 'approved' 
+                                  ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' 
+                                  : 'text-green-600 hover:text-green-700 hover:bg-green-50'}
+                                title={h.verification_status === 'approved' ? 'Deaktivieren' : 'Reaktivieren'}
+                              >
+                                {actionLoading === h.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : h.verification_status === 'approved' ? (
+                                  'Deaktivieren'
+                                ) : (
+                                  'Reaktivieren'
+                                )}
+                              </Button>
                             )}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
