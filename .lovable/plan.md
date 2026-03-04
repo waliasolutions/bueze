@@ -1,42 +1,44 @@
 
 
-# Fix: Allow Pending Handwerkers to Edit Their Profile
+# Updated Plan: Remove Local Payment Method Management, Delegate to Payrexx
 
-## Root Cause
+## Changes from Previous Plan
 
-When a user registers as a handwerker, their role in `user_roles` remains `user` until an admin approves them and upgrades the role to `handwerker`. The `useUserRole` hook returns `isHandwerker: false` for pending users, which means:
+1. **Added Payrexx portal link** — the simplified `PaymentMethodCard` will include a button directing users to manage payment methods via Payrexx (using the checkout URL pattern already in the codebase).
+2. **Remove `hasPaymentMethod` from `SubscriptionManagement`** — this field is derived from the mock data and triggers a misleading "Zahlungsmethode erforderlich" warning. Since Payrexx owns payment state, this warning is inaccurate. Remove the field and the warning banner.
+3. **Full cleanup sweep confirmed** — no test files or other components reference these mocks beyond the 4 files identified.
 
-1. **`UserDropdown`** shows client navigation (no "Profil bearbeiten" or "Dashboard" links for handwerker)
-2. **`Profile.tsx`** page's `isHandwerker` check (line 443) uses `!!handwerkerProfile` from a DB query — this actually works, but the user may not know to go to `/profile` or `/handwerker-profile/edit`
+## Implementation
 
-The pages themselves (`HandwerkerDashboard`, `HandwerkerProfileEdit`) correctly handle pending users. The problem is **navigation/discoverability** — pending handwerkers see client menu items and can't find the handwerker pages.
+### 1. Delete `src/components/AddPaymentMethodDialog.tsx`
+Entire file removed. Collects card data locally — violates Payrexx-exclusive policy.
 
-## Fix Plan
+### 2. Rewrite `src/components/PaymentMethodCard.tsx`
+Replace with a simple informational card:
+- Icon + title "Zahlungsmethoden"
+- Description: "Ihre Zahlungsmethoden werden sicher über unseren Zahlungspartner Payrexx verwaltet."
+- Bullet points: payment details entered during checkout, stored securely by Payrexx, supports TWINT/PostFinance/Kreditkarten
+- Button: "Zahlungsmethoden verwalten" linking to `/checkout` (where Payrexx gateway handles the rest)
+- No props needed — fully self-contained
 
-### 1. Add handwerker profile awareness to `UserDropdown` (src/components/UserDropdown.tsx)
+### 3. Clean up `src/pages/Profile.tsx`
+Remove:
+- Import of `AddPaymentMethodDialog`
+- `paymentMethods` state
+- `showAddPaymentDialog` state
+- `handleAddPaymentMethod`, `handleRemovePaymentMethod`, `handleSetDefaultPaymentMethod` handlers
+- Mock `setPaymentMethods([])` call (line 226-228)
+- `hasPaymentMethod` from `currentSubscription` object (line 218)
+- `AddPaymentMethodDialog` JSX (lines 928-933)
+- Update `PaymentMethodCard` usage — remove all props (now prop-less)
 
-After fetching the user profile, also check if a `handwerker_profiles` record exists (regardless of `user_roles`). If it does, treat the user as a handwerker for navigation purposes.
+### 4. Update `src/components/SubscriptionManagement.tsx`
+- Remove `hasPaymentMethod` from `CurrentSubscription` interface
+- Remove the amber warning banner (lines 153-162) that says "Zahlungsmethode erforderlich"
 
-- Query `handwerker_profiles` for the current user (same pattern as `Profile.tsx` line 183-187)
-- If a profile exists with `verification_status` in `['pending', 'approved']`, show handwerker navigation items in the dropdown
-- This ensures pending handwerkers see "Dashboard", "Profil bearbeiten" etc.
-
-### 2. Update `useUserRole` to expose pending handwerker state (src/hooks/useUserRole.ts)
-
-Add a `hasPendingHandwerkerProfile` flag to the hook's return value. This queries `handwerker_profiles` to check if the user has a profile with `verification_status = 'pending'`. This avoids duplicating the check in multiple components.
-
-**Alternative (simpler):** Instead of modifying the shared hook, just add the handwerker profile check directly in `UserDropdown.tsx` since that's the only place the navigation issue manifests. This keeps the change minimal and follows SSOT (the `handwerker_profiles` table is the source of truth for whether someone is a handwerker, not just `user_roles`).
-
-### Recommended: Option 2 (simpler)
-
-Only modify `UserDropdown.tsx`:
-- After fetching the profile, also fetch `handwerker_profiles` for the user
-- If a handwerker profile exists (any status except null), use handwerker navigation
-- This is ~10 lines of additional code in the existing `fetchProfile` function
-
-### Files Changed
-
-1. **`src/components/UserDropdown.tsx`** — Add handwerker profile check to determine navigation items for pending handwerkers
-
-No database changes needed. RLS policies already allow pending handwerkers to read their own profile.
+## Files Changed
+1. **Delete** `src/components/AddPaymentMethodDialog.tsx`
+2. **Rewrite** `src/components/PaymentMethodCard.tsx` — informational card with Payrexx link
+3. **Update** `src/pages/Profile.tsx` — remove mock state, handlers, dialog
+4. **Update** `src/components/SubscriptionManagement.tsx` — remove `hasPaymentMethod` field and warning
 
