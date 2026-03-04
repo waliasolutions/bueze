@@ -90,6 +90,14 @@ serve(async (req) => {
       if (guestProfiles && guestProfiles.length > 0) {
         const profileIds = guestProfiles.map(p => p.id);
         
+        // Delete service areas
+        const { data: serviceAreas } = await supabase
+          .from('handwerker_service_areas')
+          .delete()
+          .in('handwerker_id', profileIds)
+          .select('id');
+        deletionStats.handwerker_service_areas = serviceAreas?.length || 0;
+        
         // Delete documents
         const { data: docs } = await supabase
           .from('handwerker_documents')
@@ -331,7 +339,17 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_documents = (deletionStats.handwerker_documents || 0) + (userDocs?.length || 0);
 
-    // 10. Handwerker subscriptions
+    // 10. Handwerker service areas (explicit cleanup before profile deletion)
+    if (handwerkerProfile) {
+      const { data: serviceAreas } = await supabase
+        .from('handwerker_service_areas')
+        .delete()
+        .eq('handwerker_id', handwerkerProfile.id)
+        .select('id');
+      deletionStats.handwerker_service_areas = serviceAreas?.length || 0;
+    }
+
+    // 11. Handwerker subscriptions
     const { data: subs } = await supabase
       .from('handwerker_subscriptions')
       .delete()
@@ -339,7 +357,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_subscriptions = subs?.length || 0;
 
-    // 11. Handwerker profiles
+    // 12. Handwerker profiles
     const { data: hwProfiles } = await supabase
       .from('handwerker_profiles')
       .delete()
