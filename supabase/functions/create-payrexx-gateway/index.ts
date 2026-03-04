@@ -26,18 +26,19 @@ async function generateSignature(queryString: string, apiKey: string): Promise<s
   const encoder = new TextEncoder();
   const keyData = encoder.encode(apiKey);
   const messageData = encoder.encode(queryString);
-  
+
   const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
+    'raw', keyData,
     { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
+    false, ['sign']
   );
-  
+
   const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  const hashArray = Array.from(new Uint8Array(signature));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  // Payrexx requires base64, NOT hex
+  const bytes = new Uint8Array(signature);
+  let binary = '';
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
 }
 
 Deno.serve(async (req) => {
