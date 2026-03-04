@@ -698,14 +698,16 @@ export default function HandwerkerManagement() {
                         <TableCell className="hidden sm:table-cell">{getSubscriptionBadge(h.user_id)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setSelectedHandwerkerId(h.user_id)}
-                              title="Profil anzeigen"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            {h.verification_status !== 'pending' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setSelectedHandwerkerId(h.user_id)}
+                                title="Profil anzeigen"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
                             {h.verification_status === 'pending' && (
                               <>
                                 <Button
