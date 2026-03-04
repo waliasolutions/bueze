@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getRoleLabelShort, getRoleBadgeVariant, type AppRole } from '@/config/roles';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import {
@@ -49,6 +50,7 @@ interface Client {
   leads_count: number;
   active_leads_count: number;
   last_lead_date: string | null;
+  roles: AppRole[];
 }
 
 interface Lead {
@@ -96,15 +98,35 @@ export default function ClientManagement() {
 
       if (rolesError) throw rolesError;
 
-      // Create a map of roles (exclude handwerkers and admins)
-      const clientUserIds = new Set(
-        roles
-          ?.filter((r) => r.role === 'client' || r.role === 'user')
-          .map((r) => r.user_id)
+      // Build a map of user_id -> roles[]
+      const userRolesMap = new Map<string, AppRole[]>();
+      roles?.forEach((r) => {
+        const existing = userRolesMap.get(r.user_id) || [];
+        existing.push(r.role as AppRole);
+        userRolesMap.set(r.user_id, existing);
+      });
+
+      // Identify handwerker user IDs (by role)
+      const handwerkerUserIds = new Set(
+        roles?.filter((r) => r.role === 'handwerker').map((r) => r.user_id)
       );
 
-      // Also include users without a role (default to client)
-      const usersWithRoles = new Set(roles?.map((r) => r.user_id));
+      // Also fetch handwerker_profiles to catch users without roles who registered as handwerkers
+      const { data: hwProfiles, error: hwError } = await supabase
+        .from('handwerker_profiles')
+        .select('user_id');
+
+      if (hwError) throw hwError;
+
+      // Add handwerker_profiles user_ids to exclusion set
+      hwProfiles?.forEach((hp) => {
+        if (hp.user_id) handwerkerUserIds.add(hp.user_id);
+      });
+
+      // Admin/super_admin user IDs to exclude
+      const adminUserIds = new Set(
+        roles?.filter((r) => r.role === 'admin' || r.role === 'super_admin' || r.role === 'department_admin').map((r) => r.user_id)
+      );
 
       // Fetch leads count per user
       const { data: leads, error: leadsError } = await supabase
@@ -113,9 +135,9 @@ export default function ClientManagement() {
 
       if (leadsError) throw leadsError;
 
-      // Build client data
+      // Build client data — exclude handwerkers and admins
       const clientsData: Client[] = (profiles || [])
-        .filter((p) => clientUserIds.has(p.id) || !usersWithRoles.has(p.id))
+        .filter((p) => !handwerkerUserIds.has(p.id) && !adminUserIds.has(p.id))
         .map((profile) => {
           const userLeads = leads?.filter((l) => l.owner_id === profile.id) || [];
           const activeLeads = userLeads.filter((l) => l.status === 'active');
@@ -135,6 +157,7 @@ export default function ClientManagement() {
             leads_count: userLeads.length,
             active_leads_count: activeLeads.length,
             last_lead_date: sortedLeads[0]?.created_at || null,
+            roles: userRolesMap.get(profile.id) || [],
           };
         });
 
@@ -346,6 +369,7 @@ export default function ClientManagement() {
               <TableRow>
                 <TableHead className="w-8"></TableHead>
                 <TableHead>Kunde</TableHead>
+                <TableHead>Rolle</TableHead>
                 <TableHead>Typ</TableHead>
                 <TableHead className="hidden md:table-cell">Kontakt</TableHead>
                 <TableHead>Aufträge</TableHead>
@@ -357,7 +381,7 @@ export default function ClientManagement() {
             <TableBody>
               {filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                     Keine Kunden gefunden
                   </TableCell>
                 </TableRow>
@@ -393,6 +417,19 @@ export default function ClientManagement() {
                             </p>
                             <p className="text-sm text-muted-foreground">{client.email}</p>
                           </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {client.roles.length > 0 ? (
+                            client.roles.map((role) => (
+                              <Badge key={role} variant={getRoleBadgeVariant(role)} className="text-xs">
+                                {getRoleLabelShort(role)}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Keine</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -507,7 +544,7 @@ export default function ClientManagement() {
                     {/* Expanded Leads Row */}
                     {expandedClient === client.id && clientLeads.has(client.id) && (
                       <TableRow>
-                        <TableCell colSpan={8} className="bg-muted/30 p-4">
+                        <TableCell colSpan={9} className="bg-muted/30 p-4">
                           <div className="space-y-2">
                             <p className="text-sm font-medium mb-2">Letzte Aufträge:</p>
                             {clientLeads.get(client.id)?.length === 0 ? (
