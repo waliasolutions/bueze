@@ -1,34 +1,36 @@
 
 
-# Separate Clients from Handwerkers in Kundenverwaltung
+# Handwerkerverzeichnis: Filter by Business Address Only
 
 ## Problem
-The Client Management page (`/admin/clients`) shows handwerkers mixed in with clients because:
-1. Users with **both** `handwerker` and `client` roles pass the filter (line 100-104 only checks for `client`/`user` inclusion, not `handwerker` exclusion)
-2. Users with **no roles** are included by default (line 118), which may include handwerker guest registrations
+The canton filter and available cantons logic currently includes `service_areas` alongside `business_canton`. This means a handwerker in Zürich serving all of Switzerland appears in every canton — misleading for a directory that should show where businesses are physically located.
 
-## Solution
+## Changes
 
-**File:** `src/pages/admin/ClientManagement.tsx`
+**File:** `src/pages/HandwerkerVerzeichnis.tsx`
 
-### 1. Exclude handwerker users from the client list
-- Build a `handwerkerUserIds` set from roles with `handwerker` role
-- On line 118, add `&& !handwerkerUserIds.has(p.id)` to the filter condition
-- This ensures users with a handwerker role (even if they also have a client role) are excluded
+### 1. Remove `service_areas` from canton filter (line 92)
+Change from:
+```
+hw.business_canton === filterCanton || (hw.service_areas || []).includes(filterCanton)
+```
+To:
+```
+hw.business_canton === filterCanton
+```
 
-### 2. Exclude users who have a handwerker_profiles record but no role
-- Fetch `handwerker_profiles` user_ids to catch users without roles who registered as handwerkers
-- Add these to the exclusion set
+### 2. Remove `service_areas` from available cantons computation (lines 114-124)
+Only collect `business_canton` values — remove the `service_areas` loop entirely.
 
-### 3. Add a visual "Rolle" indicator column
-- Add a column showing the user's role(s) as badges so admins can quickly identify any edge cases
-- Use existing `getRoleLabelShort` and `getRoleBadgeVariant` from `src/config/roles.ts` for consistent display
-
-### Changes Summary
+### 3. Remove `service_areas` from the data fetch and interface
+Remove `service_areas` from the `select()` call (line 75) and the `PublicHandwerker` interface (line 49) since it's no longer used on this page.
 
 | Area | Change |
 |------|--------|
-| Data fetching | Also fetch `handwerker_profiles.user_id` to identify handwerkers without roles |
-| Filter logic | Exclude any user with handwerker role OR handwerker_profiles record |
-| Table UI | Add "Rolle" badge column using SSOT from `roles.ts` |
+| Interface | Remove `service_areas` field |
+| Data fetch | Remove `service_areas` from select |
+| Filter logic | Match only on `business_canton` |
+| Available cantons | Derive only from `business_canton` |
+
+Three lines of logic removed, zero new code. SSOT: business address is the single source for directory location.
 
