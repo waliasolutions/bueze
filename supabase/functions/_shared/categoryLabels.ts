@@ -1,6 +1,9 @@
-// SSOT for category labels used across edge functions and frontend
-// This is the single source of truth for category display names
+// SSOT for category labels used across edge functions
+// Uses subcategoryLabels as the comprehensive source for all category/subcategory names
 
+import { subcategoryLabels } from './subcategoryLabels.ts';
+
+// Re-export major category labels for backward compatibility
 export const categoryLabels: Record<string, string> = {
   'bau_renovation': 'Bau & Renovation',
   'elektroinstallationen': 'Elektroinstallationen',
@@ -23,10 +26,10 @@ export const urgencyLabels: Record<string, string> = {
 };
 
 /**
- * Get human-readable category label
+ * Get human-readable category label (major or subcategory)
  */
 export function getCategoryLabel(category: string): string {
-  return categoryLabels[category] || category;
+  return categoryLabels[category] || subcategoryLabels[category] || category;
 }
 
 /**
