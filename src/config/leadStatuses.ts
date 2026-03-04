@@ -3,7 +3,7 @@
  * All lead status-related configuration should reference this file
  */
 
-export type LeadStatusType = 'draft' | 'active' | 'paused' | 'completed' | 'expired' | 'deleted';
+export type LeadStatusType = 'draft' | 'active' | 'paused' | 'completed' | 'expired' | 'deleted' | 'cancelled' | 'closed';
 
 export interface LeadStatusConfig {
   id: LeadStatusType;
@@ -60,6 +60,22 @@ export const LEAD_STATUSES: Record<LeadStatusType, LeadStatusConfig> = {
     label: 'Gelöscht',
     description: 'Lead wurde gelöscht',
     color: 'bg-red-100 text-red-800',
+    canView: false,
+    canPurchase: false,
+  },
+  cancelled: {
+    id: 'cancelled',
+    label: 'Abgebrochen',
+    description: 'Lead wurde vom Auftraggeber abgebrochen',
+    color: 'bg-orange-100 text-orange-800',
+    canView: false,
+    canPurchase: false,
+  },
+  closed: {
+    id: 'closed',
+    label: 'Geschlossen',
+    description: 'Lead wurde geschlossen',
+    color: 'bg-slate-100 text-slate-800',
     canView: false,
     canPurchase: false,
   },

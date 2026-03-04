@@ -21,11 +21,34 @@ serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
+    const supabase = createSupabaseAdmin();
+
+    // Verify admin authorization
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return errorResponse('Nicht autorisiert', 401);
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: caller }, error: callerError } = await supabase.auth.getUser(token);
+    
+    if (callerError || !caller) {
+      return errorResponse('Ungültiges Token', 401);
+    }
+
+    const { data: callerRoles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', caller.id);
+
+    const isAdmin = callerRoles?.some(r => r.role === 'admin' || r.role === 'super_admin');
+    if (!isAdmin) {
+      return errorResponse('Admin-Zugang erforderlich', 403);
+    }
+
     const { profileId, adminId }: CreateAccountRequest = await req.json();
     
     console.log('Creating account for profile:', profileId);
-    
-    const supabase = createSupabaseAdmin();
 
     // 1. Get handwerker profile data
     const { data: profile, error: fetchError } = await supabase
