@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ArrowLeft, Loader2, CreditCard, Smartphone, Clock, AlertCircle } from "lucide-react";
+import { Check, ArrowLeft, Loader2, CreditCard, Smartphone, Clock, AlertCircle, ChevronDown } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -26,12 +27,14 @@ export default function Checkout() {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const planParam = searchParams.get("plan") as SubscriptionPlanType || "monthly";
+  const planFromUrl = !!searchParams.get("plan");
   
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanType>(planParam);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSavingPendingPlan, setIsSavingPendingPlan] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>('loading');
   const [userId, setUserId] = useState<string | null>(null);
+  const [planSelectorOpen, setPlanSelectorOpen] = useState(!planFromUrl);
 
   const plan = SUBSCRIPTION_PLANS[selectedPlan];
 
@@ -54,14 +57,12 @@ export default function Checkout() {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
-      // Not authenticated - redirect to auth
       navigate("/auth", { state: { from: `/checkout?plan=${selectedPlan}` } });
       return;
     }
 
     setUserId(user.id);
 
-    // Check handwerker profile approval status
     const { data: handwerkerProfile, error } = await supabase
       .from('handwerker_profiles')
       .select('verification_status')
@@ -75,7 +76,6 @@ export default function Checkout() {
     }
 
     if (!handwerkerProfile) {
-      // No handwerker profile - redirect to onboarding with plan param
       setApprovalStatus('no_profile');
       return;
     }
@@ -92,7 +92,6 @@ export default function Checkout() {
 
     setIsSavingPendingPlan(true);
     try {
-      // Upsert subscription with pending_plan
       const { error } = await supabase
         .from('handwerker_subscriptions')
         .upsert({
@@ -136,7 +135,6 @@ export default function Checkout() {
       const successUrl = `${window.location.origin}/profile?tab=subscription&success=true`;
       const cancelUrl = `${window.location.origin}/checkout?plan=${selectedPlan}&cancelled=true`;
 
-      // Use Payrexx for all payments (Swiss payment methods)
       const { data, error } = await supabase.functions.invoke('create-payrexx-gateway', {
         body: {
           planType: selectedPlan,
@@ -146,7 +144,6 @@ export default function Checkout() {
       });
 
       if (error) {
-        // Extract detailed error from edge function response
         const edgeMsg = typeof error === 'object' && error?.message
           ? error.message
           : typeof error === 'string' ? error : null;
@@ -155,6 +152,7 @@ export default function Checkout() {
 
       if (data?.url) {
         if (data.testMode) {
+          console.info('[Checkout] Test mode payment simulation — no real charge');
           toast({
             title: "Testmodus",
             description: "Payrexx Testmodus aktiv – Weiterleitung zur Bestätigung ohne echte Zahlung.",
@@ -184,21 +182,16 @@ export default function Checkout() {
     );
   }
 
-  // No handwerker profile - redirect to onboarding
+  // No handwerker profile
   if (approvalStatus === 'no_profile') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
         <Header />
         <div className="container mx-auto px-4 py-8 pt-24 max-w-2xl">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Zurück
           </Button>
-
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -213,10 +206,7 @@ export default function Checkout() {
               <p className="text-muted-foreground mb-4">
                 Erstellen Sie Ihr Profil und wählen Sie dabei Ihren gewünschten Plan. Nach der Freischaltung können Sie das Abonnement abschliessen.
               </p>
-              <Button
-                onClick={() => navigate(`/handwerker-onboarding?plan=${selectedPlan}`)}
-                className="w-full"
-              >
+              <Button onClick={() => navigate(`/handwerker-onboarding?plan=${selectedPlan}`)} className="w-full">
                 Handwerker-Profil erstellen
               </Button>
             </CardContent>
@@ -227,21 +217,16 @@ export default function Checkout() {
     );
   }
 
-  // Pending approval - show info and save pending plan option
+  // Pending approval
   if (approvalStatus === 'pending') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
         <Header />
         <div className="container mx-auto px-4 py-8 pt-24 max-w-2xl">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Zurück
           </Button>
-
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -259,8 +244,6 @@ export default function Checkout() {
                   Sobald Ihr Profil freigeschaltet wurde, erhalten Sie eine E-Mail mit einem direkten Zahlungslink für Ihr ausgewähltes Abonnement.
                 </AlertDescription>
               </Alert>
-
-              {/* Selected Plan Summary */}
               <div className="bg-muted rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold">Ausgewählter Plan:</span>
@@ -274,13 +257,8 @@ export default function Checkout() {
                   <p className="text-sm text-green-600 mt-2">{plan.savings}</p>
                 )}
               </div>
-
               <div className="flex flex-col gap-3">
-                <Button 
-                  onClick={handleSavePendingPlan}
-                  disabled={isSavingPendingPlan}
-                  className="w-full"
-                >
+                <Button onClick={handleSavePendingPlan} disabled={isSavingPendingPlan} className="w-full">
                   {isSavingPendingPlan ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -290,15 +268,10 @@ export default function Checkout() {
                     'Plan auswählen & auf Freischaltung warten'
                   )}
                 </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate('/handwerker-dashboard')}
-                  className="w-full"
-                >
+                <Button variant="outline" onClick={() => navigate('/handwerker-dashboard')} className="w-full">
                   Später entscheiden
                 </Button>
               </div>
-
               <p className="text-xs text-muted-foreground text-center">
                 Sie können Ihre Planauswahl jederzeit ändern, solange Sie noch nicht bezahlt haben.
               </p>
@@ -310,145 +283,156 @@ export default function Checkout() {
     );
   }
 
-  // Approved - show normal checkout flow
+  // Approved - streamlined checkout
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
       <Header />
-      <div className="container mx-auto px-4 py-8 pt-24 max-w-7xl">
+      <div className="container mx-auto px-4 py-8 pt-24 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="mb-4"
-          >
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Zurück
           </Button>
-          <h1 className="text-4xl font-bold mb-2">Abonnement abschliessen</h1>
+          <h1 className="text-3xl font-bold mb-1">Checkout</h1>
           <p className="text-muted-foreground">
-            Wählen Sie Ihren Plan und fahren Sie mit der Zahlung fort
+            Überprüfen und bestätigen Sie Ihr Abonnement
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Column - Plan Selection */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Plan Selection */}
+        <div className="grid lg:grid-cols-5 gap-8">
+          {/* Left Column - Plan & Payment */}
+          <div className="lg:col-span-3 space-y-6">
+            
+            {/* Plan Summary / Selector */}
             <Card>
-              <CardHeader>
-                <CardTitle>1. Plan auswählen</CardTitle>
-                <CardDescription>
-                  Wählen Sie das Abonnement, das am besten zu Ihren Bedürfnissen passt
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RadioGroup
-                  value={selectedPlan}
-                  onValueChange={(value) => setSelectedPlan(value as SubscriptionPlanType)}
-                  className="space-y-3"
-                >
-                  {Object.values(SUBSCRIPTION_PLANS).map((planOption) => (
-                    <div
-                      key={planOption.id}
-                      className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                        selectedPlan === planOption.id
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                      onClick={() => setSelectedPlan(planOption.id)}
+              <Collapsible open={planSelectorOpen} onOpenChange={setPlanSelectorOpen}>
+                {/* Collapsed: receipt-style summary */}
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Check className="h-4 w-4 text-primary" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-lg">{plan.displayName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {plan.proposalsLimit === -1 ? 'Unbegrenzte' : plan.proposalsLimit} Offerten · {plan.billingCycle === 'monthly' ? 'Monatlich' : plan.billingCycle === '6_month' ? '6 Monate' : 'Jährlich'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl font-bold">
+                        {plan.price === 0 ? "Kostenlos" : formatPrice(plan.price)}
+                      </span>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="text-sm text-muted-foreground">
+                          Plan ändern
+                          <ChevronDown className={`ml-1 h-4 w-4 transition-transform ${planSelectorOpen ? 'rotate-180' : ''}`} />
+                        </Button>
+                      </CollapsibleTrigger>
+                    </div>
+                  </div>
+                </CardHeader>
+
+                {/* Expanded: full plan selector */}
+                <CollapsibleContent>
+                  <CardContent className="pt-0">
+                    <Separator className="mb-4" />
+                    <RadioGroup
+                      value={selectedPlan}
+                      onValueChange={(value) => {
+                        setSelectedPlan(value as SubscriptionPlanType);
+                        // Auto-collapse after selection if it was opened from URL
+                        if (planFromUrl) {
+                          setTimeout(() => setPlanSelectorOpen(false), 150);
+                        }
+                      }}
+                      className="space-y-3"
                     >
-                      <RadioGroupItem
-                        value={planOption.id}
-                        id={planOption.id}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <Label
-                            htmlFor={planOption.id}
-                            className="text-lg font-semibold cursor-pointer flex items-center gap-2"
-                          >
-                            {planOption.displayName}
-                            {planOption.popular && (
-                              <Badge variant="default">Beliebt</Badge>
-                            )}
-                            {planOption.savings && (
-                              <Badge variant="secondary">{planOption.savings}</Badge>
-                            )}
-                          </Label>
-                          <div className="text-right">
-                            <div className="text-2xl font-bold">
-                              {planOption.price === 0 ? "Kostenlos" : formatPrice(planOption.price)}
-                            </div>
-                            {planOption.billingCycle && (
-                              <div className="text-sm text-muted-foreground">
-                                {formatPrice(planOption.pricePerMonth)}/Monat
+                      {Object.values(SUBSCRIPTION_PLANS).map((planOption) => (
+                        <div
+                          key={planOption.id}
+                          className={`relative flex items-start space-x-3 rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                            selectedPlan === planOption.id
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                          onClick={() => {
+                            setSelectedPlan(planOption.id);
+                            if (planFromUrl) {
+                              setTimeout(() => setPlanSelectorOpen(false), 150);
+                            }
+                          }}
+                        >
+                          <RadioGroupItem value={planOption.id} id={planOption.id} className="mt-1" />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-1">
+                              <Label htmlFor={planOption.id} className="text-base font-semibold cursor-pointer flex items-center gap-2">
+                                {planOption.displayName}
+                                {planOption.popular && <Badge variant="default">Beliebt</Badge>}
+                                {planOption.savings && <Badge variant="secondary">{planOption.savings}</Badge>}
+                              </Label>
+                              <div className="text-right">
+                                <div className="text-lg font-bold">
+                                  {planOption.price === 0 ? "Kostenlos" : formatPrice(planOption.price)}
+                                </div>
+                                {planOption.billingCycle && planOption.price > 0 && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {formatPrice(planOption.pricePerMonth)}/Monat
+                                  </div>
+                                )}
                               </div>
-                            )}
+                            </div>
+                            <ul className="space-y-1 text-sm text-muted-foreground">
+                              {planOption.features.slice(0, 3).map((feature, idx) => (
+                                <li key={idx} className="flex items-center gap-2">
+                                  <Check className="h-3 w-3 text-primary flex-shrink-0" />
+                                  {feature}
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                         </div>
-                        <ul className="space-y-1 text-sm text-muted-foreground">
-                          {planOption.features.map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-2">
-                              <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </CardContent>
+                      ))}
+                    </RadioGroup>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
             </Card>
 
-            {/* Payment Info */}
+            {/* Payment Methods Info - inline */}
             {plan.price > 0 && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    2. Sichere Zahlung
-                  </CardTitle>
-                  <CardDescription>
-                    Sie werden zu Payrexx weitergeleitet – dem führenden Schweizer Zahlungsanbieter
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-muted p-4 rounded-lg">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Verfügbare Schweizer Zahlungsmethoden:
-                    </p>
-                    <div className="flex flex-wrap items-center gap-4">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Smartphone className="h-4 w-4" />
-                        TWINT
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <CreditCard className="h-4 w-4" />
-                        PostFinance Card
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <CreditCard className="h-4 w-4" />
-                        PostFinance E-Finance
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <CreditCard className="h-4 w-4" />
-                        Visa / Mastercard
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-3">
-                      Ihre Zahlungsdaten werden sicher verarbeitet und niemals auf unseren Servern gespeichert.
-                    </p>
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CreditCard className="h-5 w-5 text-muted-foreground" />
+                    <p className="font-medium">Sichere Zahlung via Payrexx</p>
                   </div>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <Smartphone className="h-4 w-4" />
+                      TWINT
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard className="h-4 w-4" />
+                      PostFinance
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard className="h-4 w-4" />
+                      Visa / Mastercard
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    Ihre Zahlungsdaten werden sicher verarbeitet und niemals auf unseren Servern gespeichert.
+                  </p>
                 </CardContent>
               </Card>
             )}
           </div>
 
           {/* Right Column - Order Summary */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <Card className="sticky top-8">
               <CardHeader>
                 <CardTitle>Zusammenfassung</CardTitle>
@@ -500,7 +484,6 @@ export default function Checkout() {
                         <span>{formatPrice(Math.round(plan.price * 0.081))}</span>
                       </div>
                     </div>
-
                     <Separator />
                   </>
                 )}
@@ -519,15 +502,6 @@ export default function Checkout() {
                   <p className="text-xs text-muted-foreground text-center">
                     Entspricht {formatPrice(plan.pricePerMonth)} pro Monat
                   </p>
-                )}
-
-                {/* Payment method indicator */}
-                {plan.price > 0 && (
-                  <div className="bg-muted/50 rounded-lg p-2 text-center">
-                    <p className="text-xs text-muted-foreground">
-                      Zahlung via Payrexx (Schweiz)
-                    </p>
-                  </div>
                 )}
               </CardContent>
 
@@ -552,13 +526,9 @@ export default function Checkout() {
 
                 <p className="text-xs text-center text-muted-foreground">
                   Mit dem Abschluss akzeptieren Sie unsere{" "}
-                  <a href="/legal/agb" className="underline hover:text-primary">
-                    AGB
-                  </a>{" "}
+                  <a href="/legal/agb" className="underline hover:text-primary">AGB</a>{" "}
                   und{" "}
-                  <a href="/datenschutz" className="underline hover:text-primary">
-                    Datenschutzrichtlinien
-                  </a>
+                  <a href="/datenschutz" className="underline hover:text-primary">Datenschutzrichtlinien</a>
                 </p>
               </CardFooter>
             </Card>

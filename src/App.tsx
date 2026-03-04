@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { initErrorTracking, generateCorrelationId } from "@/lib/errorTracking";
+import { supabase } from "@/integrations/supabase/client";
+import { clearRoleCache } from "@/hooks/useUserRole";
 import { GlobalScriptManager } from "@/components/GlobalScriptManager";
 import { CookieBanner } from "@/components/CookieBanner";
 import RouteErrorBoundary from "@/components/RouteErrorBoundary";
@@ -126,6 +128,20 @@ const App = () => {
     // Initialize error tracking and correlation ID
     initErrorTracking();
     generateCorrelationId();
+
+    // Clear cached data on auth state changes to prevent cross-account data leaks
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+        queryClient.clear();
+        clearRoleCache();
+        sessionStorage.clear();
+        console.info(`[Auth] Cache cleared on ${event}`);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
