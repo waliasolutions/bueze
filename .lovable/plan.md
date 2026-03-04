@@ -1,30 +1,42 @@
 
 
-# Dynamic Filters in Handwerkerverzeichnis — Updated Plan
+# Fix Canton Availability to Include Service Area Coverage
 
-## Approach
+## Problem
+Currently `availableCantons` only checks `business_canton` — the physical location. Handwerkers with nationwide (`service_areas` contains all 26 cantons) or multi-canton coverage are invisible in cantons they serve but aren't physically located in. Same issue affects the results filter: `matchesCanton` only checks `business_canton`.
 
-- **Memoization**: Wrap `availableCantons` and `availableCategories` in `useMemo` keyed on `handwerkers` to avoid recalculation on unrelated re-renders.
-- **Global filtering**: Derive available sets from the full `handwerkers` array (not from already-filtered results). This ensures all existing cantons/categories remain visible regardless of other active filters.
-
-## Changes
+## Solution
 
 **File: `src/pages/HandwerkerVerzeichnis.tsx`**
 
-1. Add `useMemo` import
-2. In `HandwerkerVerzeichnis` component, compute:
-   ```ts
-   const availableCantons = useMemo(() =>
-     new Set(handwerkers.map(hw => hw.business_canton).filter(Boolean)),
-   [handwerkers]);
+### 1. Fix `availableCantons` memoization (line 104-106)
+Extract cantons from both `business_canton` AND `service_areas` (2-letter codes):
 
-   const availableCategories = useMemo(() =>
-     new Set(handwerkers.flatMap(hw => hw.categories || [])),
-   [handwerkers]);
-   ```
-3. Pass both sets to `BrowseLayer`
-4. In `BrowseLayer`: filter canton chips to `availableCantons.has(canton.value)`, filter major category groups and subcategories to only those present in `availableCategories`, hide empty groups entirely
-5. No changes to `ResultsLayer` — its category dropdown already derives from data
+```ts
+const availableCantons = useMemo(() => {
+  const cantonCodes = new Set(CANTON_CODES); // import from cantons.ts
+  const result = new Set<string>();
+  handwerkers.forEach(hw => {
+    if (hw.business_canton) result.add(hw.business_canton);
+    (hw.service_areas || []).forEach(area => {
+      if (area.length === 2 && cantonCodes.has(area)) result.add(area);
+    });
+  });
+  return result;
+}, [handwerkers]);
+```
 
-Single file, no new dependencies.
+### 2. Fix `matchesCanton` filter (line 82)
+When filtering results by canton, also match if the handwerker's `service_areas` includes that canton:
+
+```ts
+const matchesCanton = filterCanton === 'all' 
+  || hw.business_canton === filterCanton
+  || (hw.service_areas || []).includes(filterCanton);
+```
+
+### 3. Import `CANTON_CODES`
+Add to existing import from `@/config/cantons`.
+
+Two small changes, same file only. This ensures nationwide and multi-canton handwerkers appear in all cantons they cover.
 
