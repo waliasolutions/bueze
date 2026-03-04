@@ -1,30 +1,34 @@
 
 
-# Enable PAYREXX_TEST_MODE + Add SignatureCheck Diagnostic
+# Separate Clients from Handwerkers in Kundenverwaltung
 
-## Current State
-- The `create-payrexx-gateway` function already has test mode fallback logic built in
-- `PAYREXX_TEST_MODE` secret is **not set** — the user needs to add it manually or approve the tool
-- Both primary and fallback Payrexx requests return 422, confirming test API limitations
+## Problem
+The Client Management page (`/admin/clients`) shows handwerkers mixed in with clients because:
+1. Users with **both** `handwerker` and `client` roles pass the filter (line 100-104 only checks for `client`/`user` inclusion, not `handwerker` exclusion)
+2. Users with **no roles** are included by default (line 118), which may include handwerker guest registrations
 
-## Plan
+## Solution
 
-### Step 1: User adds PAYREXX_TEST_MODE secret
-The user adds `PAYREXX_TEST_MODE` = `true` in Supabase Dashboard → Settings → Edge Functions → Secrets. Alternatively, I can request it via the secrets tool if the user approves.
+**File:** `src/pages/admin/ClientManagement.tsx`
 
-### Step 2: Add SignatureCheck diagnostic to Edge Function
-Add a `verifyApiCredentials()` call before the Gateway creation attempt. This calls `GET /v1.0/SignatureCheck/` to verify the API key and instance are valid. Log the result. If it fails, return a clear error message.
+### 1. Exclude handwerker users from the client list
+- Build a `handwerkerUserIds` set from roles with `handwerker` role
+- On line 118, add `&& !handwerkerUserIds.has(p.id)` to the filter condition
+- This ensures users with a handwerker role (even if they also have a client role) are excluded
 
-### Step 3: Fix catch block error status
-Change the final `catch` block from status 500 to 502 so the real error message reaches the client instead of being sanitized.
+### 2. Exclude users who have a handwerker_profiles record but no role
+- Fetch `handwerker_profiles` user_ids to catch users without roles who registered as handwerkers
+- Add these to the exclusion set
 
-**File:** `supabase/functions/create-payrexx-gateway/index.ts`
+### 3. Add a visual "Rolle" indicator column
+- Add a column showing the user's role(s) as badges so admins can quickly identify any edge cases
+- Use existing `getRoleLabelShort` and `getRoleBadgeVariant` from `src/config/roles.ts` for consistent display
 
-### Expected Outcome
-- With `PAYREXX_TEST_MODE=true`, checkout returns `successUrl` directly — full flow works without real payments
-- SignatureCheck logs tell us whether the API key/instance are valid for when you switch to production
+### Changes Summary
 
-| File | Change |
+| Area | Change |
 |------|--------|
-| `supabase/functions/create-payrexx-gateway/index.ts` | Add SignatureCheck, fix catch status |
+| Data fetching | Also fetch `handwerker_profiles.user_id` to identify handwerkers without roles |
+| Filter logic | Exclude any user with handwerker role OR handwerker_profiles record |
+| Table UI | Add "Rolle" badge column using SSOT from `roles.ts` |
 
