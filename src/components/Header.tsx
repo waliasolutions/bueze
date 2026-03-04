@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Plus, LogOut, LayoutDashboard, LogIn } from 'lucide-react';
+import { Menu, X, Plus, LogOut, LayoutDashboard, LogIn, ChevronDown } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { UserDropdown } from './UserDropdown';
 import { AdminNotifications } from './AdminNotifications';
@@ -63,12 +63,14 @@ export const Header = () => {
     }
   };
 
-  const navItems = [
+  const navItems: { label: string; href: string; highlight?: boolean; children?: { label: string; href: string }[] }[] = [
     { label: 'So funktioniert es', href: '/#how-it-works' },
     { label: 'Kategorien', href: '/kategorien' },
     { label: 'Handwerker finden', href: '/handwerker-verzeichnis' },
-    { label: 'Für Handwerker', href: '/handwerker' },
-    { label: 'Preise', href: '/pricing' },
+    { label: 'Für Handwerker', href: '/handwerker', highlight: true, children: [
+      { label: 'Übersicht', href: '/handwerker' },
+      { label: 'Preise', href: '/pricing' },
+    ]},
   ];
 
   return (
@@ -84,8 +86,39 @@ export const Header = () => {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
             {navItems.map((item, index) => {
-              // Handle hash links
-              if (item.href?.startsWith('/#')) {
+              // Dropdown items
+              if (item.children) {
+                return (
+                  <DropdownMenu key={index}>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={`flex items-center gap-1 font-medium transition-colors hover:text-brand-600 cursor-pointer ${
+                          item.highlight
+                            ? 'border border-brand-600 rounded-full px-3 py-1 text-brand-600'
+                            : 'text-ink-700'
+                        }`}
+                      >
+                        {item.label}
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center" className="bg-popover">
+                      {item.children.map((child) => (
+                        <DropdownMenuItem
+                          key={child.href}
+                          className="cursor-pointer"
+                          onClick={() => navigate(child.href)}
+                        >
+                          {child.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              }
+
+              // Hash links
+              if (item.href.startsWith('/#')) {
                 return (
                   <a
                     key={index}
@@ -98,7 +131,7 @@ export const Header = () => {
                 );
               }
               
-              // Handle regular links
+              // Regular links
               return (
                 <Link
                   key={index}
@@ -242,8 +275,31 @@ export const Header = () => {
           {/* Menu Content */}
           <div className="p-4 space-y-2 overflow-y-auto h-[calc(100%-80px)]">
             {navItems.map((item, index) => {
-              // Handle hash links
-              if (item.href?.startsWith('/#')) {
+              // Dropdown children → render heading + indented sub-links
+              if (item.children) {
+                return (
+                  <div key={index}>
+                    <span className={`block py-3 px-4 font-semibold text-sm uppercase tracking-wide ${
+                      item.highlight ? 'text-brand-600' : 'text-ink-700'
+                    }`}>
+                      {item.label}
+                    </span>
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.href}
+                        to={child.href}
+                        className="block py-2.5 px-4 pl-8 text-ink-700 hover:text-brand-600 hover:bg-pastel-pink/20 rounded-lg transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {child.label}
+                      </Link>
+                    ))}
+                  </div>
+                );
+              }
+
+              // Hash links
+              if (item.href.startsWith('/#')) {
                 return (
                   <a
                     key={index}
@@ -256,7 +312,7 @@ export const Header = () => {
                 );
               }
               
-              // Handle regular links
+              // Regular links
               return (
                 <Link
                   key={index}
