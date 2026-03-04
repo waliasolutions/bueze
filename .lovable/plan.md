@@ -1,49 +1,43 @@
 
 
-# Fix: Admin Abo Dropdown + Handwerker Subscription Access
+# Fix: Handwerker In-App Subscription Purchase + Payrexx Test Mode Handling
 
-## Problem 1: Admin can't change Handwerker plans
-The `handwerker_subscriptions` table has two RLS policies that check `get_user_role(auth.uid()) = 'admin'`:
-- "Admins can manage all subscriptions" (ALL)
-- "Admins can view all subscriptions" (SELECT)
+## Two Issues Identified
 
-The `get_user_role()` function returns only ONE role via `LIMIT 1`. If the logged-in user has `super_admin` role, the equality check `= 'admin'` fails silently — the admin sees no subscription data and updates are rejected.
+### Issue 1: Handwerker subscription upgrade only redirects to `/checkout`
+The `SubscriptionManagement` component on `/profile?tab=subscription` already shows upgrade cards with "Jetzt upgraden" buttons. These call `onUpgradePlan` which navigates to `/checkout?plan={planId}`. The checkout page then calls `create-payrexx-gateway`. **This flow already exists and is correct.** The "Abo verwalten" nav link added in the last change points to `/profile?tab=subscription` — so the handwerker CAN access it.
 
-**Fix**: Database migration to replace both policies with `has_role()` checks that cover both `admin` and `super_admin`, matching the pattern used on other tables (leads, handwerker_profiles, etc.).
+However, if a handwerker has NO subscription record yet (no row in `handwerker_subscriptions`), `currentSubscription` is `null`, and the SubscriptionManagement component shows the "Abonnement wählen" view with plan cards — which also calls `onUpgradePlan`. This part works.
 
-```sql
-DROP POLICY "Admins can manage all subscriptions" ON handwerker_subscriptions;
-DROP POLICY "Admins can view all subscriptions" ON handwerker_subscriptions;
+The real problem is likely that the Payrexx API call fails silently or returns an error.
 
-CREATE POLICY "Admins can manage all subscriptions" ON handwerker_subscriptions
-  FOR ALL TO authenticated
-  USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin'))
-  WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin'));
+### Issue 2: Payrexx test API returns error, no dummy confirmation
+Looking at the edge function logs, there are no gateway creation log entries (only boot/shutdown). The Payrexx API call either:
+- Fails with a non-JSON response (HTML error page from test instance)
+- Returns an error status that gets swallowed
 
-CREATE POLICY "Admins can view all subscriptions" ON handwerker_subscriptions
-  FOR SELECT TO authenticated
-  USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin'));
-```
+The `create-payrexx-gateway` function doesn't handle non-JSON responses defensively. With test API keys on the `wsolutions` instance, the Payrexx API may reject gateway creation or return unexpected formats.
 
-## Problem 2: Handwerker can't find subscription upgrade in logged-in area
-The `SubscriptionManagement` component already exists at `/profile` (subscription tab), but:
-- The handwerker navigation in `src/config/navigation.ts` has no link to `/profile`
-- The HandwerkerDashboard Profile tab has no link to subscription management
+**Fix**: Add defensive response parsing in the edge function AND a test-mode fallback. When Payrexx returns an error in test mode, return a simulated gateway URL that redirects to the success URL with a test confirmation, so the flow can be tested end-to-end.
 
-**Fix**: Add "Abo verwalten" nav item to the handwerker navigation in `src/config/navigation.ts`, linking to `/profile` with the subscription tab context. This is the SSOT for navigation.
+## Plan
 
-```typescript
-// Add to handwerker navigation array:
-{ label: 'Abo verwalten', href: '/profile?tab=subscription', icon: Crown },
-```
+### 1. Fix `create-payrexx-gateway` edge function
+- Add defensive `Content-Type` check before parsing JSON
+- Log the full response for debugging
+- Add a `PAYREXX_TEST_MODE` secret check: if test mode and Payrexx fails, return the `successUrl` directly as a fallback so the handwerker sees a confirmation flow
 
-Then ensure `Profile.tsx` reads the `tab` query param to auto-select the subscription tab when arriving via this link.
+### 2. Improve error display in Checkout.tsx
+- Show the actual Payrexx error message in the toast instead of generic text
+- The `supabase.functions.invoke` error object may contain the edge function's error response — extract and display it
+
+### 3. No navigation changes needed
+The `/profile?tab=subscription` route + the "Abo verwalten" nav item already provide in-app access. The SubscriptionManagement component already shows upgrade options. The checkout page handles approved handwerkers correctly.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| Migration SQL | Fix RLS policies on `handwerker_subscriptions` to use `has_role()` |
-| `src/config/navigation.ts` | Add "Abo verwalten" link for handwerker role |
-| `src/pages/Profile.tsx` | Read `tab` query param to auto-select subscription tab |
+| `supabase/functions/create-payrexx-gateway/index.ts` | Defensive response parsing, detailed logging, test-mode fallback |
+| `src/pages/Checkout.tsx` | Better error message extraction from edge function response |
 
