@@ -6,11 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Star, Search, Shield, Mail, Phone } from 'lucide-react';
-import { SWISS_CANTONS } from '@/config/cantons';
+import { MapPin, Star, Search, Shield, Mail, Phone, ArrowLeft } from 'lucide-react';
+import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 
@@ -39,10 +41,18 @@ const HandwerkerVerzeichnis = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCanton, setFilterCanton] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [showResults, setShowResults] = useState(false);
 
   useEffect(() => {
     fetchHandwerkers();
   }, []);
+
+  // Show results whenever a filter is active
+  useEffect(() => {
+    if (filterCanton !== 'all' || filterCategory !== 'all') {
+      setShowResults(true);
+    }
+  }, [filterCanton, filterCategory]);
 
   const fetchHandwerkers = async () => {
     try {
@@ -75,8 +85,28 @@ const HandwerkerVerzeichnis = () => {
     return matchesSearch && matchesCanton && matchesCategory;
   });
 
-  // Collect all unique category values from handwerker data
-  const allCategories = [...new Set(handwerkers.flatMap(hw => hw.categories || []))].sort();
+  const handleSearch = () => {
+    if (searchTerm.trim()) {
+      setShowResults(true);
+    }
+  };
+
+  const handleCantonClick = (canton: string) => {
+    setFilterCanton(canton);
+    setShowResults(true);
+  };
+
+  const handleCategoryClick = (category: string) => {
+    setFilterCategory(category);
+    setShowResults(true);
+  };
+
+  const handleBackToBrowse = () => {
+    setShowResults(false);
+    setFilterCanton('all');
+    setFilterCategory('all');
+    setSearchTerm('');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,147 +124,307 @@ const HandwerkerVerzeichnis = () => {
             </p>
           </div>
 
-          {/* Filters */}
-          <Card className="mb-6">
-            <CardContent className="pt-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Name oder Ort suchen..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <Select value={filterCanton} onValueChange={setFilterCanton}>
-                  <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Kanton" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle Kantone</SelectItem>
-                    {SWISS_CANTONS.map(canton => (
-                      <SelectItem key={canton.value} value={canton.value}>
-                        {canton.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filterCategory} onValueChange={setFilterCategory}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Kategorie" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Alle Kategorien</SelectItem>
-                    {allCategories.map(cat => (
-                      <SelectItem key={cat} value={cat}>
-                        {getCategoryLabel(cat)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Results count */}
-          <p className="text-sm text-muted-foreground mb-4">
-            {filteredHandwerkers.length} Handwerker gefunden
-          </p>
-
-          {/* Results */}
-          {loading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[1, 2, 3, 4, 5, 6].map(i => <CardSkeleton key={i} />)}
-            </div>
-          ) : filteredHandwerkers.length === 0 ? (
-            <EmptyState
-              variant="search"
-              description="Keine Handwerker mit diesen Filterkriterien gefunden."
+          {!showResults ? (
+            <BrowseLayer
+              searchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
+              onSearch={handleSearch}
+              onCantonClick={handleCantonClick}
+              onCategoryClick={handleCategoryClick}
             />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredHandwerkers.map(hw => (
-                <Card key={hw.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start gap-3 mb-3">
-                      {hw.logo_url ? (
-                        <img
-                          src={hw.logo_url}
-                          alt={hw.company_name || ''}
-                          className="h-12 w-12 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-lg">
-                          {(hw.company_name || hw.first_name || '?')[0].toUpperCase()}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold truncate">
-                          {hw.company_name || `${hw.first_name || ''} ${hw.last_name || ''}`.trim()}
-                        </h3>
-                        {hw.business_city && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {hw.business_zip && `${hw.business_zip} `}{hw.business_city}
-                            {hw.business_canton && `, ${hw.business_canton}`}
-                          </p>
-                        )}
-                      </div>
-                      {hw.is_verified && (
-                        <Shield className="h-5 w-5 text-primary shrink-0" />
-                      )}
-                    </div>
-
-                    {hw.business_address && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {hw.business_address}
-                      </p>
-                    )}
-
-                    {/* Contact details */}
-                    <div className="space-y-1 mb-3">
-                      {hw.email && (
-                        <a href={`mailto:${hw.email}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                          <Mail className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{hw.email}</span>
-                        </a>
-                      )}
-                      {hw.phone_number && (
-                        <a href={`tel:${hw.phone_number}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                          <Phone className="h-3 w-3 shrink-0" />
-                          {hw.phone_number}
-                        </a>
-                      )}
-                    </div>
-
-                    {hw.bio && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                        {hw.bio}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap gap-1">
-                      {(hw.categories || []).slice(0, 3).map(cat => (
-                        <Badge key={cat} variant="secondary" className="text-xs">
-                          {getCategoryLabel(cat)}
-                        </Badge>
-                      ))}
-                      {(hw.categories || []).length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{hw.categories.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <ResultsLayer
+              loading={loading}
+              searchTerm={searchTerm}
+              filterCanton={filterCanton}
+              filterCategory={filterCategory}
+              filteredHandwerkers={filteredHandwerkers}
+              handwerkers={handwerkers}
+              onSearchTermChange={setSearchTerm}
+              onFilterCantonChange={setFilterCanton}
+              onFilterCategoryChange={setFilterCategory}
+              onBackToBrowse={handleBackToBrowse}
+            />
           )}
         </div>
       </main>
       <Footer />
     </div>
+  );
+};
+
+// ── Browse Layer (Phase 1) ──────────────────────────────────────────
+
+interface BrowseLayerProps {
+  searchTerm: string;
+  onSearchTermChange: (v: string) => void;
+  onSearch: () => void;
+  onCantonClick: (canton: string) => void;
+  onCategoryClick: (category: string) => void;
+}
+
+const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, onCategoryClick }: BrowseLayerProps) => {
+  const categoriesWithSubs = Object.values(majorCategories).map(category => {
+    const subs = category.subcategories
+      .map(subId => subcategoryLabels[subId])
+      .filter(Boolean);
+    return { ...category, subs };
+  });
+
+  return (
+    <div className="space-y-10">
+      {/* Search bar */}
+      <div className="flex gap-2 max-w-2xl">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Handwerker, Firma oder Ort suchen..."
+            value={searchTerm}
+            onChange={(e) => onSearchTermChange(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+            className="pl-9"
+          />
+        </div>
+        <Button onClick={onSearch}>Suchen</Button>
+      </div>
+
+      {/* Cantons */}
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Kantone</h2>
+        <div className="flex flex-wrap gap-2">
+          {SWISS_CANTONS.map(canton => (
+            <button
+              key={canton.value}
+              onClick={() => onCantonClick(canton.value)}
+              className="px-3 py-1.5 rounded-full border border-border bg-card text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
+            >
+              {canton.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Categories with subcategories */}
+      <section>
+        <h2 className="text-xl font-semibold mb-6">Alle Kategorien</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {categoriesWithSubs.map(category => (
+            <div key={category.id} className="space-y-2">
+              <button
+                onClick={() => onCategoryClick(category.subcategories[0] || category.id)}
+                className="font-semibold text-foreground hover:text-primary transition-colors text-left text-base"
+              >
+                {category.label}
+              </button>
+              <ul className="space-y-1">
+                {category.subs.map(sub => (
+                  <li key={sub.value}>
+                    <button
+                      onClick={() => onCategoryClick(sub.value)}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors text-left w-full"
+                    >
+                      {sub.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+};
+
+// ── Results Layer (Phase 2) ─────────────────────────────────────────
+
+interface ResultsLayerProps {
+  loading: boolean;
+  searchTerm: string;
+  filterCanton: string;
+  filterCategory: string;
+  filteredHandwerkers: PublicHandwerker[];
+  handwerkers: PublicHandwerker[];
+  onSearchTermChange: (v: string) => void;
+  onFilterCantonChange: (v: string) => void;
+  onFilterCategoryChange: (v: string) => void;
+  onBackToBrowse: () => void;
+}
+
+const ResultsLayer = ({
+  loading, searchTerm, filterCanton, filterCategory,
+  filteredHandwerkers, handwerkers,
+  onSearchTermChange, onFilterCantonChange, onFilterCategoryChange,
+  onBackToBrowse
+}: ResultsLayerProps) => {
+  const allCategories = [...new Set(handwerkers.flatMap(hw => hw.categories || []))].sort();
+
+  return (
+    <>
+      {/* Back link */}
+      <button
+        onClick={onBackToBrowse}
+        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Zurück zur Übersicht
+      </button>
+
+      {/* Active filter badges */}
+      {(filterCanton !== 'all' || filterCategory !== 'all') && (
+        <div className="flex flex-wrap gap-2 mb-4">
+          {filterCanton !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              {getCantonLabel(filterCanton)}
+              <button onClick={() => onFilterCantonChange('all')} className="ml-1 hover:text-destructive">×</button>
+            </Badge>
+          )}
+          {filterCategory !== 'all' && (
+            <Badge variant="secondary" className="gap-1">
+              {getCategoryLabel(filterCategory)}
+              <button onClick={() => onFilterCategoryChange('all')} className="ml-1 hover:text-destructive">×</button>
+            </Badge>
+          )}
+        </div>
+      )}
+
+      {/* Filters */}
+      <Card className="mb-6">
+        <CardContent className="pt-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Name oder Ort suchen..."
+                value={searchTerm}
+                onChange={(e) => onSearchTermChange(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={filterCanton} onValueChange={onFilterCantonChange}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Kanton" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Kantone</SelectItem>
+                {SWISS_CANTONS.map(canton => (
+                  <SelectItem key={canton.value} value={canton.value}>
+                    {canton.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterCategory} onValueChange={onFilterCategoryChange}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Kategorie" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Kategorien</SelectItem>
+                {allCategories.map(cat => (
+                  <SelectItem key={cat} value={cat}>
+                    {getCategoryLabel(cat)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Results count */}
+      <p className="text-sm text-muted-foreground mb-4">
+        {filteredHandwerkers.length} Handwerker gefunden
+      </p>
+
+      {/* Results */}
+      {loading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map(i => <CardSkeleton key={i} />)}
+        </div>
+      ) : filteredHandwerkers.length === 0 ? (
+        <EmptyState
+          variant="search"
+          description="Keine Handwerker mit diesen Filterkriterien gefunden."
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredHandwerkers.map(hw => (
+            <Card key={hw.id} className="hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-3 mb-3">
+                  {hw.logo_url ? (
+                    <img
+                      src={hw.logo_url}
+                      alt={hw.company_name || ''}
+                      className="h-12 w-12 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-lg">
+                      {(hw.company_name || hw.first_name || '?')[0].toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">
+                      {hw.company_name || `${hw.first_name || ''} ${hw.last_name || ''}`.trim()}
+                    </h3>
+                    {hw.business_city && (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {hw.business_zip && `${hw.business_zip} `}{hw.business_city}
+                        {hw.business_canton && `, ${hw.business_canton}`}
+                      </p>
+                    )}
+                  </div>
+                  {hw.is_verified && (
+                    <Shield className="h-5 w-5 text-primary shrink-0" />
+                  )}
+                </div>
+
+                {hw.business_address && (
+                  <p className="text-sm text-muted-foreground mb-2">
+                    {hw.business_address}
+                  </p>
+                )}
+
+                <div className="space-y-1 mb-3">
+                  {hw.email && (
+                    <a href={`mailto:${hw.email}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      <Mail className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{hw.email}</span>
+                    </a>
+                  )}
+                  {hw.phone_number && (
+                    <a href={`tel:${hw.phone_number}`} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                      <Phone className="h-3 w-3 shrink-0" />
+                      {hw.phone_number}
+                    </a>
+                  )}
+                </div>
+
+                {hw.bio && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                    {hw.bio}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-1">
+                  {(hw.categories || []).slice(0, 3).map(cat => (
+                    <Badge key={cat} variant="secondary" className="text-xs">
+                      {getCategoryLabel(cat)}
+                    </Badge>
+                  ))}
+                  {(hw.categories || []).length > 3 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{hw.categories.length - 3}
+                    </Badge>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </>
   );
 };
 

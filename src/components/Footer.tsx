@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Phone, MapPin, Facebook, Instagram } from 'lucide-react';
+import { Mail, Phone, MapPin, Facebook, Instagram, Search } from 'lucide-react';
 import logo from '@/assets/bueze-logo.png';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
@@ -142,6 +142,16 @@ export const Footer = ({ content }: FooterProps) => {
             >
               <Instagram className="h-5 w-5 text-white" />
             </a>
+          </div>
+
+          <div className="flex justify-center mb-6">
+            <Link
+              to="/handwerker-verzeichnis"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors"
+            >
+              <Search className="h-4 w-4" />
+              Handwerker finden
+            </Link>
           </div>
 
           <div className="text-center">
