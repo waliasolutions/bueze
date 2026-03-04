@@ -1,87 +1,57 @@
 
 
-# Fix Payrexx 422 Error and Billing Workflow Overview
+# Fix Payrexx 422 — Diagnose Test API + Enable Test Mode Fallback
 
-## 1. The Payrexx 422 "Unprocessable Content" Error
+## Analysis
 
-### Root Cause (confirmed via Payrexx SDK source code)
+The Payrexx API consistently returns **422 "Unprocessable Content"** with an empty `reason` field for both full and minimal payloads. The signature encoding (base64) and URL-encoding (via `URLSearchParams`) are now correct per the official docs.
 
-The signature is computed on the **wrong string format**. Looking at the [official Payrexx Node SDK](https://github.com/3AP-AG/payrexx-sdk), the `AuthHelper.buildPayloadWithSignature` method:
+Since you confirmed you're using a **test instance + test API key**, the most likely cause is one of:
 
-1. Uses `qs.stringify(params, { format: 'RFC1738' })` to **URL-encode** the parameters
-2. Signs that URL-encoded string with HMAC-SHA256 base64
-3. Sends the body as `qs.stringify({ ...params, ApiSignature: signature })`
+1. **Invalid API key or instance name** — the 422 could be Payrexx rejecting the authentication silently
+2. **Test instance limitation** — some Payrexx test/sandbox instances do not support Gateway creation at all, only SignatureCheck
 
-Our current code does two things wrong:
+## Plan
 
-- **`buildQueryString` does NOT URL-encode values** — it joins raw `key=value` pairs. But the signature must be computed on the URL-encoded form (e.g., `fields%5Bemail%5D%5Bvalue%5D=user%40example.com`, not `fields[email][value]=user@example.com`).
-- **Alphabetical sorting** — the Payrexx docs and SDK do NOT sort parameters alphabetically. The signature input must match the body order.
+### Step 1: Add SignatureCheck diagnostic call
 
-### Fix — Single file: `supabase/functions/create-payrexx-gateway/index.ts`
+Before creating a Gateway, call `GET /v1.0/SignatureCheck/?instance=INSTANCE_NAME` with a signature of an empty string (per Payrexx docs). This verifies the API key and instance are valid. Log the result clearly.
 
-Replace the signature + body construction logic:
+**File:** `supabase/functions/create-payrexx-gateway/index.ts`
 
-1. Remove `buildQueryString` function entirely
-2. Build `URLSearchParams` from params (this URL-encodes automatically)
-3. Sign the `URLSearchParams.toString()` output (URL-encoded, no ApiSignature)
-4. Append `ApiSignature` to the form data before sending
+- Add a `verifyApiCredentials()` function that calls the SignatureCheck endpoint
+- Call it before the Gateway creation attempt
+- If it fails, return a clear error: "Payrexx API-Schlüssel oder Instanzname ungültig"
 
-```text
-Before:  queryString = buildQueryString(params)      → "amount=9000&currency=CHF&fields[email][value]=..."
-         sign(queryString)                            → WRONG: not URL-encoded
+### Step 2: Set PAYREXX_TEST_MODE secret
 
-After:   formData = new URLSearchParams(params)
-         sign(formData.toString())                    → "amount=9000&currency=CHF&fields%5Bemail%5D%5Bvalue%5D=..."
-         formData.append('ApiSignature', signature)   → CORRECT: matches what Payrexx expects
+The `PAYREXX_TEST_MODE` environment variable is not currently set. Adding it as `true` will enable the existing test fallback logic in the function — when Payrexx returns an error, the function returns the `successUrl` directly, allowing end-to-end flow testing without a working payment gateway.
+
+- Add Supabase secret: `PAYREXX_TEST_MODE` = `true`
+
+### Step 3: Improve error transparency
+
+The `errorResponse()` in `_shared/cors.ts` sanitizes ALL 500+ status codes to a generic German message. The function already uses status 502 for upstream errors, but the catch block at line 229 still uses `errorResponse(msg, 500)` — which gets sanitized. Change this to 502 so the real error reaches the client during debugging.
+
+**File:** `supabase/functions/create-payrexx-gateway/index.ts` (line 229)
+
+```typescript
+// Change from:
+return errorResponse(getErrorMessage(error), 500);
+// To:
+return errorResponse(getErrorMessage(error), 502);
 ```
 
-Additionally, the `errorResponse` for 500s sanitizes the real error message (returning "Ein interner Fehler ist aufgetreten..."). The function should return the actual Payrexx API error message when available, using status 502 (not 500) to avoid sanitization. This is already partially in place but needs the error path to use the Payrexx message directly.
+## Expected Outcome
 
----
+- With `PAYREXX_TEST_MODE=true`, the checkout flow will work end-to-end immediately (simulated payments)
+- The SignatureCheck diagnostic will tell us whether the API key/instance are valid
+- Once you switch to a live Payrexx instance + live API key, remove `PAYREXX_TEST_MODE` and real payments will work
 
-## 2. Billing Workflow — How It Works
-
-To answer your questions about how the subscription billing works, here is the complete existing workflow:
-
-### Payment Flow
-1. **Handwerker selects a plan** on `/checkout` or during registration
-2. **If not yet approved**: Plan is saved as `pending_plan` in `handwerker_subscriptions`. No payment happens.
-3. **After admin approval**: Handwerker receives an email with a Payrexx checkout link (via `send-pending-payment-reminder`).
-4. **User clicks link** → redirected to Payrexx hosted payment page (TWINT, PostFinance, Visa/Mastercard).
-5. **Payrexx sends webhook** to `payrexx-webhook` edge function with transaction result.
-6. **On success**: Subscription activated, `payment_history` record created, confirmation email sent via `send-subscription-confirmation`.
-7. **On failure**: User stays on free tier (or keeps existing paid plan if they had one), failure notification sent.
-
-### Emails Sent to Handwerkers
-- Subscription confirmation email (after successful payment)
-- 7-day warning before expiry (renewal reminder or cancellation notice)
-- Grace period renewal email (with Payrexx payment link, if not cancelled)
-- Downgrade notification (after grace period expires without payment)
-- Payment failure notification
-- Payment reminders (48-72h and 7 days after approval if pending payment)
-
-### Data Stored
-- **`handwerker_subscriptions`**: Plan type, status, period dates, proposals used/limit, pending plan
-- **`payment_history`**: Amount (in Rappen), currency, plan type, status, Payrexx transaction ID, payment date, invoice URL
-- **`handwerker_notifications`**: In-app notifications for subscription events
-
-### GDPR Compliance
-- **No credit card data stored**: All payment data is handled by Payrexx (PCI DSS compliant Swiss provider). The platform only stores transaction IDs and amounts.
-- **Data minimization**: Only essential billing data is stored (amount, date, plan type, transaction reference).
-- **User access**: Handwerkers can view their payment history in Profile → "Rechnungen" tab.
-- **Datenschutz page**: Already documents Payrexx as payment processor.
-- **Data deletion**: The `delete-user` edge function handles complete user deletion including subscription and payment records.
-- **Swiss hosting**: Payrexx is a Swiss company with Swiss data residency, aligning with Swiss data protection (DSG/nDSG).
-
-The system is already well-structured for GDPR. No additional personal data beyond what Payrexx requires (email) is shared with the payment provider.
-
----
-
-## Summary of Code Changes
+## Files Changed
 
 | File | Change |
 |------|--------|
-| `supabase/functions/create-payrexx-gateway/index.ts` | Fix signature: sign URL-encoded form data instead of raw query string. Remove `buildQueryString`. Build form data first, sign its `.toString()`, then append signature. |
-
-This is the only change needed. The webhook handler, subscription confirmation emails, and expiry checks are all working correctly once the gateway creation succeeds.
+| `supabase/functions/create-payrexx-gateway/index.ts` | Add SignatureCheck call, change catch error status to 502 |
+| Supabase secret | Add `PAYREXX_TEST_MODE` = `true` |
 
