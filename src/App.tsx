@@ -1,6 +1,5 @@
 import React, { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
@@ -30,7 +29,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Messages = lazy(() => import("./pages/Messages"));
 const ConversationsList = lazy(() => import("./pages/ConversationsList"));
 const Profile = lazy(() => import("./pages/Profile"));
-const TestDashboard = lazy(() => import("./pages/TestDashboard"));
+
 const BrowseLeads = lazy(() => import("./pages/BrowseLeads"));
 const Checkout = lazy(() => import("./pages/Checkout"));
 const CategoryLanding = lazy(() => import("./pages/CategoryLanding"));
@@ -140,7 +139,7 @@ const App = () => {
         >
           <ScrollToTop />
           <Toaster />
-          <Sonner />
+          
           <CookieBanner />
           <ViewModeProvider>
           <RouteErrorBoundary>
@@ -185,7 +184,7 @@ const App = () => {
                 
                 {/* Utility routes */}
                 <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
-                <Route path="/test-dashboard" element={<ProtectedRoute><TestDashboard /></ProtectedRoute>} />
+                
                 <Route path="/magic" element={<MagicLinkHandler />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
                 

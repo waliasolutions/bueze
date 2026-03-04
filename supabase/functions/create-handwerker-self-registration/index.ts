@@ -77,28 +77,15 @@ serve(async (req) => {
     
     const supabase = createSupabaseAdmin();
 
-    // 1. Check if email already exists in auth.users
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const emailExists = existingUsers?.users?.some(u => u.email?.toLowerCase() === email);
+    // 1. Check if email already exists in auth.users (targeted lookup, no full scan)
+    const { data: existingAuthUser, error: lookupError } = await supabase.auth.admin.getUserByEmail(email);
     
-    if (emailExists) {
+    if (existingAuthUser?.user) {
       console.log('Email already exists in auth.users');
       throw new Error('Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an.');
     }
 
-    // 2. Check if email already exists in profiles
-    const { data: existingProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle();
-    
-    if (existingProfile) {
-      console.log('Email already exists in profiles');
-      throw new Error('Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an.');
-    }
-
-    // 3. Check if email already exists in handwerker_profiles
+    // 2. Check if email already exists in handwerker_profiles
     const { data: existingHandwerker } = await supabase
       .from('handwerker_profiles')
       .select('id, user_id')

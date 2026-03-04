@@ -32,7 +32,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.FETCH_TIMEOUT,
       originalError: error,
-      message: 'Request timed out',
+      message: 'Zeitüberschreitung bei der Anfrage',
       severity: 'medium'
     };
   }
@@ -42,7 +42,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.FILE_TOO_LARGE,
       originalError: error,
-      message: 'File size exceeds maximum allowed (3MB)',
+      message: 'Dateigrösse überschreitet das Maximum (3MB)',
       severity: 'low'
     };
   }
@@ -51,7 +51,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.INVALID_FILE_TYPE,
       originalError: error,
-      message: 'Invalid file type. Only images allowed.',
+      message: 'Ungültiger Dateityp. Nur Bilder erlaubt.',
       severity: 'low'
     };
   }
@@ -60,7 +60,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.FILE_UPLOAD,
       originalError: error,
-      message: 'Maximum number of files exceeded (2 images max)',
+      message: 'Maximale Anzahl Dateien überschritten (max. 2 Bilder)',
       severity: 'low'
     };
   }
@@ -69,7 +69,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.STORAGE_QUOTA,
       originalError: error,
-      message: 'Storage quota exceeded',
+      message: 'Speicherkontingent erschöpft',
       severity: 'high'
     };
   }
@@ -79,7 +79,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.AUTH_401,
       originalError: error,
-      message: 'Authentication required',
+      message: 'Anmeldung erforderlich',
       severity: 'high'
     };
   }
@@ -88,7 +88,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.AUTH_403,
       originalError: error,
-      message: 'Access forbidden',
+      message: 'Zugriff verweigert',
       severity: 'high'
     };
   }
@@ -98,7 +98,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.RLS_POLICY,
       originalError: error,
-      message: 'Row-level security policy violation',
+      message: 'Zugriffsbeschränkung: Unzureichende Berechtigung',
       severity: 'high'
     };
   }
@@ -108,7 +108,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.RACE_CONDITION,
       originalError: error,
-      message: 'Concurrent operation detected',
+      message: 'Gleichzeitige Bearbeitung erkannt',
       severity: 'medium'
     };
   }
@@ -118,7 +118,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.DUPLICATE_KEY,
       originalError: error,
-      message: 'Duplicate entry detected',
+      message: 'Doppelter Eintrag erkannt',
       severity: 'low'
     };
   }
@@ -128,7 +128,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.NETWORK,
       originalError: error,
-      message: 'Network connection error',
+      message: 'Netzwerkverbindungsfehler',
       severity: 'medium'
     };
   }
@@ -138,7 +138,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.FETCH_EMPTY,
       originalError: error,
-      message: 'No data returned',
+      message: 'Keine Daten zurückgegeben',
       severity: 'low'
     };
   }
@@ -148,7 +148,7 @@ export const categorizeError = (error: any): CategorizedError => {
     return {
       category: ErrorCategory.VALIDATION,
       originalError: error,
-      message: 'Validation error',
+      message: 'Validierungsfehler',
       severity: 'low'
     };
   }
@@ -157,7 +157,7 @@ export const categorizeError = (error: any): CategorizedError => {
   return {
     category: ErrorCategory.UNKNOWN,
     originalError: error,
-    message: error?.message || 'An unknown error occurred',
+    message: error?.message || 'Ein unbekannter Fehler ist aufgetreten',
     severity: 'medium'
   };
 };
