@@ -1,59 +1,42 @@
 
 
-# Refined Plan: Checkout Streamlining, Cache Leak Fix, Test Mode Clarity
+# Fix: Allow Pending Handwerkers to Edit Their Profile
 
-## 1. Cross-Account Cache Leak Fix (App.tsx)
+## Root Cause
 
-**Approach:** Instead of a separate component, add an `onAuthStateChange` listener directly inside the existing `App` component (where `queryClient` is already in scope). This keeps architecture flat per your suggestion.
+When a user registers as a handwerker, their role in `user_roles` remains `user` until an admin approves them and upgrades the role to `handwerker`. The `useUserRole` hook returns `isHandwerker: false` for pending users, which means:
 
-**On `SIGNED_OUT`:**
-- `queryClient.clear()` — wipe all React Query cache
-- `roleCache.clear()` (from `useUserRole.ts`) — already happens there, but double-ensuring
-- `sessionStorage.clear()` — already done in `UserDropdown.handleSignOut`, but this catches programmatic sign-outs and browser-level session expiry too
+1. **`UserDropdown`** shows client navigation (no "Profil bearbeiten" or "Dashboard" links for handwerker)
+2. **`Profile.tsx`** page's `isHandwerker` check (line 443) uses `!!handwerkerProfile` from a DB query — this actually works, but the user may not know to go to `/profile` or `/handwerker-profile/edit`
 
-**On `SIGNED_IN`:**
-- `queryClient.clear()` — ensures fresh data for the new user (fail-safe)
+The pages themselves (`HandwerkerDashboard`, `HandwerkerProfileEdit`) correctly handle pending users. The problem is **navigation/discoverability** — pending handwerkers see client menu items and can't find the handwerker pages.
 
-This is ~15 lines added to the existing `useEffect` in `App`.
+## Fix Plan
 
-**Security note:** `localStorage` items like cookie consent and onboarding drafts are non-sensitive and user-agnostic, so they don't need clearing. The sensitive items (role cache, query cache, session storage view mode) are all covered.
+### 1. Add handwerker profile awareness to `UserDropdown` (src/components/UserDropdown.tsx)
 
-## 2. Checkout Streamlining (Checkout.tsx)
+After fetching the user profile, also check if a `handwerker_profiles` record exists (regardless of `user_roles`). If it does, treat the user as a handwerker for navigation purposes.
 
-**"Summary-First" pattern** for the approved checkout view (lines 314-570):
+- Query `handwerker_profiles` for the current user (same pattern as `Profile.tsx` line 183-187)
+- If a profile exists with `verification_status` in `['pending', 'approved']`, show handwerker navigation items in the dropdown
+- This ensures pending handwerkers see "Dashboard", "Profil bearbeiten" etc.
 
-- **When plan is pre-selected via URL param:** Replace the full RadioGroup card with a compact "receipt item" banner:
-  ```
-  ┌─────────────────────────────────────────┐
-  │  ✓ Monthly Pro Plan      CHF 49/Monat   │
-  │    Enthält 15 Offerten · Priorität       │
-  │                        [Plan ändern ▾]   │
-  └─────────────────────────────────────────┘
-  ```
-- **"Plan ändern" link:** Opens a `Collapsible` accordion (already available via Radix) that reveals the existing RadioGroup options. The payment button stays visible below.
-- **Remove numbered steps:** No "1." / "2." — single flow. Payment methods info merges into the order summary sidebar instead of a separate card.
-- **Payment button stays in the sticky sidebar** (already there), so it's always accessible.
+### 2. Update `useUserRole` to expose pending handwerker state (src/hooks/useUserRole.ts)
 
-**Key behavior:**
-- `planFromUrl` boolean tracks if plan came from URL params
-- If `planFromUrl` is true → show collapsed summary
-- If user clicks "Plan ändern" → expand RadioGroup via Collapsible
-- If no URL param → show full RadioGroup (direct `/checkout` navigation)
+Add a `hasPendingHandwerkerProfile` flag to the hook's return value. This queries `handwerker_profiles` to check if the user has a profile with `verification_status = 'pending'`. This avoids duplicating the check in multiple components.
 
-## 3. Test Mode Toast Clarity (Checkout.tsx)
+**Alternative (simpler):** Instead of modifying the shared hook, just add the handwerker profile check directly in `UserDropdown.tsx` since that's the only place the navigation issue manifests. This keeps the change minimal and follows SSOT (the `handwerker_profiles` table is the source of truth for whether someone is a handwerker, not just `user_roles`).
 
-Add a visible `Alert` banner at the top of the checkout page when the response includes `testMode: true`. Currently the toast fires and disappears. Instead:
+### Recommended: Option 2 (simpler)
 
-- Keep the existing toast for immediate feedback
-- After redirect to success page, the success page should show a subtle "Testmodus" badge (this is already handled by the `?success=true` param flow)
-- No additional change needed beyond what's already in place — the toast at line 158-161 already provides clarity
+Only modify `UserDropdown.tsx`:
+- After fetching the profile, also fetch `handwerker_profiles` for the user
+- If a handwerker profile exists (any status except null), use handwerker navigation
+- This is ~10 lines of additional code in the existing `fetchProfile` function
 
-**Optional enhancement:** Add a console.info in the edge function response handler so QA testers can see it in DevTools. Minimal code, high clarity.
+### Files Changed
 
-## Files Changed
+1. **`src/components/UserDropdown.tsx`** — Add handwerker profile check to determine navigation items for pending handwerkers
 
-1. **`src/App.tsx`** — Add auth state listener for `queryClient.clear()` + `sessionStorage.clear()` on sign-out/sign-in
-2. **`src/pages/Checkout.tsx`** — Redesign approved checkout: summary-first pattern with collapsible plan selector, remove numbered steps, merge payment info into sidebar
-
-No edge function changes. No new files.
+No database changes needed. RLS policies already allow pending handwerkers to read their own profile.
 
