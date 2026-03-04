@@ -174,6 +174,9 @@ Deno.serve(async (req) => {
           current_period_start: now.toISOString(),
           current_period_end: periodEnd.toISOString(),
           pending_plan: null, // Clear pending plan after successful payment
+          renewal_reminder_sent: false,
+          payment_reminder_1_sent: false,
+          payment_reminder_2_sent: false,
           updated_at: now.toISOString(),
         }, {
           onConflict: 'user_id',

@@ -907,6 +907,7 @@ export type Database = {
           plan_type: string
           proposals_limit: number
           proposals_used_this_period: number
+          renewal_reminder_sent: boolean | null
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -924,6 +925,7 @@ export type Database = {
           plan_type?: string
           proposals_limit?: number
           proposals_used_this_period?: number
+          renewal_reminder_sent?: boolean | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -941,6 +943,7 @@ export type Database = {
           plan_type?: string
           proposals_limit?: number
           proposals_used_this_period?: number
+          renewal_reminder_sent?: boolean | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null

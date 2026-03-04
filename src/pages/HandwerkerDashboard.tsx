@@ -44,6 +44,7 @@ const HandwerkerDashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [handwerkerProfile, setHandwerkerProfile] = useState<HandwerkerProfileBasic | null>(null);
+  const [subscriptionData, setSubscriptionData] = useState<{ plan_type: string; current_period_end: string } | null>(null);
 
   // Browse Leads Tab
   const [leads, setLeads] = useState<LeadListItem[]>([]);
@@ -240,6 +241,15 @@ const HandwerkerDashboard = () => {
       }
       
       // Only fetch proposals, reviews, and stats for approved users
+      // Fetch subscription data for grace period banner
+      const { data: subData } = await supabase
+        .from('handwerker_subscriptions')
+        .select('plan_type, current_period_end')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (subData) setSubscriptionData(subData);
+
       if (profile.verification_status === 'approved') {
         await Promise.all([
           fetchProposals(currentUser.id),
@@ -945,6 +955,28 @@ const HandwerkerDashboard = () => {
               </AlertDescription>
             </Alert>
           )}
+
+          {/* Grace Period Banner — subscription expired but not yet downgraded */}
+          {subscriptionData && subscriptionData.plan_type !== 'free' && new Date(subscriptionData.current_period_end) < new Date() && (() => {
+            const graceEndDate = new Date(subscriptionData.current_period_end);
+            graceEndDate.setDate(graceEndDate.getDate() + 7);
+            const now = new Date();
+            const daysLeft = Math.max(0, Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+            return (
+              <Alert className="mb-6 border-orange-400 bg-orange-50">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <AlertTitle className="text-orange-900">Abonnement-Verlängerung ausstehend</AlertTitle>
+                <AlertDescription className="text-orange-800">
+                  <p className="mb-3">
+                    Ihre Abonnement-Verlängerung steht aus. Bitte schliessen Sie die Zahlung innerhalb von <strong>{daysLeft} {daysLeft === 1 ? 'Tag' : 'Tagen'}</strong> ab, um den Zugang zu behalten.
+                  </p>
+                  <Button onClick={() => navigate('/checkout')} size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
+                    Jetzt erneuern
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            );
+          })()}
 
           {/* Dashboard Quick Stats - Unread Notifications */}
           {(dashboardStats.unreadMessages > 0 || dashboardStats.newAcceptedProposals > 0 || dashboardStats.newReviews > 0) && (
