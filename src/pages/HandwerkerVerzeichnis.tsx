@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
@@ -101,6 +101,14 @@ const HandwerkerVerzeichnis = () => {
     setShowResults(true);
   };
 
+  const availableCantons = useMemo(() =>
+    new Set(handwerkers.map(hw => hw.business_canton).filter(Boolean) as string[]),
+  [handwerkers]);
+
+  const availableCategories = useMemo(() =>
+    new Set(handwerkers.flatMap(hw => hw.categories || [])),
+  [handwerkers]);
+
   const handleBackToBrowse = () => {
     setShowResults(false);
     setFilterCanton('all');
@@ -131,6 +139,8 @@ const HandwerkerVerzeichnis = () => {
               onSearch={handleSearch}
               onCantonClick={handleCantonClick}
               onCategoryClick={handleCategoryClick}
+              availableCantons={availableCantons}
+              availableCategories={availableCategories}
             />
           ) : (
             <ResultsLayer
@@ -161,15 +171,22 @@ interface BrowseLayerProps {
   onSearch: () => void;
   onCantonClick: (canton: string) => void;
   onCategoryClick: (category: string) => void;
+  availableCantons: Set<string>;
+  availableCategories: Set<string>;
 }
 
-const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, onCategoryClick }: BrowseLayerProps) => {
-  const categoriesWithSubs = Object.values(majorCategories).map(category => {
-    const subs = category.subcategories
-      .map(subId => subcategoryLabels[subId])
-      .filter(Boolean);
-    return { ...category, subs };
-  });
+const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, onCategoryClick, availableCantons, availableCategories }: BrowseLayerProps) => {
+  const filteredCantons = SWISS_CANTONS.filter(c => availableCantons.has(c.value));
+
+  const categoriesWithSubs = Object.values(majorCategories)
+    .map(category => {
+      const subs = category.subcategories
+        .filter(subId => availableCategories.has(subId))
+        .map(subId => subcategoryLabels[subId])
+        .filter(Boolean);
+      return { ...category, subs };
+    })
+    .filter(category => category.subs.length > 0);
 
   return (
     <div className="space-y-10">
@@ -192,7 +209,7 @@ const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, 
       <section>
         <h2 className="text-xl font-semibold mb-4">Kantone</h2>
         <div className="flex flex-wrap gap-2">
-          {SWISS_CANTONS.map(canton => (
+          {filteredCantons.map(canton => (
             <button
               key={canton.value}
               onClick={() => onCantonClick(canton.value)}
