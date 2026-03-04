@@ -1,39 +1,30 @@
 
 
-# Changes Overview
+# Add Profile Detail Modal to Handwerkerverzeichnis Cards
 
-Four changes across two files.
+## Approach
+Reuse the existing `HandwerkerProfileModal` component (already used in ConversationsList, ReceivedProposals, etc.) — no new components needed. Make each card clickable to open the modal.
 
-## 1. HandwerkerVerzeichnis card cleanup (`src/pages/HandwerkerVerzeichnis.tsx`)
+## Changes — single file: `src/pages/HandwerkerVerzeichnis.tsx`
 
-- **Remove bio/description block** (lines 429-433): Delete the `hw.bio` paragraph entirely.
-- **Always show full company name** (line 392-393): Remove `truncate` class from `h3` so company names always display in full.
-- **Remove Shield icon** (lines 403-405): Delete the verified shield icon since all listed profiles are already filtered to `is_verified = true`. Also remove `Shield` from the lucide import.
+### 1. Add `user_id` to the interface and query
+- Add `user_id: string | null` to `PublicHandwerker` interface
+- Add `user_id` to the select fields in `fetchHandwerkers`
 
-## 2. Navigation: "Für Handwerker" dropdown with "Preise" (`src/components/Header.tsx`)
+### 2. Add modal state to `HandwerkerVerzeichnis` component
+- `selectedHandwerkerId: string | null` state
+- `profileModalOpen: boolean` state
 
-Currently "Für Handwerker" and "Preise" are separate top-level nav items. Changes:
+### 3. Make each card clickable
+- Add `cursor-pointer` to `Card` and an `onClick` handler that sets `selectedHandwerkerId` to `hw.user_id` and opens the modal
+- Add a subtle "Profil ansehen" text/button at the bottom of each card for discoverability
 
-- **Merge into dropdown**: Remove "Preise" as a standalone nav item. Turn "Für Handwerker" into a dropdown menu containing:
-  - "Übersicht" → `/handwerker`
-  - "Preise" → `/pricing`
-- **Visual encirclement**: Add a border/ring style to the "Für Handwerker" trigger button (e.g. `border border-brand-600 rounded-full px-3 py-1`) to visually distinguish it.
-- **Desktop**: Use existing `DropdownMenu` component (already imported).
-- **Mobile**: Render both sub-links indented under "Für Handwerker" heading in the slide-out menu.
-- **SSOT**: Define the dropdown items as a structure in `navItems` (e.g. `children` array) so both desktop and mobile menus render from the same data.
+### 4. Render `HandwerkerProfileModal`
+- Import and render `HandwerkerProfileModal` once, passing the selected ID and open state
+- Place it at the end of `<main>`, outside the results grid
 
-### navItems structure change
-```ts
-const navItems = [
-  { label: 'So funktioniert es', href: '/#how-it-works' },
-  { label: 'Kategorien', href: '/kategorien' },
-  { label: 'Handwerker finden', href: '/handwerker-verzeichnis' },
-  { label: 'Für Handwerker', href: '/handwerker', highlight: true, children: [
-    { label: 'Übersicht', href: '/handwerker' },
-    { label: 'Preise', href: '/pricing' },
-  ]},
-];
-```
+### 5. Pass state down to ResultsLayer
+- Thread `onCardClick` callback and render the modal at the parent level (keeps modal state in one place, SSOT)
 
-Both desktop and mobile rendering loops will check for `children` to render a dropdown or nested list respectively.
+No new components, no duplication. Follows the established pattern used in 4+ other places in the app.
 
