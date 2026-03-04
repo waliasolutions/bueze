@@ -17,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { PaymentMethodCard } from '@/components/PaymentMethodCard';
 import { SubscriptionManagement } from '@/components/SubscriptionManagement';
-import { AddPaymentMethodDialog } from '@/components/AddPaymentMethodDialog';
 import { PaymentHistoryTable } from '@/components/PaymentHistoryTable';
 import { X, Receipt, Loader2 } from 'lucide-react';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
@@ -67,9 +66,7 @@ const Profile = () => {
   const [handwerkerProfile, setHandwerkerProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [currentSubscription, setCurrentSubscription] = useState<any>(null);
-  const [showAddPaymentDialog, setShowAddPaymentDialog] = useState(false);
   const [serviceAreaInput, setServiceAreaInput] = useState('');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -215,17 +212,12 @@ const Profile = () => {
               currentPeriodStart: subscriptionData.current_period_start,
               currentPeriodEnd: subscriptionData.current_period_end,
               usedProposals: subscriptionData.proposals_used_this_period || 0,
-              hasPaymentMethod: paymentMethods.length > 0 && paymentMethods.some(pm => pm.isVerified),
               pendingPlan: subscriptionData.pending_plan || null,
               userId: user.id,
               isApproved: handwerkerData.verification_status === 'approved',
             });
           }
 
-          // Mock payment methods for now
-          setPaymentMethods([
-            // This will be replaced with real data from payment provider
-          ]);
         }
       }
     } catch (error) {
@@ -316,36 +308,6 @@ const Profile = () => {
     }
   };
 
-  // Payment methods handlers
-  const handleAddPaymentMethod = (newPaymentMethod: any) => {
-    setPaymentMethods(prev => [...prev, newPaymentMethod]);
-    
-    // Update subscription to reflect payment method status
-    if (currentSubscription) {
-      setCurrentSubscription(prev => ({
-        ...prev,
-        hasPaymentMethod: true
-      }));
-    }
-  };
-
-  const handleRemovePaymentMethod = (id: string) => {
-    setPaymentMethods(prev => prev.filter(pm => pm.id !== id));
-    
-    const remainingMethods = paymentMethods.filter(pm => pm.id !== id);
-    if (currentSubscription) {
-      setCurrentSubscription(prev => ({
-        ...prev,
-        hasPaymentMethod: remainingMethods.length > 0 && remainingMethods.some(pm => pm.isVerified)
-      }));
-    }
-  };
-
-  const handleSetDefaultPaymentMethod = (id: string) => {
-    setPaymentMethods(prev => 
-      prev.map(pm => ({ ...pm, isDefault: pm.id === id }))
-    );
-  };
 
   // Subscription handlers
   const handleUpgradePlan = (planId: string) => {
@@ -865,12 +827,7 @@ const Profile = () => {
                 <PaymentHistoryTable userId={user?.id} />
                 
                 {/* Payment Methods */}
-                <PaymentMethodCard
-                  paymentMethods={paymentMethods}
-                  onAddPaymentMethod={() => setShowAddPaymentDialog(true)}
-                  onRemovePaymentMethod={handleRemovePaymentMethod}
-                  onSetDefault={handleSetDefaultPaymentMethod}
-                />
+                <PaymentMethodCard />
               </TabsContent>
             )}
 
@@ -925,12 +882,6 @@ const Profile = () => {
           </Tabs>
         </div>
 
-        {/* Add Payment Method Dialog */}
-        <AddPaymentMethodDialog
-          open={showAddPaymentDialog}
-          onOpenChange={setShowAddPaymentDialog}
-          onPaymentMethodAdded={handleAddPaymentMethod}
-        />
       </main>
       <Footer />
     </div>

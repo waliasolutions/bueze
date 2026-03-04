@@ -21,7 +21,6 @@ interface CurrentSubscription {
   currentPeriodStart: string;
   currentPeriodEnd: string;
   usedProposals: number;
-  hasPaymentMethod: boolean;
   pendingPlan?: SubscriptionPlanType | null;
   userId?: string;
   isApproved?: boolean;
@@ -150,18 +149,6 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!currentSubscription.hasPaymentMethod && (
-            <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
-              <div className="flex items-center gap-2 text-amber-800">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="font-medium">Zahlungsmethode erforderlich</span>
-              </div>
-              <p className="text-sm text-amber-700 mt-1">
-                Fügen Sie eine Zahlungsmethode hinzu, um Ihr Abonnement zu aktivieren.
-              </p>
-            </div>
-          )}
-
           <div className="grid gap-4 md:grid-cols-2">
             <div className="text-center p-4 bg-muted rounded-lg">
               <h4 className="font-medium text-lg">Plan</h4>
