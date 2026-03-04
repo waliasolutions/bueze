@@ -1,38 +1,26 @@
 
 
-# Admin Edit: Handwerker Address & Contact Details
+# Enable Payrexx Test Payments
 
-## Problem
-Admins can view handwerker profiles but cannot edit address or contact details directly. Currently the only edit path is the handwerker's own profile edit page.
+## Current State
+- `PAYREXX_API_KEY` secret already exists in Supabase but needs to be updated with the new key
+- `PAYREXX_TEST_MODE` is not currently set as a secret
+- The `create-payrexx-gateway` edge function already supports test mode simulation
 
-## Approach
-Add an inline edit dialog triggered from the handwerker table row. This keeps the management page clean while giving admins quick access to edit the key fields.
+## Steps
 
-## Implementation
+### 1. Update the Payrexx API Key secret
+Update `PAYREXX_API_KEY` with the provided value: `NYxaggnRJZXsOsV95GdBDzy0KslYwF`
 
-**New component:** `src/components/admin/HandwerkerEditDialog.tsx`
+### 2. Add `PAYREXX_TEST_MODE` secret
+Set `PAYREXX_TEST_MODE` to `true` so the edge function uses simulation fallback when the Payrexx API returns errors (e.g., sandbox environment). This is already implemented in the edge function logic — it just needs the secret enabled.
 
-A Dialog component that:
-- Receives a `Handwerker` object and an `onSaved` callback
-- Presents editable fields grouped into two sections:
-  - **Contact**: `first_name`, `last_name`, `email`, `phone_number`, `company_name`
-  - **Business Address**: `business_address`, `business_zip`, `business_city`, `business_canton` (canton via Select from `SWISS_CANTONS` SSOT)
-- On save, updates `handwerker_profiles` via Supabase and calls `onSaved()` to refresh the list
-- Uses existing UI components only (Dialog, Input, Label, Select, Button) — no new dependencies
+### 3. No code changes needed
+The `create-payrexx-gateway` function already:
+- Checks `PAYREXX_TEST_MODE === 'true'`
+- Falls back to returning `successUrl` directly when test mode is active
+- Returns `testMode: true` in the response
+- The Checkout page already shows a "Testmodus" toast when `data.testMode` is true
 
-**Modified file:** `src/pages/admin/HandwerkerManagement.tsx`
-
-- Add `business_address`, `business_zip` to the `Handwerker` interface (already fetched via `select('*')` but not typed)
-- Add an Edit (Pencil) icon button in the actions column next to Eye
-- State: `editingHandwerker` to control the dialog
-- Import and render `HandwerkerEditDialog`
-- On save callback: call existing `fetchHandwerkers()` to refresh
-
-| Area | Change |
-|------|--------|
-| New component | `HandwerkerEditDialog` — ~80 lines, reuses existing UI primitives and `SWISS_CANTONS` |
-| HandwerkerManagement | Add 2 fields to interface, 1 button, 1 state variable, dialog render |
-| SSOT | Canton list from `@/config/cantons`, field names match DB columns exactly |
-
-No new dependencies, no duplicated logic, no new pages or routes.
+**Summary:** Two secret updates, zero code changes.
 
