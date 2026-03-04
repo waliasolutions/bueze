@@ -590,11 +590,6 @@ const HandwerkerOnboarding = () => {
         throw new Error('Failed to create profile');
       }
 
-      // Trigger admin notification (non-blocking)
-      supabase.functions.invoke('send-admin-registration-notification', {
-        body: { profileId: profileData.id }
-      }).catch(() => {});
-
       // Clear saved draft
       clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
 

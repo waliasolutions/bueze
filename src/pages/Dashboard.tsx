@@ -174,9 +174,9 @@ const Dashboard = () => {
         const { data: handwerkerProfiles } = await supabase
           .from('handwerker_profiles')
           .select('id, user_id, first_name, last_name, company_name')
-          .in('id', reviewedIds);
+          .in('user_id', reviewedIds);
         
-        const profileMap = new Map(handwerkerProfiles?.map(p => [p.id, p]) || []);
+        const profileMap = new Map(handwerkerProfiles?.map(p => [p.user_id, p]) || []);
         
         const reviewsWithProfiles = reviewsData.map(review => ({
           ...review,

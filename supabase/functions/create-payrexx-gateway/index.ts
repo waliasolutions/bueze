@@ -56,19 +56,15 @@ Deno.serve(async (req) => {
     });
 
     // Verify user
-    const token = authHeader.replace('Bearer ', '');
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
       return errorResponse('Unauthorized', 401);
     }
-    const userId = claimsData.claims.sub as string;
-
-    // Get user email
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user?.email) {
-      return errorResponse('Could not fetch user data', 400);
-    }
+    const userId = userData.user.id;
     const userEmail = userData.user.email;
+    if (!userEmail) {
+      return errorResponse('User email not found', 400);
+    }
 
     // Parse request body
     const { planType, successUrl, cancelUrl } = await req.json();

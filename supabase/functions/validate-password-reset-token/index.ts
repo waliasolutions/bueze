@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { corsHeaders } from '../_shared/cors.ts';
+import { getErrorMessage } from '../_shared/errorUtils.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -105,7 +106,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in validate-password-reset-token:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: getErrorMessage(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
