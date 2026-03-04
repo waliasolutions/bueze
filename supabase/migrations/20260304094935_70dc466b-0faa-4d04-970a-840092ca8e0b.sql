@@ -1,0 +1,7 @@
+
+INSERT INTO public.reviews (lead_id, reviewer_id, reviewed_id, rating, title, comment, is_public, created_at, quality_rating, punctuality_rating, communication_rating, cleanliness_rating, value_rating, would_recommend, is_verified)
+VALUES
+  ('7ab8fac0-1f04-4e2c-bbd6-da4b2da4092f', '0f8b53ed-6c9c-4faf-bb15-6fc2e4952525', '3d43d30b-77ee-42b3-8005-03103ed5e8d6', 5, 'Hervorragende Arbeit', 'Sehr professionell und pünktlich. Die Arbeit wurde sauber und termingerecht erledigt. Kann ich nur weiterempfehlen!', true, now() - interval '30 days', 5, 5, 5, 5, 5, true, true),
+  ('160edc45-c113-41b2-824e-71d08e161900', '6d760d2d-0b0e-4752-92f5-fcece2fe1ded', '3d43d30b-77ee-42b3-8005-03103ed5e8d6', 4, 'Gute Qualität', 'Kompetente Beratung und gute Ausführung. Kleine Verzögerung, aber insgesamt zufrieden.', true, now() - interval '14 days', 4, 3, 5, 4, 4, true, true),
+  ('12e98cba-581f-4ee0-9952-0a2648cc9296', '0f8b53ed-6c9c-4faf-bb15-6fc2e4952525', '3d43d30b-77ee-42b3-8005-03103ed5e8d6', 5, 'Top Handwerker!', 'Schnell, zuverlässig und freundlich. Preis-Leistung stimmt perfekt. Gerne wieder!', true, now() - interval '7 days', 5, 5, 5, 4, 5, true, true),
+  ('dbe728f1-2651-4b8a-979c-57b7525b117a', '39ef47b8-65d2-4824-bc77-a3dda3f8c53f', '3d43d30b-77ee-42b3-8005-03103ed5e8d6', 4, 'Solide Arbeit', 'Fachlich einwandfrei. Kommunikation war gut, Ergebnis entspricht den Erwartungen.', true, now() - interval '3 days', 4, 4, 4, 4, 4, true, true);
