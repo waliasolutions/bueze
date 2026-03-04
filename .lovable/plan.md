@@ -1,42 +1,29 @@
 
 
-# Fix Canton Availability to Include Service Area Coverage
+# Fix: Handwerker Status Toggle Violates Check Constraint
 
 ## Problem
-Currently `availableCantons` only checks `business_canton` — the physical location. Handwerkers with nationwide (`service_areas` contains all 26 cantons) or multi-canton coverage are invisible in cantons they serve but aren't physically located in. Same issue affects the results filter: `matchesCanton` only checks `business_canton`.
+The `handwerker_profiles` table has a CHECK constraint that only allows these `verification_status` values: `pending`, `approved`, `rejected`, `needs_review`.
+
+The admin "Deaktivieren/Reaktivieren" toggle tries to set `verification_status = 'inactive'`, which violates this constraint.
 
 ## Solution
+Add `'inactive'` to the CHECK constraint so admins can deactivate/reactivate handwerkers.
 
-**File: `src/pages/HandwerkerVerzeichnis.tsx`**
+### Database Migration
+```sql
+ALTER TABLE handwerker_profiles 
+  DROP CONSTRAINT handwerker_profiles_verification_status_check;
 
-### 1. Fix `availableCantons` memoization (line 104-106)
-Extract cantons from both `business_canton` AND `service_areas` (2-letter codes):
-
-```ts
-const availableCantons = useMemo(() => {
-  const cantonCodes = new Set(CANTON_CODES); // import from cantons.ts
-  const result = new Set<string>();
-  handwerkers.forEach(hw => {
-    if (hw.business_canton) result.add(hw.business_canton);
-    (hw.service_areas || []).forEach(area => {
-      if (area.length === 2 && cantonCodes.has(area)) result.add(area);
-    });
-  });
-  return result;
-}, [handwerkers]);
+ALTER TABLE handwerker_profiles 
+  ADD CONSTRAINT handwerker_profiles_verification_status_check 
+  CHECK (verification_status = ANY (ARRAY['pending', 'approved', 'rejected', 'needs_review', 'inactive']));
 ```
 
-### 2. Fix `matchesCanton` filter (line 82)
-When filtering results by canton, also match if the handwerker's `service_areas` includes that canton:
+### No code changes needed
+The frontend code in `HandwerkerManagement.tsx` already handles `inactive` correctly (toggle logic, tab counts, UI badges). Only the database constraint needs updating.
 
-```ts
-const matchesCanton = filterCanton === 'all' 
-  || hw.business_canton === filterCanton
-  || (hw.service_areas || []).includes(filterCanton);
-```
-
-### 3. Import `CANTON_CODES`
-Add to existing import from `@/config/cantons`.
-
-Two small changes, same file only. This ensures nationwide and multi-canton handwerkers appear in all cantons they cover.
+| Change | Target |
+|--------|--------|
+| Update CHECK constraint | `handwerker_profiles.verification_status` |
 
