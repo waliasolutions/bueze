@@ -405,6 +405,7 @@ export interface ProposalListItem {
     status?: string;
     owner_id?: string;
     description?: string;
+    delivered_at?: string | null;
   };
 }
 
