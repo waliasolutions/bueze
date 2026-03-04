@@ -1,63 +1,44 @@
 
 
-# Fix: Admin Handwerker Deletion, Inaktiv-Toggle, and Directory Contact Details
+# Fix Lead Filtering & UX in BrowseLeads
 
-## Three issues identified and their root causes:
+## Issues
 
----
+1. **BrowseLeads (`/search`) shows ALL active leads** — no profile-based matching. The HandwerkerDashboard already has proper `checkCategoryMatch` + `checkServiceAreaMatch` logic, but BrowseLeads ignores the handwerker's categories and service areas entirely.
 
-## Issue 1: Delete Handwerker fails with `FunctionsFetchError`
+2. **"Noch nicht angesehen" label is confusing** — on the HandwerkerDashboard proposals tab, the label doesn't clarify *who* hasn't viewed. It should say "Vom Kunden noch nicht angesehen" (not yet viewed by the client) to make it clear.
 
-**Root cause**: The shared `supabase/functions/_shared/cors.ts` restricts `Access-Control-Allow-Origin` to `FRONTEND_URL || 'https://bueeze.ch'`. Requests from the Lovable preview domain (`*.lovableproject.com`) are blocked by the browser's CORS policy, causing a `NetworkError when attempting to fetch resource`. The `Access-Control-Allow-Headers` also lacks the `x-supabase-client-*` headers the JS SDK sends.
+## Plan
 
-**Fix**: Update `cors.ts` to use `'*'` for origin and include all required Supabase client headers.
+### 1. Add profile-based matching to BrowseLeads
 
-| File | Change |
-|------|--------|
-| `supabase/functions/_shared/cors.ts` | Change `Access-Control-Allow-Origin` to `'*'` and add `x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version` to allowed headers |
+**File: `src/pages/BrowseLeads.tsx`**
 
----
+- After fetching the user, also fetch their `handwerker_profiles` record (categories, service_areas) — same as HandwerkerDashboard does
+- Extract the `checkCategoryMatch` and `checkServiceAreaMatch` helper functions into a shared utility (`src/lib/leadHelpers.ts`) to avoid duplication (DRY/SSOT)
+- Apply matching as the default filter: only show leads that match the handwerker's categories AND service areas
+- Add toggle buttons ("Alle Kategorien" / "Alle Regionen") like the HandwerkerDashboard has, so handwerkers can optionally browse all leads
+- Filter out leads where the handwerker already submitted a proposal
 
-## Issue 2: Cannot set active Handwerker to "Inaktiv" (temporär)
+### 2. Extract matching helpers to shared module
 
-**Root cause**: There is no "inactive" status in the current `verification_status` CHECK constraint (`pending`, `approved`, `rejected`, `needs_review`). The admin UI only has approve/reject actions, no deactivation toggle.
+**File: `src/lib/leadHelpers.ts`** (already exists — extend it)
 
-**Fix**:
-1. Add `'inactive'` to the allowed `verification_status` values via migration (drop and recreate CHECK constraint)
-2. Add a toggle button in `HandwerkerManagement.tsx` for approved handwerkers to switch between `approved` ↔ `inactive`
-3. Update the status badge display to show "Inaktiv" state
-4. Add an "inactive" tab to the management page
-5. Recreate `handwerker_profiles_public` view to also exclude `inactive` status (already filtered by `is_verified = true AND verification_status = 'approved'`, so inactive will be auto-excluded)
+- Move `checkCategoryMatch` and `checkServiceAreaMatch` from `HandwerkerDashboard.tsx` into this file
+- Update `HandwerkerDashboard.tsx` to import from `leadHelpers.ts`
+- Import in `BrowseLeads.tsx` as well
 
-| File | Change |
-|------|--------|
-| Migration SQL | Drop/recreate CHECK constraint to add `'inactive'`; no view change needed (already filters `approved` only) |
-| `src/pages/admin/HandwerkerManagement.tsx` | Add deactivate/reactivate toggle button for approved/inactive handwerkers; add "Inaktiv" tab and count |
+### 3. Fix "Noch nicht angesehen" label
 
----
+**File: `src/pages/HandwerkerDashboard.tsx`**
 
-## Issue 3: Handwerkerverzeichnis missing contact details
-
-**Root cause**: The `handwerker_profiles_public` view intentionally excludes `email`, `phone_number`, `business_address`, and `personal_address` for privacy. Per user decision, these should now be public for all visitors.
-
-**Fix**:
-1. Recreate `handwerker_profiles_public` view to include `email`, `phone_number`, `business_address`, `business_zip`
-2. Update `HandwerkerVerzeichnis.tsx` to fetch and display these fields
-
-| File | Change |
-|------|--------|
-| Migration SQL | `DROP VIEW ... CASCADE; CREATE VIEW ...` adding `email, phone_number, business_address` columns |
-| `src/pages/HandwerkerVerzeichnis.tsx` | Update interface and card rendering to show email, phone, address |
-
----
+- Change `"Noch nicht angesehen"` to `"Vom Kunden noch nicht angesehen"` — one line change
 
 ## Summary
 
-| Change | Files |
-|--------|-------|
-| Fix CORS for all edge functions | `supabase/functions/_shared/cors.ts` |
-| Add `inactive` status + admin toggle | Migration + `HandwerkerManagement.tsx` |
-| Add contact details to public directory | Migration (view) + `HandwerkerVerzeichnis.tsx` |
-
-Total: 1 migration, 3 files modified. All changes follow SSOT — CORS is centralized, view is the single source for public profile data, verification_status is the single field controlling visibility.
+| File | Change |
+|------|--------|
+| `src/lib/leadHelpers.ts` | Add `checkCategoryMatch` and `checkServiceAreaMatch` exports |
+| `src/pages/HandwerkerDashboard.tsx` | Import matching helpers from leadHelpers; fix label text |
+| `src/pages/BrowseLeads.tsx` | Fetch handwerker profile; apply matching filters; add toggle buttons; exclude already-proposed leads |
 
