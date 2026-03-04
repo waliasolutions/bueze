@@ -92,12 +92,8 @@ Deno.serve(async (req) => {
       successRedirectUrl: successUrl,
       failedRedirectUrl: cancelUrl,
       cancelRedirectUrl: cancelUrl,
-      fields: JSON.stringify({
-        email: { value: userEmail, mandatory: true },
-      }),
-      // Payment methods - let Payrexx show all available
-      psp: '',
-      // Metadata for webhook processing
+      'fields[email][value]': userEmail,
+      'fields[email][mandatory]': '1',
       vatRate: '8.1',
       sku: `BUEZE_${planType.toUpperCase()}`,
     };
@@ -125,18 +121,21 @@ Deno.serve(async (req) => {
       body: formData.toString(),
     });
 
-    // Defensive response parsing
-    const contentType = payrexxResponse.headers.get('content-type') || '';
+    // Defensive response parsing — Payrexx may return JSON with text/html content-type
     const responseText = await payrexxResponse.text();
+    const contentType = payrexxResponse.headers.get('content-type') || '';
 
     console.log(`Payrexx response status: ${payrexxResponse.status}, content-type: ${contentType}`);
     console.log(`Payrexx response body (first 500 chars): ${responseText.substring(0, 500)}`);
 
-    if (!contentType.includes('application/json')) {
-      console.error('Payrexx returned non-JSON response:', responseText.substring(0, 1000));
+    let payrexxData;
+    try {
+      payrexxData = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error('Failed to parse Payrexx response as JSON:', parseErr);
 
       if (PAYREXX_TEST_MODE) {
-        console.warn('PAYREXX_TEST_MODE: Returning successUrl as test fallback');
+        console.warn('PAYREXX_TEST_MODE: JSON parse failed, returning successUrl as test fallback');
         return successResponse({
           url: successUrl,
           gatewayId: `test-${Date.now()}`,
@@ -149,25 +148,6 @@ Deno.serve(async (req) => {
         `Payrexx API hat ein unerwartetes Format zurückgegeben (${payrexxResponse.status}). Bitte kontaktieren Sie den Support.`,
         502
       );
-    }
-
-    let payrexxData;
-    try {
-      payrexxData = JSON.parse(responseText);
-    } catch (parseErr) {
-      console.error('Failed to parse Payrexx JSON:', parseErr);
-
-      if (PAYREXX_TEST_MODE) {
-        console.warn('PAYREXX_TEST_MODE: JSON parse failed, returning successUrl as test fallback');
-        return successResponse({
-          url: successUrl,
-          gatewayId: `test-${Date.now()}`,
-          referenceId: referenceId,
-          testMode: true,
-        });
-      }
-
-      return errorResponse('Payrexx-Antwort konnte nicht verarbeitet werden', 502);
     }
 
     if (payrexxData.status !== 'success' || !payrexxData.data?.[0]?.link) {
