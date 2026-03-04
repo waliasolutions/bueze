@@ -7,7 +7,10 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY')!;
 const PAYREXX_INSTANCE_RAW = Deno.env.get('PAYREXX_INSTANCE')!;
-const PAYREXX_TEST_MODE = Deno.env.get('PAYREXX_TEST_MODE') === 'true';
+const PAYREXX_TEST_MODE = (() => {
+  const raw = Deno.env.get('PAYREXX_TEST_MODE')?.trim().toLowerCase();
+  return raw === 'true' || raw === '1' || raw === 'yes' || raw === 'on';
+})();
 
 /**
  * Normalizes Payrexx instance input to the expected value (subdomain only).
