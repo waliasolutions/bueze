@@ -145,9 +145,21 @@ export default function Checkout() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Extract detailed error from edge function response
+        const edgeMsg = typeof error === 'object' && error?.message
+          ? error.message
+          : typeof error === 'string' ? error : null;
+        throw new Error(edgeMsg || 'Zahlung konnte nicht gestartet werden');
+      }
 
       if (data?.url) {
+        if (data.testMode) {
+          toast({
+            title: "Testmodus",
+            description: "Payrexx Testmodus aktiv – Weiterleitung zur Bestätigung ohne echte Zahlung.",
+          });
+        }
         window.location.href = data.url;
       } else {
         throw new Error("Keine Checkout-URL erhalten");
@@ -155,7 +167,7 @@ export default function Checkout() {
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({
-        title: "Fehler",
+        title: "Zahlung fehlgeschlagen",
         description: error.message || "Checkout konnte nicht gestartet werden. Bitte versuchen Sie es erneut.",
         variant: "destructive",
       });
