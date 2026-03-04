@@ -1,36 +1,38 @@
 
 
-# Handwerkerverzeichnis: Filter by Business Address Only
+# Admin Edit: Handwerker Address & Contact Details
 
 ## Problem
-The canton filter and available cantons logic currently includes `service_areas` alongside `business_canton`. This means a handwerker in Zürich serving all of Switzerland appears in every canton — misleading for a directory that should show where businesses are physically located.
+Admins can view handwerker profiles but cannot edit address or contact details directly. Currently the only edit path is the handwerker's own profile edit page.
 
-## Changes
+## Approach
+Add an inline edit dialog triggered from the handwerker table row. This keeps the management page clean while giving admins quick access to edit the key fields.
 
-**File:** `src/pages/HandwerkerVerzeichnis.tsx`
+## Implementation
 
-### 1. Remove `service_areas` from canton filter (line 92)
-Change from:
-```
-hw.business_canton === filterCanton || (hw.service_areas || []).includes(filterCanton)
-```
-To:
-```
-hw.business_canton === filterCanton
-```
+**New component:** `src/components/admin/HandwerkerEditDialog.tsx`
 
-### 2. Remove `service_areas` from available cantons computation (lines 114-124)
-Only collect `business_canton` values — remove the `service_areas` loop entirely.
+A Dialog component that:
+- Receives a `Handwerker` object and an `onSaved` callback
+- Presents editable fields grouped into two sections:
+  - **Contact**: `first_name`, `last_name`, `email`, `phone_number`, `company_name`
+  - **Business Address**: `business_address`, `business_zip`, `business_city`, `business_canton` (canton via Select from `SWISS_CANTONS` SSOT)
+- On save, updates `handwerker_profiles` via Supabase and calls `onSaved()` to refresh the list
+- Uses existing UI components only (Dialog, Input, Label, Select, Button) — no new dependencies
 
-### 3. Remove `service_areas` from the data fetch and interface
-Remove `service_areas` from the `select()` call (line 75) and the `PublicHandwerker` interface (line 49) since it's no longer used on this page.
+**Modified file:** `src/pages/admin/HandwerkerManagement.tsx`
+
+- Add `business_address`, `business_zip` to the `Handwerker` interface (already fetched via `select('*')` but not typed)
+- Add an Edit (Pencil) icon button in the actions column next to Eye
+- State: `editingHandwerker` to control the dialog
+- Import and render `HandwerkerEditDialog`
+- On save callback: call existing `fetchHandwerkers()` to refresh
 
 | Area | Change |
 |------|--------|
-| Interface | Remove `service_areas` field |
-| Data fetch | Remove `service_areas` from select |
-| Filter logic | Match only on `business_canton` |
-| Available cantons | Derive only from `business_canton` |
+| New component | `HandwerkerEditDialog` — ~80 lines, reuses existing UI primitives and `SWISS_CANTONS` |
+| HandwerkerManagement | Add 2 fields to interface, 1 button, 1 state variable, dialog render |
+| SSOT | Canton list from `@/config/cantons`, field names match DB columns exactly |
 
-Three lines of logic removed, zero new code. SSOT: business address is the single source for directory location.
+No new dependencies, no duplicated logic, no new pages or routes.
 
