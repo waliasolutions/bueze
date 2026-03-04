@@ -107,7 +107,9 @@ Deno.serve(async (req) => {
     // Create Gateway via Payrexx API
     const payrexxUrl = `https://api.payrexx.com/v1.0/Gateway/?instance=${PAYREXX_INSTANCE}`;
 
+    const requestBody = formData.toString();
     console.log(`Creating Payrexx gateway for user ${userId}, plan ${planType}, amount ${amount}`);
+    console.log(`Payrexx request body (first 500 chars): ${requestBody.substring(0, 500)}`);
 
     const payrexxResponse = await fetch(payrexxUrl, {
       method: 'POST',
@@ -160,7 +162,7 @@ Deno.serve(async (req) => {
       }
 
       const apiMessage = payrexxData.message || 'Gateway-Erstellung fehlgeschlagen';
-      return errorResponse(apiMessage, 500);
+      return errorResponse(apiMessage, 502);
     }
 
     const gatewayLink = payrexxData.data[0].link;
