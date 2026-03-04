@@ -10,11 +10,6 @@ const PAYREXX_INSTANCE = Deno.env.get('PAYREXX_INSTANCE')!;
 const PAYREXX_TEST_MODE = Deno.env.get('PAYREXX_TEST_MODE') === 'true';
 
 /**
- * Build query string from object
- */
-// buildQueryString removed — URLSearchParams handles encoding + order
-
-/**
  * Generate HMAC-SHA256 signature for Payrexx API
  */
 async function generateSignature(queryString: string, apiKey: string): Promise<string> {
@@ -29,31 +24,74 @@ async function generateSignature(queryString: string, apiKey: string): Promise<s
   );
 
   const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  // Payrexx requires base64, NOT hex
   const bytes = new Uint8Array(signature);
   let binary = '';
   bytes.forEach(b => binary += String.fromCharCode(b));
   return btoa(binary);
 }
 
+/**
+ * Verify Payrexx API credentials using the SignatureCheck endpoint.
+ * Returns { valid: boolean, detail: string }.
+ */
+async function verifyApiCredentials(): Promise<{ valid: boolean; detail: string }> {
+  try {
+    // Payrexx docs: sign an empty string for SignatureCheck
+    const signature = await generateSignature('', PAYREXX_API_KEY);
+    const url = `https://api.payrexx.com/v1.0/SignatureCheck/?instance=${PAYREXX_INSTANCE}&ApiSignature=${encodeURIComponent(signature)}`;
+
+    console.log(`[SignatureCheck] Calling ${url.substring(0, 80)}…`);
+    const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+    const text = await res.text();
+    console.log(`[SignatureCheck] status=${res.status} body=${text.substring(0, 300)}`);
+
+    let parsed: any = null;
+    try { parsed = JSON.parse(text); } catch { /* ignore */ }
+
+    if (res.status === 200 && parsed?.status === 'success') {
+      return { valid: true, detail: 'API key and instance verified' };
+    }
+
+    return {
+      valid: false,
+      detail: `SignatureCheck failed (HTTP ${res.status}): ${parsed?.message || text.substring(0, 200)}`,
+    };
+  } catch (err) {
+    return { valid: false, detail: `SignatureCheck error: ${getErrorMessage(err)}` };
+  }
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   const corsResponse = handleCorsPreflightRequest(req);
   if (corsResponse) return corsResponse;
 
   try {
-    // Validate authentication
+    // --- Step 0: Verify Payrexx credentials (diagnostic) ---
+    const credCheck = await verifyApiCredentials();
+    console.log(`[Payrexx credentials] valid=${credCheck.valid} — ${credCheck.detail}`);
+
+    if (!credCheck.valid) {
+      console.error(`[Payrexx credentials] INVALID: ${credCheck.detail}`);
+      // In test mode we continue anyway; in production we abort early
+      if (!PAYREXX_TEST_MODE) {
+        return errorResponse(
+          'Payrexx API-Schlüssel oder Instanzname ungültig. Bitte prüfen Sie die Konfiguration.',
+          502,
+        );
+      }
+      console.warn('[Payrexx credentials] TEST_MODE active — continuing despite invalid credentials');
+    }
+
+    // --- Step 1: Authenticate user ---
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return errorResponse('Unauthorized', 401);
     }
 
-    // Create Supabase client with user's token
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } }
     });
 
-    // Verify user
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) {
       return errorResponse('Unauthorized', 401);
@@ -64,7 +102,7 @@ Deno.serve(async (req) => {
       return errorResponse('User email not found', 400);
     }
 
-    // Parse request body
+    // --- Step 2: Parse & validate request ---
     const { planType, successUrl, cancelUrl } = await req.json();
 
     if (!planType || !successUrl || !cancelUrl) {
@@ -79,7 +117,7 @@ Deno.serve(async (req) => {
     const planName = PLAN_GATEWAY_NAMES[planType];
     const referenceId = `${userId}-${planType}-${Date.now()}`;
 
-    // Build Payrexx Gateway request (full payload)
+    // --- Step 3: Create Payrexx Gateway ---
     const primaryParams: Record<string, string> = {
       amount: amount.toString(),
       currency: 'CHF',
@@ -94,7 +132,6 @@ Deno.serve(async (req) => {
       sku: `BUEZE_${planType.toUpperCase()}`,
     };
 
-    // Minimal fallback payload for strict Payrexx validation scenarios
     const fallbackParams: Record<string, string> = {
       amount: amount.toString(),
       currency: 'CHF',
@@ -113,7 +150,6 @@ Deno.serve(async (req) => {
         formData.append(key, value);
       });
 
-      // Sign the URL-encoded string (without ApiSignature)
       const signature = await generateSignature(formData.toString(), PAYREXX_API_KEY);
       formData.append('ApiSignature', signature);
 
@@ -130,7 +166,6 @@ Deno.serve(async (req) => {
         body: requestBody,
       });
 
-      // Defensive response parsing — Payrexx may return JSON with text/html content-type
       const responseText = await payrexxResponse.text();
       const contentType = payrexxResponse.headers.get('content-type') || '';
 
@@ -138,23 +173,15 @@ Deno.serve(async (req) => {
       console.log(`Payrexx response [${mode}] body (first 500 chars): ${responseText.substring(0, 500)}`);
 
       let parsed: any = null;
-      try {
-        parsed = JSON.parse(responseText);
-      } catch {
-        parsed = null;
-      }
+      try { parsed = JSON.parse(responseText); } catch { parsed = null; }
 
-      return {
-        status: payrexxResponse.status,
-        data: parsed,
-        raw: responseText,
-      };
+      return { status: payrexxResponse.status, data: parsed, raw: responseText };
     };
 
     // First attempt with full payload
     let payrexxResult = await createGatewayRequest(primaryParams, 'primary');
 
-    // If Payrexx rejects with 422, retry once with minimal payload
+    // If 422, retry with minimal payload
     if (
       payrexxResult.status === 422 &&
       (payrexxResult.data?.status !== 'success' || !payrexxResult.data?.data?.[0]?.link)
@@ -163,6 +190,7 @@ Deno.serve(async (req) => {
       payrexxResult = await createGatewayRequest(fallbackParams, 'fallback');
     }
 
+    // --- Step 4: Handle Payrexx response ---
     if (!payrexxResult.data) {
       if (PAYREXX_TEST_MODE) {
         console.warn('PAYREXX_TEST_MODE: JSON parse failed, returning successUrl as test fallback');
@@ -225,7 +253,9 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error creating Payrexx gateway:', error);
-    return errorResponse(getErrorMessage(error), 500);
+    const msg = getErrorMessage(error);
+    console.error(`Fatal error in create-payrexx-gateway: ${msg}`);
+    // Use 502 so the real error reaches the client (errorResponse sanitizes 500s)
+    return errorResponse(msg, 502);
   }
 });
