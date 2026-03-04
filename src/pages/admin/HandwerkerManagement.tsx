@@ -87,7 +87,7 @@ export default function HandwerkerManagement() {
   const [loading, setLoading] = useState(true);
   const [handwerkers, setHandwerkers] = useState<Handwerker[]>([]);
   const [subscriptions, setSubscriptions] = useState<Map<string, Subscription>>(new Map());
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedHandwerkerId, setSelectedHandwerkerId] = useState<string | null>(null);
@@ -349,7 +349,13 @@ export default function HandwerkerManagement() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // supabase.functions.invoke puts non-2xx errors in `error`, not `data`
+        const errMsg = typeof error === 'object' && error !== null && 'message' in error
+          ? (error as any).message
+          : String(error);
+        throw new Error(errMsg);
+      }
       if (data?.error) throw new Error(data.error);
 
       // Show detailed deletion stats
@@ -453,9 +459,10 @@ export default function HandwerkerManagement() {
       if (error) throw error;
       toast({ title: newStatus === 'inactive' ? 'Handwerker deaktiviert' : 'Handwerker reaktiviert' });
       fetchHandwerkers();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling inactive:', error);
-      toast({ title: 'Fehler', variant: 'destructive' });
+      const errMsg = error?.message || error?.details || 'Unbekannter Fehler';
+      toast({ title: 'Fehler beim Statuswechsel', description: errMsg, variant: 'destructive' });
     } finally {
       setActionLoading(null);
     }
