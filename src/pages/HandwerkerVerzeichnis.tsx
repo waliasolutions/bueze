@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Star, Search, Shield, Mail, Phone, ArrowLeft } from 'lucide-react';
+import { MapPin, Star, Search, Mail, Phone, ArrowLeft } from 'lucide-react';
 import { SWISS_CANTONS, CANTON_CODES, getCantonLabel } from '@/config/cantons';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
@@ -389,7 +389,7 @@ const ResultsLayer = ({
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">
+                    <h3 className="font-semibold">
                       {hw.company_name || `${hw.first_name || ''} ${hw.last_name || ''}`.trim()}
                     </h3>
                     {hw.business_city && (
@@ -400,9 +400,6 @@ const ResultsLayer = ({
                       </p>
                     )}
                   </div>
-                  {hw.is_verified && (
-                    <Shield className="h-5 w-5 text-primary shrink-0" />
-                  )}
                 </div>
 
                 {hw.business_address && (
@@ -426,11 +423,6 @@ const ResultsLayer = ({
                   )}
                 </div>
 
-                {hw.bio && (
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-                    {hw.bio}
-                  </p>
-                )}
 
                 <div className="flex flex-wrap gap-1">
                   {(hw.categories || []).slice(0, 3).map(cat => (
