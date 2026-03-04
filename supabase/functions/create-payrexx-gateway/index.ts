@@ -12,12 +12,7 @@ const PAYREXX_TEST_MODE = Deno.env.get('PAYREXX_TEST_MODE') === 'true';
 /**
  * Build query string from object
  */
-function buildQueryString(params: Record<string, string>): string {
-  return Object.entries(params)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join('&');
-}
+// buildQueryString removed — URLSearchParams handles encoding + order
 
 /**
  * Generate HMAC-SHA256 signature for Payrexx API
@@ -99,18 +94,18 @@ Deno.serve(async (req) => {
       sku: `BUEZE_${planType.toUpperCase()}`,
     };
 
-    // Generate signature
-    const queryString = buildQueryString(params);
-    const signature = await generateSignature(queryString, PAYREXX_API_KEY);
-
-    // Create Gateway via Payrexx API
-    const payrexxUrl = `https://api.payrexx.com/v1.0/Gateway/?instance=${PAYREXX_INSTANCE}`;
-    
+    // Build URL-encoded form data (this is what gets signed)
     const formData = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       formData.append(key, value);
     });
+
+    // Sign the URL-encoded string (without ApiSignature)
+    const signature = await generateSignature(formData.toString(), PAYREXX_API_KEY);
     formData.append('ApiSignature', signature);
+
+    // Create Gateway via Payrexx API
+    const payrexxUrl = `https://api.payrexx.com/v1.0/Gateway/?instance=${PAYREXX_INSTANCE}`;
 
     console.log(`Creating Payrexx gateway for user ${userId}, plan ${planType}, amount ${amount}`);
 
