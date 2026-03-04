@@ -1,43 +1,55 @@
 
 
-# Fix: Handwerker In-App Subscription Purchase + Payrexx Test Mode Handling
+# Admin & User Management Fixes
 
-## Two Issues Identified
+Three issues to address:
 
-### Issue 1: Handwerker subscription upgrade only redirects to `/checkout`
-The `SubscriptionManagement` component on `/profile?tab=subscription` already shows upgrade cards with "Jetzt upgraden" buttons. These call `onUpgradePlan` which navigates to `/checkout?plan={planId}`. The checkout page then calls `create-payrexx-gateway`. **This flow already exists and is correct.** The "Abo verwalten" nav link added in the last change points to `/profile?tab=subscription` — so the handwerker CAN access it.
+## Issue 1: Handwerkerverzeichnis for Privatpersonen
 
-However, if a handwerker has NO subscription record yet (no row in `handwerker_subscriptions`), `currentSubscription` is `null`, and the SubscriptionManagement component shows the "Abonnement wählen" view with plan cards — which also calls `onUpgradePlan`. This part works.
+Per memory `ux/craftsman-directory-removal`, the public Handwerkerverzeichnis was **permanently removed** by design. Craftsman profiles are only visible to clients who received a proposal or are in an active conversation. 
 
-The real problem is likely that the Payrexx API call fails silently or returns an error.
+**Question**: The user mentions "Privatpersonen / Handwerkerverzeichnis einblenden" — this conflicts with the prior decision. However, re-enabling a read-only public directory of verified handwerkers would require:
+- A new route `/handwerker-verzeichnis`
+- A page listing `handwerker_profiles_public` view data (already exists as a public view)
+- Filtering by category and canton
+- No contact details shown publicly
 
-### Issue 2: Payrexx test API returns error, no dummy confirmation
-Looking at the edge function logs, there are no gateway creation log entries (only boot/shutdown). The Payrexx API call either:
-- Fails with a non-JSON response (HTML error page from test instance)
-- Returns an error status that gets swallowed
-
-The `create-payrexx-gateway` function doesn't handle non-JSON responses defensively. With test API keys on the `wsolutions` instance, the Payrexx API may reject gateway creation or return unexpected formats.
-
-**Fix**: Add defensive response parsing in the edge function AND a test-mode fallback. When Payrexx returns an error in test mode, return a simulated gateway URL that redirects to the success URL with a test confirmation, so the flow can be tested end-to-end.
-
-## Plan
-
-### 1. Fix `create-payrexx-gateway` edge function
-- Add defensive `Content-Type` check before parsing JSON
-- Log the full response for debugging
-- Add a `PAYREXX_TEST_MODE` secret check: if test mode and Payrexx fails, return the `successUrl` directly as a fallback so the handwerker sees a confirmation flow
-
-### 2. Improve error display in Checkout.tsx
-- Show the actual Payrexx error message in the toast instead of generic text
-- The `supabase.functions.invoke` error object may contain the edge function's error response — extract and display it
-
-### 3. No navigation changes needed
-The `/profile?tab=subscription` route + the "Abo verwalten" nav item already provide in-app access. The SubscriptionManagement component already shows upgrade options. The checkout page handles approved handwerkers correctly.
-
-## Files Modified
+**Plan**: Create a simple `HandwerkerVerzeichnis.tsx` page that queries the existing `handwerker_profiles_public` view (already has data for verified/approved profiles). Add route and navigation link visible to unauthenticated users and clients.
 
 | File | Change |
 |------|--------|
-| `supabase/functions/create-payrexx-gateway/index.ts` | Defensive response parsing, detailed logging, test-mode fallback |
-| `src/pages/Checkout.tsx` | Better error message extraction from edge function response |
+| `src/pages/HandwerkerVerzeichnis.tsx` | New page: list verified handwerkers from `handwerker_profiles_public` view with category/canton filters |
+| `src/App.tsx` | Add route `/handwerker-verzeichnis` |
+| `src/config/navigation.ts` | Add nav item for client role |
+| `src/components/Header.tsx` | Add public nav link (if not covered by navigation.ts) |
+
+## Issue 2: Admin client categorization (Kunden vs Privatpersonen)
+
+Currently `ClientManagement.tsx` fetches all profiles with `client` or `user` roles but has no categorization. The user wants admins to distinguish between "Kunden" (business clients) and "Privatpersonen" (private individuals).
+
+**Plan**: Add a `client_type` column to the `profiles` table (`'business'` or `'private'`, default `'private'`). Show it as a badge in the admin client table with an inline toggle. No new tables needed — extends existing profiles.
+
+| File | Change |
+|------|--------|
+| Migration SQL | `ALTER TABLE profiles ADD COLUMN client_type text DEFAULT 'private'` |
+| `src/pages/admin/ClientManagement.tsx` | Show client_type badge, add toggle dropdown to switch between 'business'/'private' |
+| `src/integrations/supabase/types.ts` | Auto-regenerated |
+
+## Issue 3: 5-proposal limit — show message to client after 5th proposal received
+
+Currently the `max_purchases` column on leads defaults to 5 and is enforced in `HandwerkerDashboard.tsx` (line 327) — leads with `proposals_count >= max_purchases` are hidden from handwerkers. But the **client** receives no notification or message about this.
+
+**Plan**: In `ReceivedProposals.tsx`, after fetching proposals per lead, show an info banner when `proposals_count >= max_purchases` (both available on the lead data). Also add this info in `LeadDetails.tsx`.
+
+| File | Change |
+|------|--------|
+| `src/components/ReceivedProposals.tsx` | Add info banner per lead group when proposal limit reached: "Sie haben die maximale Anzahl von 5 Offerten erhalten" |
+| `src/pages/LeadDetails.tsx` | Show info badge when `proposals_count >= max_purchases` |
+
+## Summary
+
+- **3 files changed** + 1 new page + 1 migration
+- All changes use existing data structures and views (SSOT)
+- No new components beyond the Verzeichnis page
+- `max_purchases` limit already enforced server-side; this adds client-facing messaging
 
