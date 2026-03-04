@@ -1,44 +1,74 @@
 
 
-# Fix Lead Filtering & UX in BrowseLeads
+# Fix Payments & Subscriptions: Auto-Renewal, Cancellation, Grace Period
 
-## Issues
+## Changes
 
-1. **BrowseLeads (`/search`) shows ALL active leads** — no profile-based matching. The HandwerkerDashboard already has proper `checkCategoryMatch` + `checkServiceAreaMatch` logic, but BrowseLeads ignores the handwerker's categories and service areas entirely.
+### 1. Migration: Add `renewal_reminder_sent` + performance index
 
-2. **"Noch nicht angesehen" label is confusing** — on the HandwerkerDashboard proposals tab, the label doesn't clarify *who* hasn't viewed. It should say "Vom Kunden noch nicht angesehen" (not yet viewed by the client) to make it clear.
+```sql
+ALTER TABLE handwerker_subscriptions 
+ADD COLUMN IF NOT EXISTS renewal_reminder_sent BOOLEAN DEFAULT false;
 
-## Plan
+CREATE INDEX IF NOT EXISTS idx_subs_expiry_logic 
+ON handwerker_subscriptions (current_period_end, pending_plan, renewal_reminder_sent);
+```
 
-### 1. Add profile-based matching to BrowseLeads
+### 2. Rewrite `check-subscription-expiry` with two-path logic
 
-**File: `src/pages/BrowseLeads.tsx`**
+**File: `supabase/functions/check-subscription-expiry/index.ts`**
 
-- After fetching the user, also fetch their `handwerker_profiles` record (categories, service_areas) — same as HandwerkerDashboard does
-- Extract the `checkCategoryMatch` and `checkServiceAreaMatch` helper functions into a shared utility (`src/lib/leadHelpers.ts`) to avoid duplication (DRY/SSOT)
-- Apply matching as the default filter: only show leads that match the handwerker's categories AND service areas
-- Add toggle buttons ("Alle Kategorien" / "Alle Regionen") like the HandwerkerDashboard has, so handwerkers can optionally browse all leads
-- Filter out leads where the handwerker already submitted a proposal
+Split into three query paths:
 
-### 2. Extract matching helpers to shared module
+**Path A — Cancelled subs** (`pending_plan = 'free'` AND `current_period_end < now`):
+- Downgrade to free immediately (current behavior)
+- Send "Abonnement beendet" email
+- Clear `pending_plan` and `renewal_reminder_sent`
 
-**File: `src/lib/leadHelpers.ts`** (already exists — extend it)
+**Path B — Non-cancelled, within grace period** (`pending_plan IS NULL` AND `current_period_end < now` AND `current_period_end + 7 days > now` AND `renewal_reminder_sent = false`):
+- Do NOT downgrade yet
+- Generate a Payrexx checkout URL via `create-payrexx-gateway` invocation (passing `referenceId = {userId}-{planType}-{timestamp}` so webhook can identify the subscription)
+- Send "Verlängerung erforderlich" email with direct payment link
+- Set `renewal_reminder_sent = true`
 
-- Move `checkCategoryMatch` and `checkServiceAreaMatch` from `HandwerkerDashboard.tsx` into this file
-- Update `HandwerkerDashboard.tsx` to import from `leadHelpers.ts`
-- Import in `BrowseLeads.tsx` as well
+**Path C — Non-cancelled, grace period expired** (`pending_plan IS NULL` AND `current_period_end + 7 days < now`):
+- Downgrade to free
+- Send "Abonnement abgelaufen" email
+- Reset `renewal_reminder_sent = false`
 
-### 3. Fix "Noch nicht angesehen" label
+**7-day warning emails** (existing logic, refined):
+- If `pending_plan = 'free'`: "Ihr Abo endet am X, danach kostenloser Plan"
+- If `pending_plan IS NULL`: "Ihr Abo wird am X verlängert. Bitte erneuern Sie rechtzeitig." with checkout link
+
+### 3. Update `payrexx-webhook` to reset renewal flag
+
+**File: `supabase/functions/payrexx-webhook/index.ts`**
+
+In the `status === 'confirmed'` block, add to the upsert:
+```
+renewal_reminder_sent: false,
+payment_reminder_1_sent: false,
+payment_reminder_2_sent: false,
+```
+
+### 4. Grace period banner in HandwerkerDashboard
 
 **File: `src/pages/HandwerkerDashboard.tsx`**
 
-- Change `"Noch nicht angesehen"` to `"Vom Kunden noch nicht angesehen"` — one line change
+Add a warning banner when the user's subscription `current_period_end < now` AND `plan_type !== 'free'` (meaning they're in the grace period):
+
+> "Ihre Abonnement-Verlängerung steht aus. Bitte schliessen Sie die Zahlung innerhalb von X Tagen ab, um den Zugang zu behalten."
+
+With a "Jetzt erneuern" button linking to `/checkout`.
 
 ## Summary
 
 | File | Change |
 |------|--------|
-| `src/lib/leadHelpers.ts` | Add `checkCategoryMatch` and `checkServiceAreaMatch` exports |
-| `src/pages/HandwerkerDashboard.tsx` | Import matching helpers from leadHelpers; fix label text |
-| `src/pages/BrowseLeads.tsx` | Fetch handwerker profile; apply matching filters; add toggle buttons; exclude already-proposed leads |
+| Migration SQL | Add `renewal_reminder_sent` column + index |
+| `check-subscription-expiry/index.ts` | Three-path logic: cancelled→downgrade, grace→email+wait, grace expired→downgrade |
+| `payrexx-webhook/index.ts` | Reset `renewal_reminder_sent` on confirmed payment |
+| `HandwerkerDashboard.tsx` | Grace period warning banner |
+
+Deploy: `check-subscription-expiry` and `payrexx-webhook` edge functions.
 
