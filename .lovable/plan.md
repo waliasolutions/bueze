@@ -1,48 +1,44 @@
 
-# Fix Handwerker Deactivation, Tab Default, and Deletion
 
-## Issues Found
+# Handwerkerverzeichnis Browse Layer + Footer CTA
 
-### 1. Deactivation Error
-The `toggleInactive` function (line 441-462) sets `verification_status: 'inactive'`, but the `handwerker_profiles` table has no CHECK constraint blocking this — it's a free text column. The error is likely surfaced generically ("Fehler") without showing the actual error message. The toast at line 458 says `{ title: 'Fehler', variant: 'destructive' }` with no `description`, hiding the root cause. Need to surface the actual error.
+## What Changes
 
-After investigation, this may also relate to the `is_verified` being set to `false` while the profile is still `approved` — causing a mismatch for RLS policies that check both `is_verified = true AND verification_status = 'approved'`. When toggling back from inactive to approved, the function correctly sets `is_verified: true`, so the issue is more likely an RLS update policy problem. The admin RLS policy for updates uses `EXISTS(SELECT 1 FROM user_roles WHERE ...)` — this should work. Let me check if the admin's session is valid.
+### 1. HandwerkerVerzeichnis: Add browse landing layer before results
 
-Actually, the most likely cause: the update query succeeds but the subsequent `fetchHandwerkers()` fails or the toast doesn't show success. Need to add proper error description to the catch block.
+Inspired by the renovero screenshot, the page will show a **two-phase UI**:
 
-### 2. Dashboard Card Shows "Ausstehend" First
-The `activeTab` state defaults to `'pending'` (line 90). When the admin page loads, the "Ausstehend" tab is selected. Clicking the "Aktiv" stat card correctly switches the tab. However, the user's complaint is likely that on **page load**, the default tab is "Ausstehend" even when clicking from a stat card link. The fix: default `activeTab` to `'all'` or persist the tab from the URL.
+**Phase 1 (Landing/Browse layer)** — shown when no canton or category is selected:
+- Search bar with "Suchen" button (matching renovero style)
+- **Kantone** section: all 26 Swiss cantons as clickable badge/chips (using `SWISS_CANTONS` SSOT from `cantons.ts`)
+- **Alle Kategorien** section: all major categories with their subcategories as clickable links in a multi-column grid (using `majorCategories` + `subcategoryLabels` SSOT)
+- Clicking a canton or category sets the filter and transitions to Phase 2
 
-### 3. Deletion Fails
-The `delete-user` edge function deletes `handwerker_profiles` (line 343-348), and `handwerker_service_areas` has `ON DELETE CASCADE` on `handwerker_profiles(id)`, so that should cascade. However, there's a missing cleanup for `handwerker_service_areas` by `user_id` lookup and the `handwerker_approval_history` might have FK issues. The delete button also uses an `AlertDialog` — the `AlertDialogAction` at line 888 calls `deleteHandwerker(h)`. The error might be that `data?.error` at line 353 catches the edge function's error response format incorrectly.
+**Phase 2 (Results)** — shown when a filter is active (current behavior, mostly unchanged):
+- Filter bar with active selections
+- Handwerker cards grid
+- "Back to browse" link to return to Phase 1
 
-Looking at the edge function: it uses `successResponse` and `errorResponse` from cors.ts. The frontend checks `if (data?.error)` at line 353 — but `errorResponse` returns the error in the HTTP response body, while `supabase.functions.invoke` puts non-2xx responses in the `error` parameter, not `data`. So the error handling might be misaligned.
+This is a simple state toggle (`showResults`) — no new routes needed. Data is fetched once on mount (existing behavior).
 
-## Plan
+### 2. Navigation: Remove "Handwerker finden" from client nav
 
-### A. Fix deactivation error handling
-**File: `src/pages/admin/HandwerkerManagement.tsx`**
-- Add descriptive error messages in `toggleInactive` catch block
-- Surface the actual Supabase error message in the toast
+**File: `src/config/navigation.ts`**
+- Remove the `{ label: 'Handwerker finden', href: '/handwerker-verzeichnis', icon: Users }` entry from `roleNavigation.client`
 
-### B. Fix default tab to 'all'
-**File: `src/pages/admin/HandwerkerManagement.tsx`**
-- Change `useState('pending')` to `useState('all')` for `activeTab` — shows all handwerkers by default, matching the "Gesamt" card
+### 3. Footer: Add standalone CTA button
 
-### C. Fix deletion error handling
-**File: `src/pages/admin/HandwerkerManagement.tsx`**
-- Fix `deleteHandwerker` to properly handle edge function error responses
-- The `supabase.functions.invoke` returns `{ data, error }` — when the edge function returns a non-2xx status, `error` contains the error and `data` is null. The current code checks `data?.error` which only catches edge function errors returned as 200 with error in body
-- Also add `handwerker_service_areas` deletion to the delete-user edge function (before handwerker_profiles deletion) as a safety measure, even though CASCADE should handle it
+**File: `src/components/Footer.tsx`**
+- Add a "Handwerker finden" CTA button (Link to `/handwerker-verzeichnis`) in the footer bottom section, above the copyright line
+- Styled as a visible button (brand colors), not a text link
 
-### D. Add `handwerker_service_areas` cleanup to delete-user
-**File: `supabase/functions/delete-user/index.ts`**
-- Add deletion of `handwerker_service_areas` before `handwerker_profiles` deletion (both in guest and full user paths)
-- This is a belt-and-suspenders approach since CASCADE exists, but ensures reliability
-
-## Summary
+## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/pages/admin/HandwerkerManagement.tsx` | Fix error messages in toggleInactive; change default tab to 'all'; fix deleteHandwerker error handling |
-| `supabase/functions/delete-user/index.ts` | Add handwerker_service_areas cleanup before profile deletion |
+| `src/pages/HandwerkerVerzeichnis.tsx` | Add browse layer with cantons grid + categories grid; toggle to results on filter selection |
+| `src/config/navigation.ts` | Remove "Handwerker finden" from client navigation |
+| `src/components/Footer.tsx` | Add "Handwerker finden" CTA button |
+
+No new files, no new dependencies. All data sourced from existing SSOT configs (`cantons.ts`, `majorCategories.ts`, `subcategoryLabels.ts`, `categoryLabels.ts`).
+
