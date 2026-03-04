@@ -382,6 +382,11 @@ const LeadDetails = () => {
                 <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
                 <p className="text-3xl font-bold">{lead.proposals_count || 0}</p>
                 <p className="text-sm text-muted-foreground">Offerten erhalten</p>
+                {lead.proposals_count != null && lead.max_purchases != null && lead.proposals_count >= lead.max_purchases && (
+                  <Badge variant="secondary" className="mt-2">
+                    Maximum von {lead.max_purchases} Offerten erreicht
+                  </Badge>
+                )}
               </div>
             </CardContent>
           </Card>
