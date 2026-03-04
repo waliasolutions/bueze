@@ -45,6 +45,7 @@ interface Client {
   last_name: string | null;
   phone: string | null;
   created_at: string;
+  client_type: string | null;
   leads_count: number;
   active_leads_count: number;
   last_lead_date: string | null;
@@ -83,7 +84,7 @@ export default function ClientManagement() {
       // Fetch profiles with client/user roles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, full_name, first_name, last_name, phone, created_at')
+        .select('id, email, full_name, first_name, last_name, phone, created_at, client_type')
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;
@@ -130,6 +131,7 @@ export default function ClientManagement() {
             last_name: profile.last_name,
             phone: profile.phone,
             created_at: profile.created_at,
+            client_type: (profile as any).client_type || 'private',
             leads_count: userLeads.length,
             active_leads_count: activeLeads.length,
             last_lead_date: sortedLeads[0]?.created_at || null,
@@ -227,15 +229,42 @@ export default function ClientManagement() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-600">Aktiv</Badge>;
+        return <Badge className="bg-green-600 text-white">Aktiv</Badge>;
       case 'completed':
-        return <Badge className="bg-blue-600">Abgeschlossen</Badge>;
+        return <Badge className="bg-blue-600 text-white">Abgeschlossen</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">Abgebrochen</Badge>;
       case 'draft':
         return <Badge variant="secondary">Entwurf</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const toggleClientType = async (clientId: string, currentType: string) => {
+    const newType = currentType === 'business' ? 'private' : 'business';
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ client_type: newType } as any)
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      setClients(prev => prev.map(c => 
+        c.id === clientId ? { ...c, client_type: newType } : c
+      ));
+      toast({
+        title: 'Kundentyp aktualisiert',
+        description: `Kunde wurde als ${newType === 'business' ? 'Geschäftskunde' : 'Privatperson'} markiert.`,
+      });
+    } catch (error) {
+      console.error('Error updating client type:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Kundentyp konnte nicht aktualisiert werden.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -317,6 +346,7 @@ export default function ClientManagement() {
               <TableRow>
                 <TableHead className="w-8"></TableHead>
                 <TableHead>Kunde</TableHead>
+                <TableHead>Typ</TableHead>
                 <TableHead className="hidden md:table-cell">Kontakt</TableHead>
                 <TableHead>Aufträge</TableHead>
                 <TableHead className="hidden sm:table-cell">Letzte Aktivität</TableHead>
@@ -327,7 +357,7 @@ export default function ClientManagement() {
             <TableBody>
               {filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Keine Kunden gefunden
                   </TableCell>
                 </TableRow>
@@ -364,6 +394,16 @@ export default function ClientManagement() {
                             <p className="text-sm text-muted-foreground">{client.email}</p>
                           </div>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={client.client_type === 'business' ? 'default' : 'secondary'}
+                          className="cursor-pointer"
+                          onClick={() => toggleClientType(client.id, client.client_type || 'private')}
+                          title="Klicken zum Umschalten"
+                        >
+                          {client.client_type === 'business' ? 'Geschäftskunde' : 'Privatperson'}
+                        </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="space-y-1">
@@ -467,7 +507,7 @@ export default function ClientManagement() {
                     {/* Expanded Leads Row */}
                     {expandedClient === client.id && clientLeads.has(client.id) && (
                       <TableRow>
-                        <TableCell colSpan={7} className="bg-muted/30 p-4">
+                        <TableCell colSpan={8} className="bg-muted/30 p-4">
                           <div className="space-y-2">
                             <p className="text-sm font-medium mb-2">Letzte Aufträge:</p>
                             {clientLeads.get(client.id)?.length === 0 ? (

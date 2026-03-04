@@ -1559,6 +1559,7 @@ export type Database = {
           avatar_url: string | null
           canton: Database["public"]["Enums"]["canton"] | null
           city: string | null
+          client_type: string | null
           company_name: string | null
           created_at: string
           date_of_birth: string | null
@@ -1579,6 +1580,7 @@ export type Database = {
           avatar_url?: string | null
           canton?: Database["public"]["Enums"]["canton"] | null
           city?: string | null
+          client_type?: string | null
           company_name?: string | null
           created_at?: string
           date_of_birth?: string | null
@@ -1599,6 +1601,7 @@ export type Database = {
           avatar_url?: string | null
           canton?: Database["public"]["Enums"]["canton"] | null
           city?: string | null
+          client_type?: string | null
           company_name?: string | null
           created_at?: string
           date_of_birth?: string | null

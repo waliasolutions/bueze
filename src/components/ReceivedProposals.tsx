@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter, LayoutGrid, Phone, Mail, Globe, MessageSquare, User, Paperclip, Download, FileText, Image } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Star, MapPin, Coins, Calendar, Filter, LayoutGrid, Phone, Mail, Globe, MessageSquare, User, Paperclip, Download, FileText, Image, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
 import { HandwerkerRating } from './HandwerkerRating';
@@ -16,6 +16,7 @@ import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBa
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProposalComparisonDialog } from './ProposalComparisonDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { invalidateProposalQueries } from '@/lib/queryInvalidation';
 import { HandwerkerProfileModal } from './HandwerkerProfileModal';
 import type { ProposalWithHandwerkerInfo } from '@/types/entities';
@@ -97,7 +98,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
         .from('lead_proposals')
         .select(`
           *,
-          leads!lead_proposals_lead_id_fkey(title, category, status)
+          leads!lead_proposals_lead_id_fkey(title, category, status, proposals_count, max_purchases)
         `)
         .in('lead_id', leadIds)
         .order('submitted_at', { ascending: false });
@@ -311,9 +312,26 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
     );
   }
 
+  // Check if any lead has reached the proposal limit
+  const leadsAtLimit = new Set<string>();
+  proposals.forEach(p => {
+    const lead = p.leads as any;
+    if (lead && lead.proposals_count != null && lead.max_purchases != null && lead.proposals_count >= lead.max_purchases) {
+      leadsAtLimit.add(lead.title || p.lead_id);
+    }
+  });
+
   return (
     <div className="space-y-6">
-      {/* Filters and Actions */}
+      {/* Proposal limit banner */}
+      {leadsAtLimit.size > 0 && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Sie haben die maximale Anzahl von 5 Offerten erhalten. Es werden keine weiteren Offerten für {leadsAtLimit.size === 1 ? 'diesen Auftrag' : 'diese Aufträge'} mehr angenommen.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <div className="flex gap-3">
           <Select value={filterStatus} onValueChange={setFilterStatus}>

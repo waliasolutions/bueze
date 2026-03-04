@@ -36,6 +36,7 @@ const CategoryLanding = lazy(() => import("./pages/CategoryLanding"));
 const KategorienLanding = lazy(() => import("./pages/KategorienLanding"));
 const MajorCategoryLanding = lazy(() => import("./pages/MajorCategoryLanding"));
 const HandwerkerLanding = lazy(() => import("./pages/HandwerkerLanding"));
+const HandwerkerVerzeichnis = lazy(() => import("./pages/HandwerkerVerzeichnis"));
 const MagicLinkHandler = lazy(() => import("./pages/MagicLinkHandler"));
 const OpportunityView = lazy(() => import("./pages/OpportunityView"));
 const ProposalReview = lazy(() => import("./pages/ProposalReview"));
@@ -159,6 +160,7 @@ const App = () => {
                 <Route path="/handwerker-dashboard" element={<ProtectedRoute><HandwerkerDashboard /></ProtectedRoute>} />
                 <Route path="/handwerker-profile/edit" element={<ProtectedRoute><HandwerkerProfileEdit /></ProtectedRoute>} />
                 <Route path="/handwerker" element={<HandwerkerLanding />} />
+                <Route path="/handwerker-verzeichnis" element={<HandwerkerVerzeichnis />} />
 
 
                 {/* Lead management routes */}
