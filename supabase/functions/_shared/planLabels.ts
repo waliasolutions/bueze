@@ -39,6 +39,20 @@ export function getPlanNameWithPrice(planType: string): string {
 /** SSOT: Free tier proposals limit. Use this instead of hardcoding 5. */
 export const FREE_TIER_PROPOSALS_LIMIT = 5;
 
+/**
+ * Valid amounts per plan for webhook validation (in Rappen).
+ * When changing prices:
+ *   1. Add new price to each plan's array
+ *   2. Keep old price with a // TODO: remove after YYYY-MM-DD comment
+ *   3. Update PLAN_AMOUNTS to the new price
+ *   4. Remove old price after 48 hours
+ */
+export const VALID_PLAN_AMOUNTS: Record<string, number[]> = {
+  monthly: [9000],
+  '6_month': [51000],
+  annual: [96000],
+};
+
 export function getPlanAmount(planType: string): number | null {
   return PLAN_AMOUNTS[planType] || null;
 }

@@ -541,7 +541,29 @@ import {
 | 2025-01 | Payrexx integration |
 | 2025-02 | Swiss timezone SSOT |
 | 2025-02 | 30-day rolling quota periods |
+| 2026-03 | Payment architecture hardening (6 fixes) |
 
 ---
 
-*Last updated: February 2025*
+## Payment Architecture — Operational Notes
+
+### Payrexx Integration
+- **Provider**: Payrexx (exclusive), no stored payment methods
+- **Flow**: `Checkout.tsx` → `create-payrexx-gateway` → Payrexx hosted page → `payrexx-webhook` → subscription activation
+- **Delimiter**: `referenceId` uses `|` (pipe) delimiter: `{userId}|{planType}|{timestamp}`. Legacy `-` delimiter supported for backward compatibility in webhook parsing.
+- **Idempotency**: Webhook inserts `payment_history` FIRST with `ON CONFLICT DO NOTHING` on `payrexx_transaction_id`. If no row returned, the transaction was already processed — bail immediately before touching subscriptions.
+- **Realtime**: `handwerker_subscriptions` is in the `supabase_realtime` publication. `Profile.tsx` subscribes to changes after payment redirect to show instant activation.
+
+### Price Migration Process
+When changing subscription prices:
+1. Add the **new** price to `VALID_PLAN_AMOUNTS` in `supabase/functions/_shared/planLabels.ts`
+2. Keep the **old** price with a `// TODO: remove after YYYY-MM-DD` comment (48h window)
+3. Update `PLAN_AMOUNTS` to the new price
+4. After 48 hours, remove the old price from `VALID_PLAN_AMOUNTS`
+
+### Test Mode
+`PAYREXX_TEST_MODE` must be explicitly set to `true` to enable simulation. Invalid credentials in production return a 502 error — no auto-heal.
+
+---
+
+*Last updated: March 2026*

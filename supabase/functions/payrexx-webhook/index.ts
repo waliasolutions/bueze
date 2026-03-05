@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
-import { PLAN_AMOUNTS, FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
+import { VALID_PLAN_AMOUNTS, FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
 import { addMonths } from '../_shared/dateFormatter.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -44,18 +44,23 @@ async function verifySignature(body: string, signature: string): Promise<boolean
 
 /**
  * Parse reference ID to extract user info
- * Format: {userId}-{planType}-{timestamp}
+ * Format: {userId}|{planType}|{timestamp}
+ * Uses pipe delimiter to avoid conflicts with UUID hyphens.
  */
 function parseReferenceId(referenceId: string): { userId: string; planType: string; timestamp: string } | null {
+  // Support both | (new) and - (legacy) delimiters
+  if (referenceId.includes('|')) {
+    const parts = referenceId.split('|');
+    if (parts.length !== 3) return null;
+    return { userId: parts[0], planType: parts[1], timestamp: parts[2] };
+  }
+
+  // Legacy fallback: hyphen delimiter (pop from right)
   const parts = referenceId.split('-');
   if (parts.length < 3) return null;
-
-  // UUID has 5 parts with hyphens, so we need to reconstruct it
-  // Format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-planType-timestamp
   const timestamp = parts.pop()!;
   const planType = parts.pop()!;
   const userId = parts.join('-');
-
   return { userId, planType, timestamp };
 }
 
@@ -127,26 +132,14 @@ Deno.serve(async (req) => {
     // Create Supabase admin client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Idempotency check: if this transaction was already processed, return 200
-    const { data: existingPayment } = await supabase
-      .from('payment_history')
-      .select('id')
-      .eq('payrexx_transaction_id', transactionId.toString())
-      .maybeSingle();
-
-    if (existingPayment) {
-      console.log(`Transaction ${transactionId} already processed, skipping`);
-      return successResponse({ received: true, already_processed: true });
-    }
-
     // Handle different transaction statuses
     if (status === 'confirmed') {
-      // Validate amount matches expected plan price
-      const expectedAmount = PLAN_AMOUNTS[planType];
-      if (expectedAmount && amount !== undefined) {
-        if (Number(amount) !== expectedAmount) {
-          console.error(`Amount mismatch: expected ${expectedAmount}, got ${amount} for plan ${planType}`);
-          return errorResponse('Amount mismatch', 400);
+      // Validate amount against allowlist
+      const validAmounts = VALID_PLAN_AMOUNTS[planType] || [];
+      if (validAmounts.length > 0 && amount !== undefined) {
+        if (!validAmounts.includes(Number(amount))) {
+          console.error(`Amount ${amount} not in valid set ${JSON.stringify(validAmounts)} for plan ${planType}`);
+          return errorResponse('Invalid amount', 400);
         }
       }
 
@@ -156,13 +149,33 @@ Deno.serve(async (req) => {
         return errorResponse('Invalid currency', 400);
       }
 
-      // Payment confirmed — activate subscription
-      const planConfig = PLAN_CONFIGS[planType];
-
       const now = new Date();
+      const planConfig = PLAN_CONFIGS[planType];
       const periodEnd = addMonths(now, planConfig.periodMonths);
 
-      // Update or create subscription
+      // IDEMPOTENCY: Insert payment record FIRST — if conflict fires, bail
+      const { data: insertedPayment } = await supabase
+        .from('payment_history')
+        .upsert({
+          user_id: userId,
+          amount: amount,
+          currency: (currency || 'CHF').toUpperCase(),
+          plan_type: planType,
+          status: 'paid',
+          payment_provider: 'payrexx',
+          payrexx_transaction_id: transactionId.toString(),
+          payment_date: now.toISOString(),
+          description: `Büeze ${planType} Abonnement`,
+          invoice_pdf_url: invoice?.paymentLink || null,
+        }, { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true })
+        .select('id');
+
+      if (!insertedPayment || insertedPayment.length === 0) {
+        console.log(`Transaction ${transactionId} already processed (conflict), skipping`);
+        return successResponse({ received: true, already_processed: true });
+      }
+
+      // Payment confirmed — activate subscription
       const { error: subError } = await supabase
         .from('handwerker_subscriptions')
         .upsert({
@@ -173,7 +186,7 @@ Deno.serve(async (req) => {
           proposals_used_this_period: 0,
           current_period_start: now.toISOString(),
           current_period_end: periodEnd.toISOString(),
-          pending_plan: null, // Clear pending plan after successful payment
+          pending_plan: null,
           renewal_reminder_sent: false,
           payment_reminder_1_sent: false,
           payment_reminder_2_sent: false,
@@ -185,27 +198,6 @@ Deno.serve(async (req) => {
       if (subError) {
         console.error('Error updating subscription:', subError);
         return errorResponse('Failed to update subscription', 500);
-      }
-
-      // Record payment in history
-      const { error: paymentError } = await supabase
-        .from('payment_history')
-        .insert({
-          user_id: userId,
-          amount: amount,
-          currency: (currency || 'CHF').toUpperCase(),
-          plan_type: planType,
-          status: 'paid',
-          payment_provider: 'payrexx',
-          payrexx_transaction_id: transactionId.toString(),
-          payment_date: now.toISOString(),
-          description: `Büeze ${planType} Abonnement`,
-          invoice_pdf_url: invoice?.paymentLink || null,
-        });
-
-      if (paymentError) {
-        console.error('Error recording payment:', paymentError);
-        // Don't fail the webhook for this
       }
 
       // Create in-app notification for user
