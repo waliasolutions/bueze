@@ -37,26 +37,23 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Fetch with timeout using AbortController
+ * Fetch with timeout using Promise.race.
+ * 
+ * Note: The Supabase JS client's query builder doesn't accept an AbortSignal,
+ * so we use Promise.race as a pragmatic timeout. The underlying request may
+ * continue in the background, but the caller unblocks and can retry.
+ * For raw fetch() calls, prefer passing AbortSignal directly at the call site.
  */
 async function fetchWithTimeout<T>(
   fetchFn: () => Promise<T>,
   timeout: number
 ): Promise<T> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
-
-  try {
-    const result = await fetchFn();
-    clearTimeout(timeoutId);
-    return result;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Request timeout');
-    }
-    throw error;
-  }
+  return Promise.race([
+    fetchFn(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out after ${timeout}ms`)), timeout)
+    ),
+  ]);
 }
 
 /**

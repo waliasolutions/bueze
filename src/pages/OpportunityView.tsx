@@ -53,9 +53,8 @@ const OpportunityView = () => {
 
       const { data: leadData, error: leadError } = await supabase
         .from('leads')
-        .select('id, title, description, category, budget_min, budget_max, urgency, city, canton, zip, proposal_deadline, created_at')
+        .select('id, title, description, category, budget_min, budget_max, urgency, city, canton, zip, proposal_deadline, created_at, status')
         .eq('id', leadId)
-        .eq('status', 'active')
         .single();
 
       if (leadError) throw leadError;
@@ -223,7 +222,36 @@ const OpportunityView = () => {
             </div>
             <h1 className="text-2xl font-bold mb-2">Anfrage nicht gefunden</h1>
             <p className="text-muted-foreground mb-6">
-              Diese Anfrage existiert nicht mehr oder ist nicht mehr aktiv.
+              Diese Anfrage existiert nicht mehr oder Sie haben keinen Zugriff darauf.
+            </p>
+            <Button onClick={() => navigate('/handwerker-dashboard')}>
+              Zum Dashboard
+            </Button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  {/* Show specific expired message if lead exists but is not active */}
+  if (lead.status !== 'active') {
+    const isExpiredStatus = lead.status === 'expired';
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-8">
+          <div className="max-w-md mx-auto text-center">
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
+              <Clock className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold mb-2">
+              {isExpiredStatus ? 'Frist abgelaufen' : 'Anfrage nicht mehr aktiv'}
+            </h1>
+            <p className="text-muted-foreground mb-6">
+              {isExpiredStatus 
+                ? 'Die Frist für Offerten zu dieser Anfrage ist leider abgelaufen.'
+                : 'Diese Anfrage ist nicht mehr aktiv und nimmt keine Offerten mehr entgegen.'}
             </p>
             <Button onClick={() => navigate('/handwerker-dashboard')}>
               Zum Dashboard
