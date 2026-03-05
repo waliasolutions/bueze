@@ -1,3 +1,5 @@
+// DEV-ONLY: This page is not routed in App.tsx and is excluded from production.
+// It exists solely for local development testing of UI components and test data utilities.
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
