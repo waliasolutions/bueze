@@ -150,7 +150,7 @@ export const STORAGE_KEYS = {
 
 // Version constants for each storage key
 export const STORAGE_VERSIONS = {
-  HANDWERKER_ONBOARDING_DRAFT: 2,
+  HANDWERKER_ONBOARDING_DRAFT: 3,
   COOKIE_CONSENT: 1,
   SUBMIT_LEAD_DRAFT: 1,
 } as const;
