@@ -115,7 +115,7 @@ const ProposalReview = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-8">
           <div className="max-w-3xl mx-auto space-y-4">
             <div className="h-8 bg-muted rounded w-1/2 animate-pulse" />
             <div className="h-64 bg-muted rounded animate-pulse" />
@@ -130,7 +130,7 @@ const ProposalReview = () => {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
+        <main className="flex-1 container mx-auto px-4 pt-24 pb-8">
           <div className="max-w-md mx-auto text-center">
             <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
               <XCircle className="h-8 w-8 text-muted-foreground" />
@@ -154,7 +154,7 @@ const ProposalReview = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 pt-24 pb-8">
         <Card className="max-w-3xl mx-auto">
           <CardHeader>
             <CardTitle className="text-2xl">Offerte für: {proposal.leads?.title}</CardTitle>

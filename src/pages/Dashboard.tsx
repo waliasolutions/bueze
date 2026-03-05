@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useViewMode } from '@/contexts/ViewModeContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, MapPin, Eye, Users, FileText, Trash2, Archive, RotateCcw, Star, MessageSquare } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
@@ -49,6 +50,7 @@ const Dashboard = () => {
   const [selectedHandwerkerId, setSelectedHandwerkerId] = useState<string | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const { isAdmin, isHandwerker, loading: roleLoading } = useUserRole();
+  const { activeView } = useViewMode();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -158,7 +160,7 @@ const Dashboard = () => {
         // Create basic profile if it doesn't exist
         setProfile({ 
           id: user.id, 
-          full_name: user.user_metadata?.first_name + ' ' + user.user_metadata?.last_name || user.email?.split('@')[0] || 'User',
+          full_name: `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() || user.email?.split('@')[0] || 'User',
           email: user.email || '',
           role: 'user' 
         });
@@ -211,8 +213,8 @@ const Dashboard = () => {
         setMyReviews([]);
       }
 
-      // Check if handwerker and redirect if needed (but NOT for admins testing client view)
-      if (handwerkerProfileData && !isAdmin) {
+      // Check if handwerker and redirect if needed (but NOT for admins or when viewing as client)
+      if (handwerkerProfileData && !isAdmin && activeView !== 'client') {
         navigate('/handwerker-dashboard');
         return;
       }
