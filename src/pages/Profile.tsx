@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -74,18 +74,68 @@ const Profile = () => {
   const { isHandwerker: isHandwerkerRole, isAdmin } = useUserRole();
   const { activeView } = useViewMode();
 
-  // Handle checkout success redirect
+  // Payment processing state for realtime subscription
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // Handle checkout success redirect — subscribe to realtime for instant update
   useEffect(() => {
-    if (searchParams.get('success') === 'true') {
+    if (searchParams.get('success') !== 'true') return;
+
+    setPaymentProcessing(true);
+
+    // Clean up URL params immediately
+    searchParams.delete('success');
+    setSearchParams(searchParams, { replace: true });
+
+    // Subscribe to realtime changes on handwerker_subscriptions
+    const channel = supabase
+      .channel('payment-status')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'handwerker_subscriptions',
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          const newPlan = (payload.new as any)?.plan_type;
+          if (newPlan && newPlan !== 'free') {
+            setPaymentProcessing(false);
+            toast({
+              title: 'Abonnement aktiviert',
+              description: 'Ihr Abonnement wurde erfolgreich aktiviert.',
+            });
+            fetchUserData(); // Refresh subscription data
+            cleanup();
+          }
+        }
+      )
+      .subscribe();
+
+    realtimeChannelRef.current = channel;
+
+    // 30-second timeout
+    const timeout = setTimeout(() => {
+      setPaymentProcessing(false);
       toast({
-        title: 'Zahlung erfolgreich',
-        description: 'Ihr Abonnement wird in Kürze aktiviert. Dies kann einige Sekunden dauern.',
+        title: 'Zahlung wird verarbeitet',
+        description: 'Bitte laden Sie die Seite in einigen Sekunden erneut.',
       });
-      // Clean up URL params
-      searchParams.delete('success');
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, []);
+      cleanup();
+    }, 30000);
+
+    const cleanup = () => {
+      clearTimeout(timeout);
+      if (realtimeChannelRef.current) {
+        supabase.removeChannel(realtimeChannelRef.current);
+        realtimeChannelRef.current = null;
+      }
+    };
+
+    return cleanup;
+  }, [user?.id]);
 
   // Role-aware back navigation using activeView
   const handleBackNavigation = () => {
@@ -422,6 +472,17 @@ const Profile = () => {
               </p>
             </div>
           </div>
+
+          {/* Payment processing banner */}
+          {paymentProcessing && (
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <div>
+                <p className="font-medium">Zahlung wird verarbeitet...</p>
+                <p className="text-sm text-muted-foreground">Ihr Abonnement wird in Kürze aktiviert.</p>
+              </div>
+            </div>
+          )}
 
           <Tabs defaultValue={searchParams.get('tab') || 'personal'} className="space-y-6">
             <TabsList className="w-full flex flex-wrap sm:inline-flex h-auto p-1 gap-1 overflow-x-auto">

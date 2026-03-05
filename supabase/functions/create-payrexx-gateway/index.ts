@@ -99,13 +99,9 @@ Deno.serve(async (req) => {
     console.log(`[Payrexx credentials] instanceRaw=${PAYREXX_INSTANCE_RAW} instanceNormalized=${PAYREXX_INSTANCE}`);
     console.log(`[Payrexx credentials] valid=${credCheck.valid} — ${credCheck.detail}`);
 
-    const payrexxApiUnavailable =
-      !credCheck.valid && credCheck.detail.includes('API is not included in your license');
-    const simulationMode = PAYREXX_TEST_MODE || payrexxApiUnavailable;
-
     if (!credCheck.valid) {
       console.error(`[Payrexx credentials] INVALID: ${credCheck.detail}`);
-      if (!simulationMode) {
+      if (!PAYREXX_TEST_MODE) {
         return new Response(
           JSON.stringify({
             error: `Payrexx-Konfiguration ungültig: ${credCheck.detail}`,
@@ -117,7 +113,7 @@ Deno.serve(async (req) => {
           }
         );
       }
-      console.warn('[Payrexx credentials] Simulation mode active — continuing despite invalid credentials');
+      console.warn('[Payrexx credentials] PAYREXX_TEST_MODE active — continuing despite invalid credentials');
     }
 
     // --- Step 1: Authenticate user ---
@@ -153,7 +149,7 @@ Deno.serve(async (req) => {
 
     const amount = PLAN_AMOUNTS[planType];
     const planName = PLAN_GATEWAY_NAMES[planType];
-    const referenceId = `${userId}-${planType}-${Date.now()}`;
+    const referenceId = `${userId}|${planType}|${Date.now()}`;
 
     // --- Step 3: Create Payrexx Gateway ---
     const primaryParams: Record<string, string> = {
@@ -230,7 +226,7 @@ Deno.serve(async (req) => {
 
     // --- Step 4: Handle Payrexx response ---
     if (!payrexxResult.data) {
-      if (simulationMode) {
+      if (PAYREXX_TEST_MODE) {
         console.warn('PAYREXX_TEST_MODE: JSON parse failed, returning successUrl as test fallback');
         return successResponse({
           url: successUrl,
@@ -255,17 +251,11 @@ Deno.serve(async (req) => {
     if (payrexxResult.data.status !== 'success' || !payrexxResult.data.data?.[0]?.link) {
       console.error('Payrexx API error:', JSON.stringify(payrexxResult.data));
 
-      // Detect auth/credential errors from Payrexx (403 or specific message)
       const apiMessage = payrexxResult.data.message || 'Gateway-Erstellung fehlgeschlagen';
-      const isAuthError =
-        payrexxResult.status === 403 ||
-        apiMessage.toLowerCase().includes('api secret is not correct') ||
-        apiMessage.toLowerCase().includes('api key') ||
-        apiMessage.toLowerCase().includes('unauthorized');
 
-      if (simulationMode || isAuthError) {
-        const reason = simulationMode ? 'PAYREXX_TEST_MODE' : 'auto-heal (auth error detected)';
-        console.warn(`[Payrexx simulation] Activated via ${reason}. Returning successUrl as test fallback.`);
+      // Only simulate when PAYREXX_TEST_MODE is explicitly enabled — never auto-heal in production
+      if (PAYREXX_TEST_MODE) {
+        console.warn(`[Payrexx simulation] PAYREXX_TEST_MODE active. Returning successUrl as test fallback.`);
         console.warn(`[Payrexx simulation] Original error: HTTP ${payrexxResult.status} — ${apiMessage}`);
         return successResponse({
           url: successUrl,

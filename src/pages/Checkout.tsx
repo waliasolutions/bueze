@@ -144,6 +144,14 @@ export default function Checkout() {
       });
 
       if (error) {
+        // Check for 502 (payment system unavailable)
+        const is502 = error?.status === 502 || 
+          (typeof error === 'object' && error?.context?.status === 502);
+        
+        if (is502) {
+          throw new Error('Das Zahlungssystem ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.');
+        }
+
         const edgeMsg = typeof error === 'object' && error?.message
           ? error.message
           : typeof error === 'string' ? error : null;
