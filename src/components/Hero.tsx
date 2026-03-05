@@ -19,10 +19,9 @@ interface HeroProps {
       trustSignals?: string[];
     };
   } | null;
-  loading?: boolean;
 }
 
-export const Hero = ({ content, loading = false }: HeroProps) => {
+export const Hero = ({ content }: HeroProps) => {
   const navigate = useNavigate();
 
   const handleCategoryClick = (categorySlug: string) => {
@@ -42,27 +41,16 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
         {/* Main Content - Centered */}
         <div className="max-w-4xl mx-auto text-center space-y-12">
           
-          {/* Headlines - Show skeleton only while loading, otherwise show content immediately */}
           <div className="space-y-6">
-            {loading ? (
-              <>
-                <div className="h-14 md:h-16 lg:h-20 bg-pastel-grey-200 rounded-lg w-3/4 mx-auto animate-pulse" />
-                <div className="h-6 md:h-7 bg-pastel-grey-200 rounded w-2/3 mx-auto animate-pulse" />
-                <div className="h-4 md:h-5 bg-pastel-grey-200 rounded w-1/2 mx-auto animate-pulse" />
-              </>
-            ) : (
-              <>
-                <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
-                  {title}
-                </h1>
-                <p className="text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto">
-                  {subtitle}
-                </p>
-                <p className="text-sm md:text-base text-ink-500 leading-relaxed max-w-xl mx-auto mt-6">
-                  {subIntro}
-                </p>
-              </>
-            )}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-ink-900 leading-tight">
+              {title}
+            </h1>
+            <p className="text-lg md:text-xl text-ink-700 leading-relaxed max-w-2xl mx-auto">
+              {subtitle}
+            </p>
+            <p className="text-sm md:text-base text-ink-500 leading-relaxed max-w-xl mx-auto mt-6">
+              {subIntro}
+            </p>
           </div>
 
           {/* Primary CTA */}
@@ -76,7 +64,7 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
                 hover:scale-105 active:scale-95
                 group"
             >
-              <span className="relative z-10">{loading ? '...' : ctaText}</span>
+              <span className="relative z-10">{ctaText}</span>
               <ArrowRight className="relative z-10 ml-3 w-6 h-6 group-hover:translate-x-1 transition-transform" />
             </Button>
           </div>
@@ -118,20 +106,12 @@ export const Hero = ({ content, loading = false }: HeroProps) => {
 
           {/* Trust Signals */}
           <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-3 sm:gap-6 md:gap-8 text-xs sm:text-sm text-ink-600 pt-6 sm:pt-8">
-            {loading ? (
-              <>
-                <div className="h-4 bg-pastel-grey-200 rounded w-40 animate-pulse" />
-                <div className="h-4 bg-pastel-grey-200 rounded w-48 animate-pulse" />
-                <div className="h-4 bg-pastel-grey-200 rounded w-36 animate-pulse" />
-              </>
-            ) : (
-              trustSignals.map((signal: string, index: number) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
-                  <span>{signal}</span>
-                </div>
-              ))
-            )}
+            {trustSignals.map((signal: string, index: number) => (
+              <div key={index} className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-brand-500 rounded-full flex-shrink-0"></div>
+                <span>{signal}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
