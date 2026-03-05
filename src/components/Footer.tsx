@@ -5,6 +5,7 @@ import logo from '@/assets/bueze-logo.png';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { footerDefaults } from '@/config/contentDefaults';
+import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 
 interface FooterProps {
   content?: { fields?: any } | null;
@@ -57,8 +58,8 @@ export const Footer = ({ content }: FooterProps) => {
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Phone className="h-4 w-4 flex-shrink-0" />
-                <a href={`tel:${phone.replace(/\s/g, '')}`} className="hover:text-brand-400 transition-colors">
-                  {phone}
+                <a href={formatPhoneHref(phone)} className="hover:text-brand-400 transition-colors">
+                  {formatPhoneDisplay(phone)}
                 </a>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">

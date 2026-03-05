@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { getRoleLabelShort, getRoleBadgeVariant, type AppRole } from '@/config/roles';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 import {
   Search,
   Mail,
@@ -449,9 +450,9 @@ export default function ClientManagement() {
                             {client.email}
                           </a>
                           {client.phone && (
-                            <a href={`tel:${client.phone}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                            <a href={formatPhoneHref(client.phone)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                               <Phone className="h-3 w-3" />
-                              {client.phone}
+                              {formatPhoneDisplay(client.phone)}
                             </a>
                           )}
                         </div>

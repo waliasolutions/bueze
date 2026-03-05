@@ -17,6 +17,7 @@ import { ProposalStatusBadge } from '@/components/ProposalStatusBadge';
 import { getCantonLabel } from '@/config/cantons';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { acceptProposal, rejectProposal } from '@/lib/proposalHelpers';
+import { formatPhoneDisplay, formatPhoneHref, formatWebsiteUrl, formatAddress } from '@/lib/displayFormatters';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProposalComparisonDialog } from '@/components/ProposalComparisonDialog';
 import { invalidateProposalQueries } from '@/lib/queryInvalidation';
@@ -433,10 +434,10 @@ const ProposalsManagement = () => {
                                 <div className="flex items-center gap-2">
                                   <Phone className="h-4 w-4 text-muted-foreground" />
                                   <a 
-                                    href={`tel:${proposal.handwerker_profile.phone_number}`} 
+                                    href={formatPhoneHref(proposal.handwerker_profile.phone_number)} 
                                     className="text-primary hover:underline"
                                   >
-                                    {proposal.handwerker_profile.phone_number}
+                                    {formatPhoneDisplay(proposal.handwerker_profile.phone_number)}
                                   </a>
                                 </div>
                               )}
@@ -459,11 +460,11 @@ const ProposalsManagement = () => {
                                 <div className="flex items-center gap-2">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
                                   <span>
-                                    {[
-                                      proposal.handwerker_profile.business_address,
-                                      proposal.handwerker_profile.business_zip,
-                                      proposal.handwerker_profile.business_city || proposal.handwerker_profile.city
-                                    ].filter(Boolean).join(', ')}
+                                    {formatAddress({
+                                      street: proposal.handwerker_profile.business_address,
+                                      zip: proposal.handwerker_profile.business_zip,
+                                      city: proposal.handwerker_profile.business_city || proposal.handwerker_profile.city,
+                                    })}
                                   </span>
                                 </div>
                               )}
@@ -473,9 +474,7 @@ const ProposalsManagement = () => {
                                 <div className="flex items-center gap-2">
                                   <Globe className="h-4 w-4 text-muted-foreground" />
                                   <a 
-                                    href={proposal.handwerker_profile.website.startsWith('http') 
-                                      ? proposal.handwerker_profile.website 
-                                      : `https://${proposal.handwerker_profile.website}`} 
+                                    href={formatWebsiteUrl(proposal.handwerker_profile.website)} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="text-primary hover:underline"

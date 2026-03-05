@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Star, Search, Mail, Phone, ArrowLeft, Eye } from 'lucide-react';
 import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
+import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
@@ -435,9 +436,9 @@ const ResultsLayer = ({
                     </a>
                   )}
                   {hw.phone_number && (
-                    <a href={`tel:${hw.phone_number}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <a href={formatPhoneHref(hw.phone_number)} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
                       <Phone className="h-3 w-3 shrink-0" />
-                      {hw.phone_number}
+                      {formatPhoneDisplay(hw.phone_number)}
                     </a>
                   )}
                 </div>

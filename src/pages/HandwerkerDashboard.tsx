@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { withdrawProposal } from "@/lib/proposalQueries";
 import { ProposalLimitBadge } from "@/components/ProposalLimitBadge";
+import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 import { ProposalStatusBadge } from "@/components/ProposalStatusBadge";
 import { HandwerkerStatusIndicator } from "@/components/HandwerkerStatusIndicator";
 import { HandwerkerReviewResponse } from "@/components/HandwerkerReviewResponse";
@@ -1511,8 +1512,8 @@ const HandwerkerDashboard = () => {
                                     {proposal.client_contact.phone && (
                                       <div className="flex items-center gap-2">
                                         <Phone className="h-4 w-4 text-green-700" />
-                                        <a href={`tel:${proposal.client_contact.phone}`} className="text-green-900 hover:underline">
-                                          {proposal.client_contact.phone}
+                                        <a href={formatPhoneHref(proposal.client_contact.phone)} className="text-green-900 hover:underline">
+                                          {formatPhoneDisplay(proposal.client_contact.phone)}
                                         </a>
                                       </div>
                                     )}

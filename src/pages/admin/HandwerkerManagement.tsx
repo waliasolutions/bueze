@@ -14,6 +14,7 @@ import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { checkUserIsAdmin, upsertUserRole } from '@/lib/roleHelpers';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getCantonLabel } from '@/config/cantons';
+import { formatPhoneDisplay, formatPhoneHref, formatAddress } from '@/lib/displayFormatters';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import { HandwerkerEditDialog } from '@/components/admin/HandwerkerEditDialog';
@@ -764,9 +765,9 @@ export default function HandwerkerManagement() {
                               </a>
                             )}
                             {h.phone_number && (
-                              <a href={`tel:${h.phone_number}`} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+                              <a href={formatPhoneHref(h.phone_number)} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                                 <Phone className="h-3 w-3" />
-                                {h.phone_number}
+                                {formatPhoneDisplay(h.phone_number)}
                               </a>
                             )}
                           </div>
@@ -789,8 +790,11 @@ export default function HandwerkerManagement() {
                           {h.business_city && (
                             <div className="flex items-center gap-1 text-sm">
                               <MapPin className="h-3 w-3 text-muted-foreground" />
-                              {h.business_city}
-                              {h.business_canton && ` (${getCantonLabel(h.business_canton)})`}
+                              {formatAddress({
+                                zip: h.business_zip,
+                                city: h.business_city,
+                                canton: h.business_canton,
+                              })}
                             </div>
                           )}
                         </TableCell>
