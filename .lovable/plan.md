@@ -1,44 +1,57 @@
 
 
-# Updated Plan: Remove Local Payment Method Management, Delegate to Payrexx
+# Fix: Onboarding Recovery Dialog — Data-Only Restore, No Step Tracking
 
-## Changes from Previous Plan
+## Problem
 
-1. **Added Payrexx portal link** — the simplified `PaymentMethodCard` will include a button directing users to manage payment methods via Payrexx (using the checkout URL pattern already in the codebase).
-2. **Remove `hasPaymentMethod` from `SubscriptionManagement`** — this field is derived from the mock data and triggers a misleading "Zahlungsmethode erforderlich" warning. Since Payrexx owns payment state, this warning is inaccurate. Remove the field and the warning banner.
-3. **Full cleanup sweep confirmed** — no test files or other components reference these mocks beyond the 4 files identified.
+The recovery dialog shows wrong progress because:
+1. `currentStep` is saved but meaningless across sessions (auth state changes the step count from 3→2)
+2. Progress bar hardcodes `/3` even for authenticated users (2-step flow)
+3. Restoring `currentStep` lands users on wrong content when auth state differs from save time
 
-## Implementation
+## Fix
 
-### 1. Delete `src/components/AddPaymentMethodDialog.tsx`
-Entire file removed. Collects card data locally — violates Payrexx-exclusive policy.
+### 1. Auto-save: stop saving `currentStep` (lines 243-247)
 
-### 2. Rewrite `src/components/PaymentMethodCard.tsx`
-Replace with a simple informational card:
-- Icon + title "Zahlungsmethoden"
-- Description: "Ihre Zahlungsmethoden werden sicher über unseren Zahlungspartner Payrexx verwaltet."
-- Bullet points: payment details entered during checkout, stored securely by Payrexx, supports TWINT/PostFinance/Kreditkarten
-- Button: "Zahlungsmethoden verwalten" linking to `/checkout` (where Payrexx gateway handles the rest)
-- No props needed — fully self-contained
+Remove `currentStep` from `dataToSave`. Only save `formData` and `selectedMajorCategories`. Also remove `currentStep` from the `useEffect` dependency array (line 258).
 
-### 3. Clean up `src/pages/Profile.tsx`
+### 2. Recovery load: ignore `currentStep` (lines 263-301)
+
+- Update the type parameter of `loadVersionedData` to remove `currentStep`
+- Remove the `savedProgress` calculation (line 277)
+- Simplify `setRecoveryData` — only store `lastSaveTime` (remove `progress`, `currentStep`, `totalSteps`)
+
+**Backward compatibility**: Existing saved data may include `currentStep`. Since we destructure only `formData` and `selectedMajorCategories` from the loaded data, the extra `currentStep` key is simply ignored. Bump `STORAGE_VERSIONS.HANDWERKER_ONBOARDING_DRAFT` from `2` to `3` in `localStorageVersioning.ts` and add a migration that strips `currentStep` from old data, keeping it clean.
+
+### 3. Recovery dialog UI (lines 1400-1413)
+
 Remove:
-- Import of `AddPaymentMethodDialog`
-- `paymentMethods` state
-- `showAddPaymentDialog` state
-- `handleAddPaymentMethod`, `handleRemovePaymentMethod`, `handleSetDefaultPaymentMethod` handlers
-- Mock `setPaymentMethods([])` call (line 226-228)
-- `hasPaymentMethod` from `currentSubscription` object (line 218)
-- `AddPaymentMethodDialog` JSX (lines 928-933)
-- Update `PaymentMethodCard` usage — remove all props (now prop-less)
+- Progress bar (`<Progress>`)
+- Step counter ("Schritt X von Y")
+- `progress`, `currentStep`, `totalSteps` from `recoveryData` state type
 
-### 4. Update `src/components/SubscriptionManagement.tsx`
-- Remove `hasPaymentMethod` from `CurrentSubscription` interface
-- Remove the amber warning banner (lines 153-162) that says "Zahlungsmethode erforderlich"
+Keep:
+- "Zuletzt bearbeitet" timestamp (works correctly)
+- Fortsetzen / Neu beginnen buttons
+
+### 4. Restore handler: data only (lines 1473-1491)
+
+Remove `setCurrentStep(parsed.currentStep || 1)` — let the component use its natural first step based on current auth state. Only restore `formData` and `selectedMajorCategories`.
+
+### 5. `recoveryData` state shape simplification
+
+Change from `{ progress, lastSaveTime, currentStep, totalSteps }` to just `{ lastSaveTime: string }`. Remove the `Progress` import if no longer used elsewhere in the file.
+
+### 6. Version bump in `localStorageVersioning.ts`
+
+```
+HANDWERKER_ONBOARDING_DRAFT: 3
+```
+
+Migration `3`: receives old data, returns `{ formData, selectedMajorCategories }` (drops `currentStep`).
 
 ## Files Changed
-1. **Delete** `src/components/AddPaymentMethodDialog.tsx`
-2. **Rewrite** `src/components/PaymentMethodCard.tsx` — informational card with Payrexx link
-3. **Update** `src/pages/Profile.tsx` — remove mock state, handlers, dialog
-4. **Update** `src/components/SubscriptionManagement.tsx` — remove `hasPaymentMethod` field and warning
+
+1. **`src/pages/HandwerkerOnboarding.tsx`** — remove step tracking from save/load/restore/dialog
+2. **`src/lib/localStorageVersioning.ts`** — bump version to 3
 
