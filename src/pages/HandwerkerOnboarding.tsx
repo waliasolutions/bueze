@@ -34,7 +34,7 @@ import {
   STORAGE_VERSIONS 
 } from "@/lib/localStorageVersioning";
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
-import { PASSWORD_MIN_LENGTH } from "@/lib/validationHelpers";
+import { validatePassword } from "@/lib/validationHelpers";
 import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
 
 type StepContent = 'contact' | 'services' | 'summary';
@@ -327,10 +327,9 @@ const HandwerkerOnboarding = () => {
       if (!formData.phoneNumber.trim()) {
         newErrors.phoneNumber = "Telefonnummer ist erforderlich";
       }
-      if (!formData.password) {
-        newErrors.password = "Passwort ist erforderlich";
-      } else if (formData.password.length < PASSWORD_MIN_LENGTH) {
-        newErrors.password = `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen lang sein`;
+      const pwResult = validatePassword(formData.password);
+      if (!pwResult.valid) {
+        newErrors.password = pwResult.error!;
       }
       if (!formData.companyName.trim()) {
         newErrors.companyName = "Firmenname ist erforderlich";
