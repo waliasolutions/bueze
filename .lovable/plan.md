@@ -1,35 +1,48 @@
 
 
-# Plan: Add Visible Validation Error Feedback on Submit Failure
+# Plan: Make /auth Login-Only, Remove Direct Registration
 
-## Context
-The B1 schema fix is already deployed. But the root UX problem remains: when `form.handleSubmit` fails validation, the user sees nothing — no toast, no error summary. React Hook Form silently prevents submission. This affected real users on March 5th.
+## Problem
+The `/auth` page offers both login and signup. But signup here creates "orphan" users with no lead and no handwerker profile — they land on `/dashboard` with nothing to do. The intended paths are:
+- **Clients**: `/auftrag-erstellen` (submit lead) — account created as part of Step 1
+- **Handwerker**: `/handwerker-registrierung` — account created as part of Step 1
+
+Direct registration on `/auth` bypasses both flows and caused the B1 bug.
 
 ## What to Change
 
-**File**: `src/pages/SubmitLead.tsx`
+**File**: `src/pages/Auth.tsx`
 
-Add an `onInvalid` callback to `form.handleSubmit` that shows a toast with the validation errors:
+1. **Remove the signup form entirely** — delete the `isSignUp` state, the signup form JSX, and `handleSignUp`
+2. **Replace the "Noch kein Konto?" toggle** with two clear CTAs:
+   - "Auftrag erstellen" → links to `/auftrag-erstellen` (client path)
+   - "Als Handwerker registrieren" → links to `/handwerker-registrierung` (handwerker path)
+3. Keep login form and password reset dialog unchanged
+
+The bottom section becomes:
 
 ```tsx
-<form onSubmit={form.handleSubmit(onSubmit, (errors) => {
-  const errorCount = Object.keys(errors).length;
-  toast({
-    title: 'Formular unvollständig',
-    description: `Bitte überprüfen Sie ${errorCount} ${errorCount === 1 ? 'Feld' : 'Felder'}.`,
-    variant: 'destructive',
-  });
-  console.error('[SubmitLead] Validation errors:', errors);
-})} className="space-y-6">
+<div className="pt-2 border-t space-y-2">
+  <p className="text-sm text-muted-foreground">Noch kein Konto?</p>
+  <div className="flex flex-col gap-2">
+    <Button variant="outline" onClick={() => navigate('/auftrag-erstellen')} className="w-full">
+      Auftrag erstellen (Kunde)
+    </Button>
+    <Button variant="outline" onClick={() => navigate('/handwerker-registrierung')} className="w-full">
+      Als Handwerker registrieren
+    </Button>
+  </div>
+</div>
 ```
 
-This is the second argument to `handleSubmit` — React Hook Form calls it when validation fails. Currently it's not used, so failures are silent.
-
 ## What This Fixes
-- Users always get feedback when submit fails
-- Console log captures the exact failing fields for debugging
-- No architectural changes, no new components — single line addition
+- No more orphan registrations without a lead or profile
+- Users are guided to the correct flow with built-in account creation
+- `/auth` becomes a focused login page — single responsibility
+- Eliminates the B1 bug scenario entirely (no authenticated users arriving at SubmitLead via a detour)
 
-## Operational Task (Not Code)
-Contact affected users (`dedonno@yahoo.com`, `putzwind@yahoo.com`, `info@wp-24.ch`, `highdent@gmx.ch`) to inform them the issue is resolved and invite them to retry.
+## Files Changed
+| File | Change |
+|------|--------|
+| `src/pages/Auth.tsx` | Remove signup form, add navigation CTAs to intended registration flows |
 
