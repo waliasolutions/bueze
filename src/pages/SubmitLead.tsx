@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -32,8 +32,8 @@ import { useMultiStepForm } from '@/hooks/useMultiStepForm';
 import { MultiStepProgress } from '@/components/ui/multi-step-progress';
 
 
-// Schema with proper validation - no more .or(z.literal('')) bug
-const leadSchema = z.object({
+// Base schema type — used for TypeScript inference only (no contact validation here)
+const leadSchemaBase = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
   description: z.string().optional().or(z.literal('')),
   category: z.string().min(1, 'Bitte wählen Sie eine Kategorie'),
@@ -45,25 +45,16 @@ const leadSchema = z.object({
   city: z.string().optional().or(z.literal('')),
   canton: z.string().optional().or(z.literal('')),
   address: z.string().optional(),
-  // Contact fields - REQUIRED for guests, properly validated (no .or(z.literal('')))
-  contactEmail: z.string().email('Gültige E-Mail erforderlich'),
-  contactPhone: z.string().optional().or(z.literal('')),
-  contactFirstName: z.string().min(1, 'Vorname ist erforderlich'),
-  contactLastName: z.string().min(1, 'Nachname ist erforderlich'),
-  contactPassword: z.string().min(PASSWORD_MIN_LENGTH, `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen haben`),
+  contactEmail: z.string().default(''),
+  contactPhone: z.string().optional().default(''),
+  contactFirstName: z.string().default(''),
+  contactLastName: z.string().default(''),
+  contactPassword: z.string().default(''),
   // Honeypot field
   website: z.string().max(0, 'Spam erkannt').optional().default(''),
-}).refine((data) => {
-  if (data.budget_min && data.budget_max) {
-    return data.budget_max >= data.budget_min;
-  }
-  return true;
-}, {
-  message: 'Maximalbudget muss größer oder gleich dem Mindestbudget sein',
-  path: ['budget_max'],
 });
 
-type LeadFormData = z.infer<typeof leadSchema>;
+type LeadFormData = z.infer<typeof leadSchemaBase>;
 
 // Generate categories dynamically from subcategoryLabels (SSOT)
 const categories = Object.values(majorCategories).flatMap(majorCat => 
@@ -114,6 +105,50 @@ const SubmitLead = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   // Track if user started as guest - this determines step flow for the entire session
   const [startedAsGuest, setStartedAsGuest] = useState<boolean | null>(null);
+
+  /**
+   * DUAL VALIDATION STRATEGY:
+   * - Guest users: Contact fields validated via superRefine (isAuthenticatedRef=false)
+   *   AND per-field via form.trigger() in handleCreateAccountAndProceed (Step 1).
+   *   After account creation, isAuthenticatedRef flips to true — subsequent
+   *   form.handleSubmit() skips contact validation.
+   * - Authenticated users: isAuthenticatedRef is true from mount. Contact fields
+   *   use .default('') and superRefine skips them entirely.
+   *
+   * WHY a ref instead of useMemo: React Hook Form binds the resolver once at mount.
+   * A useMemo-based schema swap doesn't propagate to the resolver. The ref is read
+   * at validation time (inside superRefine closure), so it always reflects current state.
+   */
+  const isAuthenticatedRef = useRef(false);
+
+  const leadSchema = useMemo(() => leadSchemaBase
+    .refine((data) => {
+      if (data.budget_min && data.budget_max) {
+        return data.budget_max >= data.budget_min;
+      }
+      return true;
+    }, {
+      message: 'Maximalbudget muss größer oder gleich dem Mindestbudget sein',
+      path: ['budget_max'],
+    })
+    .superRefine((data, ctx) => {
+      if (isAuthenticatedRef.current) return; // Session provides identity
+
+      if (!data.contactEmail || !z.string().email().safeParse(data.contactEmail).success) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Gültige E-Mail erforderlich', path: ['contactEmail'] });
+      }
+      if (!data.contactFirstName) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vorname ist erforderlich', path: ['contactFirstName'] });
+      }
+      if (!data.contactLastName) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Nachname ist erforderlich', path: ['contactLastName'] });
+      }
+      if (!data.contactPassword || data.contactPassword.length < PASSWORD_MIN_LENGTH) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Passwort muss mindestens ${PASSWORD_MIN_LENGTH} Zeichen haben`, path: ['contactPassword'] });
+      }
+    }),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  []); // Empty deps — created once, reads ref dynamically
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -183,6 +218,7 @@ const SubmitLead = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      isAuthenticatedRef.current = !!user;
       setIsAuthenticated(!!user);
       // Capture initial state ONCE - this determines step flow for the entire session
       setStartedAsGuest(!user);
@@ -414,7 +450,8 @@ const SubmitLead = () => {
         return;
       }
 
-      // Success! User is now authenticated
+      // Success! User is now authenticated — flip ref so superRefine skips contact validation
+      isAuthenticatedRef.current = true;
       setIsAuthenticated(true);
       toast({
         title: "Konto erstellt",
