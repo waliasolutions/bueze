@@ -1,118 +1,102 @@
 
 
-# Updated Plan: Payment Architecture — 6 Hardening Changes
+# Updated Plan: Deep QA — Lead Submission & 404 Fixes
 
-Feedback incorporated: realtime publication migration added, cleanup on unmount specified, price migration documented with timestamped TODO pattern.
-
----
-
-## Issue 1: Race condition — Realtime subscription (HIGH)
-
-**Problem**: User lands on `/profile?tab=subscription&success=true` before webhook fires. Sees "free tier."
-
-**Migration needed**: `handwerker_subscriptions` is NOT in the `supabase_realtime` publication (only `handwerker_notifications` is). Add migration:
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE handwerker_subscriptions;
-```
-
-**Fix in `src/pages/Profile.tsx`**:
-- When `success=true` is detected, show a "Zahlung wird verarbeitet..." banner with spinner
-- Subscribe to realtime changes on `handwerker_subscriptions` filtered by `user_id`
-- When `plan_type` changes from `free` to paid, dismiss banner, show success toast, refetch subscription data
-- 30-second timeout: if no update, show "Bitte laden Sie die Seite in einigen Sekunden erneut"
-- **Cleanup**: unsubscribe both on timeout AND on component unmount (return cleanup function from useEffect). This prevents leaked subscriptions if the user navigates away before 30 seconds.
-
-**Files**: `src/pages/Profile.tsx`, migration SQL
+Feedback incorporated: AbortSignal pattern for fetchWithTimeout, Deno-only shared file constraint, orphan recovery safeguards.
 
 ---
 
-## Issue 2: referenceId delimiter (HIGH)
+## Issue 1 (CRITICAL): Stale category mapping in `send-lead-notification`
 
-**Problem**: `{userId}-{planType}-{timestamp}` uses hyphens — fragile with UUIDs.
+The edge function's `majorCategorySubcategories` (lines 12-52) is completely out of sync with the frontend SSOT (`src/config/majorCategories.ts`).
 
-**Fix**: Change delimiter to `|`:
-- `create-payrexx-gateway`: `${userId}|${planType}|${Date.now()}`
-- `payrexx-webhook`: `parseReferenceId` splits on `|`
+**Missing categories** (leads here produce ZERO notifications):
+- `heizung_klima` with subcategories: `waermepumpen`, `fussbodenheizung`, `boiler`, `klimaanlage_lueftung`, `cheminee_kamin_ofen`, `photovoltaik`, `solarheizung`, `heizung_sonstige`
+- `kueche`: `kuechenbau`, `kuechenplanung`, `kuechengeraete`, `arbeitsplatten`, `kueche_sonstige`
+- `innenausbau_schreiner`: `schreiner`, `moebelbau`, `fenster_tueren`, `treppen`, `holzarbeiten_innen`, `metallarbeiten_innen`, `innenausbau_sonstige`
+- `garten_umgebung`: `gartenbau`, `pflasterarbeiten`, `zaun_torbau`, `aussenarbeiten_sonstige`
+- `reinigung_hauswartung`: `reinigung`, `reinigung_hauswartung`
+- `raeumung_entsorgung`: `aufloesung_entsorgung`, `umzug`, `reinigung`, `reinigung_hauswartung`
 
-**Files**: `supabase/functions/create-payrexx-gateway/index.ts`, `supabase/functions/payrexx-webhook/index.ts`
+**Stale entries** still present: `sanitaer_heizung`, `maler_gipser`, `schreiner_holzbau`, `dach_fassade`, `garten_aussen`, `umzug_reinigung`, `badumbau`
+
+**Fix**: Create `supabase/functions/_shared/majorCategoryMapping.ts` — a pure data file (no React, no Node imports) that mirrors the subcategory arrays from `majorCategories.ts`. Import it in `send-lead-notification/index.ts`, replacing the hardcoded mapping.
+
+The shared file will contain only a `Record<string, string[]>` export and pure helper functions — fully Deno-compatible.
+
+**Files**: new `supabase/functions/_shared/majorCategoryMapping.ts`, `supabase/functions/send-lead-notification/index.ts`
 
 ---
 
-## Issue 4: Webhook idempotency ordering (MEDIUM)
+## Issue 2 (HIGH): `fetchWithTimeout` doesn't actually timeout
 
-**Problem**: `payment_history` insert happens AFTER subscription upsert. Two rapid webhook calls can both pass the idempotency check.
+The current `fetchWithTimeout` creates an `AbortController` but never passes the signal to `fetchFn`. The `controller.abort()` fires into the void.
 
-**Fix**: Insert into `payment_history` FIRST using upsert with `onConflict: 'payrexx_transaction_id'` and `ignoreDuplicates: true`. Use `.select('id')` to check if a row was returned. If no rows returned → conflict fired → already processed → bail. Remove the earlier `maybeSingle()` check.
+**The nuance**: `fetchWithRetry` and `supabaseQuery` wrap Supabase client calls (`supabase.from(...)`), not raw `fetch()`. The Supabase JS client doesn't accept an `AbortSignal` on its query builder. So the AbortSignal approach can't be used directly here.
+
+**Fix**: Use `Promise.race` for the timeout (since we can't pass signal to Supabase client), but restructure `fetchWithTimeout` to properly clean up:
 
 ```typescript
-const { data: insertedPayment } = await supabase
-  .from('payment_history')
-  .upsert({
-    user_id: userId,
-    amount,
-    currency: 'CHF',
-    plan_type: planType,
-    status: 'paid',
-    payment_provider: 'payrexx',
-    payrexx_transaction_id: transactionId.toString(),
-    payment_date: now.toISOString(),
-    description: `Büeze ${planType} Abonnement`,
-    invoice_pdf_url: invoice?.paymentLink || null,
-  }, { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true })
-  .select('id');
-
-if (!insertedPayment || insertedPayment.length === 0) {
-  console.log(`Transaction ${transactionId} already processed (conflict), skipping`);
-  return successResponse({ received: true, already_processed: true });
+async function fetchWithTimeout<T>(
+  fetchFn: () => Promise<T>,
+  timeout: number
+): Promise<T> {
+  return Promise.race([
+    fetchFn(),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Request timed out after ${timeout}ms`)), timeout)
+    ),
+  ]);
 }
-// NOW proceed with subscription upsert
 ```
 
-**File**: `supabase/functions/payrexx-webhook/index.ts`
+This is a known trade-off: the underlying Supabase request may continue, but the caller unblocks and can retry. Document this limitation with a comment. If we later add raw `fetch()` calls, those callers should use the AbortSignal pattern directly at the call site.
+
+**File**: `src/lib/fetchHelpers.ts`
 
 ---
 
-## Issue 5: Amount validation — allowlist (MEDIUM)
+## Issue 3 (HIGH): Client-side 404s from RLS
 
-**Problem**: Exact match rejects valid payments after price changes. Accept-all opens tampering risk.
+**Server routing is fine** — `vercel.json` has the SPA rewrite.
 
-**Fix**: Add `VALID_PLAN_AMOUNTS` to `planLabels.ts`:
+**The real 404s are client-side**:
 
-```typescript
-// When changing prices, add the old price here temporarily.
-// TODO: remove old price after YYYY-MM-DD (add date when migrating)
-export const VALID_PLAN_AMOUNTS: Record<string, number[]> = {
-  monthly: [9000],
-  '6_month': [51000],
-  annual: [96000],
-};
-```
+1. **`LeadDetails.tsx`** (line 103-107): Uses `.single()` which throws if RLS blocks access. The catch block (line 121-123) silently swallows the error. The `!lead` UI (line 221-234) shows "Auftrag nicht gefunden" with a link to `/search` — but gives no explanation of *why* (RLS block vs deleted vs expired).
 
-In webhook, validate against the array instead of exact match. Document the migration process in the architecture doc: "When changing prices: (1) add new price to VALID_PLAN_AMOUNTS, (2) keep old price with a `// TODO: remove after YYYY-MM-DD` comment, (3) update PLAN_AMOUNTS to new price, (4) remove old price after 48 hours."
+2. **`OpportunityView.tsx`** (line 54-59): Filters `.eq('status', 'active')`. If a handwerker clicks a magic link for an expired lead, they get the "Anfrage nicht gefunden" page (line 215-236) — which already has decent UX ("nicht mehr aktiv"). However, the `.eq('status', 'active')` filter is redundant since RLS already controls access, and it prevents showing a proper "expired" message vs "not found."
 
-**Files**: `supabase/functions/_shared/planLabels.ts`, `supabase/functions/payrexx-webhook/index.ts`
+**Fix**:
+- `OpportunityView.tsx`: Remove `.eq('status', 'active')` from the query. After fetching, check `lead.status` and show a specific "Frist abgelaufen" message if expired, vs "Nicht gefunden" if null.
+- `LeadDetails.tsx`: Add guidance text to the not-found state: "Dieser Auftrag existiert nicht mehr oder Sie haben keinen Zugriff darauf."
+
+**Files**: `src/pages/OpportunityView.tsx`, `src/pages/LeadDetails.tsx`
 
 ---
 
-## Issue 6: Remove auto-heal + Checkout error UX (HIGH)
+## Issue 4 (MEDIUM): Orphaned lead recovery
 
-**Problem**: Invalid credentials in production trigger simulation mode, redirecting users to success without payment.
+After fixing Issue 1, existing orphaned leads need re-processing.
 
-**Fix in `create-payrexx-gateway`**:
-- Remove the `isAuthError` auto-heal branch entirely. Only simulate when `PAYREXX_TEST_MODE` is explicitly `true`.
-- When credentials fail and test mode is off, return 502 with clear error message.
+**Safeguard**: Only re-trigger for leads that are:
+- `status = 'active'`
+- `proposal_deadline > now()` (not expired)
+- Have zero entries in `lead_proposals` (no handwerkers responded)
+- Were created with categories that match the stale mapping (the 6 missing categories)
 
-**Fix in `Checkout.tsx`**:
-- Detect 502 status in the catch block and show: "Das Zahlungssystem ist momentan nicht verfügbar. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support."
+This prevents re-triggering for leads that already processed correctly or are no longer relevant.
 
-**Files**: `supabase/functions/create-payrexx-gateway/index.ts`, `src/pages/Checkout.tsx`
+**Approach**: SQL query to identify affected leads, then manually invoke `send-lead-notification` for each via `supabase.functions.invoke()`. This is a one-time operation.
 
 ---
 
-## Issues 3 & 7: Confirmed — No code changes
+## Issue 5 (LOW): `boiler` duplicated across major categories
 
-- **Issue 3** (grace period / manual renewal): Intentional per AGB.
-- **Issue 7** (cancellation): Exists via "Abo kündigen" → `pending_plan='free'` → cron downgrade.
+`boiler` appears in both `sanitaer.subcategories` and `heizung_klima.subcategories` in `majorCategories.ts`. It belongs under `heizung_klima` per `subcategoryLabels.ts`.
+
+**Fix**: Remove `boiler` from `sanitaer.subcategories`.
+
+**File**: `src/config/majorCategories.ts`
 
 ---
 
@@ -120,11 +104,11 @@ In webhook, validate against the array instead of exact match. Document the migr
 
 | # | Issue | Severity | Files |
 |---|-------|----------|-------|
-| 1 | Race condition → realtime | HIGH | `Profile.tsx`, migration |
-| 2 | referenceId delimiter → `\|` | HIGH | `create-payrexx-gateway`, `payrexx-webhook` |
-| 4 | Idempotency → insert-first | MEDIUM | `payrexx-webhook` |
-| 5 | Amount → allowlist + TODO pattern | MEDIUM | `planLabels.ts`, `payrexx-webhook` |
-| 6 | Remove auto-heal + 502 UX | HIGH | `create-payrexx-gateway`, `Checkout.tsx` |
+| 1 | Stale category mapping → SSOT shared file | CRITICAL | new `_shared/majorCategoryMapping.ts`, `send-lead-notification/index.ts` |
+| 2 | `fetchWithTimeout` → `Promise.race` | HIGH | `src/lib/fetchHelpers.ts` |
+| 3 | Client-side 404s → proper error UI | HIGH | `OpportunityView.tsx`, `LeadDetails.tsx` |
+| 4 | Orphaned lead recovery | MEDIUM | SQL query (one-time) |
+| 5 | Remove duplicate `boiler` | LOW | `src/config/majorCategories.ts` |
 
-**Total**: 5 files + 1 migration across frontend and edge functions.
+**Total**: 5 files changed + 1 new shared file + 1 recovery query.
 
