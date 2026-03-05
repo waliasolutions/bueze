@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { getUserRoles } from '@/lib/roleHelpers';
 
@@ -19,9 +19,17 @@ export default function Auth() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   // If redirected here from a ProtectedRoute, capture the intended destination
   const returnTo = (location.state as { from?: string })?.from;
+
+  // Auto-open reset dialog when ?mode=reset is present
+  useEffect(() => {
+    if (searchParams.get('mode') === 'reset') {
+      setIsDialogOpen(true);
+    }
+  }, [searchParams]);
 
   const [signInData, setSignInData] = useState({
     email: '',
