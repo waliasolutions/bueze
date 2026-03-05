@@ -276,7 +276,12 @@ export function HandwerkerProfileModal({ handwerkerId, open, onOpenChange }: Han
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => window.open(profile.website!, '_blank')}
+                  onClick={() => {
+                    const url = profile.website!.match(/^https?:\/\//) 
+                      ? profile.website! 
+                      : `https://${profile.website}`;
+                    window.open(url, '_blank');
+                  }}
                 >
                   <Globe className="h-4 w-4 mr-2" />
                   Website besuchen
