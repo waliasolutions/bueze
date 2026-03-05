@@ -652,7 +652,15 @@ const SubmitLead = () => {
           />
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
+              const errorCount = Object.keys(errors).length;
+              toast({
+                title: 'Formular unvollständig',
+                description: `Bitte überprüfen Sie ${errorCount} ${errorCount === 1 ? 'Feld' : 'Felder'}.`,
+                variant: 'destructive',
+              });
+              console.error('[SubmitLead] Validation errors:', errors);
+            })} className="space-y-6">
               {/* Honeypot field */}
               <div className="absolute left-[-9999px] opacity-0 pointer-events-none" aria-hidden="true">
                 <FormField
