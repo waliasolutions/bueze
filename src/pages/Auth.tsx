@@ -284,10 +284,10 @@ export default function Auth() {
               <div className="pt-2 border-t space-y-2">
                 <p className="text-sm text-muted-foreground">Noch kein Konto?</p>
                 <div className="flex flex-col gap-2">
-                  <Button variant="outline" onClick={() => navigate('/auftrag-erstellen')} className="w-full">
+                  <Button variant="outline" onClick={() => navigate('/submit-lead')} className="w-full">
                     Auftrag erstellen (Kunde)
                   </Button>
-                  <Button variant="outline" onClick={() => navigate('/handwerker-registrierung')} className="w-full">
+                  <Button variant="outline" onClick={() => navigate('/handwerker-onboarding')} className="w-full">
                     Als Handwerker registrieren
                   </Button>
                 </div>
