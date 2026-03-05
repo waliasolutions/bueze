@@ -161,7 +161,7 @@ export async function reactivateLead(leadId: string, userId: string): Promise<Le
 /**
  * Get lead analytics for owner
  */
-export async function getLeadAnalytics(leadId: string, userId: string): Promise<LeadAnalytics> {
+export async function getLeadAnalytics(leadId: string): Promise<LeadAnalytics> {
   try {
     // Get total purchases
     const { data: purchases, error: purchaseError } = await supabase

@@ -58,7 +58,7 @@ const LeadDetails = () => {
 
   const fetchAnalytics = async () => {
     if (!user || !lead) return;
-    const data = await getLeadAnalytics(lead.id, user.id);
+    const data = await getLeadAnalytics(lead.id);
     setAnalytics(data);
   };
 
