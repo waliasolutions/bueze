@@ -8,78 +8,7 @@ import { getCategoryLabel } from '../_shared/categoryLabels.ts';
 import { newLeadNotificationTemplate, newLeadAdminNotificationTemplate } from '../_shared/emailTemplates.ts';
 import { formatSwissDateTime } from '../_shared/dateFormatter.ts';
 
-// Major category to subcategory mapping for proper matching
-const majorCategorySubcategories: Record<string, string[]> = {
-  'bau_renovation': [
-    'maurer', 'zimmermann', 'mauerarbeit', 'betonarbeiten', 'fundament',
-    'kernbohrungen', 'abbruch_durchbruch', 'renovierung_sonstige'
-  ],
-  'bodenbelaege': [
-    'bodenleger', 'parkett_laminat', 'teppich_pvc_linoleum', 'bodenfliese', 'bodenbelag_sonstige'
-  ],
-  'elektroinstallationen': [
-    'elektriker', 'elektro_hausinstallationen', 'elektro_unterverteilung',
-    'elektro_stoerung_notfall', 'elektro_beleuchtung', 'elektro_geraete_anschliessen',
-    'elektro_netzwerk_multimedia', 'elektro_sprechanlage', 'elektro_smart_home', 'elektro_wallbox'
-  ],
-  'sanitaer_heizung': [
-    'sanitaer', 'heizung', 'klimatechnik'
-  ],
-  'maler_gipser': [
-    'maler', 'gipser'
-  ],
-  'schreiner_holzbau': [
-    'schreiner', 'holzbau', 'fenster_tueren', 'kuechenbau'
-  ],
-  'dach_fassade': [
-    'dachdecker', 'fassadenbauer', 'spengler'
-  ],
-  'garten_aussen': [
-    'gartenbau', 'pflasterarbeiten', 'zaun_torbau', 'garage_carport', 'aussenarbeiten_sonstige'
-  ],
-  'metallbau': [
-    'schlosserei', 'metallbau'
-  ],
-  'plattenleger': [
-    'plattenleger'
-  ],
-  'umzug_reinigung': [
-    'umzug', 'reinigung'
-  ],
-  'badumbau': [
-    'badumbau'
-  ]
-};
-
-// Get the major category for a subcategory
-function getMajorCategoryForSubcategory(subcategory: string): string | null {
-  for (const [major, subs] of Object.entries(majorCategorySubcategories)) {
-    if (subs.includes(subcategory)) {
-      return major;
-    }
-  }
-  return null;
-}
-
-// Check if handwerker categories match lead category (including major category matching)
-function handwerkerMatchesCategory(handwerkerCategories: string[], leadCategory: string): boolean {
-  if (handwerkerCategories.includes(leadCategory)) return true;
-  
-  const majorSubs = majorCategorySubcategories[leadCategory];
-  if (majorSubs) {
-    return handwerkerCategories.some(cat => majorSubs.includes(cat));
-  }
-  
-  const leadMajor = getMajorCategoryForSubcategory(leadCategory);
-  if (leadMajor) {
-    const majorSubcats = majorCategorySubcategories[leadMajor];
-    if (majorSubcats) {
-      return handwerkerCategories.some(cat => majorSubcats.includes(cat));
-    }
-  }
-  
-  return false;
-}
+import { handwerkerMatchesCategory } from '../_shared/majorCategoryMapping.ts';
 
 // Swiss canton codes
 const SWISS_CANTONS = ['AG', 'AI', 'AR', 'BE', 'BL', 'BS', 'FR', 'GE', 'GL', 'GR', 'JU', 'LU', 'NE', 'NW', 'OW', 'SG', 'SH', 'SO', 'SZ', 'TG', 'TI', 'UR', 'VD', 'VS', 'ZG', 'ZH'];

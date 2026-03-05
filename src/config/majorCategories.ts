@@ -152,8 +152,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     description: 'Badezimmer, Sanitärinstallationen und Reparaturen',
     subcategories: [
       'badewanne_dusche', 'badezimmer', 'badumbau',
-      'klempnerarbeiten', 'sanitaer', 
-      'boiler', 'sanitaer_sonstige'
+      'klempnerarbeiten', 'sanitaer', 'sanitaer_sonstige'
     ],
     color: 'from-blue-500 to-cyan-600',
     showOnHome: true,

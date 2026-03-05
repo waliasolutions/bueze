@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, Coins, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Users, ArrowLeft } from 'lucide-react';
+import { MapPin, Clock, Coins, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Users, ArrowLeft, AlertCircle } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { pauseLead, completeLead, deleteLead, reactivateLead, getLeadAnalytics } from '@/lib/leadHelpers';
 import { getLeadStatus } from '@/config/leadStatuses';
@@ -224,7 +224,13 @@ const LeadDetails = () => {
         <Header />
         <main className="container mx-auto px-4 py-8 pt-24">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-2xl font-bold text-foreground mb-4">Auftrag nicht gefunden</h1>
+            <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-6">
+              <AlertCircle className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">Auftrag nicht gefunden</h1>
+            <p className="text-muted-foreground mb-6">
+              Dieser Auftrag existiert nicht mehr oder Sie haben keinen Zugriff darauf.
+            </p>
             <Button onClick={() => navigate('/search')}>Zurück zur Suche</Button>
           </div>
         </main>
