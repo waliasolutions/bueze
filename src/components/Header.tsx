@@ -68,7 +68,7 @@ export const Header = () => {
     { label: 'Kategorien', href: '/kategorien' },
     { label: 'Handwerker finden', href: '/handwerker-verzeichnis' },
     { label: 'Für Handwerker', href: '/handwerker', highlight: true, children: [
-      { label: 'Übersicht', href: '/handwerker' },
+      { label: 'Registrieren', href: '/handwerker' },
       { label: 'Preise', href: '/pricing' },
     ]},
   ];
