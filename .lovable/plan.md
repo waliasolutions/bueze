@@ -1,27 +1,33 @@
 
 
-# Fix: Hero Loading Flash
+# Fix: Dashboard Profile Tab — Summary + Redirect, Remove Duplicate Editing
 
 ## Problem
 
-The Hero shows skeleton placeholders while `usePageContent('homepage_hero')` loads. If the query is slow, fails, or the row doesn't exist, users see a flash of grey skeleton blocks before defaults appear. This is unnecessary because `heroDefaults` already provides complete, identical fallback content — there's no reason to show a loading state.
+The dashboard profile tab has disabled fields with a misleading "contact us to change" message, even though the full edit page (`/handwerker-profile/edit`) allows all changes — including logo upload. This confuses pending handwerkers into thinking their data is locked.
 
-## Root Cause
+## Verification: Logo Upload
 
-`Index.tsx` passes `loading={heroLoading}` to `Hero`, which triggers skeleton rendering on every page load. Since defaults are always available and match the CMS content, the skeleton adds latency to the perceived load time with zero benefit.
+`HandwerkerProfileEdit.tsx` has a complete logo upload implementation (lines 508-550, UI at lines 1396-1450) with the same Supabase storage logic. Removing `handleLogoUpload` from the dashboard is safe — no functionality is lost.
 
 ## Fix
 
-**`src/pages/Index.tsx`**: Remove `heroLoading` — stop passing `loading` prop to `Hero`.
+### `src/pages/HandwerkerDashboard.tsx`
 
-**`src/components/Hero.tsx`**: Remove the `loading` prop, the skeleton branches, and the `loading ? '...' : ctaText` ternary. Always render content immediately using the existing `content?.fields?.X ?? heroDefaults.X` pattern (already in place, lines 33-37). This means:
-- First render: defaults show instantly (no flash)
-- CMS content arrives: React re-renders with CMS values (seamless swap, usually identical)
+**Replace profile tab content** (lines ~1809-1955) with:
+- Read-only summary card showing: logo (display only), name, company, email, phone
+- Single CTA button: "Profil bearbeiten" → `/handwerker-profile/edit`
+- Remove the misleading "Kontaktieren Sie uns" alert
 
-Remove the `loading` field from the `HeroProps` interface. Remove all three skeleton blocks (headlines skeleton lines 48-52, CTA "..." on line 79, trust signals skeleton lines 122-126).
+**Remove dead code:**
+- `profileEditing` state
+- `logoUploading` state
+- `profileData` state
+- `handleLogoUpload` function
+- `handleUpdateProfile` function
+- Any imports only used by these (check Upload, Pencil usage elsewhere before removing)
 
 ## Files Changed
 
-1. **`src/components/Hero.tsx`** — remove `loading` prop and all skeleton/loading branches
-2. **`src/pages/Index.tsx`** — remove `heroLoading` variable and `loading` prop from `<Hero>`
+1. **`src/pages/HandwerkerDashboard.tsx`** — simplify profile tab to summary + link, remove duplicate editing code
 
