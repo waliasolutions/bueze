@@ -79,16 +79,6 @@ const HandwerkerDashboard = () => {
     newReviews: 0
   });
 
-  // Profile Tab
-  const [profileEditing, setProfileEditing] = useState(false);
-  const [logoUploading, setLogoUploading] = useState(false);
-  const [profileData, setProfileData] = useState({
-    bio: "",
-    hourly_rate_min: "",
-    hourly_rate_max: "",
-    phone_number: "",
-    logo_url: ""
-  });
 
   // Proposal Form
   const [proposalForm, setProposalForm] = useState({
@@ -223,14 +213,6 @@ const HandwerkerDashboard = () => {
       }
       setHandwerkerProfile(profile);
 
-      // Set profile data for editing
-      setProfileData({
-        bio: profile.bio || '',
-        phone_number: profile.phone_number || '',
-        hourly_rate_min: profile.hourly_rate_min?.toString() || '',
-        hourly_rate_max: profile.hourly_rate_max?.toString() || '',
-        logo_url: profile.logo_url || ''
-      });
 
       // Fetch leads for approved AND pending (Pre-Verified Browse Mode)
       const canBrowse = ['approved', 'pending'].includes(profile.verification_status || '');
@@ -696,116 +678,6 @@ const HandwerkerDashboard = () => {
     }
   };
 
-  const handleUpdateProfile = async () => {
-    if (!handwerkerProfile?.id) return;
-    setProfileEditing(true);
-    try {
-      const {
-        error
-      } = await supabase.from('handwerker_profiles').update({
-        bio: profileData.bio,
-        hourly_rate_min: profileData.hourly_rate_min ? parseInt(profileData.hourly_rate_min) : null,
-        hourly_rate_max: profileData.hourly_rate_max ? parseInt(profileData.hourly_rate_max) : null,
-        phone_number: profileData.phone_number,
-        logo_url: profileData.logo_url,
-        updated_at: new Date().toISOString()
-      }).eq('id', handwerkerProfile.id);
-      if (error) throw error;
-      toast({
-        title: "Profil aktualisiert",
-        description: "Ihre Änderungen wurden gespeichert."
-      });
-
-      // Refresh profile via checkAuth
-      await checkAuth();
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: "Fehler",
-        description: "Profil konnte nicht aktualisiert werden.",
-        variant: "destructive"
-      });
-    } finally {
-      setProfileEditing(false);
-    }
-  };
-  const handleLogoUpload = async (file: File) => {
-    if (!user) return;
-    try {
-      // Validate file size (max 5MB for logos)
-      const MAX_FILE_SIZE = 5 * 1024 * 1024;
-      if (file.size > MAX_FILE_SIZE) {
-        toast({
-          title: "Datei zu groß",
-          description: "Das Logo darf maximal 5MB groß sein.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: "Ungültiger Dateityp",
-          description: "Bitte laden Sie eine Bilddatei hoch (JPG, PNG, SVG, WebP).",
-          variant: "destructive"
-        });
-        return;
-      }
-      setLogoUploading(true);
-      const fileExt = file.name.split('.').pop();
-      // Use consistent path with HandwerkerProfileEdit - store logos in handwerker-portfolio bucket
-      const fileName = `${user.id}/logo.${fileExt}`;
-
-      // Delete old logo if exists - check both buckets for backwards compatibility
-      if (profileData.logo_url) {
-        // Try handwerker-portfolio bucket first (correct location)
-        const portfolioPath = profileData.logo_url.split('/handwerker-portfolio/')[1];
-        if (portfolioPath) {
-          await supabase.storage.from('handwerker-portfolio').remove([portfolioPath.split('?')[0]]);
-        } else {
-          // Fallback: check old handwerker-documents bucket location
-          const documentsPath = profileData.logo_url.split('/handwerker-documents/')[1];
-          if (documentsPath) {
-            await supabase.storage.from('handwerker-documents').remove([documentsPath.split('?')[0]]);
-          }
-        }
-      }
-
-      // Upload new logo to handwerker-portfolio bucket (SSOT with HandwerkerProfileEdit)
-      const {
-        error: uploadError
-      } = await supabase.storage.from('handwerker-portfolio').upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true
-      });
-      if (uploadError) throw uploadError;
-
-      // Get public URL from handwerker-portfolio bucket
-      const {
-        data
-      } = supabase.storage.from('handwerker-portfolio').getPublicUrl(fileName);
-      if (data?.publicUrl) {
-        setProfileData(prev => ({
-          ...prev,
-          logo_url: data.publicUrl
-        }));
-        toast({
-          title: "Logo hochgeladen",
-          description: "Speichern Sie Ihr Profil, um die Änderungen zu übernehmen."
-        });
-      }
-    } catch (error) {
-      console.error('Logo upload error:', error);
-      toast({
-        title: "Upload fehlgeschlagen",
-        description: error instanceof Error ? error.message : "Logo konnte nicht hochgeladen werden.",
-        variant: "destructive"
-      });
-    } finally {
-      setLogoUploading(false);
-    }
-  };
   const getUrgencyBadge = (urgency: string) => {
     const label = getUrgencyLabel(urgency);
     const colorClasses = getUrgencyColor(urgency);
@@ -1809,147 +1681,67 @@ const HandwerkerDashboard = () => {
             <TabsContent value="profile" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>Profil bearbeiten</CardTitle>
-                      <CardDescription>
-                        Aktualisieren Sie Ihre Profilinformationen
-                      </CardDescription>
-                    </div>
-                    <Button onClick={() => navigate('/handwerker-profile/edit')} variant="default">
-                      Erweiterte Profileinstellungen
-                    </Button>
-                  </div>
+                  <CardTitle>Mein Profil</CardTitle>
+                  <CardDescription>
+                    Übersicht Ihrer Profilinformationen
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <Alert className="bg-blue-50 border-blue-200">
-                    <AlertDescription className="text-blue-900">
-                      💡 <strong>Tipp:</strong> Bearbeiten Sie Ihre Bio, Stundensätze, Servicegebiete und Portfolio-Bilder in den erweiterten Profileinstellungen.
-                    </AlertDescription>
-                  </Alert>
-
-                  {/* Logo Upload Section */}
-                  <div className="space-y-3">
-                    <Label htmlFor="logo-upload">Firmenlogo</Label>
-                    <div className="flex items-center gap-4">
-                      {profileData.logo_url && <div className="h-24 w-24 rounded-lg border-2 bg-background flex items-center justify-center overflow-hidden">
-                          <img src={profileData.logo_url} alt="Firmenlogo" className="h-full w-full object-contain" />
-                        </div>}
-                      <div className="flex-1">
-                        <Input id="logo-upload" type="file" accept=".jpg,.jpeg,.png,.svg,.webp" onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (file) handleLogoUpload(file);
-                      }} className="hidden" />
-                        <Button type="button" variant="outline" onClick={() => document.getElementById('logo-upload')?.click()} disabled={logoUploading}>
-                          {logoUploading ? <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Wird hochgeladen...
-                            </> : <>
-                              {profileData.logo_url ? 'Logo ändern' : 'Logo hochladen'}
-                            </>}
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          JPG, PNG, SVG oder WebP (max. 5MB)
-                        </p>
+                  {/* Profile Summary */}
+                  <div className="flex items-start gap-6">
+                    {/* Logo Display */}
+                    {(handwerkerProfile as any)?.logo_url && (
+                      <div className="h-20 w-20 rounded-lg border-2 border-line-200 bg-background flex items-center justify-center overflow-hidden flex-shrink-0">
+                        <img src={(handwerkerProfile as any).logo_url} alt="Firmenlogo" className="h-full w-full object-contain" />
                       </div>
+                    )}
+                    <div className="space-y-3 flex-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          <UserIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-ink-700">
+                            {[handwerkerProfile.first_name, handwerkerProfile.last_name].filter(Boolean).join(' ') || '–'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-ink-700">{handwerkerProfile.company_name || '–'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-ink-700">{handwerkerProfile.email || '–'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          <span className="text-ink-700">{handwerkerProfile.phone_number || '–'}</span>
+                        </div>
+                      </div>
+
+                      {/* Categories & Service Areas */}
+                      {handwerkerProfile.categories.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {handwerkerProfile.categories.map(cat => (
+                            <Badge key={cat} variant="secondary" className="text-xs">{getCategoryLabel(cat)}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      {handwerkerProfile.service_areas.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {handwerkerProfile.service_areas.map(area => (
+                            <Badge key={area} variant="outline" className="text-xs">
+                              {area.length === 2 ? getCantonLabel(area) : area}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Basic Info - Read Only */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Vorname</Label>
-                      <Input value={handwerkerProfile.first_name || ""} disabled />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Nachname</Label>
-                      <Input value={handwerkerProfile.last_name || ""} disabled />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>E-Mail</Label>
-                    <Input value={handwerkerProfile.email || ""} disabled />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Firma</Label>
-                    <Input value={handwerkerProfile.company_name || ""} disabled />
-                  </div>
-
-                  <Alert>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription className="text-sm">
-                      Grundlegende Informationen können nicht hier geändert werden. 
-                      Kontaktieren Sie uns bei Änderungswünschen.
-                    </AlertDescription>
-                  </Alert>
-
-                  {/* Editable Fields */}
-                  <div className="space-y-2">
-                    <Label htmlFor="phone_number">Telefonnummer</Label>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <Input id="phone_number" type="tel" placeholder="+41 79 123 45 67" value={profileData.phone_number} onChange={e => setProfileData({
-                      ...profileData,
-                      phone_number: e.target.value
-                    })} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Über mich / Firma</Label>
-                    <Textarea id="bio" placeholder="Beschreiben Sie Ihre Erfahrung und Spezialisierung..." rows={6} value={profileData.bio} onChange={e => setProfileData({
-                    ...profileData,
-                    bio: e.target.value
-                  })} />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="hourly_rate_min">Stundensatz von (CHF)</Label>
-                      <Input id="hourly_rate_min" type="number" placeholder="z.B. 80" value={profileData.hourly_rate_min} onChange={e => setProfileData({
-                      ...profileData,
-                      hourly_rate_min: e.target.value
-                    })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="hourly_rate_max">Stundensatz bis (CHF)</Label>
-                      <Input id="hourly_rate_max" type="number" placeholder="z.B. 120" value={profileData.hourly_rate_max} onChange={e => setProfileData({
-                      ...profileData,
-                      hourly_rate_max: e.target.value
-                    })} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Kategorien</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {handwerkerProfile.categories.map(cat => (
-                        <Badge key={cat} variant="secondary">{getCategoryLabel(cat)}</Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Einsatzgebiete</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {handwerkerProfile.service_areas.map(area => (
-                        <Badge key={area} variant="outline">
-                          {area.length === 2 ? getCantonLabel(area) : area}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button onClick={handleUpdateProfile} disabled={profileEditing}>
-                      {profileEditing ? <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Wird gespeichert...
-                        </> : "Profil aktualisieren"}
-                    </Button>
-                  </div>
+                  {/* CTA */}
+                  <Button onClick={() => navigate('/handwerker-profile/edit')} className="w-full sm:w-auto">
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Profil bearbeiten
+                  </Button>
                 </CardContent>
               </Card>
             </TabsContent>
