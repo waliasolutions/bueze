@@ -1,160 +1,135 @@
 
 
-# Final Audit Remediation Plan v4
+# Plan v5.2 — B1 Fix Refined (Schema Timing Verified)
 
-Two corrections from feedback incorporated:
+## Verification Result
 
-1. **Orphaned Lead Recovery SQL**: Removed unnecessary `GROUP BY` — `leads.id` is unique and no aggregate is used.
-2. **Recovery timing**: Explicitly sequenced recovery BEFORE Phase 1B (trigger secret). If done after 1B, the manual `invoke` call must include the `x-trigger-secret` header.
+The user's concern is valid and important. After guest account creation at Step 1:
+- Line 418: `setIsAuthenticated(true)` — state changes
+- Line 427: `setStep(2)` — component stays mounted, no remount
+- Line 157: `useForm({ resolver: zodResolver(leadSchema) })` — resolver bound once at mount
 
----
+If we use `useMemo(() => createLeadSchema(!!user), [user])`, the schema object changes when auth state changes, but **React Hook Form does not re-read the resolver after mount**. The `zodResolver(schema)` closure captures the initial schema. A `useMemo`-based swap would silently fail — the old (guest) schema would still run on final submit, which actually works fine for guests-turned-authenticated (contact fields are filled), but the architectural intent would be wrong.
 
-## Already Fixed (not in scope)
+## Corrected B1 Implementation
 
-- Stale category mapping → `_shared/majorCategoryMapping.ts` created
-- `fetchWithTimeout` → `Promise.race`
-- Client-side 404s → proper expired/not-found UI
-- Duplicate `boiler` → removed from `sanitaer`
-- Website URL protocol → `HandwerkerProfileModal.tsx` fixed
+**Use `startedAsGuest` instead of reactive auth state.** The component already tracks this (line 188: `setStartedAsGuest(!user)`), set once at mount and never changed. This is the correct discriminator:
 
----
+```typescript
+function createLeadSchema(isGuest: boolean) {
+  return z.object({
+    // ... non-contact fields unchanged ...
+    contactEmail: z.string().default(''),
+    contactPhone: z.string().optional().default(''),
+    contactFirstName: z.string().default(''),
+    contactLastName: z.string().default(''),
+    contactPassword: z.string().default(''),
+    website: z.string().max(0, 'Spam erkannt').optional().default(''),
+  })
+  .refine(/* existing budget refine */)
+  .superRefine((data, ctx) => {
+    // Guest validation: contact fields required.
+    // These are also validated per-field in handleCreateAccountAndProceed
+    // via form.trigger(). This superRefine is a safety net for final submit.
+    if (!isGuest) return; // Authenticated at mount — no contact fields needed
 
-## Phase 1A — Quick Security Wins
-
-### C1: `.env` not in `.gitignore`
-Add `.env` and `.env.*` to `.gitignore`.
-
-**File**: `.gitignore`
-
-### C4: RLS Audit — COMPLETED
-All admin-touched tables verified: `reviews`, `leads`, `handwerker_profiles`, `admin_notifications`, `handwerker_subscriptions`, `handwerker_documents` — all gated by `has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'super_admin')`. No gaps found.
-
-### C5: TestDashboard
-Not routed in `App.tsx`. Add `// DEV-ONLY` comment header.
-
-**File**: `src/pages/TestDashboard.tsx` (comment only)
-
----
-
-## Orphaned Lead Recovery (BEFORE Phase 1B)
-
-Must run before trigger secret is deployed, otherwise manual `invoke` calls get blocked.
-
-**SQL** (Supabase SQL Editor):
-```sql
-SELECT l.id, l.category, l.city, l.canton, l.created_at, l.proposal_deadline
-FROM leads l
-LEFT JOIN lead_proposals lp ON lp.lead_id = l.id
-WHERE l.status = 'active'
-  AND l.proposal_deadline > now()
-  AND l.category IN (
-    'heizung_klima', 'kueche', 'innenausbau_schreiner',
-    'garten_umgebung', 'reinigung_hauswartung', 'raeumung_entsorgung',
-    'waermepumpen', 'fussbodenheizung', 'boiler', 'klimaanlage_lueftung',
-    'cheminee_kamin_ofen', 'photovoltaik', 'solarheizung', 'heizung_sonstige',
-    'kuechenbau', 'kuechenplanung', 'kuechengeraete', 'arbeitsplatten', 'kueche_sonstige',
-    'schreiner', 'moebelbau', 'fenster_tueren', 'treppen', 'holzarbeiten_innen',
-    'metallarbeiten_innen', 'innenausbau_sonstige',
-    'gartenbau', 'pflasterarbeiten', 'zaun_torbau', 'aussenarbeiten_sonstige',
-    'reinigung', 'aufloesung_entsorgung', 'umzug'
-  )
-  AND lp.id IS NULL
-ORDER BY l.created_at DESC;
+    if (!data.contactEmail || !z.string().email().safeParse(data.contactEmail).success) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Gültige E-Mail erforderlich', path: ['contactEmail'] });
+    }
+    if (!data.contactFirstName) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Vorname ist erforderlich', path: ['contactFirstName'] });
+    }
+    if (!data.contactLastName) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Nachname ist erforderlich', path: ['contactLastName'] });
+    }
+    if (!data.contactPassword || data.contactPassword.length < PASSWORD_MIN_LENGTH) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Passwort mind. ${PASSWORD_MIN_LENGTH} Zeichen`, path: ['contactPassword'] });
+    }
+  });
+}
 ```
 
-For each result, invoke via JS console or Supabase client:
-```javascript
-await supabase.functions.invoke('send-lead-notification', {
-  body: { leadId: '<lead-id>' }
+Schema created once at component init, not reactively:
+
+```typescript
+// Determine auth state synchronously from session cache for schema creation
+const initialUser = supabase.auth.getSession(); // sync check not possible — see below
+```
+
+**Problem**: `supabase.auth.getSession()` is async. At line 157, `useForm` runs synchronously. We can't await auth state before creating the form.
+
+**Solution**: Use a two-phase approach:
+1. Schema always uses `superRefine` with a **ref** for the auth flag (not state)
+2. The ref is set once on mount and read at validation time (closure over ref, not over value)
+
+```typescript
+const isAuthenticatedRef = useRef(false);
+
+// Set once on mount (line 183-191 already does this)
+useEffect(() => {
+  const checkAuth = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    isAuthenticatedRef.current = !!user;
+    setIsAuthenticated(!!user);
+    setStartedAsGuest(!user);
+  };
+  checkAuth();
+}, []);
+
+// Schema reads ref at validation time, not at creation time
+const leadSchema = useMemo(() => z.object({
+  // ... all fields with .default('') for contact fields ...
+})
+.refine(/* budget */)
+.superRefine((data, ctx) => {
+  if (isAuthenticatedRef.current) return;
+  // ... guest validation ...
+}), []); // Empty deps — created once, reads ref dynamically
+
+const form = useForm<LeadFormData>({
+  resolver: zodResolver(leadSchema),
+  // ...
 });
 ```
 
----
+This way:
+- Schema created once (no resolver rebinding issue)
+- `superRefine` reads `isAuthenticatedRef.current` at validation time
+- Guest who creates account at Step 1: ref flips to `true`, subsequent `form.handleSubmit` skips contact validation
+- Already-authenticated user: ref is `true` from mount, contact validation never runs
+- No `useMemo` dependency on `user` — no stale resolver problem
 
-## Phase 1B — Edge Function Trigger Secret (separate deployment)
+### Comment block for the schema:
 
-### C3: Functions callable without auth
+```typescript
+/**
+ * DUAL VALIDATION STRATEGY:
+ * - Guest users: Contact fields validated via superRefine (isAuthenticatedRef=false)
+ *   AND per-field via form.trigger() in handleCreateAccountAndProceed (Step 1).
+ *   After account creation, isAuthenticatedRef flips to true — subsequent
+ *   form.handleSubmit() skips contact validation.
+ * - Authenticated users: isAuthenticatedRef is true from mount. Contact fields
+ *   use .default('') and superRefine skips them entirely.
+ *
+ * WHY a ref instead of useMemo: React Hook Form binds the resolver once at mount.
+ * A useMemo-based schema swap doesn't propagate to the resolver. The ref is read
+ * at validation time (inside superRefine closure), so it always reflects current state.
+ */
+```
 
-1. Create Supabase secret `EDGE_TRIGGER_SECRET` (random value)
-2. Create `supabase/functions/_shared/triggerAuth.ts`:
-   ```typescript
-   export function validateTriggerSecret(req: Request): void {
-     const secret = req.headers.get('x-trigger-secret');
-     const expected = Deno.env.get('EDGE_TRIGGER_SECRET');
-     if (!secret || secret !== expected) {
-       throw new Error('Unauthorized: invalid trigger secret');
-     }
-   }
-   ```
-3. Add `validateTriggerSecret(req)` to 7 edge functions (after CORS check):
-   - `send-lead-notification`
-   - `send-message-notification`
-   - `send-proposal-notification`
-   - `send-acceptance-emails`
-   - `send-rating-notification`
-   - `send-rating-response-notification`
-   - `send-admin-registration-notification`
-4. SQL migration: update 6 trigger functions to read secret from Supabase Vault (`vault.decrypted_secrets`) and pass as `x-trigger-secret` header
+## Other Phase 0 Fixes (unchanged)
 
-**Rollback**: Revert trigger functions to current version (no secret check) via SQL Editor.
+- **B2**: Dashboard name bug — template literal with fallbacks
+- **B3**: ProposalReview `pt-24` for fixed header
+- **B4**: Dashboard redirect respects ViewMode
 
-**Files**: new `_shared/triggerAuth.ts`, 7 edge functions, 1 SQL migration
+## Files Changed in Phase 0
 
----
+| File | Change |
+|------|--------|
+| `src/pages/SubmitLead.tsx` | Schema factory with ref-based superRefine |
+| `src/pages/Dashboard.tsx` | Name bug fix + ViewMode redirect |
+| `src/pages/ProposalReview.tsx` | `pt-24 pb-8` on 3 main elements |
 
-## Phase 2 — Architecture (Large)
-
-### C6: HandwerkerDashboard.tsx (1826 lines)
-Extract into sub-components:
-- `HandwerkerLeadBrowser.tsx` — lead browsing + filtering
-- `HandwerkerProposalsList.tsx` — proposals tab
-- `HandwerkerReviewsList.tsx` — reviews tab
-- `HandwerkerOverviewTab.tsx` — stats/profile overview
-
-Main file becomes tab shell < 200 lines.
-
-### I1: `select('*')` → specific fields
-Top 10 most-used queries across HandwerkerDashboard, Dashboard, BrowseLeads, LeadDetails, Messages.
-
-### I5: React Query migration
-Migrate `Dashboard.tsx` and `BrowseLeads.tsx` from `useState`+`useEffect` to `useQuery`. HandwerkerDashboard migrated as part of C6.
-
----
-
-## Phase 3 — Quality & Testing (Medium)
-
-### C2: No tests
-Set up Vitest + React Testing Library. Tests for `categoryLabels`, `fetchHelpers`, `proposalHelpers`, `ProtectedRoute`.
-
-### I3: Category label drift validation
-Vitest test comparing frontend and edge function label files. CI setup (GitHub Actions) included so it runs on PRs.
-
-### I6: Status badge dedup
-Replace inline `getStatusBadge` in 4 files with imports from `status-badge.tsx`.
-
----
-
-## Phase 4 — UX Polish (Medium)
-
-### I2: Admin pagination
-`usePagination` hook + 5 admin pages.
-
-### I4: Unsaved changes warning
-`useUnsavedChanges` hook with `beforeunload` + `useBlocker`. Apply to `HandwerkerProfileEdit`, `EditLead`, `ContentEditor`.
-
-### I7: Console cleanup
-Remove unguarded `console.log` from ~6 source files for audit optics (production builds already strip via `esbuild.drop`).
-
----
-
-## Summary
-
-| Phase | Issues | Effort | Risk |
-|-------|--------|--------|------|
-| **1A — Quick Wins** | C1, C4 (done), C5 | Small | Low |
-| **Ops — Recovery** | Orphaned leads re-trigger | Small | Low |
-| **1B — Trigger Secret** | C3 (7 edge fns + 6 triggers) | Medium | High |
-| **2 — Architecture** | C6, I1, I5 | Large | Medium |
-| **3 — Quality** | C2, I3, I6 + CI | Medium | Low |
-| **4 — UX** | I2, I4, I7 | Medium | Low |
+## Remaining Phases — unchanged from v5.1
 
