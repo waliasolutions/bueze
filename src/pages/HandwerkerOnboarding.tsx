@@ -547,6 +547,9 @@ const HandwerkerOnboarding = () => {
         throw new Error('Nicht angemeldet. Bitte laden Sie die Seite neu.');
       }
 
+      // Merge major categories + subcategories, deduplicated
+      const allCategories = [...new Set([...selectedMajorCategories, ...(formData.categories || [])])];
+
       // Create handwerker profile
       const insertData = {
         user_id: user.id,
@@ -557,7 +560,7 @@ const HandwerkerOnboarding = () => {
         company_name: formData.companyName?.trim() || null,
         company_legal_form: formData.companyLegalForm?.trim() || null,
         bio: formData.bio?.trim() || null,
-        categories: formData.categories?.length > 0 ? formData.categories : [] as any,
+        categories: allCategories as any,
         service_areas: formData.serviceAreas?.length > 0 ? formData.serviceAreas : [],
         hourly_rate_min: formData.hourlyRateMin?.trim() ? parseInt(formData.hourlyRateMin) : null,
         hourly_rate_max: formData.hourlyRateMax?.trim() ? parseInt(formData.hourlyRateMax) : null,
