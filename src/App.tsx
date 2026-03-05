@@ -242,6 +242,7 @@ const App = () => {
                 {/* Legal redirects for consistency */}
                 <Route path="/legal/impressum" element={<Navigate to="/impressum" replace />} />
                 <Route path="/legal/datenschutz" element={<Navigate to="/datenschutz" replace />} />
+                <Route path="/agb" element={<Navigate to="/legal/agb" replace />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 
                 {/* Catch-all */}
