@@ -71,10 +71,7 @@ const HandwerkerOnboarding = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [recoveryData, setRecoveryData] = useState<{
-    progress: number;
     lastSaveTime: string;
-    currentStep: number;
-    totalSteps: number;
   } | null>(null);
 
   const [formData, setFormData] = useState({
@@ -241,7 +238,6 @@ const HandwerkerOnboarding = () => {
       if (!hasSignificantProgress()) return;
       
       const dataToSave = {
-        currentStep,
         formData: { ...formData, password: '' }, // Never save password
         selectedMajorCategories,
       };
@@ -255,13 +251,12 @@ const HandwerkerOnboarding = () => {
 
     const timeoutId = setTimeout(saveToLocalStorage, 1000);
     return () => clearTimeout(timeoutId);
-  }, [currentStep, formData, selectedMajorCategories]);
+  }, [formData, selectedMajorCategories]);
 
   // Load saved form data from localStorage on mount
   useEffect(() => {
     const loadFromLocalStorage = () => {
       const { data, wasRecovered, lastSaved: savedAt } = loadVersionedData<{
-        currentStep: number;
         formData: typeof formData;
         selectedMajorCategories: string[];
       }>({
@@ -270,12 +265,15 @@ const HandwerkerOnboarding = () => {
         ttlHours: 168,
         migrations: {
           2: (oldData: unknown) => oldData,
+          3: (oldData: unknown) => {
+            // Strip currentStep from v2 data — no longer tracked
+            const { currentStep, ...rest } = oldData as Record<string, unknown>;
+            return rest;
+          },
         },
       });
 
       if (wasRecovered && data && savedAt) {
-        const savedProgress = Math.min(((data.currentStep - 1) / 3) * 100, 100);
-        
         const now = new Date();
         const diffDays = Math.floor((now.getTime() - savedAt.getTime()) / (1000 * 60 * 60 * 24));
         
@@ -294,10 +292,7 @@ const HandwerkerOnboarding = () => {
         }
         
         setRecoveryData({
-          progress: savedProgress,
           lastSaveTime: lastSaveTimeStr,
-          currentStep: data.currentStep,
-          totalSteps: 3,
         });
         setShowRecoveryDialog(true);
         
@@ -1401,16 +1396,6 @@ const HandwerkerOnboarding = () => {
 
               {recoveryData && (
                 <div className="space-y-4 py-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium text-muted-foreground">Fortschritt</p>
-                      <p className="text-sm font-bold text-brand-600">{Math.round(recoveryData.progress)}%</p>
-                    </div>
-                    <Progress value={recoveryData.progress} className="h-2" />
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Schritt {Math.min(recoveryData.currentStep, recoveryData.totalSteps)} von {recoveryData.totalSteps}
-                    </p>
-                  </div>
 
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <Clock className="h-4 w-4 text-muted-foreground" />
@@ -1475,7 +1460,6 @@ const HandwerkerOnboarding = () => {
                     const pendingData = sessionStorage.getItem('pending-recovery-data');
                     if (pendingData) {
                       const parsed = JSON.parse(pendingData);
-                      setCurrentStep(parsed.currentStep || 1);
                       setFormData({ ...formData, ...parsed.formData });
                       setSelectedMajorCategories(parsed.selectedMajorCategories || []);
                     }
