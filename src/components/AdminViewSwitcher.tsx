@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Eye, Shield, User, Briefcase, ChevronDown } from 'lucide-react';
 import { useViewMode, type ViewMode } from '@/contexts/ViewModeContext';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const VIEW_LABELS: Record<ViewMode, { label: string; icon: React.ElementType; color: string }> = {
   admin: { label: 'Admin', icon: Shield, color: 'bg-red-100 text-red-700 border-red-200' },
@@ -22,7 +23,12 @@ const VIEW_LABELS: Record<ViewMode, { label: string; icon: React.ElementType; co
 export const AdminViewSwitcher: React.FC = () => {
   const navigate = useNavigate();
   const { activeView, setActiveView } = useViewMode();
+  const { allRoles } = useUserRole();
   const CurrentIcon = VIEW_LABELS[activeView].icon;
+
+  // Pure admins (no handwerker/client/user roles) don't need the switcher
+  const hasOtherRoles = allRoles.some(r => r === 'handwerker' || r === 'client' || r === 'user');
+  if (!hasOtherRoles) return null;
 
   const handleViewChange = (view: ViewMode) => {
     setActiveView(view);
