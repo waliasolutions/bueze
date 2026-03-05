@@ -1,12 +1,32 @@
 
 
-# Plan: Rename "Übersicht" to "Registrieren" in Handwerker Navigation
+# Plan: Include Major Categories in Database Save (Revised)
 
-## Change
+## Problem
+Same as before — major categories not saved to DB when no subcategories selected.
 
-**File**: `src/components/Header.tsx`, line 71
+## Fix
 
-Change `{ label: 'Übersicht', href: '/handwerker' }` → `{ label: 'Registrieren', href: '/handwerker' }`
+**File**: `src/pages/HandwerkerOnboarding.tsx`, around line ~560
 
-Single line change, no other files affected.
+Before the DB insert, compute the merged array once:
+
+```tsx
+const allCategories = [...new Set([...selectedMajorCategories, ...(formData.categories || [])])];
+```
+
+Then use it in the insert:
+
+```tsx
+categories: allCategories as any,
+```
+
+- Single computation, no repetition
+- `new Set` deduplicates in case a major ID appears in both arrays
+- Empty array is a valid value — no length check needed
+
+## Files Changed
+| File | Change |
+|------|--------|
+| `src/pages/HandwerkerOnboarding.tsx` | Add `allCategories` merge with dedup before save, use in insert |
 
