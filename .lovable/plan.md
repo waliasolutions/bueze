@@ -1,33 +1,31 @@
 
 
-# Fix: Dashboard Profile Tab — Summary + Redirect, Remove Duplicate Editing
+# Hide View Switcher for Pure Admin Users
 
 ## Problem
 
-The dashboard profile tab has disabled fields with a misleading "contact us to change" message, even though the full edit page (`/handwerker-profile/edit`) allows all changes — including logo upload. This confuses pending handwerkers into thinking their data is locked.
-
-## Verification: Logo Upload
-
-`HandwerkerProfileEdit.tsx` has a complete logo upload implementation (lines 508-550, UI at lines 1396-1450) with the same Supabase storage logic. Removing `handleLogoUpload` from the dashboard is safe — no functionality is lost.
+The `info@bueeze.ch` admin account has no handwerker or client profile. The view switcher lets them switch to "Kunden-Ansicht" or "Handwerker-Ansicht", which is confusing — they land on dashboards with no data and no meaningful context. The switcher should only be shown to admins who also hold handwerker/client roles (for testing purposes).
 
 ## Fix
 
-### `src/pages/HandwerkerDashboard.tsx`
+**`src/components/AdminViewSwitcher.tsx`**: Add a check using `useUserRole()` — only render the switcher if the admin also has `handwerker` or `client` in their `allRoles` array. Pure admins (only admin/super_admin roles) see no switcher.
 
-**Replace profile tab content** (lines ~1809-1955) with:
-- Read-only summary card showing: logo (display only), name, company, email, phone
-- Single CTA button: "Profil bearbeiten" → `/handwerker-profile/edit`
-- Remove the misleading "Kontaktieren Sie uns" alert
+**`src/components/Header.tsx`**: No changes needed — it already conditionally renders `<AdminViewSwitcher />` only when `isAdmin` is true. The hide logic moves inside the component itself.
 
-**Remove dead code:**
-- `profileEditing` state
-- `logoUploading` state
-- `profileData` state
-- `handleLogoUpload` function
-- `handleUpdateProfile` function
-- Any imports only used by these (check Upload, Pencil usage elsewhere before removing)
+### Logic
+
+```typescript
+// Inside AdminViewSwitcher
+const { allRoles } = useUserRole();
+const hasOtherRoles = allRoles.some(r => r === 'handwerker' || r === 'client' || r === 'user');
+
+// If pure admin with no other roles, don't render
+if (!hasOtherRoles) return null;
+```
+
+This is role-based (not email-based), so it works correctly for any pure admin account while still showing the switcher for admins who also have testing profiles.
 
 ## Files Changed
 
-1. **`src/pages/HandwerkerDashboard.tsx`** — simplify profile tab to summary + link, remove duplicate editing code
+1. **`src/components/AdminViewSwitcher.tsx`** — add early return when admin has no client/handwerker roles
 
