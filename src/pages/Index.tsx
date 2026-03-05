@@ -12,7 +12,7 @@ import { homepageSeoDefaults } from '@/config/contentDefaults';
 
 const Index = () => {
   const { content } = usePageContent('homepage');
-  const { content: heroContent, loading: heroLoading } = usePageContent('homepage_hero');
+  const { content: heroContent } = usePageContent('homepage_hero');
   const { content: howItWorksContent } = usePageContent('homepage_how_it_works');
   const { content: faqContent } = usePageContent('homepage_faq');
   const { content: footerContent } = usePageContent('homepage_footer');
@@ -50,7 +50,7 @@ const Index = () => {
       />
       <Header />
       <main className="pt-16">
-        <Hero content={heroContent} loading={heroLoading} />
+        <Hero content={heroContent} />
         <HowItWorks content={howItWorksContent} />
         <FAQ content={faqContent} />
       </main>
