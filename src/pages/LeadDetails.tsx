@@ -18,6 +18,7 @@ import type { LeadAnalytics } from '@/lib/leadHelpers';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
+import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 import { getCantonLabel } from '@/config/cantons';
 
 const LeadDetails = () => {
@@ -454,8 +455,8 @@ const LeadDetails = () => {
                   {owner.phone && (
                     <div className="flex items-center text-sm">
                       <Phone className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
-                      <a href={`tel:${owner.phone}`} className="hover:underline">
-                        {owner.phone}
+                      <a href={formatPhoneHref(owner.phone)} className="hover:underline">
+                        {formatPhoneDisplay(owner.phone)}
                       </a>
                     </div>
                   )}

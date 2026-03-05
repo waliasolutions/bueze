@@ -8,6 +8,7 @@ import { StarRating } from '@/components/ui/star-rating';
 import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Globe, Clock, Building2, Briefcase } from 'lucide-react';
+import { formatAddress, formatWebsiteUrl } from '@/lib/displayFormatters';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
 
@@ -97,13 +98,11 @@ export function HandwerkerProfileModal({ handwerkerId, open, onOpenChange }: Han
   };
 
   const getLocation = () => {
-    const parts = [];
-    if (profile?.business_zip) parts.push(profile.business_zip);
-    if (profile?.business_city) parts.push(profile.business_city);
-    if (profile?.business_canton) {
-      parts.push(`(${profile.business_canton})`);
-    }
-    return parts.join(' ');
+    return formatAddress({
+      zip: profile?.business_zip,
+      city: profile?.business_city,
+      canton: profile?.business_canton,
+    });
   };
 
   // getCategoryLabel imported from SSOT @/config/categoryLabels
@@ -276,12 +275,7 @@ export function HandwerkerProfileModal({ handwerkerId, open, onOpenChange }: Han
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => {
-                    const url = profile.website!.match(/^https?:\/\//) 
-                      ? profile.website! 
-                      : `https://${profile.website}`;
-                    window.open(url, '_blank');
-                  }}
+                  onClick={() => window.open(formatWebsiteUrl(profile.website), '_blank')}
                 >
                   <Globe className="h-4 w-4 mr-2" />
                   Website besuchen

@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { invalidateProposalQueries } from '@/lib/queryInvalidation';
 import { HandwerkerProfileModal } from './HandwerkerProfileModal';
 import type { ProposalWithHandwerkerInfo } from '@/types/entities';
+import { formatPhoneDisplay, formatPhoneHref, formatWebsiteUrl, formatAddress } from '@/lib/displayFormatters';
 
 // Extended type for ReceivedProposals with specific joined data
 interface ReceivedProposal extends ProposalWithHandwerkerInfo {
@@ -537,10 +538,10 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-muted-foreground" />
                             <a 
-                              href={`tel:${proposal.handwerker_profiles.phone_number}`} 
+                              href={formatPhoneHref(proposal.handwerker_profiles.phone_number)} 
                               className="text-primary hover:underline"
                             >
-                              {proposal.handwerker_profiles.phone_number}
+                              {formatPhoneDisplay(proposal.handwerker_profiles.phone_number)}
                             </a>
                           </div>
                         )}
@@ -563,11 +564,11 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
                             <span>
-                              {[
-                                proposal.handwerker_profiles.business_address,
-                                proposal.handwerker_profiles.business_zip,
-                                proposal.handwerker_profiles.business_city
-                              ].filter(Boolean).join(', ')}
+                              {formatAddress({
+                                street: proposal.handwerker_profiles.business_address,
+                                zip: proposal.handwerker_profiles.business_zip,
+                                city: proposal.handwerker_profiles.business_city,
+                              })}
                             </span>
                           </div>
                         )}
@@ -577,9 +578,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
                           <div className="flex items-center gap-2">
                             <Globe className="h-4 w-4 text-muted-foreground" />
                             <a 
-                              href={proposal.handwerker_profiles.website.startsWith('http') 
-                                ? proposal.handwerker_profiles.website 
-                                : `https://${proposal.handwerker_profiles.website}`} 
+                              href={formatWebsiteUrl(proposal.handwerker_profiles.website)} 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="text-primary hover:underline"

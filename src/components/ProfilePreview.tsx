@@ -6,6 +6,7 @@ import { MapPin, Globe, Coins, Star, Phone, Mail, Shield, Wrench, Building2, Che
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { majorCategories } from '@/config/majorCategories';
 import { formatCantonDisplay } from '@/lib/cantonPostalCodes';
+import { formatPhoneDisplay, formatPhoneHref, formatAddress } from '@/lib/displayFormatters';
 import { HandwerkerRating } from './HandwerkerRating';
 
 interface ProfilePreviewProps {
@@ -133,8 +134,8 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
                 {profile.phone_number && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <a href={`tel:${profile.phone_number}`} className="text-brand-500 hover:underline">
-                      {profile.phone_number}
+                    <a href={formatPhoneHref(profile.phone_number)} className="text-brand-500 hover:underline">
+                      {formatPhoneDisplay(profile.phone_number)}
                     </a>
                   </div>
                 )}
@@ -150,9 +151,12 @@ export const ProfilePreview: React.FC<ProfilePreviewProps> = ({ profile }) => {
                   <div className="flex items-center gap-2 col-span-2">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
                     <span>
-                      {profile.business_address && `${profile.business_address}, `}
-                      {profile.business_zip} {profile.business_city}
-                      {profile.business_canton && `, ${profile.business_canton}`}
+                      {formatAddress({
+                        street: profile.business_address,
+                        zip: profile.business_zip,
+                        city: profile.business_city,
+                        canton: profile.business_canton,
+                      })}
                     </span>
                   </div>
                 )}
