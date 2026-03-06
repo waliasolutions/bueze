@@ -7,17 +7,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY')!;
 const PAYREXX_INSTANCE_RAW = Deno.env.get('PAYREXX_INSTANCE')!;
-const PAYREXX_TEST_MODE = (() => {
-  const raw = Deno.env.get('PAYREXX_TEST_MODE')?.trim().toLowerCase();
-  return raw === 'true' || raw === '1' || raw === 'yes' || raw === 'on';
-})();
 
 /**
  * Normalizes Payrexx instance input to the expected value (subdomain only).
- * Accepts values like:
- * - wsolutions
- * - wsolutions.payrexx.com
- * - https://wsolutions.payrexx.com
  */
 function normalizePayrexxInstance(input: string): string {
   const trimmed = input.trim();
@@ -57,18 +49,14 @@ async function generateSignature(queryString: string, apiKey: string): Promise<s
 
 /**
  * Verify Payrexx API credentials using the SignatureCheck endpoint.
- * Returns { valid: boolean, detail: string }.
  */
 async function verifyApiCredentials(): Promise<{ valid: boolean; detail: string }> {
   try {
-    // Payrexx docs: sign an empty string for SignatureCheck
     const signature = await generateSignature('', PAYREXX_API_KEY);
     const url = `https://api.payrexx.com/v1.0/SignatureCheck/?instance=${encodeURIComponent(PAYREXX_INSTANCE)}&ApiSignature=${encodeURIComponent(signature)}`;
 
-    console.log(`[SignatureCheck] Calling ${url.substring(0, 80)}…`);
     const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
     const text = await res.text();
-    console.log(`[SignatureCheck] status=${res.status} body=${text.substring(0, 300)}`);
 
     let parsed: any = null;
     try { parsed = JSON.parse(text); } catch { /* ignore */ }
@@ -91,29 +79,22 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    // --- Diagnostic: log PAYREXX_TEST_MODE at request time ---
-    console.log(`[Payrexx boot] PAYREXX_TEST_MODE=${PAYREXX_TEST_MODE}, raw env=${Deno.env.get('PAYREXX_TEST_MODE') ?? '<unset>'}`);
-
-    // --- Step 0: Verify Payrexx credentials (diagnostic) ---
+    // --- Step 0: Verify Payrexx credentials ---
     const credCheck = await verifyApiCredentials();
-    console.log(`[Payrexx credentials] instanceRaw=${PAYREXX_INSTANCE_RAW} instanceNormalized=${PAYREXX_INSTANCE}`);
-    console.log(`[Payrexx credentials] valid=${credCheck.valid} — ${credCheck.detail}`);
+    console.log(`[Payrexx credentials] instance=${PAYREXX_INSTANCE} valid=${credCheck.valid}`);
 
     if (!credCheck.valid) {
       console.error(`[Payrexx credentials] INVALID: ${credCheck.detail}`);
-      if (!PAYREXX_TEST_MODE) {
-        return new Response(
-          JSON.stringify({
-            error: `Payrexx-Konfiguration ungültig: ${credCheck.detail}`,
-            success: false,
-          }),
-          {
-            status: 502,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-      console.warn('[Payrexx credentials] PAYREXX_TEST_MODE active — continuing despite invalid credentials');
+      return new Response(
+        JSON.stringify({
+          error: `Payrexx-Konfiguration ungültig: ${credCheck.detail}`,
+          success: false,
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     // --- Step 1: Authenticate user ---
@@ -186,7 +167,6 @@ Deno.serve(async (req) => {
       cancelRedirectUrl: cancelUrl,
     };
 
-    // Also add subscription params to fallback if saveCard is true
     if (saveCard && PLAN_INTERVALS[planType]) {
       const interval = PLAN_INTERVALS[planType];
       fallbackParams.subscriptionState = '1';
@@ -208,7 +188,6 @@ Deno.serve(async (req) => {
 
       const requestBody = formData.toString();
       console.log(`Creating Payrexx gateway [${mode}] for user ${userId}, plan ${planType}, amount ${amount}`);
-      console.log(`Payrexx request body [${mode}] (first 500 chars): ${requestBody.substring(0, 500)}`);
 
       const payrexxResponse = await fetch(payrexxUrl, {
         method: 'POST',
@@ -220,10 +199,7 @@ Deno.serve(async (req) => {
       });
 
       const responseText = await payrexxResponse.text();
-      const contentType = payrexxResponse.headers.get('content-type') || '';
-
-      console.log(`Payrexx response [${mode}] status: ${payrexxResponse.status}, content-type: ${contentType}`);
-      console.log(`Payrexx response [${mode}] body (first 500 chars): ${responseText.substring(0, 500)}`);
+      console.log(`Payrexx response [${mode}] status: ${payrexxResponse.status}`);
 
       let parsed: any = null;
       try { parsed = JSON.parse(responseText); } catch { parsed = null; }
@@ -245,16 +221,6 @@ Deno.serve(async (req) => {
 
     // --- Step 4: Handle Payrexx response ---
     if (!payrexxResult.data) {
-      if (PAYREXX_TEST_MODE) {
-        console.warn('PAYREXX_TEST_MODE: JSON parse failed, returning successUrl as test fallback');
-        return successResponse({
-          url: successUrl,
-          gatewayId: `test-${Date.now()}`,
-          referenceId: referenceId,
-          testMode: true,
-        });
-      }
-
       return new Response(
         JSON.stringify({
           error: `Payrexx API hat ein unerwartetes Format zurückgegeben (${payrexxResult.status}). Bitte kontaktieren Sie den Support.`,
@@ -271,18 +237,6 @@ Deno.serve(async (req) => {
       console.error('Payrexx API error:', JSON.stringify(payrexxResult.data));
 
       const apiMessage = payrexxResult.data.message || 'Gateway-Erstellung fehlgeschlagen';
-
-      // Only simulate when PAYREXX_TEST_MODE is explicitly enabled — never auto-heal in production
-      if (PAYREXX_TEST_MODE) {
-        console.warn(`[Payrexx simulation] PAYREXX_TEST_MODE active. Returning successUrl as test fallback.`);
-        console.warn(`[Payrexx simulation] Original error: HTTP ${payrexxResult.status} — ${apiMessage}`);
-        return successResponse({
-          url: successUrl,
-          gatewayId: `test-${Date.now()}`,
-          referenceId: referenceId,
-          testMode: true,
-        });
-      }
 
       const upstreamStatus = payrexxResult.status >= 400 && payrexxResult.status < 500
         ? payrexxResult.status
