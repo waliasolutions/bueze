@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
-import { PLAN_AMOUNTS, PLAN_GATEWAY_NAMES } from '../_shared/planLabels.ts';
+import { PLAN_AMOUNTS, PLAN_GATEWAY_NAMES, PLAN_INTERVALS } from '../_shared/planLabels.ts';
 import { getErrorMessage } from '../_shared/errorUtils.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
     }
 
     // --- Step 2: Parse & validate request ---
-    const { planType, successUrl, cancelUrl } = await req.json();
+    const { planType, successUrl, cancelUrl, saveCard } = await req.json();
 
     if (!planType || !successUrl || !cancelUrl) {
       return errorResponse('Missing required fields: planType, successUrl, cancelUrl', 400);
@@ -166,6 +166,16 @@ Deno.serve(async (req) => {
       sku: `BUEZE_${planType.toUpperCase()}`,
     };
 
+    // Add Payrexx-managed subscription params when user opts in to save card
+    if (saveCard && PLAN_INTERVALS[planType]) {
+      const interval = PLAN_INTERVALS[planType];
+      primaryParams.subscriptionState = '1';
+      primaryParams.subscriptionInterval = interval;
+      primaryParams.subscriptionPeriod = interval;
+      primaryParams.subscriptionCancellationInterval = '0';
+      console.log(`[Payrexx] Subscription mode enabled: interval=${interval} for plan ${planType}`);
+    }
+
     const fallbackParams: Record<string, string> = {
       amount: amount.toString(),
       currency: 'CHF',
@@ -175,6 +185,15 @@ Deno.serve(async (req) => {
       failedRedirectUrl: cancelUrl,
       cancelRedirectUrl: cancelUrl,
     };
+
+    // Also add subscription params to fallback if saveCard is true
+    if (saveCard && PLAN_INTERVALS[planType]) {
+      const interval = PLAN_INTERVALS[planType];
+      fallbackParams.subscriptionState = '1';
+      fallbackParams.subscriptionInterval = interval;
+      fallbackParams.subscriptionPeriod = interval;
+      fallbackParams.subscriptionCancellationInterval = '0';
+    }
 
     const payrexxUrl = `https://api.payrexx.com/v1.0/Gateway/?instance=${encodeURIComponent(PAYREXX_INSTANCE)}`;
 
@@ -287,6 +306,7 @@ Deno.serve(async (req) => {
       url: gatewayLink,
       gatewayId: gatewayId,
       referenceId: referenceId,
+      subscription: saveCard ? true : false,
     });
 
   } catch (error) {

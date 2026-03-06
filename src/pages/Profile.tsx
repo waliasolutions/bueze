@@ -248,7 +248,7 @@ const Profile = () => {
           // Fetch subscription data
           const { data: subscriptionData } = await supabase
             .from('handwerker_subscriptions')
-            .select('id, user_id, plan_type, status, proposals_used_this_period, proposals_limit, current_period_start, current_period_end, pending_plan, updated_at')
+            .select('id, user_id, plan_type, status, proposals_used_this_period, proposals_limit, current_period_start, current_period_end, pending_plan, auto_renew, updated_at')
             .eq('user_id', user.id)
             .maybeSingle();
 
@@ -263,6 +263,7 @@ const Profile = () => {
               currentPeriodEnd: subscriptionData.current_period_end,
               usedProposals: subscriptionData.proposals_used_this_period || 0,
               pendingPlan: subscriptionData.pending_plan || null,
+              autoRenew: subscriptionData.auto_renew || false,
               userId: user.id,
               isApproved: handwerkerData.verification_status === 'approved',
             });
@@ -888,7 +889,11 @@ const Profile = () => {
                 <PaymentHistoryTable userId={user?.id} />
                 
                 {/* Payment Methods */}
-                <PaymentMethodCard />
+                <PaymentMethodCard
+                  autoRenew={currentSubscription?.autoRenew}
+                  currentPeriodEnd={currentSubscription?.currentPeriodEnd}
+                  onAutoRenewChanged={fetchUserData}
+                />
               </TabsContent>
             )}
 

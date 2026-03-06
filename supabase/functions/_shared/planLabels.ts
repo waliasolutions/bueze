@@ -56,3 +56,10 @@ export const VALID_PLAN_AMOUNTS: Record<string, number[]> = {
 export function getPlanAmount(planType: string): number | null {
   return PLAN_AMOUNTS[planType] || null;
 }
+
+/** ISO 8601 duration intervals for Payrexx-managed subscriptions */
+export const PLAN_INTERVALS: Record<string, string> = {
+  monthly: 'P1M',
+  '6_month': 'P6M',
+  annual: 'P1Y',
+};
