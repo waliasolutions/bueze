@@ -1,67 +1,39 @@
 
 
-# Deep QA: Routing & URL Issues Found
+# Fix: Remove PAYREXX_TEST_MODE + Add Missing DB Columns
 
-## Issues Identified
+## Two issues to resolve
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+### 1. Build error: `auto_renew` column missing from `handwerker_subscriptions`
 
----
+The table lacks `auto_renew` and `payrexx_subscription_id` columns that both `Profile.tsx` and `cancel-payrexx-subscription` edge function depend on.
 
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
-
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
-
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
-
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
-
-```tsx
-const [searchParams] = useSearchParams();
-
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
+**Fix**: Add migration with:
+```sql
+ALTER TABLE handwerker_subscriptions
+  ADD COLUMN IF NOT EXISTS auto_renew boolean DEFAULT false,
+  ADD COLUMN IF NOT EXISTS payrexx_subscription_id text;
 ```
 
----
+### 2. Remove PAYREXX_TEST_MODE from `create-payrexx-gateway`
 
-## Fix 2: AGB route — Add top-level `/agb` with redirect
+The secret has been deleted. All test-mode fallback logic must be removed. The function should fail cleanly on errors instead of simulating success.
 
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
+**File**: `supabase/functions/create-payrexx-gateway/index.ts`
 
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+Changes:
+- Remove `PAYREXX_TEST_MODE` constant (lines 10-13)
+- Remove diagnostic log referencing it (line 94-95)
+- Remove `if (!PAYREXX_TEST_MODE)` wrapper around credential failure — always return 502 on invalid credentials (lines 104-116)
+- Remove test-mode fallback in Step 4 JSON parse failure (lines 248-256) — always return 502
+- Remove test-mode fallback in Step 4 API error (lines 275-285) — always return error
 
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
+Result: clean production-only code path. Invalid credentials or API errors return proper error responses.
 
----
+### Summary
 
-## Fix 3: Stale comments in sitemap generator (optional)
-
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
-
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
-
----
-
-## Summary
-
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
+| # | Action | File |
+|---|--------|------|
+| 1 | Add `auto_renew` + `payrexx_subscription_id` columns | DB migration |
+| 2 | Strip all PAYREXX_TEST_MODE logic | `create-payrexx-gateway/index.ts` |
 
