@@ -114,6 +114,12 @@ Deno.serve(async (req) => {
       invoice,
     } = transaction;
 
+    // Extract subscription info if present (Payrexx-managed subscriptions)
+    const subscriptionId = transaction.subscription?.id || null;
+    if (subscriptionId) {
+      console.log(`Payrexx webhook: subscription ID ${subscriptionId} present`);
+    }
+
     // Parse and validate reference ID
     const parsedRef = parseReferenceId(referenceId || '');
     if (!parsedRef) {
@@ -165,7 +171,9 @@ Deno.serve(async (req) => {
           payment_provider: 'payrexx',
           payrexx_transaction_id: transactionId.toString(),
           payment_date: now.toISOString(),
-          description: `Büeze ${planType} Abonnement`,
+          description: subscriptionId
+            ? `Büeze ${planType} Abonnement (automatische Verlängerung)`
+            : `Büeze ${planType} Abonnement`,
           invoice_pdf_url: invoice?.paymentLink || null,
         }, { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true })
         .select('id');
@@ -175,23 +183,42 @@ Deno.serve(async (req) => {
         return successResponse({ received: true, already_processed: true });
       }
 
-      // Payment confirmed — activate subscription
+      // Check if this is a recurring renewal (subscription already active for this user)
+      const { data: existingSub } = await supabase
+        .from('handwerker_subscriptions')
+        .select('status, plan_type, auto_renew, payrexx_subscription_id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const isRenewal = existingSub?.auto_renew === true
+        && existingSub?.payrexx_subscription_id
+        && subscriptionId;
+
+      // Payment confirmed — activate or renew subscription
+      const subscriptionData: Record<string, any> = {
+        user_id: userId,
+        plan_type: planType,
+        status: 'active',
+        proposals_limit: planConfig.proposalsLimit,
+        proposals_used_this_period: isRenewal ? 0 : 0,
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+        pending_plan: null,
+        renewal_reminder_sent: false,
+        payment_reminder_1_sent: false,
+        payment_reminder_2_sent: false,
+        updated_at: now.toISOString(),
+      };
+
+      // Store Payrexx subscription info when present
+      if (subscriptionId) {
+        subscriptionData.payrexx_subscription_id = subscriptionId.toString();
+        subscriptionData.auto_renew = true;
+      }
+
       const { error: subError } = await supabase
         .from('handwerker_subscriptions')
-        .upsert({
-          user_id: userId,
-          plan_type: planType,
-          status: 'active',
-          proposals_limit: planConfig.proposalsLimit,
-          proposals_used_this_period: 0,
-          current_period_start: now.toISOString(),
-          current_period_end: periodEnd.toISOString(),
-          pending_plan: null,
-          renewal_reminder_sent: false,
-          payment_reminder_1_sent: false,
-          payment_reminder_2_sent: false,
-          updated_at: now.toISOString(),
-        }, {
+        .upsert(subscriptionData, {
           onConflict: 'user_id',
         });
 
@@ -201,14 +228,20 @@ Deno.serve(async (req) => {
       }
 
       // Create in-app notification for user
+      const notificationType = isRenewal ? 'subscription_renewed' : 'subscription_activated';
+      const notificationTitle = isRenewal ? 'Abonnement verlängert' : 'Abonnement aktiviert';
+      const notificationMessage = isRenewal
+        ? `Ihr ${planType === 'monthly' ? 'monatliches' : planType === '6_month' ? '6-Monats' : 'Jahres'}-Abonnement wurde automatisch verlängert.`
+        : `Ihr ${planType === 'monthly' ? 'monatliches' : planType === '6_month' ? '6-Monats' : 'Jahres'}-Abonnement wurde erfolgreich aktiviert.`;
+
       await supabase
         .from('handwerker_notifications')
         .insert({
           user_id: userId,
-          type: 'subscription_activated',
-          title: 'Abonnement aktiviert',
-          message: `Ihr ${planType === 'monthly' ? 'monatliches' : planType === '6_month' ? '6-Monats' : 'Jahres'}-Abonnement wurde erfolgreich aktiviert.`,
-          metadata: { planType, transactionId },
+          type: notificationType,
+          title: notificationTitle,
+          message: notificationMessage,
+          metadata: { planType, transactionId, subscriptionId, isRenewal },
         });
 
       // Send subscription confirmation email
@@ -220,24 +253,36 @@ Deno.serve(async (req) => {
         console.error('Failed to send subscription confirmation email:', emailError);
       }
 
-      console.log(`Subscription activated for user ${userId}, plan ${planType}`);
+      console.log(`Subscription ${isRenewal ? 'renewed' : 'activated'} for user ${userId}, plan ${planType}${subscriptionId ? ` (subscription ${subscriptionId})` : ''}`);
 
     } else if (status === 'waiting') {
       // Payment still processing — acknowledge but don't activate
       console.log(`Payment ${transactionId} for user ${userId} is waiting/processing, no action taken`);
 
     } else if (status === 'declined' || status === 'failed' || status === 'cancelled') {
-      // Payment failed — only revert to free if user doesn't already have an active paid plan
+      // Payment failed — check if this was an auto-renewal failure
       const { data: existingSub } = await supabase
         .from('handwerker_subscriptions')
-        .select('plan_type')
+        .select('plan_type, auto_renew, payrexx_subscription_id')
         .eq('user_id', userId)
         .eq('status', 'active')
         .maybeSingle();
 
       const alreadyPaid = existingSub && existingSub.plan_type !== 'free';
+      const isAutoRenewFailure = existingSub?.auto_renew === true && subscriptionId;
 
-      if (!alreadyPaid) {
+      if (isAutoRenewFailure) {
+        // Auto-renewal payment failed — disable auto-renew so manual flow takes over
+        console.log(`Auto-renewal failed for user ${userId}, disabling auto-renew`);
+        await supabase
+          .from('handwerker_subscriptions')
+          .update({
+            auto_renew: false,
+            payrexx_subscription_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+      } else if (!alreadyPaid) {
         const { error: subError } = await supabase
           .from('handwerker_subscriptions')
           .upsert({
@@ -269,18 +314,24 @@ Deno.serve(async (req) => {
           payment_provider: 'payrexx',
           payrexx_transaction_id: transactionId.toString(),
           payment_date: new Date().toISOString(),
-          description: `Fehlgeschlagene Zahlung: ${planType} Abonnement`,
+          description: isAutoRenewFailure
+            ? `Automatische Verlängerung fehlgeschlagen: ${planType} Abonnement`
+            : `Fehlgeschlagene Zahlung: ${planType} Abonnement`,
         });
 
       // Notify user
+      const failedMessage = isAutoRenewFailure
+        ? 'Die automatische Verlängerung Ihres Abonnements ist fehlgeschlagen. Bitte erneuern Sie Ihr Abonnement manuell.'
+        : 'Ihre Zahlung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.';
+
       await supabase
         .from('handwerker_notifications')
         .insert({
           user_id: userId,
           type: 'payment_failed',
           title: 'Zahlung fehlgeschlagen',
-          message: 'Ihre Zahlung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.',
-          metadata: { planType, transactionId, status },
+          message: failedMessage,
+          metadata: { planType, transactionId, status, subscriptionId, isAutoRenewFailure },
         });
 
       // Admin notification
@@ -289,11 +340,11 @@ Deno.serve(async (req) => {
         .insert({
           type: 'payment_failed',
           title: 'Zahlung fehlgeschlagen',
-          message: `Payrexx Zahlung für Benutzer ${userId} fehlgeschlagen. Status: ${status}`,
-          metadata: { userId, planType, transactionId, status },
+          message: `Payrexx Zahlung für Benutzer ${userId} fehlgeschlagen. Status: ${status}${isAutoRenewFailure ? ' (Auto-Renewal)' : ''}`,
+          metadata: { userId, planType, transactionId, status, subscriptionId },
         });
 
-      console.log(`Payment failed for user ${userId}, reverted to free tier`);
+      console.log(`Payment failed for user ${userId}${isAutoRenewFailure ? ' (auto-renewal disabled)' : ', reverted to free tier'}`);
 
     } else {
       // Unknown status — log and acknowledge

@@ -116,6 +116,7 @@ serve(async (req) => {
     // PATH B: Non-cancelled, within grace period (expired but < 7 days ago)
     // Send renewal email with Payrexx checkout link, don't downgrade yet
     // ============================================================
+    // Skip auto-renew users — Payrexx handles their billing automatically
     const { data: gracePeriodSubs, error: graceError } = await supabase
       .from('handwerker_subscriptions')
       .select('user_id, plan_type, current_period_end')
@@ -123,6 +124,7 @@ serve(async (req) => {
       .neq('plan_type', 'free')
       .is('pending_plan', null)
       .eq('renewal_reminder_sent', false)
+      .eq('auto_renew', false)
       .lt('current_period_end', nowISO)
       .gt('current_period_end', gracePeriodCutoff);
 
@@ -210,12 +212,14 @@ serve(async (req) => {
     // PATH C: Non-cancelled, grace period expired (> 7 days past expiry)
     // Downgrade to free
     // ============================================================
+    // Skip auto-renew users — Payrexx handles their billing automatically
     const { data: graceExpiredSubs, error: graceExpiredError } = await supabase
       .from('handwerker_subscriptions')
       .select('user_id, plan_type')
       .eq('status', 'active')
       .neq('plan_type', 'free')
       .is('pending_plan', null)
+      .eq('auto_renew', false)
       .lt('current_period_end', gracePeriodCutoff);
 
     if (graceExpiredError) {

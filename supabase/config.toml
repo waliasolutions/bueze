@@ -93,6 +93,9 @@ verify_jwt = false
 [functions.payrexx-webhook]
 verify_jwt = false
 
+[functions.cancel-payrexx-subscription]
+verify_jwt = false
+
 [functions.lead-expiry-check]
 verify_jwt = false
 

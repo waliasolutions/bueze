@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Check, ArrowLeft, Loader2, CreditCard, Smartphone, Clock, AlertCircle, ChevronDown } from "lucide-react";
+import { Check, ArrowLeft, Loader2, CreditCard, Smartphone, Clock, AlertCircle, ChevronDown, RefreshCw } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -32,6 +33,7 @@ export default function Checkout() {
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanType>(planParam);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSavingPendingPlan, setIsSavingPendingPlan] = useState(false);
+  const [saveCard, setSaveCard] = useState(false);
   const [approvalStatus, setApprovalStatus] = useState<ApprovalStatus>('loading');
   const [userId, setUserId] = useState<string | null>(null);
   const [planSelectorOpen, setPlanSelectorOpen] = useState(!planFromUrl);
@@ -140,6 +142,7 @@ export default function Checkout() {
           planType: selectedPlan,
           successUrl,
           cancelUrl,
+          saveCard,
         },
       });
 
@@ -434,6 +437,27 @@ export default function Checkout() {
                   <p className="text-xs text-muted-foreground mt-3">
                     Ihre Zahlungsdaten werden sicher verarbeitet und niemals auf unseren Servern gespeichert.
                   </p>
+
+                  {/* Auto-renewal opt-in */}
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="saveCard"
+                        checked={saveCard}
+                        onCheckedChange={(checked) => setSaveCard(checked === true)}
+                        className="mt-0.5"
+                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="saveCard" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          Kreditkarte für automatische Verlängerung speichern
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          Ihre Kreditkartendaten werden sicher bei Payrexx gespeichert. Die Zahlung wird automatisch am Ende jeder Laufzeit erneuert. Sie können dies jederzeit in Ihrem Profil deaktivieren.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
