@@ -897,12 +897,14 @@ export type Database = {
       }
       handwerker_subscriptions: {
         Row: {
+          auto_renew: boolean | null
           created_at: string
           current_period_end: string
           current_period_start: string
           id: string
           payment_reminder_1_sent: boolean | null
           payment_reminder_2_sent: boolean | null
+          payrexx_subscription_id: string | null
           pending_plan: string | null
           plan_type: string
           proposals_limit: number
@@ -915,12 +917,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_renew?: boolean | null
           created_at?: string
           current_period_end?: string
           current_period_start?: string
           id?: string
           payment_reminder_1_sent?: boolean | null
           payment_reminder_2_sent?: boolean | null
+          payrexx_subscription_id?: string | null
           pending_plan?: string | null
           plan_type?: string
           proposals_limit?: number
@@ -933,12 +937,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_renew?: boolean | null
           created_at?: string
           current_period_end?: string
           current_period_start?: string
           id?: string
           payment_reminder_1_sent?: boolean | null
           payment_reminder_2_sent?: boolean | null
+          payrexx_subscription_id?: string | null
           pending_plan?: string | null
           plan_type?: string
           proposals_limit?: number
