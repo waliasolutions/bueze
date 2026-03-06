@@ -1,35 +1,67 @@
 
 
-# Fix: Payrexx Gateway 403 "API secret not correct"
+# Deep QA: Routing & URL Issues Found
 
-## Root Cause
+## Issues Identified
 
-The SignatureCheck (GET with empty body) passes, but gateway creation (POST with body) fails. After reviewing the **official Payrexx PHP SDK** (v2.0.11), I found that `Communicator.php` line 899 sends the API secret as an HTTP header:
+| # | Severity | Issue | Location |
+|---|----------|-------|----------|
+| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
+| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
+| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
 
-```php
-$this->httpHeaders['x-api-key'] = $this->apiSecret;
+---
+
+## Fix 1: `/auth?mode=reset` — Make it work or fix the link
+
+**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
+
+**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
+
+**File**: `src/pages/Auth.tsx`
+- Add `useSearchParams` import
+- Read `mode` param on mount
+- If `mode === 'reset'`, set `isDialogOpen` to `true`
+
+```tsx
+const [searchParams] = useSearchParams();
+
+useEffect(() => {
+  if (searchParams.get('mode') === 'reset') {
+    setIsDialogOpen(true);
+  }
+}, [searchParams]);
 ```
 
-Our edge function does NOT send this header. The `SignatureCheck` endpoint is lenient (works without it), but the `Gateway` POST endpoint requires it.
+---
 
-## Fix
+## Fix 2: AGB route — Add top-level `/agb` with redirect
 
-**File**: `supabase/functions/create-payrexx-gateway/index.ts`
+**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
 
-Add `x-api-key` header to the gateway creation fetch request (line 194-196):
+**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
 
-```typescript
-headers: {
-  'Content-Type': 'application/x-www-form-urlencoded',
-  'Accept': 'application/json',
-  'x-api-key': PAYREXX_API_KEY,
-},
-```
+**File**: `src/App.tsx`
+- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
 
-One line added. No other changes needed.
+---
 
-## Why SignatureCheck works but Gateway doesn't
+## Fix 3: Stale comments in sitemap generator (optional)
 
-- `SignatureCheck` is a GET endpoint that validates the HMAC of an empty string — it only checks instance + signature validity
-- `Gateway` POST requires the full `x-api-key` header for server-side request authentication, in addition to the body signature
+**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
+
+**File**: `supabase/functions/generate-sitemap/index.ts`
+- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
+
+---
+
+## Summary
+
+| # | Fix | Files | Effort |
+|---|-----|-------|--------|
+| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
+| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
+| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
+
+No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
 
