@@ -24,6 +24,7 @@ import {
   Eye,
   Trash2,
   Loader2,
+  Key,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -38,6 +39,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { AdminPasswordResetDialog } from '@/components/admin/AdminPasswordResetDialog';
 
 interface Client {
   id: string;
@@ -74,6 +76,7 @@ export default function ClientManagement() {
   const [clientLeads, setClientLeads] = useState<Map<string, Lead[]>>(new Map());
   const [loadingLeads, setLoadingLeads] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [resetPasswordClient, setResetPasswordClient] = useState<{ id: string; email: string; name: string } | null>(null);
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -495,6 +498,18 @@ export default function ClientManagement() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setResetPasswordClient({
+                              id: client.id,
+                              email: client.email,
+                              name: client.full_name || client.email,
+                            })}
+                            title="Passwort zurücksetzen"
+                          >
+                            <Key className="h-4 w-4 text-orange-600" />
+                          </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button
@@ -590,6 +605,13 @@ export default function ClientManagement() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Password Reset Dialog */}
+      <AdminPasswordResetDialog
+        user={resetPasswordClient}
+        open={!!resetPasswordClient}
+        onOpenChange={(open) => !open && setResetPasswordClient(null)}
+      />
     </AdminLayout>
   );
 }

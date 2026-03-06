@@ -121,6 +121,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        newPassword,
         message: 'Password reset successfully. Das neue Passwort wurde per E-Mail gesendet.',
       }),
       {

@@ -18,6 +18,7 @@ import { formatPhoneDisplay, formatPhoneHref, formatAddress } from '@/lib/displa
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import { HandwerkerEditDialog } from '@/components/admin/HandwerkerEditDialog';
+import { AdminPasswordResetDialog } from '@/components/admin/AdminPasswordResetDialog';
 import {
   Search,
   CheckCircle,
@@ -35,6 +36,7 @@ import {
   CheckCheck,
   Trash2,
   Loader2,
+  Key,
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -100,6 +102,7 @@ export default function HandwerkerManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [resetPasswordHandwerker, setResetPasswordHandwerker] = useState<{ id: string; email: string; name: string } | null>(null);
   const [editingHandwerker, setEditingHandwerker] = useState<Handwerker | null>(null);
 
   useEffect(() => {
@@ -826,6 +829,20 @@ export default function HandwerkerManagement() {
                                 <Eye className="h-4 w-4" />
                               </Button>
                             )}
+                            {h.user_id && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setResetPasswordHandwerker({
+                                  id: h.user_id!,
+                                  email: h.email || '',
+                                  name: `${h.first_name || ''} ${h.last_name || ''}`.trim() || h.email || '',
+                                })}
+                                title="Passwort zurücksetzen"
+                              >
+                                <Key className="h-4 w-4 text-orange-600" />
+                              </Button>
+                            )}
                             {h.verification_status === 'pending' && (
                               <>
                                 <Button
@@ -946,6 +963,13 @@ export default function HandwerkerManagement() {
         open={!!editingHandwerker}
         onOpenChange={(open) => !open && setEditingHandwerker(null)}
         onSaved={fetchHandwerkers}
+      />
+
+      {/* Password Reset Dialog */}
+      <AdminPasswordResetDialog
+        user={resetPasswordHandwerker}
+        open={!!resetPasswordHandwerker}
+        onOpenChange={(open) => !open && setResetPasswordHandwerker(null)}
       />
     </AdminLayout>
   );
