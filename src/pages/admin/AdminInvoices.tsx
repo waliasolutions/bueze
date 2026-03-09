@@ -43,7 +43,7 @@ import {
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { getInvoiceStatusConfig, formatInvoiceAmount } from '@/config/invoiceConfig';
-import { getPlanLabel } from '@/config/subscriptionPlans';
+import { getPlanLabel, PLAN_BADGE_VARIANT } from '@/config/subscriptionPlans';
 import type { InvoiceWithUser } from '@/types/entities';
 
 const AdminInvoices = () => {
@@ -375,7 +375,11 @@ const AdminInvoices = () => {
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell>{getPlanLabel(invoice.plan_type)}</TableCell>
+                        <TableCell>
+                          <Badge variant={PLAN_BADGE_VARIANT[invoice.plan_type] || 'outline'}>
+                            {getPlanLabel(invoice.plan_type)}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="font-semibold">
                           {formatInvoiceAmount(invoice.amount, invoice.currency)}
                         </TableCell>

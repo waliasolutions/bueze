@@ -10,7 +10,8 @@ import { Receipt, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { getPlanLabel } from '@/config/subscriptionPlans';
+import { getPlanLabel, PLAN_BADGE_VARIANT } from '@/config/subscriptionPlans';
+import { formatInvoiceAmount } from '@/config/invoiceConfig';
 
 interface Payment {
   id: string;
@@ -40,12 +41,6 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const formatAmount = (amount: number, currency: string): string => {
-  return new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-  }).format(amount / 100);
-};
 
 export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId }) => {
   const navigate = useNavigate();
@@ -146,7 +141,7 @@ export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total bezahlt</p>
             <p className="text-xl font-bold text-green-600">
-              {formatAmount(totalPaid, 'chf')}
+              {formatInvoiceAmount(totalPaid)}
             </p>
           </div>
         </div>
@@ -168,9 +163,13 @@ export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId
                 <TableCell className="font-medium">
                   {format(new Date(payment.payment_date), 'dd. MMMM yyyy', { locale: de })}
                 </TableCell>
-                <TableCell>{getPlanLabel(payment.plan_type)}</TableCell>
+                <TableCell>
+                  <Badge variant={PLAN_BADGE_VARIANT[payment.plan_type] || 'outline'}>
+                    {getPlanLabel(payment.plan_type)}
+                  </Badge>
+                </TableCell>
                 <TableCell className="font-semibold">
-                  {formatAmount(payment.amount, payment.currency)}
+                  {formatInvoiceAmount(payment.amount, payment.currency)}
                 </TableCell>
                 <TableCell>{getStatusBadge(payment.status)}</TableCell>
                 <TableCell className="text-right">

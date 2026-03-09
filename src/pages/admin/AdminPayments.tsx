@@ -60,7 +60,8 @@ interface PlanBreakdown {
   color: string;
 }
 
-import { getPlanLabel } from '@/config/subscriptionPlans';
+import { getPlanLabel, PLAN_BADGE_VARIANT } from '@/config/subscriptionPlans';
+import { formatInvoiceAmount } from '@/config/invoiceConfig';
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -75,12 +76,6 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const formatAmount = (amount: number): string => {
-  return new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency: 'CHF',
-  }).format(amount / 100);
-};
 
 const PLAN_COLORS: Record<string, string> = {
   'monthly': 'hsl(var(--chart-1))',
@@ -234,7 +229,7 @@ const AdminPayments = () => {
                   Gesamtumsatz
                 </CardDescription>
                 <CardTitle className="text-3xl font-bold text-green-600">
-                  {formatAmount(stats.totalRevenue)}
+                  {formatInvoiceAmount(stats.totalRevenue)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -251,7 +246,7 @@ const AdminPayments = () => {
                   Umsatz diesen Monat
                 </CardDescription>
                 <CardTitle className="text-3xl font-bold text-blue-600">
-                  {formatAmount(stats.monthlyRevenue)}
+                  {formatInvoiceAmount(stats.monthlyRevenue)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -285,7 +280,7 @@ const AdminPayments = () => {
                   Ø pro Nutzer
                 </CardDescription>
                 <CardTitle className="text-3xl font-bold text-amber-600">
-                  {formatAmount(stats.avgRevenuePerUser)}
+                  {formatInvoiceAmount(stats.avgRevenuePerUser)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -380,9 +375,13 @@ const AdminPayments = () => {
                               </p>
                             </div>
                           </TableCell>
-                          <TableCell>{getPlanLabel(payment.plan_type)}</TableCell>
+                          <TableCell>
+                            <Badge variant={PLAN_BADGE_VARIANT[payment.plan_type] || 'outline'}>
+                              {getPlanLabel(payment.plan_type)}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="font-semibold">
-                            {formatAmount(payment.amount)}
+                            {formatInvoiceAmount(payment.amount)}
                           </TableCell>
                           <TableCell>{getStatusBadge(payment.status)}</TableCell>
                           <TableCell className="text-right">

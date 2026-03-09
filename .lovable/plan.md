@@ -1,57 +1,67 @@
 
 
-# Final Polish: Badge Variants + DRY Amount Formatting
+# Deep QA: Routing & URL Issues Found
 
-Two trivial fixes across 4 files — completing the SSOT loop for subscription/invoicing UI.
+## Issues Identified
+
+| # | Severity | Issue | Location |
+|---|----------|-------|----------|
+| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
+| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
+| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
 
 ---
 
-## Fix 1: Apply `PLAN_BADGE_VARIANT` in JSX (4 files)
+## Fix 1: `/auth?mode=reset` — Make it work or fix the link
 
-### `HandwerkerInvoices.tsx`
-- **Line 17**: `import { getPlanLabel }` → `import { getPlanLabel, PLAN_BADGE_VARIANT }`
-- **Line 217**: Replace `<TableCell>{getPlanLabel(invoice.plan_type)}</TableCell>` with:
+**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
+
+**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
+
+**File**: `src/pages/Auth.tsx`
+- Add `useSearchParams` import
+- Read `mode` param on mount
+- If `mode === 'reset'`, set `isDialogOpen` to `true`
+
 ```tsx
-<TableCell>
-  <Badge variant={PLAN_BADGE_VARIANT[invoice.plan_type] || 'outline'}>
-    {getPlanLabel(invoice.plan_type)}
-  </Badge>
-</TableCell>
+const [searchParams] = useSearchParams();
+
+useEffect(() => {
+  if (searchParams.get('mode') === 'reset') {
+    setIsDialogOpen(true);
+  }
+}, [searchParams]);
 ```
-- **Line 272** (mobile): Keep as plain text — badge inside inline span looks wrong on mobile.
-
-### `AdminInvoices.tsx`
-- **Line 46**: Add `PLAN_BADGE_VARIANT` to import
-- **Line 378**: Same Badge wrap pattern
-
-### `AdminPayments.tsx`
-- **Line 63**: Add `PLAN_BADGE_VARIANT` to import
-- **Line 383**: Same Badge wrap pattern
-
-### `PaymentHistoryTable.tsx`
-- **Line 13**: Add `PLAN_BADGE_VARIANT` to import
-- **Line 171**: Same Badge wrap pattern
 
 ---
 
-## Fix 2: Replace local `formatAmount` with `formatInvoiceAmount` (2 files)
+## Fix 2: AGB route — Add top-level `/agb` with redirect
 
-### `AdminPayments.tsx`
-- **Line 63**: Add `import { formatInvoiceAmount } from '@/config/invoiceConfig';`
-- **Lines 78-83**: Delete the local `formatAmount` function entirely
-- **Lines 237, 254, 288, 385**: Replace all `formatAmount(...)` → `formatInvoiceAmount(...)`
+**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
 
-### `PaymentHistoryTable.tsx`
-- **Line 13 area**: Add `import { formatInvoiceAmount } from '@/config/invoiceConfig';`
-- **Lines 43-48**: Delete the local `formatAmount` function entirely
-- **Line 149**: `formatAmount(totalPaid, 'chf')` → `formatInvoiceAmount(totalPaid)`
-- **Line 173**: `formatAmount(payment.amount, payment.currency)` → `formatInvoiceAmount(payment.amount, payment.currency)`
+**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+
+**File**: `src/App.tsx`
+- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
 
 ---
 
-## Post-Deploy Visual Audit
+## Fix 3: Stale comments in sitemap generator (optional)
 
-1. **Admin > Payments**: Verify Revenue Stats (Total/Monthly/Avg) still format correctly. Confirm plan type column now shows color-coded badges.
-2. **Admin > Invoices**: Confirm plan type badges appear with correct variant styling.
-3. **Handwerker > Rechnungen**: Verify desktop table shows plan badges, mobile cards keep plain text.
+**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
+
+**File**: `supabase/functions/generate-sitemap/index.ts`
+- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
+
+---
+
+## Summary
+
+| # | Fix | Files | Effort |
+|---|-----|-------|--------|
+| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
+| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
+| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
+
+No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
 
