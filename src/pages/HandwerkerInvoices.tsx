@@ -14,7 +14,7 @@ import { ArrowLeft, Download, FileText, Receipt, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { getInvoiceStatusConfig, formatInvoiceAmount } from '@/config/invoiceConfig';
-import { getPlanLabel } from '@/config/subscriptionPlans';
+import { getPlanLabel, PLAN_BADGE_VARIANT } from '@/config/subscriptionPlans';
 import type { Invoice } from '@/types/entities';
 
 const HandwerkerInvoices = () => {
