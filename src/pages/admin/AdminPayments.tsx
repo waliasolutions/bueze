@@ -76,12 +76,6 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const formatAmount = (amount: number): string => {
-  return new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency: 'CHF',
-  }).format(amount / 100);
-};
 
 const PLAN_COLORS: Record<string, string> = {
   'monthly': 'hsl(var(--chart-1))',
