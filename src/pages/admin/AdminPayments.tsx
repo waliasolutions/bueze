@@ -60,15 +60,7 @@ interface PlanBreakdown {
   color: string;
 }
 
-const getPlanLabel = (planType: string): string => {
-  const labels: Record<string, string> = {
-    'free': 'Gratis',
-    'monthly': 'Monatlich',
-    '6_month': '6 Monate',
-    'annual': 'Jährlich',
-  };
-  return labels[planType] || planType;
-};
+import { getPlanLabel } from '@/config/subscriptionPlans';
 
 const getStatusBadge = (status: string) => {
   switch (status) {

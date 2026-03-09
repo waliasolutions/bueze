@@ -121,3 +121,17 @@ export function formatPricePerMonth(plan: SubscriptionPlan): string {
   if (plan.billingCycle === 'monthly') return `${formatPrice(plan.price)}/Monat`;
   return `${formatPrice(plan.price)} (${formatPrice(plan.pricePerMonth)}/Monat)`;
 }
+
+/** SSOT: Human-readable plan label. Do not duplicate. */
+export function getPlanLabel(planType: string): string {
+  const plan = SUBSCRIPTION_PLANS[planType as SubscriptionPlanType];
+  return plan?.displayName ?? planType;
+}
+
+/** Badge variant per plan for consistent UI styling */
+export const PLAN_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
+  free: 'outline',
+  monthly: 'default',
+  '6_month': 'default',
+  annual: 'secondary',
+};
