@@ -77,13 +77,7 @@ serve(async (req) => {
     
     const supabase = createSupabaseAdmin();
 
-    // 1. Check if email already exists in auth.users (targeted lookup, no full scan)
-    const { data: existingAuthUser, error: lookupError } = await supabase.auth.admin.getUserByEmail(email);
-    
-    if (existingAuthUser?.user) {
-      console.log('Email already exists in auth.users');
-      throw new Error('Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an.');
-    }
+    // 1. Duplicate auth check removed — handled by createUser error (status 422)
 
     // 2. Check if email already exists in handwerker_profiles
     const { data: existingHandwerker } = await supabase
