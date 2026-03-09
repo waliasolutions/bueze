@@ -74,13 +74,36 @@ const AdminInvoices = () => {
   const fetchInvoices = async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
     try {
-      const { data, error } = await supabase
+      // Fetch invoices first, then enrich with profile data
+      // (invoices.user_id references auth.users, not profiles directly)
+      const { data: invoiceData, error } = await supabase
         .from('invoices')
-        .select('*, profiles:user_id(full_name, email)')
+        .select('*')
         .order('issued_at', { ascending: false });
 
       if (error) throw error;
-      setInvoices((data as InvoiceWithUser[]) || []);
+
+      // Fetch profile data for all unique user_ids
+      const userIds = [...new Set((invoiceData || []).map(i => i.user_id))];
+      let profileMap: Record<string, { full_name: string | null; email: string }> = {};
+
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
+
+        if (profiles) {
+          profileMap = Object.fromEntries(profiles.map(p => [p.id, { full_name: p.full_name, email: p.email }]));
+        }
+      }
+
+      const enriched = (invoiceData || []).map(inv => ({
+        ...inv,
+        profiles: profileMap[inv.user_id] || null,
+      })) as InvoiceWithUser[];
+
+      setInvoices(enriched);
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast({
