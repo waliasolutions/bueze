@@ -40,12 +40,19 @@ export default function Checkout() {
 
   const plan = SUBSCRIPTION_PLANS[selectedPlan];
 
-  // Show toast if user cancelled payment
+  // Show toast if user cancelled or failed payment
   useEffect(() => {
     if (searchParams.get('cancelled') === 'true') {
       toast({
         title: 'Zahlung abgebrochen',
         description: 'Sie können den Vorgang jederzeit erneut starten.',
+        variant: 'destructive',
+      });
+    }
+    if (searchParams.get('failed') === 'true') {
+      toast({
+        title: 'Zahlung fehlgeschlagen',
+        description: 'Ihre Zahlung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.',
         variant: 'destructive',
       });
     }
@@ -136,12 +143,14 @@ export default function Checkout() {
     try {
       const successUrl = `${window.location.origin}/payment-success`;
       const cancelUrl = `${window.location.origin}/checkout?plan=${selectedPlan}&cancelled=true`;
+      const failedUrl = `${window.location.origin}/checkout?plan=${selectedPlan}&failed=true`;
 
       const { data, error } = await supabase.functions.invoke('create-payrexx-gateway', {
         body: {
           planType: selectedPlan,
           successUrl,
           cancelUrl,
+          failedUrl,
           saveCard,
         },
       });
@@ -162,13 +171,6 @@ export default function Checkout() {
       }
 
       if (data?.url) {
-        if (data.testMode) {
-          console.info('[Checkout] Test mode payment simulation — no real charge');
-          toast({
-            title: "Testmodus",
-            description: "Payrexx Testmodus aktiv – Weiterleitung zur Bestätigung ohne echte Zahlung.",
-          });
-        }
         window.location.href = data.url;
       } else {
         throw new Error("Keine Checkout-URL erhalten");

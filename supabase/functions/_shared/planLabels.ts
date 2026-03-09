@@ -1,6 +1,5 @@
-// Shared plan labels and amounts for edge functions
-// NOTE: Prices must match the SSOT in src/config/subscriptionPlans.ts (frontend)
-// and src/config/payrexx.ts. If prices change, update all three files.
+// Shared plan labels, amounts, and configs for edge functions
+// NOTE: Prices must match the SSOT in src/config/subscriptionPlans.ts (frontend).
 // Edge functions cannot import frontend modules, so this duplication is intentional.
 
 export const PLAN_AMOUNTS: Record<string, number> = {
@@ -62,4 +61,11 @@ export const PLAN_INTERVALS: Record<string, string> = {
   monthly: 'P1M',
   '6_month': 'P6M',
   annual: 'P1Y',
+};
+
+/** Plan configurations for subscription activation (proposals limit + billing period) */
+export const PLAN_CONFIGS: Record<string, { proposalsLimit: number; periodMonths: number }> = {
+  monthly: { proposalsLimit: -1, periodMonths: 1 },
+  '6_month': { proposalsLimit: -1, periodMonths: 6 },
+  annual: { proposalsLimit: -1, periodMonths: 12 },
 };
