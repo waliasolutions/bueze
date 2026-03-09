@@ -43,7 +43,7 @@ import {
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { getInvoiceStatusConfig, formatInvoiceAmount } from '@/config/invoiceConfig';
-import { getPlanLabel } from '@/config/subscriptionPlans';
+import { getPlanLabel, PLAN_BADGE_VARIANT } from '@/config/subscriptionPlans';
 import type { InvoiceWithUser } from '@/types/entities';
 
 const AdminInvoices = () => {
