@@ -118,8 +118,8 @@ const AdminInvoices = () => {
   };
 
   useEffect(() => {
-    if (isAdminAuthenticated) fetchInvoices();
-  }, [isAdminAuthenticated]);
+    if (isAuthorized) fetchInvoices();
+  }, [isAuthorized]);
 
   // Filtered invoices
   const filteredInvoices = useMemo(() => {

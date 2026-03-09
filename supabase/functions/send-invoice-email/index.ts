@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
 
     // Convert to base64 for email attachment
     const arrayBuffer = await pdfData.arrayBuffer();
-    const pdfBase64 = base64Encode(new Uint8Array(arrayBuffer));
+    const pdfBase64 = base64Encode(arrayBuffer);
 
     // 4. Format email data
     const planName = getPlanName(invoice.plan_type);
