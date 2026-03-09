@@ -56,7 +56,7 @@ const getPlanLabel = (planType: string): string => {
 };
 
 const AdminInvoices = () => {
-  const { isAdminAuthenticated } = useAdminAuth();
+  const { isAuthorized } = useAdminAuth();
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<InvoiceWithUser[]>([]);
   const [loading, setLoading] = useState(true);
