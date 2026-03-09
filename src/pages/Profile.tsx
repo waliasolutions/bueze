@@ -18,7 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PaymentMethodCard } from '@/components/PaymentMethodCard';
 import { SubscriptionManagement } from '@/components/SubscriptionManagement';
 import { PaymentHistoryTable } from '@/components/PaymentHistoryTable';
-import { X, Receipt, Loader2 } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { ArrowLeft, Save, User, Settings as SettingsIcon, CreditCard, Crown } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SWISS_CANTONS } from '@/config/cantons';
@@ -560,22 +560,10 @@ const Profile = () => {
               {isHandwerker && (
                 <TabsTrigger value="subscription" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
                   <Crown className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Abonnement</span>
+                  <span className="hidden sm:inline">Abonnement & Rechnungen</span>
                   <span className="sm:hidden">Abo</span>
                 </TabsTrigger>
               )}
-              {isHandwerker && (
-                <TabsTrigger value="payments" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
-                  <Receipt className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Rechnungen</span>
-                  <span className="sm:hidden">Rechnung</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="settings" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
-                <SettingsIcon className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Einstellungen</span>
-                <span className="sm:hidden">Settings</span>
-              </TabsTrigger>
             </TabsList>
 
             {/* Personal Data Tab */}
@@ -683,6 +671,53 @@ const Profile = () => {
                       </Button>
                     </form>
                   </Form>
+                </CardContent>
+              </Card>
+
+              {/* Account Settings — merged from former Settings tab */}
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Konto-Einstellungen</CardTitle>
+                  <CardDescription>
+                    Ihre Konto-Informationen und Präferenzen
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">E-Mail</label>
+                      <p className="text-sm text-muted-foreground">{user?.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Rolle</label>
+                      <p className="text-sm text-muted-foreground">
+                        <Badge variant="secondary">
+                          {profile?.role === 'handwerker' ? 'Handwerker' : 'Auftraggeber'}
+                        </Badge>
+                      </p>
+                    </div>
+                  </div>
+
+                  {isHandwerker && handwerkerProfile && (
+                    <div>
+                      <label className="text-sm font-medium">Verifikation</label>
+                      <p className="text-sm text-muted-foreground">
+                        <Badge variant={handwerkerProfile.is_verified ? 'default' : 'secondary'}>
+                          {handwerkerProfile.is_verified ? 'Geprüft' : 'Nicht geprüft'}
+                        </Badge>
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="pt-4 border-t">
+                    <h3 className="font-semibold mb-2">Konto löschen</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Das Löschen Ihres Kontos kann nicht rückgängig gemacht werden.
+                    </p>
+                    <Button variant="destructive" disabled>
+                      Konto löschen
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -938,72 +973,18 @@ const Profile = () => {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+
+                {/* Payment History & Methods — merged from former Payments tab */}
+                <div className="mt-6 space-y-6">
+                  <PaymentHistoryTable userId={user?.id} />
+                  <PaymentMethodCard
+                    autoRenew={currentSubscription?.autoRenew}
+                    currentPeriodEnd={currentSubscription?.currentPeriodEnd}
+                    onAutoRenewChanged={fetchUserData}
+                  />
+                </div>
               </TabsContent>
             )}
-
-            {/* Payments & Invoices Tab - Only for Handwerker */}
-            {isHandwerker && (
-              <TabsContent value="payments" className="space-y-6">
-                {/* Payment History */}
-                <PaymentHistoryTable userId={user?.id} />
-                
-                {/* Payment Methods */}
-                <PaymentMethodCard
-                  autoRenew={currentSubscription?.autoRenew}
-                  currentPeriodEnd={currentSubscription?.currentPeriodEnd}
-                  onAutoRenewChanged={fetchUserData}
-                />
-              </TabsContent>
-            )}
-
-            {/* Settings Tab */}
-            <TabsContent value="settings">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Konto-Einstellungen</CardTitle>
-                  <CardDescription>
-                    Verwalten Sie Ihre Konto-Einstellungen und Präferenzen
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">E-Mail</label>
-                      <p className="text-sm text-muted-foreground">{user?.email}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Rolle</label>
-                      <p className="text-sm text-muted-foreground">
-                        <Badge variant="secondary">
-                          {profile?.role === 'handwerker' ? 'Handwerker' : 'Auftraggeber'}
-                        </Badge>
-                      </p>
-                    </div>
-                  </div>
-
-                  {isHandwerker && handwerkerProfile && (
-                    <div>
-                      <label className="text-sm font-medium">Verifikation</label>
-                      <p className="text-sm text-muted-foreground">
-                        <Badge variant={handwerkerProfile.is_verified ? 'default' : 'secondary'}>
-                          {handwerkerProfile.is_verified ? 'Geprüft' : 'Nicht geprüft'}
-                        </Badge>
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="pt-4 border-t">
-                    <h3 className="font-semibold mb-2">Konto löschen</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Das Löschen Ihres Kontos kann nicht rückgängig gemacht werden.
-                    </p>
-                    <Button variant="destructive" disabled>
-                      Konto löschen
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </div>
 

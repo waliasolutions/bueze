@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Crown, Calendar, AlertTriangle, ArrowDown, ArrowUp, Infinity as InfinityIcon } from 'lucide-react';
+import { Crown, Calendar, AlertTriangle, ArrowDown, Infinity as InfinityIcon } from 'lucide-react';
 import { formatDate } from '@/lib/swissTime';
 import { PendingPlanCard } from '@/components/PendingPlanCard';
 import {
@@ -273,116 +273,51 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
         </CardContent>
       </Card>
 
-      {/* Plan switching (for paid plan users) */}
+      {/* Plan switching (for paid plan users) — compact inline */}
       {currentSubscription.plan.id !== 'free' && !isCancellationPending && !isDowngradePending && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Plan wechseln</CardTitle>
-            <CardDescription>
-              Wechseln Sie zu einem anderen Abonnement. Downgrades werden zum Ende der Laufzeit wirksam, Upgrades sofort.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              {paidPlans.map((plan) => {
-                const isCurrent = plan.id === currentSubscription.plan.id;
-                const isUpgrade = plan.price > currentSubscription.plan.price;
-                const isDowngrade = plan.price < currentSubscription.plan.price;
-
-                return (
-                  <div
-                    key={plan.id}
-                    className={`border rounded-lg p-4 ${isCurrent ? 'border-primary bg-primary/5' : ''}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-bold">{plan.displayName}</h3>
-                      {isCurrent && (
-                        <Badge variant="default">Aktuell</Badge>
-                      )}
-                      {plan.popular && !isCurrent && (
-                        <Badge variant="secondary">Beliebt</Badge>
-                      )}
-                    </div>
-                    <p className="text-2xl font-bold mb-1">{formatPrice(plan.price)}</p>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {formatPrice(plan.pricePerMonth)}/Monat
-                    </p>
-                    {plan.savings && (
-                      <p className="text-xs text-green-600 mb-3">{plan.savings}</p>
-                    )}
-
-                    {isCurrent ? (
-                      <Button className="w-full" variant="outline" size="sm" disabled>
-                        Aktueller Plan
-                      </Button>
-                    ) : isUpgrade ? (
-                      <Button
-                        className="w-full"
-                        variant="default"
-                        size="sm"
-                        onClick={() => onUpgradePlan(plan.id)}
-                        disabled={loading}
-                      >
-                        <ArrowUp className="h-3 w-3 mr-1" />
-                        Upgrade
-                      </Button>
-                    ) : isDowngrade && onDowngradePlan ? (
-                      <Button
-                        className="w-full"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onDowngradePlan(plan.id)}
-                        disabled={loading}
-                      >
-                        <ArrowDown className="h-3 w-3 mr-1" />
-                        Downgrade
-                      </Button>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+          <div>
+            <p className="text-sm font-medium">Plan wechseln</p>
+            <p className="text-xs text-muted-foreground">Upgrades sofort, Downgrades zum Laufzeitende</p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onUpgradePlan(currentSubscription.plan.id)}
+          >
+            Plan ändern
+          </Button>
+        </div>
       )}
 
-      {/* Upgrade Options (for free plan users) */}
+      {/* Upgrade Options (for free plan users) — compact list */}
       {currentSubscription.plan.id === 'free' && (
         <Card>
-          <CardHeader>
-            <CardTitle>Upgrade zu unbegrenzten Offerten</CardTitle>
-            <CardDescription>
-              Reichen Sie unbegrenzt Offerten ein und wachsen Sie Ihr Geschäft
-            </CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Upgrade zu unbegrenzten Offerten</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              {paidPlans.map((plan) => (
-                <div key={plan.id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold">{plan.displayName}</h3>
-                    {plan.popular && (
-                      <Badge variant="secondary">Beliebt</Badge>
-                    )}
+          <CardContent className="space-y-3">
+            {paidPlans.map((plan) => (
+              <div key={plan.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{plan.displayName}</span>
+                    {plan.popular && <Badge variant="secondary" className="text-xs">Beliebt</Badge>}
                   </div>
-                  <p className="text-2xl font-bold mb-1">{formatPrice(plan.price)}</p>
-                  <p className="text-sm text-muted-foreground mb-3">
+                  <p className="text-sm text-muted-foreground">
                     {formatPrice(plan.pricePerMonth)}/Monat
+                    {plan.savings && <span className="text-green-600 ml-2">{plan.savings}</span>}
                   </p>
-                  {plan.savings && (
-                    <p className="text-xs text-green-600 mb-3">{plan.savings}</p>
-                  )}
-                  <Button
-                    onClick={() => onUpgradePlan(plan.id)}
-                    className="w-full"
-                    variant={plan.popular ? 'default' : 'outline'}
-                    size="sm"
-                  >
-                    Jetzt upgraden
-                  </Button>
                 </div>
-              ))}
-            </div>
+                <Button
+                  onClick={() => onUpgradePlan(plan.id)}
+                  variant={plan.popular ? 'default' : 'outline'}
+                  size="sm"
+                >
+                  {formatPrice(plan.price)}
+                </Button>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

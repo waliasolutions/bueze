@@ -356,10 +356,6 @@ export default function Checkout() {
                       value={selectedPlan}
                       onValueChange={(value) => {
                         setSelectedPlan(value as SubscriptionPlanType);
-                        // Auto-collapse after selection if it was opened from URL
-                        if (planFromUrl) {
-                          setTimeout(() => setPlanSelectorOpen(false), 150);
-                        }
                       }}
                       className="space-y-3"
                     >
@@ -373,9 +369,6 @@ export default function Checkout() {
                           }`}
                           onClick={() => {
                             setSelectedPlan(planOption.id);
-                            if (planFromUrl) {
-                              setTimeout(() => setPlanSelectorOpen(false), 150);
-                            }
                           }}
                         >
                           <RadioGroupItem value={planOption.id} id={planOption.id} className="mt-1" />

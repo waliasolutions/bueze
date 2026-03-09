@@ -17,7 +17,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useProposalFormValidation } from "@/hooks/useProposalFormValidation";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User as UserIcon, Building2, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X, Filter, Globe, RotateCcw, MessageSquare } from "lucide-react";
+import { Search, MapPin, Clock, Send, Eye, EyeOff, FileText, User as UserIcon, Mail, Phone, AlertCircle, CheckCircle, XCircle, Loader2, Users, Star, Briefcase, Paperclip, Download, Pencil, X, Filter, Globe, RotateCcw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -73,12 +73,6 @@ const HandwerkerDashboard = () => {
   const [activeTab, setActiveTab] = useState("leads");
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Dashboard notification stats
-  const [dashboardStats, setDashboardStats] = useState({
-    unreadMessages: 0,
-    newAcceptedProposals: 0,
-    newReviews: 0
-  });
 
 
   // Proposal Form
@@ -237,7 +231,6 @@ const HandwerkerDashboard = () => {
         await Promise.all([
           fetchProposals(currentUser.id),
           fetchReviews(currentUser.id),
-          fetchDashboardStats(currentUser.id)
         ]);
       }
       setLoading(false);
@@ -247,25 +240,6 @@ const HandwerkerDashboard = () => {
     }
   };
 
-  // Fetch dashboard notification stats
-  const fetchDashboardStats = async (userId: string) => {
-    if (!userId) return;
-    try {
-      const { data: notifications } = await supabase
-        .from('handwerker_notifications')
-        .select('type, read')
-        .eq('user_id', userId)
-        .eq('read', false);
-      
-      setDashboardStats({
-        unreadMessages: (notifications || []).filter(n => n.type === 'new_message').length,
-        newAcceptedProposals: (notifications || []).filter(n => n.type === 'proposal_accepted').length,
-        newReviews: (notifications || []).filter(n => n.type === 'new_review').length
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-    }
-  };
 
   // checkCategoryMatch and checkServiceAreaMatch imported from @/lib/leadHelpers (SSOT)
 
@@ -851,68 +825,8 @@ const HandwerkerDashboard = () => {
             );
           })()}
 
-          {/* Dashboard Quick Stats - Unread Notifications */}
-          {(dashboardStats.unreadMessages > 0 || dashboardStats.newAcceptedProposals > 0 || dashboardStats.newReviews > 0) && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              {dashboardStats.unreadMessages > 0 && (
-                <Card 
-                  className="cursor-pointer hover:shadow-md transition-shadow border-primary/20 bg-primary/5" 
-                  onClick={() => navigate('/conversations')}
-                >
-                  <CardContent className="pt-4 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-primary/10">
-                        <MessageSquare className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">{dashboardStats.unreadMessages}</p>
-                        <p className="text-sm text-muted-foreground">Neue Nachrichten</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              {dashboardStats.newAcceptedProposals > 0 && (
-                <Card 
-                  className="cursor-pointer hover:shadow-md transition-shadow border-green-500/20 bg-green-500/5" 
-                  onClick={() => setActiveTab('proposals')}
-                >
-                  <CardContent className="pt-4 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-green-500/10">
-                        <CheckCircle className="h-6 w-6 text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">{dashboardStats.newAcceptedProposals}</p>
-                        <p className="text-sm text-muted-foreground">Angenommene Offerten</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              {dashboardStats.newReviews > 0 && (
-                <Card 
-                  className="cursor-pointer hover:shadow-md transition-shadow border-yellow-500/20 bg-yellow-500/5" 
-                  onClick={() => setActiveTab('reviews')}
-                >
-                  <CardContent className="pt-4 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-yellow-500/10">
-                        <Star className="h-6 w-6 text-yellow-600" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">{dashboardStats.newReviews}</p>
-                        <p className="text-sm text-muted-foreground">Neue Bewertungen</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="w-full flex flex-wrap sm:grid sm:grid-cols-4 h-auto p-1 gap-1">
+            <TabsList className="w-full flex flex-wrap sm:grid sm:grid-cols-3 h-auto p-1 gap-1">
               <TabsTrigger value="leads" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px]">
                 <Search className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Aufträge</span>
@@ -930,15 +844,6 @@ const HandwerkerDashboard = () => {
                 <Star className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Bewertungen</span>
                 <span className="ml-1">({reviews.length})</span>
-                {dashboardStats.newReviews > 0 && (
-                  <Badge className="ml-1 sm:ml-2 bg-yellow-500 hover:bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5">
-                    {dashboardStats.newReviews}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[44px]">
-                <UserIcon className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Profil</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1046,25 +951,6 @@ const HandwerkerDashboard = () => {
                       </Button>
                     )}
                   </div>
-
-                  {/* Active Filters Info */}
-                  {isFiltersActive && (
-                    <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground bg-brand-50 dark:bg-brand-950/30 p-2 px-3 rounded-md">
-                      <Globe className="h-4 w-4 text-brand-600" />
-                      <span>
-                        Sie sehen {
-                          selectedCanton !== 'all' 
-                            ? `Aufträge in ${getCantonLabel(selectedCanton)}`
-                            : showAllCategories && showAllRegions 
-                              ? "alle Aufträge" 
-                              : showAllCategories 
-                                ? "alle Kategorien" 
-                                : "die ganze Schweiz"
-                        }.
-                        {(showAllCategories || showAllRegions) && " Aufträge ausserhalb Ihres Profils sind markiert."}
-                      </span>
-                    </div>
-                  )}
 
                   {leadsLoading ? <div className="space-y-4">
                       {[1, 2, 3].map((i) => <CardSkeleton key={i} />)}
@@ -1678,74 +1564,6 @@ const HandwerkerDashboard = () => {
               )}
             </TabsContent>
 
-            {/* Profile Tab */}
-            <TabsContent value="profile" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mein Profil</CardTitle>
-                  <CardDescription>
-                    Übersicht Ihrer Profilinformationen
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Profile Summary */}
-                  <div className="flex items-start gap-6">
-                    {/* Logo Display */}
-                    {(handwerkerProfile as any)?.logo_url && (
-                      <div className="h-20 w-20 rounded-lg border-2 border-line-200 bg-background flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <img src={(handwerkerProfile as any).logo_url} alt="Firmenlogo" className="h-full w-full object-contain" />
-                      </div>
-                    )}
-                    <div className="space-y-3 flex-1">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="flex items-center gap-2 text-sm">
-                          <UserIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-ink-700">
-                            {[handwerkerProfile.first_name, handwerkerProfile.last_name].filter(Boolean).join(' ') || '–'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Building2 className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-ink-700">{handwerkerProfile.company_name || '–'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-ink-700">{handwerkerProfile.email || '–'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          <span className="text-ink-700">{handwerkerProfile.phone_number || '–'}</span>
-                        </div>
-                      </div>
-
-                      {/* Categories & Service Areas */}
-                      {handwerkerProfile.categories.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {handwerkerProfile.categories.map(cat => (
-                            <Badge key={cat} variant="secondary" className="text-xs">{getCategoryLabel(cat)}</Badge>
-                          ))}
-                        </div>
-                      )}
-                      {handwerkerProfile.service_areas.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {handwerkerProfile.service_areas.map(area => (
-                            <Badge key={area} variant="outline" className="text-xs">
-                              {area.length === 2 ? getCantonLabel(area) : area}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* CTA */}
-                  <Button onClick={() => navigate('/handwerker-profile/edit')} className="w-full sm:w-auto">
-                    <Pencil className="h-4 w-4 mr-2" />
-                    Profil bearbeiten
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
           </Tabs>
         </div>
       </main>

@@ -30,15 +30,9 @@ export const ViewModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Compute default from real role
   const defaultView = deriveDefaultView(isAdmin, isHandwerker);
 
-  // Initialize from sessionStorage (admin only) or default
-  const [activeView, setActiveViewState] = useState<ViewMode>(() => {
-    if (typeof window === 'undefined') return defaultView;
-    const stored = sessionStorage.getItem(SESSION_KEY);
-    if (stored && (stored === 'admin' || stored === 'client' || stored === 'handwerker')) {
-      return stored as ViewMode;
-    }
-    return defaultView;
-  });
+  // Start with neutral default — sessionStorage is only applied AFTER role loading
+  // confirms the user is admin (prevents stale 'handwerker' flash on login)
+  const [activeView, setActiveViewState] = useState<ViewMode>('client');
 
   // When role loading finishes or userId changes, re-derive
   useEffect(() => {
@@ -70,7 +64,8 @@ export const ViewModeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // Emergency exit: clear on sign-out
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_OUT' || event === 'SIGNED_IN') {
+        // Clear stale view on both sign-out and sign-in (handles user switches)
         sessionStorage.removeItem(SESSION_KEY);
         setActiveViewState('client'); // neutral default
       }

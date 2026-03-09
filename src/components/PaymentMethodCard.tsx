@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Shield, ExternalLink, RefreshCw, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { CreditCard, Shield, RefreshCw, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -18,7 +17,6 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
   currentPeriodEnd,
   onAutoRenewChanged,
 }) => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -125,15 +123,9 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
                 Unterstützt TWINT, PostFinance, Kreditkarten und weitere
               </li>
             </ul>
-
-            <Button
-              variant="outline"
-              className="w-full gap-2"
-              onClick={() => navigate('/checkout')}
-            >
-              <ExternalLink className="h-4 w-4" />
-              Zahlungsmethoden verwalten
-            </Button>
+            <p className="text-sm text-muted-foreground">
+              Bei Ihrer nächsten Zahlung können Sie eine Zahlungsmethode wählen.
+            </p>
           </>
         )}
       </CardContent>
