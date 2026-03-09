@@ -34,6 +34,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 
 const BrowseLeads = lazy(() => import("./pages/BrowseLeads"));
 const Checkout = lazy(() => import("./pages/Checkout"));
+const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
 const CategoryLanding = lazy(() => import("./pages/CategoryLanding"));
 const KategorienLanding = lazy(() => import("./pages/KategorienLanding"));
 const MajorCategoryLanding = lazy(() => import("./pages/MajorCategoryLanding"));
@@ -205,6 +206,7 @@ const App = () => {
                 
                 {/* Utility routes */}
                 <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+                <Route path="/payment-success" element={<PaymentSuccess />} />
                 
                 <Route path="/magic" element={<MagicLinkHandler />} />
                 <Route path="/sitemap.xml" element={<Sitemap />} />
