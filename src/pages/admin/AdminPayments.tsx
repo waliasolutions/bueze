@@ -229,7 +229,7 @@ const AdminPayments = () => {
                   Gesamtumsatz
                 </CardDescription>
                 <CardTitle className="text-3xl font-bold text-green-600">
-                  {formatAmount(stats.totalRevenue)}
+                  {formatInvoiceAmount(stats.totalRevenue)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
