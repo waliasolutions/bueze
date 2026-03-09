@@ -14,17 +14,8 @@ import { ArrowLeft, Download, FileText, Receipt, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { getInvoiceStatusConfig, formatInvoiceAmount } from '@/config/invoiceConfig';
+import { getPlanLabel } from '@/config/subscriptionPlans';
 import type { Invoice } from '@/types/entities';
-
-const getPlanLabel = (planType: string): string => {
-  const labels: Record<string, string> = {
-    'free': 'Gratis',
-    'monthly': 'Monatlich',
-    '6_month': '6 Monate',
-    'annual': 'Jährlich',
-  };
-  return labels[planType] || planType;
-};
 
 const HandwerkerInvoices = () => {
   const navigate = useNavigate();

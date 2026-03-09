@@ -43,20 +43,11 @@ import {
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { getInvoiceStatusConfig, formatInvoiceAmount } from '@/config/invoiceConfig';
+import { getPlanLabel } from '@/config/subscriptionPlans';
 import type { InvoiceWithUser } from '@/types/entities';
 
-const getPlanLabel = (planType: string): string => {
-  const labels: Record<string, string> = {
-    'free': 'Gratis',
-    'monthly': 'Monatlich',
-    '6_month': '6 Monate',
-    'annual': 'Jährlich',
-  };
-  return labels[planType] || planType;
-};
-
 const AdminInvoices = () => {
-  const { isAdminAuthenticated } = useAdminAuth();
+  const { isAuthorized } = useAdminAuth();
   const { toast } = useToast();
   const [invoices, setInvoices] = useState<InvoiceWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,13 +65,36 @@ const AdminInvoices = () => {
   const fetchInvoices = async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
     try {
-      const { data, error } = await supabase
+      // Fetch invoices first, then enrich with profile data
+      // (invoices.user_id references auth.users, not profiles directly)
+      const { data: invoiceData, error } = await supabase
         .from('invoices')
-        .select('*, profiles:user_id(full_name, email)')
+        .select('*')
         .order('issued_at', { ascending: false });
 
       if (error) throw error;
-      setInvoices((data as InvoiceWithUser[]) || []);
+
+      // Fetch profile data for all unique user_ids
+      const userIds = [...new Set((invoiceData || []).map(i => i.user_id))];
+      let profileMap: Record<string, { full_name: string | null; email: string }> = {};
+
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', userIds);
+
+        if (profiles) {
+          profileMap = Object.fromEntries(profiles.map(p => [p.id, { full_name: p.full_name, email: p.email }]));
+        }
+      }
+
+      const enriched = (invoiceData || []).map(inv => ({
+        ...inv,
+        profiles: profileMap[inv.user_id] || null,
+      })) as InvoiceWithUser[];
+
+      setInvoices(enriched);
     } catch (error) {
       console.error('Error fetching invoices:', error);
       toast({
@@ -95,8 +109,8 @@ const AdminInvoices = () => {
   };
 
   useEffect(() => {
-    if (isAdminAuthenticated) fetchInvoices();
-  }, [isAdminAuthenticated]);
+    if (isAuthorized) fetchInvoices();
+  }, [isAuthorized]);
 
   // Filtered invoices
   const filteredInvoices = useMemo(() => {

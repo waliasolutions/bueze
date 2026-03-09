@@ -10,6 +10,7 @@ import { Receipt, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { getPlanLabel } from '@/config/subscriptionPlans';
 
 interface Payment {
   id: string;
@@ -25,16 +26,6 @@ interface Payment {
 interface PaymentHistoryTableProps {
   userId: string;
 }
-
-const getPlanLabel = (planType: string): string => {
-  const labels: Record<string, string> = {
-    'free': 'Gratis',
-    'monthly': 'Monatlich',
-    '6_month': '6 Monate',
-    'annual': 'Jährlich',
-  };
-  return labels[planType] || planType;
-};
 
 const getStatusBadge = (status: string) => {
   switch (status) {

@@ -958,6 +958,84 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          amount: number
+          billing_address: string | null
+          billing_city: string | null
+          billing_company: string | null
+          billing_name: string
+          billing_zip: string | null
+          created_at: string
+          currency: string
+          description: string
+          due_date: string
+          id: string
+          invoice_number: string
+          issued_at: string
+          net_amount: number
+          paid_at: string | null
+          payment_id: string | null
+          pdf_storage_path: string | null
+          plan_type: string
+          status: string
+          tax_amount: number
+          tax_rate: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_company?: string | null
+          billing_name?: string
+          billing_zip?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          due_date?: string
+          id?: string
+          invoice_number: string
+          issued_at?: string
+          net_amount?: number
+          paid_at?: string | null
+          payment_id?: string | null
+          pdf_storage_path?: string | null
+          plan_type?: string
+          status?: string
+          tax_amount?: number
+          tax_rate?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_company?: string | null
+          billing_name?: string
+          billing_zip?: string | null
+          created_at?: string
+          currency?: string
+          description?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string
+          issued_at?: string
+          net_amount?: number
+          paid_at?: string | null
+          payment_id?: string | null
+          pdf_storage_path?: string | null
+          plan_type?: string
+          status?: string
+          tax_amount?: number
+          tax_rate?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lead_proposals: {
         Row: {
           attachments: string[] | null
