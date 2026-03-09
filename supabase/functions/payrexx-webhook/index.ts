@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
 
     if (!transactionData) {
       console.error('No transaction data in webhook');
-      return errorResponse('No transaction data', 400);
+      return successResponse({ received: true, error: 'no_transaction_data' });
     }
 
     const transaction = JSON.parse(transactionData);
@@ -120,11 +120,25 @@ Deno.serve(async (req) => {
       console.log(`Payrexx webhook: subscription ID ${subscriptionId} present`);
     }
 
+    // Create Supabase admin client (needed for admin_notifications logging)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
     // Parse and validate reference ID
     const parsedRef = parseReferenceId(referenceId || '');
     if (!parsedRef) {
       console.error('Invalid reference ID format:', referenceId);
-      return errorResponse('Invalid reference ID', 400);
+      await supabase.from('admin_notifications').insert({
+        type: 'webhook_error',
+        title: 'Webhook: Ungültige Referenz-ID',
+        message: `Payrexx Webhook mit ungültiger Referenz-ID empfangen. Transaction: ${transactionId}`,
+        metadata: {
+          payrexx_transaction_id: String(transactionId),
+          reference_id: String(referenceId || ''),
+          error_message: 'Invalid reference ID format',
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return successResponse({ received: true, error: 'invalid_reference_id' });
     }
 
     const { userId, planType } = parsedRef;
@@ -132,11 +146,19 @@ Deno.serve(async (req) => {
     // Validate plan type is known
     if (!PLAN_CONFIGS[planType]) {
       console.error('Unknown plan type in reference ID:', planType);
-      return errorResponse('Unknown plan type', 400);
+      await supabase.from('admin_notifications').insert({
+        type: 'webhook_error',
+        title: 'Webhook: Unbekannter Plan-Typ',
+        message: `Payrexx Webhook mit unbekanntem Plan-Typ "${planType}". Transaction: ${transactionId}, User: ${userId}`,
+        metadata: {
+          payrexx_transaction_id: String(transactionId),
+          reference_id: String(referenceId),
+          error_message: `Unknown plan type: ${planType}`,
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return successResponse({ received: true, error: 'unknown_plan_type' });
     }
-
-    // Create Supabase admin client
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Handle different transaction statuses
     if (status === 'confirmed') {
@@ -145,14 +167,36 @@ Deno.serve(async (req) => {
       if (validAmounts.length > 0 && amount !== undefined) {
         if (!validAmounts.includes(Number(amount))) {
           console.error(`Amount ${amount} not in valid set ${JSON.stringify(validAmounts)} for plan ${planType}`);
-          return errorResponse('Invalid amount', 400);
+          await supabase.from('admin_notifications').insert({
+            type: 'webhook_error',
+            title: 'Webhook: Ungültiger Betrag',
+            message: `Payrexx Betrag ${amount} stimmt nicht mit Plan "${planType}" überein. Transaction: ${transactionId}, User: ${userId}`,
+            metadata: {
+              payrexx_transaction_id: String(transactionId),
+              reference_id: String(referenceId),
+              error_message: `Amount ${amount} not in valid set ${JSON.stringify(validAmounts)}`,
+              timestamp: new Date().toISOString(),
+            },
+          });
+          return successResponse({ received: true, error: 'invalid_amount' });
         }
       }
 
       // Validate currency
       if (currency && currency.toUpperCase() !== 'CHF') {
         console.error(`Currency mismatch: expected CHF, got ${currency}`);
-        return errorResponse('Invalid currency', 400);
+        await supabase.from('admin_notifications').insert({
+          type: 'webhook_error',
+          title: 'Webhook: Ungültige Währung',
+          message: `Payrexx Webhook mit Währung "${currency}" statt CHF. Transaction: ${transactionId}, User: ${userId}`,
+          metadata: {
+            payrexx_transaction_id: String(transactionId),
+            reference_id: String(referenceId),
+            error_message: `Currency mismatch: expected CHF, got ${currency}`,
+            timestamp: new Date().toISOString(),
+          },
+        });
+        return successResponse({ received: true, error: 'invalid_currency' });
       }
 
       const now = new Date();
@@ -224,7 +268,20 @@ Deno.serve(async (req) => {
 
       if (subError) {
         console.error('Error updating subscription:', subError);
-        return errorResponse('Failed to update subscription', 500);
+        await supabase.from('admin_notifications').insert({
+          type: 'webhook_error',
+          title: 'Webhook: Abo-Aktualisierung fehlgeschlagen',
+          message: `Subscription-Update für User ${userId} fehlgeschlagen. Transaction: ${transactionId}, Plan: ${planType}. Zahlung wurde erfasst, aber Abo nicht aktiviert.`,
+          metadata: {
+            payrexx_transaction_id: String(transactionId),
+            reference_id: String(referenceId),
+            user_id: userId,
+            plan_type: planType,
+            error_message: String(subError?.message || JSON.stringify(subError)).slice(0, 500),
+            timestamp: new Date().toISOString(),
+          },
+        });
+        return successResponse({ received: true, error: 'subscription_update_failed' });
       }
 
       // Create in-app notification for user
@@ -366,6 +423,21 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Webhook processing error:', error);
-    return errorResponse(error instanceof Error ? error.message : 'Internal server error', 500);
+    // Return 200 to prevent Payrexx retries, but log the error for admin visibility
+    try {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      await supabase.from('admin_notifications').insert({
+        type: 'webhook_error',
+        title: 'Webhook: Unerwarteter Fehler',
+        message: `Payrexx Webhook-Verarbeitung fehlgeschlagen: ${String(error instanceof Error ? error.message : error).slice(0, 200)}`,
+        metadata: {
+          error_message: String(error instanceof Error ? error.message : error).slice(0, 500),
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (notifyError) {
+      console.error('Failed to create admin notification for webhook error:', notifyError);
+    }
+    return successResponse({ received: true, error: 'internal_error' });
   }
 });

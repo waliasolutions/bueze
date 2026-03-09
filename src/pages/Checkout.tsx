@@ -134,7 +134,7 @@ export default function Checkout() {
     setIsProcessing(true);
 
     try {
-      const successUrl = `${window.location.origin}/profile?tab=subscription&success=true`;
+      const successUrl = `${window.location.origin}/payment-success`;
       const cancelUrl = `${window.location.origin}/checkout?plan=${selectedPlan}&cancelled=true`;
 
       const { data, error } = await supabase.functions.invoke('create-payrexx-gateway', {
@@ -562,6 +562,11 @@ export default function Checkout() {
                   und{" "}
                   <a href="/datenschutz" className="underline hover:text-primary">Datenschutzrichtlinien</a>
                 </p>
+                {plan.price > 0 && (
+                  <p className="text-xs text-center text-muted-foreground">
+                    Hinweis: Nach Abschluss erhalten Sie zwei E-Mails — eine Bestätigung Ihres Abonnements und eine separate Rechnung.
+                  </p>
+                )}
               </CardFooter>
             </Card>
           </div>
