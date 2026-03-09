@@ -41,12 +41,6 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-const formatAmount = (amount: number, currency: string): string => {
-  return new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-  }).format(amount / 100);
-};
 
 export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId }) => {
   const navigate = useNavigate();
