@@ -141,7 +141,7 @@ export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId
           <div className="text-right">
             <p className="text-sm text-muted-foreground">Total bezahlt</p>
             <p className="text-xl font-bold text-green-600">
-              {formatAmount(totalPaid, 'chf')}
+              {formatInvoiceAmount(totalPaid)}
             </p>
           </div>
         </div>
