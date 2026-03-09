@@ -246,7 +246,7 @@ const AdminPayments = () => {
                   Umsatz diesen Monat
                 </CardDescription>
                 <CardTitle className="text-3xl font-bold text-blue-600">
-                  {formatAmount(stats.monthlyRevenue)}
+                  {formatInvoiceAmount(stats.monthlyRevenue)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
