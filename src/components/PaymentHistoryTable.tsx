@@ -10,7 +10,8 @@ import { Receipt, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { getPlanLabel } from '@/config/subscriptionPlans';
+import { getPlanLabel, PLAN_BADGE_VARIANT } from '@/config/subscriptionPlans';
+import { formatInvoiceAmount } from '@/config/invoiceConfig';
 
 interface Payment {
   id: string;
