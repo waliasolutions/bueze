@@ -1,67 +1,97 @@
 
 
-# Deep QA: Routing & URL Issues Found
+# Final Plan: Fix All Build Errors + DRY Cleanup
 
-## Issues Identified
+## Execution Order
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+**Phase 1 (blocking):** Fix 1 — migration to trigger types regeneration. Must complete before Phase 2.
+
+**Phase 2 (parallel):** Fixes 2, 3, 4 — can all be done in parallel once types are regenerated.
+
+**Phase 3 (non-blocking):** Fix 5 — DRY cleanup, no build dependency.
 
 ---
 
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
+## Fix 1: Trigger types regeneration for `invoices` table
 
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
-
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
-
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
-
-```tsx
-const [searchParams] = useSearchParams();
-
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
+Migration SQL:
+```sql
+COMMENT ON TABLE invoices IS 'Subscription invoices for handwerker accounts';
 ```
 
----
+## Fix 2: `isAdminAuthenticated` → `isAuthorized`
 
-## Fix 2: AGB route — Add top-level `/agb` with redirect
+**File**: `src/pages/admin/AdminInvoices.tsx`
+- `const { isAdminAuthenticated }` → `const { isAuthorized }`
+- `if (isAdminAuthenticated)` → `if (isAuthorized)`
 
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
+## Fix 3: Remove `getUserByEmail`, use create-and-catch
 
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+**File**: `supabase/functions/create-handwerker-self-registration/index.ts`
 
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
+Delete the `getUserByEmail` block (lines 80-86). The handwerker_profiles check already catches existing profiles. For auth-only duplicates, rely on `createUser` error handling:
 
----
+```typescript
+if (authError) {
+  console.error('Auth user creation failed:', JSON.stringify({
+    message: authError.message,
+    status: (authError as any).status,
+    name: authError.name,
+  }));
+  
+  const isDuplicate = (authError as any).status === 422
+    || authError.message.includes('already been registered')
+    || authError.message.includes('already registered');
+  
+  if (isDuplicate) {
+    throw new Error('Diese E-Mail-Adresse ist bereits registriert. Bitte melden Sie sich an.');
+  }
+  
+  throw new Error(`Konto konnte nicht erstellt werden: ${authError.message}`);
+}
+```
 
-## Fix 3: Stale comments in sitemap generator (optional)
+## Fix 4: Fix `base64Encode` argument
 
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
+**File**: `supabase/functions/send-invoice-email/index.ts`
+```typescript
+const pdfBase64 = base64Encode(arrayBuffer);
+```
 
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
+## Fix 5: DRY `getPlanLabel` + `PLAN_BADGE_VARIANT`
 
----
+**Decision on location**: The project already co-locates presentational config (colors, labels) with domain config — see `leadStatuses.ts` which has a `color` field alongside `label` and `description`. Following this established pattern, `PLAN_BADGE_VARIANT` belongs in `subscriptionPlans.ts`.
+
+**Add to `src/config/subscriptionPlans.ts`:**
+```typescript
+/** SSOT: Human-readable plan label. Do not duplicate. */
+export function getPlanLabel(planType: string): string {
+  const plan = SUBSCRIPTION_PLANS[planType as SubscriptionPlanType];
+  return plan?.displayName ?? planType;
+}
+
+/** Badge variant per plan for consistent UI styling */
+export const PLAN_BADGE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
+  free: 'outline',
+  monthly: 'default',
+  '6_month': 'default',
+  annual: 'secondary',
+};
+```
+
+Update 4 files — remove local `getPlanLabel`, import from `@/config/subscriptionPlans`, use `PLAN_BADGE_VARIANT` in JSX:
+- `HandwerkerInvoices.tsx`
+- `AdminInvoices.tsx`
+- `AdminPayments.tsx`
+- `PaymentHistoryTable.tsx`
 
 ## Summary
 
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
+| Phase | Fix | Files | Blocking |
+|-------|-----|-------|----------|
+| 1 | Trigger types regen | Migration | Yes |
+| 2 | `isAdminAuthenticated` → `isAuthorized` | `AdminInvoices.tsx` | Yes |
+| 2 | Remove `getUserByEmail`, status 422 primary | `create-handwerker-self-registration` | Yes |
+| 2 | Fix `base64Encode` arg | `send-invoice-email` | Yes |
+| 3 | DRY `getPlanLabel` + badge variants | 5 files | No |
 
