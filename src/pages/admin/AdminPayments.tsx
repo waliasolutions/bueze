@@ -60,7 +60,8 @@ interface PlanBreakdown {
   color: string;
 }
 
-import { getPlanLabel } from '@/config/subscriptionPlans';
+import { getPlanLabel, PLAN_BADGE_VARIANT } from '@/config/subscriptionPlans';
+import { formatInvoiceAmount } from '@/config/invoiceConfig';
 
 const getStatusBadge = (status: string) => {
   switch (status) {
