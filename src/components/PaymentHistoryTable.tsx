@@ -12,6 +12,21 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { getPlanLabel } from '@/config/subscriptionPlans';
 
+interface Payment {
+  id: string;
+  amount: number;
+  currency: string;
+  plan_type: string;
+  status: string;
+  payment_date: string;
+  invoice_pdf_url: string | null;
+  description: string | null;
+}
+
+interface PaymentHistoryTableProps {
+  userId: string;
+}
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case 'paid':
