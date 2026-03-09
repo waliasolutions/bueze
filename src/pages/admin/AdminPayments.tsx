@@ -280,7 +280,7 @@ const AdminPayments = () => {
                   Ø pro Nutzer
                 </CardDescription>
                 <CardTitle className="text-3xl font-bold text-amber-600">
-                  {formatAmount(stats.avgRevenuePerUser)}
+                  {formatInvoiceAmount(stats.avgRevenuePerUser)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
