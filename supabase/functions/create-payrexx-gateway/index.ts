@@ -2,50 +2,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { PLAN_AMOUNTS, PLAN_GATEWAY_NAMES, PLAN_INTERVALS } from '../_shared/planLabels.ts';
 import { getErrorMessage } from '../_shared/errorUtils.ts';
+import { generateSignature, normalizePayrexxInstance } from '../_shared/payrexxCrypto.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY')!;
-const PAYREXX_INSTANCE_RAW = Deno.env.get('PAYREXX_INSTANCE')!;
-
-/**
- * Normalizes Payrexx instance input to the expected value (subdomain only).
- */
-function normalizePayrexxInstance(input: string): string {
-  const trimmed = input.trim();
-  if (!trimmed) return trimmed;
-
-  const withoutProtocol = trimmed
-    .replace(/^https?:\/\//i, '')
-    .replace(/\/+$/, '');
-
-  const host = withoutProtocol.split('/')[0];
-  const match = host.match(/^([a-z0-9-]+)\.payrexx\.com$/i);
-  return match?.[1] ?? host;
-}
-
-const PAYREXX_INSTANCE = normalizePayrexxInstance(PAYREXX_INSTANCE_RAW);
-
-/**
- * Generate HMAC-SHA256 signature for Payrexx API
- */
-async function generateSignature(queryString: string, apiKey: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(apiKey);
-  const messageData = encoder.encode(queryString);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw', keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false, ['sign']
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  const bytes = new Uint8Array(signature);
-  let binary = '';
-  bytes.forEach(b => binary += String.fromCharCode(b));
-  return btoa(binary);
-}
+const PAYREXX_INSTANCE = normalizePayrexxInstance(Deno.env.get('PAYREXX_INSTANCE')!);
 
 /**
  * Verify Payrexx API credentials using the SignatureCheck endpoint.
@@ -118,7 +80,7 @@ Deno.serve(async (req) => {
     }
 
     // --- Step 2: Parse & validate request ---
-    const { planType, successUrl, cancelUrl, saveCard } = await req.json();
+    const { planType, successUrl, cancelUrl, failedUrl, saveCard } = await req.json();
 
     if (!planType || !successUrl || !cancelUrl) {
       return errorResponse('Missing required fields: planType, successUrl, cancelUrl', 400);
@@ -139,8 +101,9 @@ Deno.serve(async (req) => {
       purpose: planName,
       referenceId: referenceId,
       successRedirectUrl: successUrl,
-      failedRedirectUrl: cancelUrl,
+      failedRedirectUrl: failedUrl || cancelUrl,
       cancelRedirectUrl: cancelUrl,
+      skipResultPage: '1',
       'fields[email][value]': userEmail,
       'fields[email][mandatory]': '1',
       vatRate: '8.1',
@@ -157,23 +120,8 @@ Deno.serve(async (req) => {
       console.log(`[Payrexx] Subscription mode enabled: interval=${interval} for plan ${planType}`);
     }
 
-    const fallbackParams: Record<string, string> = {
-      amount: amount.toString(),
-      currency: 'CHF',
-      purpose: planName,
-      referenceId: referenceId,
-      successRedirectUrl: successUrl,
-      failedRedirectUrl: cancelUrl,
-      cancelRedirectUrl: cancelUrl,
-    };
-
-    if (saveCard && PLAN_INTERVALS[planType]) {
-      const interval = PLAN_INTERVALS[planType];
-      fallbackParams.subscriptionState = '1';
-      fallbackParams.subscriptionInterval = interval;
-      fallbackParams.subscriptionPeriod = interval;
-      fallbackParams.subscriptionCancellationInterval = '0';
-    }
+    // Fallback params: same as primary but without optional email/VAT/SKU fields
+    const { 'fields[email][value]': _e, 'fields[email][mandatory]': _m, vatRate: _v, sku: _s, ...fallbackParams } = primaryParams;
 
     const payrexxUrl = `https://api.payrexx.com/v1.0/Gateway/?instance=${encodeURIComponent(PAYREXX_INSTANCE)}`;
 

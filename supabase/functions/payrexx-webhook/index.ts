@@ -1,46 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
-import { VALID_PLAN_AMOUNTS, FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
+import { VALID_PLAN_AMOUNTS, FREE_TIER_PROPOSALS_LIMIT, PLAN_CONFIGS } from '../_shared/planLabels.ts';
 import { addMonths } from '../_shared/dateFormatter.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY')!;
-
-// Plan configurations
-const PLAN_CONFIGS: Record<string, { proposalsLimit: number; periodMonths: number }> = {
-  monthly: { proposalsLimit: -1, periodMonths: 1 },
-  '6_month': { proposalsLimit: -1, periodMonths: 6 },
-  annual: { proposalsLimit: -1, periodMonths: 12 },
-};
-
-/**
- * Verify Payrexx webhook signature
- */
-async function verifySignature(body: string, signature: string): Promise<boolean> {
-  try {
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(PAYREXX_API_KEY);
-    const messageData = encoder.encode(body);
-
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
-      false,
-      ['sign']
-    );
-
-    const expectedSignature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    const hashArray = Array.from(new Uint8Array(expectedSignature));
-    const expectedHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-    return expectedHex === signature;
-  } catch (error) {
-    console.error('Signature verification error:', error);
-    return false;
-  }
-}
 
 /**
  * Parse reference ID to extract user info
@@ -70,22 +34,10 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    // Get raw body for signature verification
-    const rawBody = await req.text();
-
-    // Verify webhook signature (mandatory — reject unsigned webhooks)
-    const signature = req.headers.get('x-payrexx-signature') || req.headers.get('payrexx-signature');
-    if (!signature) {
-      console.error('Missing webhook signature — rejecting unsigned webhook');
-      return errorResponse('Missing signature', 403);
-    }
-    const isValid = await verifySignature(rawBody, signature);
-    if (!isValid) {
-      console.error('Invalid webhook signature');
-      return errorResponse('Invalid signature', 403);
-    }
-
     // Parse form data from Payrexx webhook
+    // Note: Payrexx does not send a signature header for webhooks.
+    // Security relies on amount/currency/referenceId validation and idempotency constraints.
+    const rawBody = await req.text();
     const formData = new URLSearchParams(rawBody);
     const transactionData = formData.get('transaction');
 

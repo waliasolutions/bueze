@@ -1,41 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { getErrorMessage } from '../_shared/errorUtils.ts';
+import { generateSignature, normalizePayrexxInstance } from '../_shared/payrexxCrypto.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY')!;
-const PAYREXX_INSTANCE_RAW = Deno.env.get('PAYREXX_INSTANCE')!;
-
-function normalizePayrexxInstance(input: string): string {
-  const trimmed = input.trim();
-  if (!trimmed) return trimmed;
-  const withoutProtocol = trimmed.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
-  const host = withoutProtocol.split('/')[0];
-  const match = host.match(/^([a-z0-9-]+)\.payrexx\.com$/i);
-  return match?.[1] ?? host;
-}
-
-const PAYREXX_INSTANCE = normalizePayrexxInstance(PAYREXX_INSTANCE_RAW);
-
-async function generateSignature(queryString: string, apiKey: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(apiKey);
-  const messageData = encoder.encode(queryString);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw', keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false, ['sign']
-  );
-
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  const bytes = new Uint8Array(signature);
-  let binary = '';
-  bytes.forEach(b => binary += String.fromCharCode(b));
-  return btoa(binary);
-}
+const PAYREXX_INSTANCE = normalizePayrexxInstance(Deno.env.get('PAYREXX_INSTANCE')!);
 
 Deno.serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);

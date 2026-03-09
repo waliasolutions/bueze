@@ -78,15 +78,28 @@ const Profile = () => {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const realtimeChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // Handle checkout success redirect — subscribe to realtime for instant update
+  // Handle checkout success redirect — subscribe to realtime for instant update + polling fallback
   useEffect(() => {
     if (searchParams.get('success') !== 'true') return;
 
     setPaymentProcessing(true);
+    let resolved = false;
 
     // Clean up URL params immediately
     searchParams.delete('success');
     setSearchParams(searchParams, { replace: true });
+
+    const onActivated = () => {
+      if (resolved) return;
+      resolved = true;
+      setPaymentProcessing(false);
+      toast({
+        title: 'Abonnement aktiviert',
+        description: 'Ihr Abonnement wurde erfolgreich aktiviert.',
+      });
+      fetchUserData();
+      cleanup();
+    };
 
     // Subscribe to realtime changes on handwerker_subscriptions
     const channel = supabase
@@ -102,13 +115,7 @@ const Profile = () => {
         (payload) => {
           const newPlan = (payload.new as any)?.plan_type;
           if (newPlan && newPlan !== 'free') {
-            setPaymentProcessing(false);
-            toast({
-              title: 'Abonnement aktiviert',
-              description: 'Ihr Abonnement wurde erfolgreich aktiviert.',
-            });
-            fetchUserData(); // Refresh subscription data
-            cleanup();
+            onActivated();
           }
         }
       )
@@ -116,8 +123,27 @@ const Profile = () => {
 
     realtimeChannelRef.current = channel;
 
-    // 30-second timeout
+    // Polling fallback: if realtime doesn't fire within 5s, start polling every 3s
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    const pollDelay = setTimeout(() => {
+      if (resolved) return;
+      pollInterval = setInterval(async () => {
+        if (resolved) return;
+        const { data } = await supabase
+          .from('handwerker_subscriptions')
+          .select('plan_type')
+          .eq('user_id', user?.id ?? '')
+          .maybeSingle();
+        if (data?.plan_type && data.plan_type !== 'free') {
+          onActivated();
+        }
+      }, 3000);
+    }, 5000);
+
+    // 30-second overall timeout
     const timeout = setTimeout(() => {
+      if (resolved) return;
+      resolved = true;
       setPaymentProcessing(false);
       toast({
         title: 'Zahlung wird verarbeitet',
@@ -128,6 +154,8 @@ const Profile = () => {
 
     const cleanup = () => {
       clearTimeout(timeout);
+      clearTimeout(pollDelay);
+      if (pollInterval) clearInterval(pollInterval);
       if (realtimeChannelRef.current) {
         supabase.removeChannel(realtimeChannelRef.current);
         realtimeChannelRef.current = null;
