@@ -253,6 +253,17 @@ Deno.serve(async (req) => {
         console.error('Failed to send subscription confirmation email:', emailError);
       }
 
+      // Generate invoice PDF (non-blocking — payment succeeds even if this fails)
+      // The DB trigger on the invoices table will automatically send the invoice email
+      // once the PDF is uploaded and pdf_storage_path is set.
+      try {
+        await supabase.functions.invoke('generate-invoice-pdf', {
+          body: { paymentId: insertedPayment[0].id, userId, planType, amount },
+        });
+      } catch (invoiceError) {
+        console.error('Failed to generate invoice:', invoiceError);
+      }
+
       console.log(`Subscription ${isRenewal ? 'renewed' : 'activated'} for user ${userId}, plan ${planType}${subscriptionId ? ` (subscription ${subscriptionId})` : ''}`);
 
     } else if (status === 'waiting') {

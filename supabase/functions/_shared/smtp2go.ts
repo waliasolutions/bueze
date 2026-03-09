@@ -3,11 +3,18 @@
 
 import { EMAIL_SENDER } from './siteConfig.ts';
 
+export interface EmailAttachment {
+  filename: string;
+  fileblob: string; // base64 encoded content
+  mimetype: string;
+}
+
 export interface EmailOptions {
   to: string | string[];
   subject: string;
   htmlBody?: string;
   textBody?: string;
+  attachments?: EmailAttachment[];
 }
 
 export interface EmailResult {
@@ -61,6 +68,9 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   }
   if (options.textBody) {
     payload.text_body = options.textBody;
+  }
+  if (options.attachments && options.attachments.length > 0) {
+    payload.attachments = options.attachments;
   }
 
   let lastError: string | undefined;

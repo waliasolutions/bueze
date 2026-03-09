@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Download, Receipt, ExternalLink } from 'lucide-react';
+import { Receipt, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 
@@ -56,6 +57,7 @@ const formatAmount = (amount: number, currency: string): string => {
 };
 
 export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId }) => {
+  const navigate = useNavigate();
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -181,20 +183,14 @@ export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId
                 </TableCell>
                 <TableCell>{getStatusBadge(payment.status)}</TableCell>
                 <TableCell className="text-right">
-                  {payment.invoice_pdf_url ? (
+                  {payment.status === 'paid' ? (
                     <Button
                       variant="ghost"
                       size="sm"
-                      asChild
+                      onClick={() => navigate('/handwerker-invoices')}
                     >
-                      <a 
-                        href={payment.invoice_pdf_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        PDF
-                      </a>
+                      <FileText className="h-4 w-4 mr-1" />
+                      Rechnungen
                     </Button>
                   ) : (
                     <span className="text-muted-foreground text-sm">—</span>

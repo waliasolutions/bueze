@@ -8,6 +8,7 @@ import {
   Star,
   FileText,
   CreditCard,
+  Receipt,
   Globe,
   Settings,
   ChevronLeft,
@@ -62,6 +63,7 @@ const navSections: NavSection[] = [
     title: 'Finanzen',
     items: [
       { label: 'Zahlungen', href: '/admin/payments', icon: CreditCard },
+      { label: 'Rechnungen', href: '/admin/invoices', icon: Receipt },
     ],
   },
   {

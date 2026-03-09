@@ -1134,3 +1134,51 @@ export const handwerkerWelcomeTemplate = (data: HandwerkerWelcomeData) => {
     </div>
   `);
 };
+
+// Invoice Email Template
+interface InvoiceEmailData {
+  customerName: string;
+  invoiceNumber: string;
+  issuedAt: string;
+  planName: string;
+  amount: string;
+  currency: string;
+  periodStart?: string;
+  periodEnd?: string;
+}
+
+export const invoiceEmailTemplate = (data: InvoiceEmailData) => {
+  const periodText = data.periodStart && data.periodEnd
+    ? `<p style="margin: 5px 0;"><strong>Laufzeit:</strong> ${safe(data.periodStart)} – ${safe(data.periodEnd)}</p>`
+    : '';
+
+  return emailWrapper(`
+    <div class="content">
+      <h2>Ihre Rechnung von Büeze.ch</h2>
+      <p>Guten Tag ${safe(data.customerName, 'Handwerker')},</p>
+      <p>Vielen Dank für Ihre Zahlung. Anbei erhalten Sie Ihre Rechnung als PDF-Anhang.</p>
+
+      <div class="info-box" style="background: #f0f9ff; border-left-color: #0066CC;">
+        <h3 style="margin-top: 0; color: #0066CC;">Rechnungsübersicht</h3>
+        <p style="margin: 5px 0;"><strong>Rechnungsnr.:</strong> ${safe(data.invoiceNumber)}</p>
+        <p style="margin: 5px 0;"><strong>Datum:</strong> ${safe(data.issuedAt)}</p>
+        <p style="margin: 5px 0;"><strong>Plan:</strong> ${safe(data.planName)}</p>
+        <p style="margin: 5px 0;"><strong>Betrag:</strong> ${safe(data.amount)}</p>
+        ${periodText}
+      </div>
+
+      <div class="info-box" style="background: #d1fae5; border-left-color: #10b981;">
+        <p style="margin: 0; color: #065f46; font-weight: bold;">Zahlung erhalten – Vielen Dank!</p>
+      </div>
+
+      <p style="text-align: center;">
+        <a href="${FRONTEND_URL}/handwerker-invoices" class="button">Rechnungen im Portal ansehen</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Die Rechnung ist auch als PDF-Datei an diese E-Mail angehängt.
+        Bei Fragen kontaktieren Sie uns unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.
+      </p>
+    </div>
+  `);
+};

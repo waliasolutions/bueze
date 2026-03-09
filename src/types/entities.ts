@@ -340,6 +340,40 @@ export interface HandwerkerRatingStats {
 }
 
 // =============================================================================
+// Invoice Entity
+// =============================================================================
+export interface Invoice {
+  id: string;
+  invoice_number: string;
+  user_id: string;
+  payment_id: string | null;
+  amount: number;
+  currency: string;
+  tax_rate: number;
+  tax_amount: number;
+  net_amount: number;
+  plan_type: string;
+  status: 'issued' | 'paid' | 'cancelled' | 'refunded';
+  issued_at: string;
+  due_date: string;
+  paid_at: string | null;
+  pdf_storage_path: string | null;
+  description: string;
+  billing_name: string;
+  billing_company: string | null;
+  billing_address: string | null;
+  billing_zip: string | null;
+  billing_city: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Invoice with user profile (for admin views)
+export interface InvoiceWithUser extends Invoice {
+  profiles: { full_name: string | null; email: string } | null;
+}
+
+// =============================================================================
 // Extended Lead Types for UI Components
 // =============================================================================
 
