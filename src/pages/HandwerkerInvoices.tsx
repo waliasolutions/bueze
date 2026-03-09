@@ -214,7 +214,11 @@ const HandwerkerInvoices = () => {
                               <TableCell>
                                 {format(new Date(invoice.issued_at), 'dd.MM.yyyy', { locale: de })}
                               </TableCell>
-                              <TableCell>{getPlanLabel(invoice.plan_type)}</TableCell>
+                              <TableCell>
+                                <Badge variant={PLAN_BADGE_VARIANT[invoice.plan_type] || 'outline'}>
+                                  {getPlanLabel(invoice.plan_type)}
+                                </Badge>
+                              </TableCell>
                               <TableCell className="font-semibold">
                                 {formatInvoiceAmount(invoice.amount, invoice.currency)}
                               </TableCell>
