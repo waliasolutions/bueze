@@ -32,12 +32,89 @@ serve(async (req) => {
     let renewalEmailsSent = 0;
     let graceExpiredCount = 0;
     let warningsSent = 0;
+    let downgradeCount = 0;
+
+    const thirtyDaysFromNow = addDays(now, 30);
+
+    // ============================================================
+    // PATH A0: Paid plan downgrades (pending_plan is a paid plan, not 'free')
+    // Switch to the new paid plan at period end
+    // ============================================================
+    const { data: downgradeSubs, error: downgradeError } = await supabase
+      .from('handwerker_subscriptions')
+      .select('user_id, plan_type, pending_plan')
+      .eq('status', 'active')
+      .neq('plan_type', 'free')
+      .not('pending_plan', 'is', null)
+      .neq('pending_plan', 'free')
+      .lt('current_period_end', nowISO);
+
+    if (downgradeError) {
+      console.error('Error fetching downgrade subs:', downgradeError);
+    }
+
+    const PAID_PLAN_TYPES = ['monthly', '6_month', 'annual'];
+    for (const sub of downgradeSubs || []) {
+      if (!sub.pending_plan || !PAID_PLAN_TYPES.includes(sub.pending_plan)) continue;
+      try {
+        const newPlanType = sub.pending_plan;
+        await supabase
+          .from('handwerker_subscriptions')
+          .update({
+            plan_type: newPlanType,
+            proposals_limit: -1,
+            proposals_used_this_period: 0,
+            current_period_start: nowISO,
+            current_period_end: thirtyDaysFromNow.toISOString(),
+            pending_plan: null,
+            renewal_reminder_sent: false,
+            updated_at: nowISO,
+          })
+          .eq('user_id', sub.user_id);
+
+        const { profile, email } = await fetchUserInfo(supabase, sub.user_id);
+        const name = safe(profile?.first_name, 'Handwerker');
+        const oldPlanName = getPlanName(sub.plan_type);
+        const newPlanName = getPlanName(newPlanType);
+
+        if (email) {
+          await sendEmail({
+            to: email,
+            subject: `Planwechsel: ${oldPlanName} → ${newPlanName}`,
+            htmlBody: emailWrapper(`
+              <div class="content">
+                <h2>Planwechsel durchgeführt</h2>
+                <p>Hallo ${name},</p>
+                <p>Wie gewünscht wurde Ihr Plan von <strong>${oldPlanName}</strong> auf <strong>${newPlanName}</strong> umgestellt.
+                Bitte schliessen Sie die Zahlung für den neuen Plan ab, um Ihren Zugang zu behalten.</p>
+                <p style="text-align: center;">
+                  <a href="${FRONTEND_URL}/checkout?plan=${newPlanType}" class="button">Jetzt bezahlen</a>
+                </p>
+              </div>
+            `),
+          });
+        }
+
+        await supabase.from('handwerker_notifications').insert({
+          user_id: sub.user_id,
+          type: 'subscription_downgraded',
+          title: 'Planwechsel durchgeführt',
+          message: `Ihr Plan wurde von ${oldPlanName} auf ${newPlanName} umgestellt.`,
+          metadata: { old_plan: sub.plan_type, new_plan: newPlanType },
+        });
+
+        downgradeCount++;
+      } catch (err) {
+        console.error(`Error processing downgrade for ${sub.user_id}:`, err);
+      }
+    }
+
+    console.log(`[check-subscription-expiry] Processed ${downgradeCount} plan downgrades`);
 
     // ============================================================
     // PATH A: Cancelled subs (pending_plan = 'free' AND expired)
     // Downgrade immediately
     // ============================================================
-    const thirtyDaysFromNow = addDays(now, 30);
 
     const { data: cancelledSubs, error: cancelError } = await supabase
       .from('handwerker_subscriptions')
@@ -377,6 +454,7 @@ serve(async (req) => {
     console.log(`[check-subscription-expiry] Sent ${warningsSent} expiry warnings`);
 
     return successResponse({
+      plan_downgrades: downgradeCount,
       cancelled_downgraded: cancelledCount,
       renewal_emails_sent: renewalEmailsSent,
       grace_expired_downgraded: graceExpiredCount,

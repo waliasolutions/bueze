@@ -3,16 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Crown, Calendar, AlertTriangle, Infinity as InfinityIcon } from 'lucide-react';
+import { Crown, Calendar, AlertTriangle, ArrowDown, ArrowUp, Infinity as InfinityIcon } from 'lucide-react';
 import { formatDate } from '@/lib/swissTime';
 import { PendingPlanCard } from '@/components/PendingPlanCard';
-import { 
+import {
   SUBSCRIPTION_PLAN_LIST,
   SUBSCRIPTION_PLANS,
   type SubscriptionPlan,
   type SubscriptionPlanType,
   formatPrice,
-  formatPricePerMonth 
+  formatPricePerMonth
 } from '@/config/subscriptionPlans';
 
 interface CurrentSubscription {
@@ -30,6 +30,7 @@ interface SubscriptionManagementProps {
   currentSubscription: CurrentSubscription | null;
   availablePlans?: SubscriptionPlan[];
   onUpgradePlan: (planId: SubscriptionPlanType) => void;
+  onDowngradePlan?: (planId: SubscriptionPlanType) => void;
   onCancelSubscription: () => void;
   onUndoCancellation?: () => void;
   onPendingPlanCancelled?: () => void;
@@ -39,6 +40,7 @@ interface SubscriptionManagementProps {
 export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
   currentSubscription,
   onUpgradePlan,
+  onDowngradePlan,
   onCancelSubscription,
   onUndoCancellation,
   onPendingPlanCancelled,
@@ -124,11 +126,22 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
   const isUnlimited = currentSubscription.plan.proposalsLimit === -1;
   const remainingProposals = getRemainingProposals();
   const isCancellationPending = currentSubscription.pendingPlan === 'free' && currentSubscription.plan.id !== 'free';
+  // Downgrade pending: pendingPlan is a paid plan different from current
+  const isDowngradePending = currentSubscription.pendingPlan
+    && currentSubscription.pendingPlan !== 'free'
+    && currentSubscription.pendingPlan !== currentSubscription.plan.id
+    && SUBSCRIPTION_PLANS[currentSubscription.pendingPlan as SubscriptionPlanType]?.price < currentSubscription.plan.price;
+  const pendingPlanConfig = isDowngradePending
+    ? SUBSCRIPTION_PLANS[currentSubscription.pendingPlan as SubscriptionPlanType]
+    : null;
 
   return (
     <div className="space-y-6">
-      {/* Pending Plan Card (upgrade pending, not cancellation) */}
-      {currentSubscription.pendingPlan && currentSubscription.pendingPlan !== 'free' && currentSubscription.userId && (
+      {/* Pending Plan Card (upgrade pending — not cancellation or downgrade) */}
+      {currentSubscription.pendingPlan
+        && currentSubscription.pendingPlan !== 'free'
+        && !isDowngradePending
+        && currentSubscription.userId && (
         <PendingPlanCard
           pendingPlan={currentSubscription.pendingPlan}
           isApproved={currentSubscription.isApproved ?? false}
@@ -199,6 +212,7 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
             </span>
           </div>
 
+          {/* Cancellation pending banner */}
           {isCancellationPending && (
             <div className="p-4 border border-amber-200 bg-amber-50 rounded-lg">
               <div className="flex items-center gap-2 text-amber-800">
@@ -221,7 +235,30 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
             </div>
           )}
 
-          {currentSubscription.plan.id !== 'free' && !isCancellationPending && (
+          {/* Downgrade pending banner */}
+          {isDowngradePending && pendingPlanConfig && (
+            <div className="p-4 border border-blue-200 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-800">
+                <ArrowDown className="h-4 w-4" />
+                <span className="font-medium">Planwechsel vorgemerkt</span>
+              </div>
+              <p className="text-sm text-blue-700 mt-1">
+                Ihr Plan wird zum {formatDate(currentSubscription.currentPeriodEnd)} auf <strong>{pendingPlanConfig.displayName}</strong> ({formatPrice(pendingPlanConfig.price)}) umgestellt.
+              </p>
+              {onUndoCancellation && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={onUndoCancellation}
+                >
+                  Planwechsel zurücknehmen
+                </Button>
+              )}
+            </div>
+          )}
+
+          {currentSubscription.plan.id !== 'free' && !isCancellationPending && !isDowngradePending && (
             <div className="pt-2 border-t">
               <Button
                 variant="ghost"
@@ -236,7 +273,80 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
         </CardContent>
       </Card>
 
-      {/* Upgrade Options */}
+      {/* Plan switching (for paid plan users) */}
+      {currentSubscription.plan.id !== 'free' && !isCancellationPending && !isDowngradePending && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Plan wechseln</CardTitle>
+            <CardDescription>
+              Wechseln Sie zu einem anderen Abonnement. Downgrades werden zum Ende der Laufzeit wirksam, Upgrades sofort.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              {paidPlans.map((plan) => {
+                const isCurrent = plan.id === currentSubscription.plan.id;
+                const isUpgrade = plan.price > currentSubscription.plan.price;
+                const isDowngrade = plan.price < currentSubscription.plan.price;
+
+                return (
+                  <div
+                    key={plan.id}
+                    className={`border rounded-lg p-4 ${isCurrent ? 'border-primary bg-primary/5' : ''}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold">{plan.displayName}</h3>
+                      {isCurrent && (
+                        <Badge variant="default">Aktuell</Badge>
+                      )}
+                      {plan.popular && !isCurrent && (
+                        <Badge variant="secondary">Beliebt</Badge>
+                      )}
+                    </div>
+                    <p className="text-2xl font-bold mb-1">{formatPrice(plan.price)}</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {formatPrice(plan.pricePerMonth)}/Monat
+                    </p>
+                    {plan.savings && (
+                      <p className="text-xs text-green-600 mb-3">{plan.savings}</p>
+                    )}
+
+                    {isCurrent ? (
+                      <Button className="w-full" variant="outline" size="sm" disabled>
+                        Aktueller Plan
+                      </Button>
+                    ) : isUpgrade ? (
+                      <Button
+                        className="w-full"
+                        variant="default"
+                        size="sm"
+                        onClick={() => onUpgradePlan(plan.id)}
+                        disabled={loading}
+                      >
+                        <ArrowUp className="h-3 w-3 mr-1" />
+                        Upgrade
+                      </Button>
+                    ) : isDowngrade && onDowngradePlan ? (
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onDowngradePlan(plan.id)}
+                        disabled={loading}
+                      >
+                        <ArrowDown className="h-3 w-3 mr-1" />
+                        Downgrade
+                      </Button>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Upgrade Options (for free plan users) */}
       {currentSubscription.plan.id === 'free' && (
         <Card>
           <CardHeader>
@@ -262,7 +372,7 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                   {plan.savings && (
                     <p className="text-xs text-green-600 mb-3">{plan.savings}</p>
                   )}
-                  <Button 
+                  <Button
                     onClick={() => onUpgradePlan(plan.id)}
                     className="w-full"
                     variant={plan.popular ? 'default' : 'outline'}

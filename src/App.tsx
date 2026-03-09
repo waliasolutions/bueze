@@ -48,6 +48,7 @@ const Sitemap = lazy(() => import("./pages/Sitemap"));
 
 const LeadSubmissionSuccess = lazy(() => import("./pages/LeadSubmissionSuccess"));
 const HandwerkerRegistrationSuccess = lazy(() => import("./pages/HandwerkerRegistrationSuccess"));
+const HandwerkerInvoices = lazy(() => import("./pages/HandwerkerInvoices"));
 
 // Admin routes - rarely accessed, loaded separately
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
@@ -63,6 +64,7 @@ const BulkMetaManager = lazy(() => import("./pages/admin/BulkMetaManager"));
 const GTMConfiguration = lazy(() => import("./pages/admin/GTMConfiguration"));
 const ReviewsManagement = lazy(() => import("./pages/admin/ReviewsManagement"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminInvoices = lazy(() => import("./pages/admin/AdminInvoices"));
 const DeletionAudit = lazy(() => import("./pages/admin/DeletionAudit"));
 
 // Legal pages - low priority
@@ -174,6 +176,7 @@ const App = () => {
                 <Route path="/handwerker-onboarding" element={<HandwerkerOnboarding />} />
                 <Route path="/handwerker/onboarding" element={<Navigate to="/handwerker-onboarding" replace />} />
                 <Route path="/handwerker-dashboard" element={<ProtectedRoute><HandwerkerDashboard /></ProtectedRoute>} />
+                <Route path="/handwerker-invoices" element={<ProtectedRoute><HandwerkerInvoices /></ProtectedRoute>} />
                 <Route path="/handwerker-profile/edit" element={<ProtectedRoute><HandwerkerProfileEdit /></ProtectedRoute>} />
                 <Route path="/handwerker" element={<HandwerkerLanding />} />
                 <Route path="/handwerker-verzeichnis" element={<HandwerkerVerzeichnis />} />
@@ -229,6 +232,7 @@ const App = () => {
                         <Route path="gtm" element={<GTMConfiguration />} />
                         <Route path="reviews" element={<ReviewsManagement />} />
                         <Route path="payments" element={<AdminPayments />} />
+                        <Route path="invoices" element={<AdminInvoices />} />
                         <Route path="deletion-audit" element={<DeletionAudit />} />
                       </Routes>
                     </Suspense>

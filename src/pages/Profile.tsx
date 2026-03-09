@@ -402,6 +402,36 @@ const Profile = () => {
     }
   };
 
+  const handleDowngradePlan = async (planId: string) => {
+    try {
+      const { error } = await supabase
+        .from('handwerker_subscriptions')
+        .update({
+          pending_plan: planId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      const planLabel = SUBSCRIPTION_PLANS[planId as keyof typeof SUBSCRIPTION_PLANS]?.displayName || planId;
+      toast({
+        title: 'Planwechsel vorgemerkt',
+        description: `Ihr Plan wird zum Ende der Laufzeit auf "${planLabel}" umgestellt.`,
+      });
+
+      fetchUserData();
+    } catch (error) {
+      console.error('Error scheduling plan downgrade:', error);
+      toast({
+        title: 'Fehler',
+        description: 'Der Planwechsel konnte nicht vorgemerkt werden.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleUndoCancellation = async () => {
     try {
       const { error } = await supabase
@@ -853,6 +883,7 @@ const Profile = () => {
                   currentSubscription={currentSubscription}
                   availablePlans={[]}
                   onUpgradePlan={handleUpgradePlan}
+                  onDowngradePlan={handleDowngradePlan}
                   onCancelSubscription={() => setShowCancelDialog(true)}
                   onUndoCancellation={handleUndoCancellation}
                 />

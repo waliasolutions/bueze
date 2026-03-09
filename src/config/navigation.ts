@@ -1,15 +1,16 @@
-import { 
-  LucideIcon, 
-  LayoutDashboard, 
-  Search, 
-  FileText, 
-  MessageSquare, 
-  Settings, 
-  ClipboardList, 
-  Plus, 
+import {
+  LucideIcon,
+  LayoutDashboard,
+  Search,
+  FileText,
+  MessageSquare,
+  Settings,
+  ClipboardList,
+  Plus,
   User,
   Crown,
-  Users
+  Users,
+  Receipt,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -25,6 +26,7 @@ export const roleNavigation: Record<'handwerker' | 'client', NavItem[]> = {
     { label: 'Meine Angebote', href: '/proposals', icon: FileText },
     { label: 'Nachrichten', href: '/conversations', icon: MessageSquare },
     { label: 'Abo verwalten', href: '/profile?tab=subscription', icon: Crown },
+    { label: 'Rechnungen', href: '/handwerker-invoices', icon: Receipt },
     { label: 'Profil bearbeiten', href: '/handwerker-profile/edit', icon: Settings },
   ],
   client: [
