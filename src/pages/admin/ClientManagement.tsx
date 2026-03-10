@@ -78,6 +78,22 @@ export default function ClientManagement() {
   useEffect(() => {
     if (hasChecked && isAuthorized) {
       fetchClients();
+
+      const debounceRef = { timer: null as ReturnType<typeof setTimeout> | null };
+
+      // Pragmatic: event '*' covers INSERT/UPDATE/DELETE. If noisy, filter columns later.
+      const channel = supabase
+        .channel('admin-client-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          if (debounceRef.timer) clearTimeout(debounceRef.timer);
+          debounceRef.timer = setTimeout(() => fetchClients(), 500);
+        })
+        .subscribe();
+
+      return () => {
+        if (debounceRef.timer) clearTimeout(debounceRef.timer);
+        supabase.removeChannel(channel);
+      };
     }
   }, [hasChecked, isAuthorized]);
 
@@ -88,14 +104,17 @@ export default function ClientManagement() {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, full_name, first_name, last_name, phone, created_at, client_type')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        // TODO: Replace .limit(5000) with proper cursor-based pagination when client count > 2000
+        .limit(5000);
 
       if (profilesError) throw profilesError;
 
       // Fetch user roles to filter clients
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role');
+        .select('user_id, role')
+        .limit(5000);
 
       if (rolesError) throw rolesError;
 
@@ -115,7 +134,8 @@ export default function ClientManagement() {
       // Also fetch handwerker_profiles to catch users without roles who registered as handwerkers
       const { data: hwProfiles, error: hwError } = await supabase
         .from('handwerker_profiles')
-        .select('user_id');
+        .select('user_id')
+        .limit(5000);
 
       if (hwError) throw hwError;
 
@@ -132,7 +152,8 @@ export default function ClientManagement() {
       // Fetch leads count per user
       const { data: leads, error: leadsError } = await supabase
         .from('leads')
-        .select('owner_id, status, created_at');
+        .select('owner_id, status, created_at')
+        .limit(5000);
 
       if (leadsError) throw leadsError;
 

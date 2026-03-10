@@ -38,14 +38,6 @@ serve(async (req) => {
       return successResponse({ success: true, message: 'User already exists', created: false });
     }
     
-    // Also check auth.users directly in case profile doesn't exist
-    const { data: authList } = await supabase.auth.admin.listUsers();
-    const existingAuthUser = authList?.users?.find(u => u.email === email);
-    if (existingAuthUser) {
-      console.log('Auth user already exists:', email);
-      return successResponse({ success: true, message: 'User already exists', created: false });
-    }
-
     const password = generateSecurePassword(16);
 
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
@@ -56,6 +48,14 @@ serve(async (req) => {
     });
 
     if (createError) {
+      // Create-and-catch pattern: handle duplicates gracefully (matching create-handwerker-self-registration standard)
+      const isDuplicate = (createError as any).status === 422
+        || createError.message.includes('already been registered')
+        || createError.message.includes('already registered');
+      if (isDuplicate) {
+        console.log('Auth user already exists (caught on create):', email);
+        return successResponse({ success: true, message: 'User already exists', created: false });
+      }
       throw new Error(`Failed to create user: ${createError.message}`);
     }
 
