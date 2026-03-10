@@ -134,7 +134,8 @@ export default function ClientManagement() {
       // Also fetch handwerker_profiles to catch users without roles who registered as handwerkers
       const { data: hwProfiles, error: hwError } = await supabase
         .from('handwerker_profiles')
-        .select('user_id');
+        .select('user_id')
+        .limit(5000);
 
       if (hwError) throw hwError;
 
