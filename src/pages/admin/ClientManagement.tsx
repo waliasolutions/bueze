@@ -152,7 +152,8 @@ export default function ClientManagement() {
       // Fetch leads count per user
       const { data: leads, error: leadsError } = await supabase
         .from('leads')
-        .select('owner_id, status, created_at');
+        .select('owner_id, status, created_at')
+        .limit(5000);
 
       if (leadsError) throw leadsError;
 
