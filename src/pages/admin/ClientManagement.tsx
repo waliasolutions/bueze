@@ -78,6 +78,22 @@ export default function ClientManagement() {
   useEffect(() => {
     if (hasChecked && isAuthorized) {
       fetchClients();
+
+      const debounceRef = { timer: null as ReturnType<typeof setTimeout> | null };
+
+      // Pragmatic: event '*' covers INSERT/UPDATE/DELETE. If noisy, filter columns later.
+      const channel = supabase
+        .channel('admin-client-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+          if (debounceRef.timer) clearTimeout(debounceRef.timer);
+          debounceRef.timer = setTimeout(() => fetchClients(), 500);
+        })
+        .subscribe();
+
+      return () => {
+        if (debounceRef.timer) clearTimeout(debounceRef.timer);
+        supabase.removeChannel(channel);
+      };
     }
   }, [hasChecked, isAuthorized]);
 
