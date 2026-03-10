@@ -113,7 +113,8 @@ export default function ClientManagement() {
       // Fetch user roles to filter clients
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, role');
+        .select('user_id, role')
+        .limit(5000);
 
       if (rolesError) throw rolesError;
 
