@@ -104,7 +104,9 @@ export default function ClientManagement() {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, full_name, first_name, last_name, phone, created_at, client_type')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        // TODO: Replace .limit(5000) with proper cursor-based pagination when client count > 2000
+        .limit(5000);
 
       if (profilesError) throw profilesError;
 
