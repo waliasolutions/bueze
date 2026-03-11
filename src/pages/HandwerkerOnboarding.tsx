@@ -568,15 +568,7 @@ const HandwerkerOnboarding = () => {
       case 'contact':
         return (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <User className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Kontakt & Firma</h3>
-                <p className="text-base text-muted-foreground">Ihre persönlichen Daten und Firmendaten</p>
-              </div>
-            </div>
+            <h3 className="text-xl font-bold mb-6">Kontakt & Firma</h3>
 
             {/* Inline Login Form (shown when email exists) */}
             {showLoginForm && (
