@@ -29,7 +29,7 @@ export function AdminLayout({ children, title, description, isLoading = false }:
         </div>
         
         <main className="flex-1 p-4 lg:p-6 min-w-0">
-          <div className="max-w-7xl mx-auto">
+          <div>
             {/* Mobile Header with Menu Button */}
             <div className="flex items-center gap-3 mb-4 lg:mb-6">
               {/* Mobile Menu Trigger */}
