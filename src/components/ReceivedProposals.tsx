@@ -247,6 +247,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId, on
     setSelectedIds(new Set());
     await invalidateProposalQueries(queryClient, undefined, undefined, userId);
     fetchProposals();
+    if (result.success) onProposalStatusChange?.();
   };
 
   const handleAccept = async (proposalId: string) => {

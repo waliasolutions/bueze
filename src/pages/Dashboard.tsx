@@ -661,7 +661,7 @@ const Dashboard = () => {
                   Alle Offerten verwalten
                 </Button>
               </div>
-              <ReceivedProposals userId={user?.id} />
+              <ReceivedProposals userId={user?.id} onProposalStatusChange={fetchUserData} />
             </TabsContent>
 
             <TabsContent value="reviews" className="space-y-6">

@@ -613,113 +613,45 @@ export interface AdminRegistrationData {
   submittedAt: string;
 }
 
-// Major category mapping for grouping subcategories in admin emails
-const majorCategoryMap: Record<string, { label: string; subcats: string[] }> = {
-  'elektroinstallationen': {
-    label: 'Elektroinstallationen',
-    subcats: ['electrician_installation', 'electrician_repair', 'electrician_panel',
-              'electrician_lighting', 'electrician_charging', 'electrician_smart_home',
-              'electrician_solar']
-  },
-  'metallbau': {
-    label: 'Metallbau',
-    subcats: ['metalworker_construction', 'metalworker_stairs', 'metalworker_gates',
-              'metalworker_balconies']
-  },
-  'bau_renovation': {
-    label: 'Bau & Renovation',
-    subcats: ['builder_new_construction', 'builder_renovation', 'builder_masonry',
-              'builder_plastering', 'builder_insulation']
-  },
-  'bodenbelaege': {
-    label: 'Bodenbeläge',
-    subcats: ['flooring_parquet', 'flooring_tiles', 'flooring_carpet',
-              'flooring_vinyl', 'flooring_natural_stone', 'flooring_screeding']
-  },
-  'heizung': {
-    label: 'Heizung & Lüftung',
-    subcats: ['heating_installation', 'heating_service', 'heating_floor',
-              'heating_solar_thermal', 'heating_heat_pump', 'heating_ventilation']
-  },
-  'sanitaer': {
-    label: 'Sanitär',
-    subcats: ['plumber_installation', 'plumber_repair', 'plumber_bathroom',
-              'plumber_kitchen', 'plumber_heating', 'plumber_drainage']
-  },
-  'kuechen': {
-    label: 'Küchen',
-    subcats: ['kitchen_planning', 'kitchen_installation', 'kitchen_appliances',
-              'kitchen_countertops']
-  },
-  'schreinerei': {
-    label: 'Schreinerei',
-    subcats: ['carpenter_furniture', 'carpenter_doors', 'carpenter_windows',
-              'carpenter_stairs', 'carpenter_builtin', 'carpenter_flooring']
-  },
-  'raeumungen': {
-    label: 'Räumungen & Umzüge',
-    subcats: ['cleaning_clearance', 'cleaning_moving', 'cleaning_construction',
-              'cleaning_garden']
-  },
-  'maler': {
-    label: 'Maler & Gipser',
-    subcats: ['painter_interior', 'painter_exterior', 'painter_wallpaper',
-              'painter_plastering']
-  },
-  'dach': {
-    label: 'Dach & Fassade',
-    subcats: ['roofer_repair', 'roofer_new', 'roofer_insulation', 'roofer_facade']
-  },
-  'gartenbau': {
-    label: 'Gartenbau',
-    subcats: ['landscaper_garden', 'landscaper_terrace', 'landscaper_lawn',
-              'landscaper_fencing']
-  },
-  'fenster': {
-    label: 'Fenster & Türen',
-    subcats: ['window_new', 'window_repair', 'window_doors', 'window_shutters']
-  }
-};
-
-export const adminRegistrationNotificationTemplate = (data: AdminRegistrationData) => {
-
-  // Group subcategories by their major categories
-  const categoryGroups = new Map<string, { label: string; subcats: string[] }>();
-  
-  for (const subcat of data.categories) {
-    // Find which major category this subcategory belongs to
-    let foundMajorCat: { id: string; label: string } | null = null;
-    for (const [majorId, majorData] of Object.entries(majorCategoryMap)) {
-      if (majorData.subcats.includes(subcat)) {
-        foundMajorCat = { id: majorId, label: majorData.label };
-        break;
-      }
-    }
-    
-    if (foundMajorCat) {
-      if (!categoryGroups.has(foundMajorCat.id)) {
-        categoryGroups.set(foundMajorCat.id, {
-          label: foundMajorCat.label,
-          subcats: []
-        });
-      }
-      const readable = subcategoryLabels[subcat] || subcat;
-      categoryGroups.get(foundMajorCat.id)!.subcats.push(readable);
-    }
-  }
-
-  // Format as "Hauptkategorie (subcat1, subcat2)"
+  // Group categories by their major category using SSOT
   let categoriesText = '';
-  if (categoryGroups.size > 0) {
-    const formatted = Array.from(categoryGroups.values()).map(group => {
-      if (group.subcats.length > 0) {
-        return `<strong>${group.label}</strong> (${group.subcats.join(', ')})`;
-      }
-      return `<strong>${group.label}</strong>`;
-    });
-    categoriesText = formatted.join('<br>');
-  } else {
+  if (!data.categories || data.categories.length === 0) {
     categoriesText = 'Keine Kategorien angegeben';
+  } else {
+    const categoryGroups = new Map<string, string[]>();
+    const standalone: string[] = [];
+
+    for (const cat of data.categories) {
+      // If cat is itself a major category key
+      if (majorCategorySubcategories[cat]) {
+        if (!categoryGroups.has(cat)) categoryGroups.set(cat, []);
+        continue;
+      }
+      // Find parent major category
+      const major = getMajorCategoryForSubcategory(cat);
+      if (major) {
+        if (!categoryGroups.has(major)) categoryGroups.set(major, []);
+        categoryGroups.get(major)!.push(getCategoryLabel(cat));
+      } else {
+        // Standalone subcategory with no known parent
+        standalone.push(getCategoryLabel(cat));
+      }
+    }
+
+    const parts: string[] = [];
+    if (categoryGroups.size > 0) {
+      const formatted = Array.from(categoryGroups.entries()).map(([majorKey, subs]) => {
+        const majorLabel = getCategoryLabel(majorKey);
+        return subs.length > 0
+          ? `<strong>${majorLabel}</strong> (${subs.join(', ')})`
+          : `<strong>${majorLabel}</strong>`;
+      });
+      parts.push(...formatted);
+    }
+    if (standalone.length > 0) {
+      parts.push(...standalone);
+    }
+    categoriesText = parts.length > 0 ? parts.join('<br>') : 'Keine Kategorien angegeben';
   }
   
   return emailWrapper(`
