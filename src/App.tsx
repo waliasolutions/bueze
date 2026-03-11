@@ -238,6 +238,7 @@ const App = () => {
                         <Route path="reviews" element={<ReviewsManagement />} />
                         <Route path="payments" element={<AdminPayments />} />
                         <Route path="invoices" element={<AdminInvoices />} />
+                        <Route path="billing" element={<AdminBillingSettings />} />
                         <Route path="deletion-audit" element={<DeletionAudit />} />
                       </Routes>
                     </Suspense>

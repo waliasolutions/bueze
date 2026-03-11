@@ -69,6 +69,7 @@ const navSections: NavSection[] = [
   {
     title: 'Einstellungen',
     items: [
+      { label: 'Abrechnung', href: '/admin/billing', icon: Settings },
       { label: 'SEO', href: '/admin/seo', icon: Globe },
       { label: 'GTM', href: '/admin/gtm', icon: Settings },
     ],
