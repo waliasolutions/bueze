@@ -1,81 +1,47 @@
 
 
-# Plan: Fix Email Category SSOT + Dashboard Stale Data
+# Safety Analysis of the Approved Plan
 
-## Fix 1: Replace stale `majorCategoryMap` in emailTemplates.ts
+## Fix 1: emailTemplates.ts — SAFE
 
-**File**: `supabase/functions/_shared/emailTemplates.ts`
+**What changes**: Delete the hardcoded `majorCategoryMap` (lines 616-681) and replace the grouping logic (lines 685-722) with imports from existing SSOT files.
 
-1. **Add imports** at top of file:
-   ```typescript
-   import { majorCategorySubcategories, getMajorCategoryForSubcategory } from './majorCategoryMapping.ts';
-   import { getCategoryLabel } from './categoryLabels.ts';
-   ```
+**Risk assessment**:
+- `majorCategoryMap` is only used inside `adminRegistrationNotificationTemplate` in this same file — confirmed via search, no other consumers
+- `adminRegistrationNotificationTemplate` is only called by `send-admin-registration-notification/index.ts` — one caller
+- The existing code is **already broken** (stale English keys like `electrician_installation` never match real DB values like `elektro_hausinstallationen`), so this fix can only improve things
+- The replacement imports (`majorCategoryMapping.ts`, `categoryLabels.ts`) are already used by other edge functions (e.g., `send-lead-notification`) — proven to work in Deno runtime
+- The `subcategoryLabels.ts` shared file already contains both major category keys AND subcategory keys with correct labels — confirmed lines 2-13
+- Empty/undefined guard preserves existing "Keine Kategorien angegeben" fallback behavior
 
-2. **Delete** the entire `majorCategoryMap` constant (lines 616-681).
+**SSOT**: Yes — eliminates the only remaining duplicate category mapping in the codebase. After this fix, all edge functions use `majorCategoryMapping.ts` + `categoryLabels.ts`/`subcategoryLabels.ts`.
 
-3. **Rewrite** the grouping logic (lines 685-722) with early return for empty/undefined:
-   ```typescript
-   // Early return for empty/undefined categories
-   let categoriesText = '';
-   if (!data.categories || data.categories.length === 0) {
-     categoriesText = 'Keine Kategorien angegeben';
-   } else {
-     const categoryGroups = new Map<string, string[]>();
-     
-     for (const cat of data.categories) {
-       // If cat is itself a major category key
-       if (majorCategorySubcategories[cat]) {
-         if (!categoryGroups.has(cat)) categoryGroups.set(cat, []);
-         continue;
-       }
-       // Find parent major category
-       const major = getMajorCategoryForSubcategory(cat);
-       if (major) {
-         if (!categoryGroups.has(major)) categoryGroups.set(major, []);
-         categoryGroups.get(major)!.push(getCategoryLabel(cat));
-       } else {
-         // Standalone subcategory with no known parent
-         categoriesText += `${getCategoryLabel(cat)}<br>`;
-       }
-     }
-     
-     if (categoryGroups.size > 0) {
-       const formatted = Array.from(categoryGroups.entries()).map(([majorKey, subs]) => {
-         const majorLabel = getCategoryLabel(majorKey);
-         return subs.length > 0
-           ? `<strong>${majorLabel}</strong> (${subs.join(', ')})`
-           : `<strong>${majorLabel}</strong>`;
-       });
-       categoriesText = formatted.join('<br>') + (categoriesText ? '<br>' + categoriesText : '');
-     }
-     
-     if (!categoriesText) categoriesText = 'Keine Kategorien angegeben';
-   }
-   ```
+**DRY**: Yes — removes 66 lines of stale duplicated data.
 
-   This preserves the existing fallback text for empty arrays, undefined values, AND the edge case where all categories are unrecognized (final guard).
+**Can it break something?**: No. The current code produces wrong output 100% of the time. The new code uses the same SSOT that `send-lead-notification` already uses successfully.
 
 ---
 
-## Fix 2: Refresh Dashboard after proposal accept/reject
+## Fix 2: ReceivedProposals callback — SAFE
 
-**File**: `src/components/ReceivedProposals.tsx`
-- Add `onProposalStatusChange?: () => void` to props interface
-- Call `onProposalStatusChange?.()` after success in `handleAccept`, `handleReject`, and batch handler
+**What changes**: Add optional `onProposalStatusChange?: () => void` prop, call it after successful accept/reject.
 
-**File**: `src/pages/Dashboard.tsx`
-- Pass `onProposalStatusChange={fetchUserData}` to `<ReceivedProposals>`
+**Risk assessment**:
+- The prop is **optional** (`?.()`) — existing callers that don't pass it are unaffected
+- `ReceivedProposals` is used in `Dashboard.tsx` — only one consumer, which will pass `fetchUserData`
+- The callback fires **after** `fetchProposals()` already completes (line 264, 279) — no race condition
+- No new state, no new effects, no event listeners to clean up
 
-Full refresh is correct here since accept/reject changes lead status AND counters.
+**SSOT/DRY**: Not applicable — this is a UI wiring fix, not data duplication.
+
+**Can it break something?**: No. Optional prop with optional chaining. Zero impact on existing behavior if not provided.
 
 ---
 
-## Files changed
+## Verdict: Both fixes are safe to implement
 
-| File | Change |
-|------|--------|
-| `supabase/functions/_shared/emailTemplates.ts` | Delete `majorCategoryMap`, add 2 imports, rewrite grouping with SSOT + empty guard |
-| `src/components/ReceivedProposals.tsx` | Add optional callback prop, 3 one-line calls |
-| `src/pages/Dashboard.tsx` | Add one prop to ReceivedProposals |
+- Fix 1: Pure improvement — replaces broken code with working SSOT imports
+- Fix 2: Additive-only — optional callback prop with no side effects on existing callers
+
+No database changes. No new dependencies. No migration needed.
 
