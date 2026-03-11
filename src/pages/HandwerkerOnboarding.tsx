@@ -830,22 +830,7 @@ const HandwerkerOnboarding = () => {
       case 'services':
         return (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <Briefcase className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Dienstleistungen</h3>
-                <p className="text-base text-muted-foreground">Kategorien und Einsatzgebiete (optional)</p>
-              </div>
-            </div>
-
-            <Alert className="border-brand-300 bg-brand-50 mb-6">
-              <AlertCircle className="h-5 w-5 text-brand-600" />
-              <AlertDescription className="text-base ml-2">
-                Diese Angaben sind optional und können jederzeit in Ihrem Profil ergänzt werden.
-              </AlertDescription>
-            </Alert>
+            <h3 className="text-xl font-bold mb-6">Dienstleistungen <span className="text-sm font-normal text-muted-foreground">(optional)</span></h3>
 
             {/* Category Selection - Using SSOT CategorySelector */}
             <Card className="border-2">
