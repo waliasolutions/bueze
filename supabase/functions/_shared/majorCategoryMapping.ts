@@ -47,7 +47,8 @@ export const majorCategorySubcategories: Record<string, string[]> = {
     'gartenbau', 'pflasterarbeiten', 'zaun_torbau', 'aussenarbeiten_sonstige'
   ],
   reinigung_hauswartung: [
-    'reinigung'
+    'reinigung',
+    'reinigung_hauswartung'
   ]
 };
 
