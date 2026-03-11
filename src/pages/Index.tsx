@@ -12,6 +12,7 @@ import { homepageSeoDefaults } from '@/config/contentDefaults';
 import { useBillingContext } from '@/contexts/BillingSettingsProvider';
 
 const Index = () => {
+  const { settings: billing } = useBillingContext();
   const { content } = usePageContent('homepage');
   const { content: heroContent } = usePageContent('homepage_hero');
   const { content: howItWorksContent } = usePageContent('homepage_how_it_works');
@@ -32,8 +33,8 @@ const Index = () => {
 
   const schemaMarkup = wrapInGraph(
     generateWebsiteSchema(),
-    generateOrganizationSchema(),
-    generateLocalBusinessSchema(),
+    generateOrganizationSchema(billing),
+    generateLocalBusinessSchema(billing),
     generateFAQSchema(faqItems)
   );
 

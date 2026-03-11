@@ -67,6 +67,7 @@ const GTMConfiguration = lazy(() => import("./pages/admin/GTMConfiguration"));
 const ReviewsManagement = lazy(() => import("./pages/admin/ReviewsManagement"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
 const AdminInvoices = lazy(() => import("./pages/admin/AdminInvoices"));
+const AdminBillingSettings = lazy(() => import("./pages/admin/AdminBillingSettings"));
 const DeletionAudit = lazy(() => import("./pages/admin/DeletionAudit"));
 
 // Legal pages - low priority
