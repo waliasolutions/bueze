@@ -60,7 +60,7 @@ const Datenschutz = () => {
                 <h2 className="text-2xl font-bold mb-4">2. Geltungsbereich</h2>
                 <p className="text-ink-700">
                   Diese Datenschutzerklärung klärt Nutzer über die Art, den Umfang und Zwecke der Erhebung und Verwendung 
-                  personenbezogener Daten durch die Büeze.ch GmbH auf der Plattform www.bueeze.ch auf. Die Datenschutzerklärung 
+                  personenbezogener Daten durch die {b.company_legal_name} auf der Plattform {b.company_website} auf. Die Datenschutzerklärung 
                   gilt gemäss dem revidierten Schweizer Datenschutzgesetz (nDSG) sowie der EU-Datenschutz-Grundverordnung 
                   (DSGVO), soweit diese anwendbar ist.
                 </p>

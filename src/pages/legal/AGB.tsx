@@ -237,7 +237,7 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">12. Anwendbares Recht und Gerichtsstand</h2>
                 <p className="text-ink-700 mb-4">
                   Es gilt ausschliesslich liechtensteinisches Recht.
-                  Gerichtsstand ist Gamprin-Bendern, Liechtenstein.
+                  Gerichtsstand ist {b.company_city}, {b.company_country}.
                 </p>
               </section>
 
