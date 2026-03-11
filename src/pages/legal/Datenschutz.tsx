@@ -7,6 +7,7 @@ import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
 import { useBillingContext } from '@/contexts/BillingSettingsProvider';
 
 const Datenschutz = () => {
+  const { settings: b } = useBillingContext();
   const schemaMarkup = wrapInGraph(
     generateWebPageSchema(
       "Datenschutzerklärung",
