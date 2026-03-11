@@ -10,6 +10,17 @@ export interface BreadcrumbItem {
   url?: string;
 }
 
+export interface CompanyData {
+  company_name: string;
+  company_street: string;
+  company_zip: string;
+  company_city: string;
+  company_country: string;
+  company_email: string;
+  company_phone: string;
+  company_website: string;
+}
+
 export const generateFAQSchema = (faqItems: FAQItem[]) => ({
   "@type": "FAQPage",
   "mainEntity": faqItems.map(item => ({
@@ -32,18 +43,18 @@ export const generateBreadcrumbSchema = (items: BreadcrumbItem[]) => ({
   }))
 });
 
-export const generateOrganizationSchema = () => ({
+export const generateOrganizationSchema = (company?: CompanyData) => ({
   "@type": "Organization",
-  "name": "Büeze.ch",
-  "url": "https://bueeze.ch",
+  "name": company?.company_name ?? "Büeze.ch",
+  "url": `https://${company?.company_website ?? 'bueeze.ch'}`.replace('https://www.', 'https://'),
   "logo": "https://bueeze.ch/favicon.png",
   "description": "Handwerker Portal für die Schweiz – verbindet Auftraggeber mit geprüften Handwerkern",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Industriestrasse 28",
-    "addressLocality": "Gamprin-Bendern",
-    "postalCode": "9487",
-    "addressCountry": "LI"
+    "streetAddress": company?.company_street ?? "Industriestrasse 28",
+    "addressLocality": company?.company_city ?? "Gamprin-Bendern",
+    "postalCode": company?.company_zip ?? "9487",
+    "addressCountry": company?.company_country === 'Liechtenstein' ? 'LI' : 'CH'
   },
   "areaServed": {
     "@type": "Country",
@@ -51,8 +62,8 @@ export const generateOrganizationSchema = () => ({
   },
   "contactPoint": {
     "@type": "ContactPoint",
-    "telephone": "+41 41 558 22 33",
-    "email": "info@bueeze.ch",
+    "telephone": company?.company_phone ?? "+41 41 558 22 33",
+    "email": company?.company_email ?? "info@bueeze.ch",
     "contactType": "customer service",
     "availableLanguage": "German"
   },
@@ -82,20 +93,20 @@ export const generateWebsiteSchema = () => ({
   }
 });
 
-export const generateLocalBusinessSchema = () => ({
+export const generateLocalBusinessSchema = (company?: CompanyData) => ({
   "@type": "LocalBusiness",
   "@id": "https://bueeze.ch/#organization",
-  "name": "Büeze.ch",
+  "name": company?.company_name ?? "Büeze.ch",
   "image": "https://bueeze.ch/favicon.png",
   "url": "https://bueeze.ch",
-  "telephone": "+41 41 558 22 33",
-  "email": "info@bueeze.ch",
+  "telephone": company?.company_phone ?? "+41 41 558 22 33",
+  "email": company?.company_email ?? "info@bueeze.ch",
   "address": {
     "@type": "PostalAddress",
-    "streetAddress": "Industriestrasse 28",
-    "addressLocality": "Gamprin-Bendern",
-    "postalCode": "9487",
-    "addressCountry": "LI"
+    "streetAddress": company?.company_street ?? "Industriestrasse 28",
+    "addressLocality": company?.company_city ?? "Gamprin-Bendern",
+    "postalCode": company?.company_zip ?? "9487",
+    "addressCountry": company?.company_country === 'Liechtenstein' ? 'LI' : 'CH'
   },
   "priceRange": "CHF",
   "areaServed": {
