@@ -4,8 +4,10 @@ import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
+import { useBillingContext } from '@/contexts/BillingSettingsProvider';
 
 const AGB = () => {
+  const { settings: b } = useBillingContext();
   const schemaMarkup = wrapInGraph(
     generateWebPageSchema(
       "Allgemeine Geschäftsbedingungen (AGB)",
