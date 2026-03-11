@@ -52,9 +52,10 @@ interface ReceivedProposal extends ProposalWithHandwerkerInfo {
 
 interface ReceivedProposalsProps {
   userId: string;
+  onProposalStatusChange?: () => void;
 }
 
-export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) => {
+export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId, onProposalStatusChange }) => {
   const [proposals, setProposals] = useState<ReceivedProposal[]>([]);
   const [filteredProposals, setFilteredProposals] = useState<ReceivedProposal[]>([]);
   const [loading, setLoading] = useState(true);
