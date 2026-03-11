@@ -263,6 +263,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId, on
       setComparisonIds(new Set());
       await invalidateProposalQueries(queryClient, proposalId, undefined, userId);
       fetchProposals();
+      onProposalStatusChange?.();
     }
   };
 
