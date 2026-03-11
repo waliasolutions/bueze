@@ -53,7 +53,6 @@ const HandwerkerOnboarding = () => {
   const [emailChanged, setEmailChanged] = useState(false);
   
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   // Simplified service areas - PLZ + radius approach
   const [businessPlz, setBusinessPlz] = useState('');
@@ -63,10 +62,6 @@ const HandwerkerOnboarding = () => {
   const [customCantons, setCustomCantons] = useState<string[]>([]);
   
   const [showPassword, setShowPassword] = useState(false);
-  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<{
-    lastSaveTime: string;
-  } | null>(null);
 
   const [formData, setFormData] = useState({
     // Step 1: Contact + Company (required)
