@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useBillingContext } from "@/contexts/BillingSettingsProvider";
 import {
   SUBSCRIPTION_PLANS,
   FREE_TIER_PROPOSALS_LIMIT,
