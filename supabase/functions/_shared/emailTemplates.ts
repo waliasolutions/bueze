@@ -1151,7 +1151,7 @@ interface InvoiceEmailData {
   periodEnd?: string;
 }
 
-export const invoiceEmailTemplate = (data: InvoiceEmailData) => {
+export const invoiceEmailTemplate = (data: InvoiceEmailData, company?: Partial<BillingSettings>) => {
   const periodText = data.periodStart && data.periodEnd
     ? `<p style="margin: 5px 0;"><strong>Laufzeit:</strong> ${safe(data.periodStart)} – ${safe(data.periodEnd)}</p>`
     : '';
@@ -1184,5 +1184,5 @@ export const invoiceEmailTemplate = (data: InvoiceEmailData) => {
         Bei Fragen kontaktieren Sie uns unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.
       </p>
     </div>
-  `);
+  `, company);
 };
