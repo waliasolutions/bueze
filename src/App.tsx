@@ -259,6 +259,7 @@ const App = () => {
             </Suspense>
           </RouteErrorBoundary>
           </ViewModeProvider>
+          </BillingSettingsProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
