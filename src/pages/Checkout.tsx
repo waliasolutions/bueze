@@ -529,7 +529,7 @@ export default function Checkout() {
                   <span>
                     {plan.price === 0 
                       ? "CHF 0" 
-                      : formatPrice(Math.round(plan.price * 1.081))
+                      : formatPrice(Math.round(plan.price * (1 + billing.mwst_rate / 100)))
                     }
                   </span>
                 </div>

@@ -104,9 +104,7 @@ export const faqDefaults = {
  */
 export const footerDefaults = {
   companyDescription: 'Die Plattform für Handwerker-Vermittlung in der Schweiz. Verbinden Sie sich mit geprüften Profis für Ihr nächstes Projekt.',
-  email: 'info@bueeze.ch',
-  phone: '+41 41 558 22 33',
-  address: 'Industriestrasse 28, 9487 Gamprin-Bendern',
+  // email, phone, address removed — sourced from billing_settings via useBillingContext()
   socialLinks: {
     facebook: 'https://m.facebook.com/profile.php?id=61582960604117',
     instagram: 'https://www.instagram.com/bueeze.ch/',

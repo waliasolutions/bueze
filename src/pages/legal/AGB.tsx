@@ -245,12 +245,12 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">Kontakt</h2>
                 <p className="text-ink-700 mb-2">
                   <strong>BÜEZE.CH</strong><br />
-                  Büeze.ch GmbH<br />
-                  Industriestrasse 28<br />
-                  9487 Gamprin-Bendern<br />
-                  Telefon: +41 41 558 22 33<br />
-                  E-Mail: info@bueeze.ch<br />
-                  www.bueeze.ch
+                  {b.company_legal_name}<br />
+                  {b.company_street}<br />
+                  {b.company_zip} {b.company_city}<br />
+                  Telefon: {b.company_phone}<br />
+                  E-Mail: {b.company_email}<br />
+                  {b.company_website}
                 </p>
               </section>
             </CardContent>
