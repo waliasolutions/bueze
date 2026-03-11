@@ -1186,23 +1186,6 @@ const HandwerkerOnboarding = () => {
           </div>
 
           <Card className="shadow-xl">
-            <CardHeader className="pb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl">Handwerkerprofil erstellen</CardTitle>
-                  <CardDescription className="text-base mt-1">
-                    Schritt {currentStep} von {totalSteps}
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-4">
-                <Badge variant="secondary" className="text-sm px-3 py-1">
-                  {Math.round(progress)}% fertig
-                </Badge>
-              </div>
-              <Progress value={progress} className="mt-4 h-2" />
-            </CardHeader>
-
             <CardContent className="pt-6">
               {renderStepContent()}
             </CardContent>
