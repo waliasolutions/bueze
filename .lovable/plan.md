@@ -1,37 +1,67 @@
 
 
-# Fix Hauswartung Missing from Reinigung & Hauswartung Category
+# Deep QA: Routing & URL Issues Found
 
-## Problem
+## Issues Identified
 
-Three issues identified:
+| # | Severity | Issue | Location |
+|---|----------|-------|----------|
+| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
+| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
+| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
 
-1. **`reinigung_hauswartung` major category** only has `['reinigung']` in its subcategories array — missing `'reinigung_hauswartung'` (Hauswartung). So the landing page title says "Reinigung & Hauswartung" but only shows "Reinigung" as an option.
+---
 
-2. **`reinigung_hauswartung` subcategory is listed under `raeumung_entsorgung`** (line 245 of majorCategories.ts) — it should be under `reinigung_hauswartung` major category instead, since that's its natural home.
+## Fix 1: `/auth?mode=reset` — Make it work or fix the link
 
-3. **Edge function mapping is out of sync** — `majorCategoryMapping.ts` has `reinigung_hauswartung: ['reinigung']` only, missing `'reinigung_hauswartung'`.
+**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
 
-## Plan (3 files)
+**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
 
-### 1. `src/config/majorCategories.ts`
+**File**: `src/pages/Auth.tsx`
+- Add `useSearchParams` import
+- Read `mode` param on mount
+- If `mode === 'reset'`, set `isDialogOpen` to `true`
 
-- Add `'reinigung_hauswartung'` to the `reinigung_hauswartung` major category's subcategories: `['reinigung', 'reinigung_hauswartung']`
-- Remove `'reinigung_hauswartung'` from `raeumung_entsorgung`'s subcategories (keep `aufloesung_entsorgung`, `umzug`, `reinigung`)
+```tsx
+const [searchParams] = useSearchParams();
 
-### 2. `supabase/functions/_shared/majorCategoryMapping.ts`
+useEffect(() => {
+  if (searchParams.get('mode') === 'reset') {
+    setIsDialogOpen(true);
+  }
+}, [searchParams]);
+```
 
-- Mirror the same change: add `'reinigung_hauswartung'` to `reinigung_hauswartung` array, remove from `raeumung_entsorgung`
+---
 
-### 3. `supabase/functions/_shared/subcategoryLabels.ts`
+## Fix 2: AGB route — Add top-level `/agb` with redirect
 
-- Add `'reinigung_hauswartung': 'Hauswartung'` entry (currently missing from this edge-function-side labels file, breaking email display)
+**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
 
-This ensures Hauswartung appears correctly in:
-- Major category landing page (subcategory cards)
-- Handwerker onboarding category selection
-- Handwerkerverzeichnis browse/filter
-- Lead submission form
-- Backend lead-matching logic
-- Email notifications
+**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+
+**File**: `src/App.tsx`
+- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
+
+---
+
+## Fix 3: Stale comments in sitemap generator (optional)
+
+**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
+
+**File**: `supabase/functions/generate-sitemap/index.ts`
+- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
+
+---
+
+## Summary
+
+| # | Fix | Files | Effort |
+|---|-----|-------|--------|
+| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
+| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
+| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
+
+No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
 

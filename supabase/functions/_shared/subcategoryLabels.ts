@@ -102,6 +102,7 @@ export const subcategoryLabels: Record<string, string> = {
 
   // Reinigung & Hauswartung
   'reinigung': 'Reinigung',
+  'reinigung_hauswartung': 'Hauswartung',
 
   // Räumung & Entsorgung
   'aufloesung_entsorgung': 'Auflösung und Entsorgung',
