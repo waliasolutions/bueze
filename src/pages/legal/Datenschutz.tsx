@@ -20,7 +20,7 @@ const Datenschutz = () => {
     <div className="min-h-screen bg-background">
       <DynamicHelmet
         title="Datenschutzerklärung | Büeze.ch"
-        description="Datenschutzerklärung der Büeze.ch GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten."
+        description={`Datenschutzerklärung der ${b.company_legal_name}. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten.`}
         canonical="https://bueeze.ch/datenschutz"
         robotsMeta="index,follow"
         schemaMarkup={schemaMarkup}
