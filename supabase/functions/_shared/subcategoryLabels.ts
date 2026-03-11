@@ -46,6 +46,8 @@ export const subcategoryLabels: Record<string, string> = {
   'fassadenbauer': 'Fassadenbauer',
   'schlosserei': 'Schlosserei',
   'spengler': 'Spengler',
+  'maler': 'Maler',
+  'gipser': 'Gipser',
 
   // Bodenbeläge
   'parkett_laminat': 'Parkett und Laminat',

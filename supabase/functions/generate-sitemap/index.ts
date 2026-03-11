@@ -23,6 +23,7 @@ const subcategorySlugs = [
   // Bau & Renovation
   'metallbau', 'holzbau', 'mauerarbeit', 'betonarbeiten', 'fundament', 'kernbohrungen',
   'abbruch-durchbruch', 'renovierung-sonstige', 'garage-carport', 'aussenarbeiten-sonstige',
+  'maler', 'gipser',
   // Bodenbeläge
   'parkett-laminat', 'teppich-pvc-linoleum', 'bodenfliesen', 'bodenbelag-sonstige',
   // Heizung, Klima & Solar

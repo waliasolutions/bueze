@@ -452,7 +452,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Maler',
     slug: 'maler',
     shortDescription: 'Malerarbeiten',
-    majorCategoryId: 'innenausbau_schreiner',
+    majorCategoryId: 'bau_renovation',
     keywords: ['Maler']
   },
   gipser: {
@@ -460,7 +460,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Gipser',
     slug: 'gipser',
     shortDescription: 'Gipserarbeiten',
-    majorCategoryId: 'innenausbau_schreiner',
+    majorCategoryId: 'bau_renovation',
     keywords: ['Gipser']
   },
   bodenleger: {
