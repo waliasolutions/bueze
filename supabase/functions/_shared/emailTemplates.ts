@@ -4,6 +4,7 @@
 import { getUrgencyLabel } from './categoryLabels.ts';
 import { subcategoryLabels } from './subcategoryLabels.ts';
 import { FRONTEND_URL, SUPPORT_EMAIL } from './siteConfig.ts';
+import { DEFAULT_BILLING_SETTINGS, type BillingSettings } from './companyConfig.ts';
 
 /**
  * Safe interpolation helper - prevents "undefined" or "null" from appearing in emails.
