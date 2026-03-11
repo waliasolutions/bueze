@@ -1194,29 +1194,7 @@ const HandwerkerOnboarding = () => {
                     Schritt {currentStep} von {totalSteps}
                   </CardDescription>
                 </div>
-                {lastSaved && (
-                  <p className="text-xs text-muted-foreground">
-                    Zuletzt gespeichert: {lastSaved.toLocaleTimeString('de-CH')}
-                  </p>
-                )}
               </div>
-              {localStorage.getItem(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
-                    toast({
-                      title: "Entwurf gelöscht",
-                      description: "Ihre gespeicherten Daten wurden entfernt.",
-                    });
-                    window.location.reload();
-                  }}
-                  className="text-xs text-muted-foreground hover:text-destructive mt-2"
-                >
-                  Entwurf löschen
-                </Button>
-              )}
               <div className="flex items-center justify-between mt-4">
                 <Badge variant="secondary" className="text-sm px-3 py-1">
                   {Math.round(progress)}% fertig
