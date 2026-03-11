@@ -516,8 +516,8 @@ export default function Checkout() {
                         <span>{formatPrice(plan.price)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>MwSt. (8.1%)</span>
-                        <span>{formatPrice(Math.round(plan.price * 0.081))}</span>
+                        <span>{billing.mwst_rate > 0 ? `MwSt. (${billing.mwst_rate}%)` : billing.mwst_note}</span>
+                        <span>{billing.mwst_rate > 0 ? formatPrice(Math.round(plan.price * billing.mwst_rate / 100)) : 'CHF 0.00'}</span>
                       </div>
                     </div>
                     <Separator />
