@@ -26,13 +26,7 @@ import { PostalCodeInput } from "@/components/PostalCodeInput";
 import { ServiceAreaSelector } from "@/components/ServiceAreaSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ServiceRadius, buildServiceAreas, parseServiceAreas } from "@/lib/serviceAreaHelpers";
-import { 
-  saveVersionedData, 
-  loadVersionedData, 
-  clearVersionedData,
-  STORAGE_KEYS,
-  STORAGE_VERSIONS 
-} from "@/lib/localStorageVersioning";
+import { clearVersionedData } from "@/lib/localStorageVersioning";
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
 import { validatePassword } from "@/lib/validationHelpers";
 import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
