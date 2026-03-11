@@ -41,7 +41,7 @@ export const majorCategorySubcategories: Record<string, string[]> = {
     'holzarbeiten_innen', 'metallarbeiten_innen', 'innenausbau_sonstige'
   ],
   raeumung_entsorgung: [
-    'aufloesung_entsorgung', 'umzug', 'reinigung', 'reinigung_hauswartung'
+    'aufloesung_entsorgung', 'umzug', 'reinigung'
   ],
   garten_umgebung: [
     'gartenbau', 'pflasterarbeiten', 'zaun_torbau', 'aussenarbeiten_sonstige'
