@@ -35,7 +35,7 @@ const subcategorySlugs = [
   'kuechenplanung', 'kuechengeraete', 'arbeitsplatten', 'kueche-sonstige',
   // Innenausbau & Schreiner
   'moebelbau', 'moebelrestauration', 'holzarbeiten-innen', 'metallarbeiten-innen',
-  'treppen', 'innenausbau-sonstige', 'maler', 'gipser', 'bodenleger', 'plattenleger',
+  'treppen', 'innenausbau-sonstige', 'bodenleger', 'plattenleger',
   'schreiner', 'maurer', 'zimmermann',
   // Räumung & Entsorgung
   'aufloesung-entsorgung', 'individuelle-anfrage',

@@ -93,8 +93,6 @@ export const subcategoryLabels: Record<string, string> = {
   'innenausbau_sonstige': 'Sonstige Innenarbeiten',
   'schreiner': 'Schreiner',
   'fenster_tueren': 'Fenster & Türen',
-  'maler': 'Maler',
-  'gipser': 'Gipser',
 
   // Garten & Aussenbereich
   'gartenbau': 'Gartenbau',
