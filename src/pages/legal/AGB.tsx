@@ -220,7 +220,7 @@ const AGB = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">10. Geistiges Eigentum</h2>
                 <p className="text-ink-700 mb-4">
-                  Alle Inhalte, Texte, Logos, Designs und Softwareelemente der Plattform sind Eigentum der Büeze.ch GmbH oder entsprechend lizenziert.
+                  Alle Inhalte, Texte, Logos, Designs und Softwareelemente der Plattform sind Eigentum der {b.company_legal_name} oder entsprechend lizenziert.
                   Jegliche Nutzung ausserhalb der Plattform bedarf der schriftlichen Zustimmung.
                 </p>
               </section>
