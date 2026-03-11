@@ -297,7 +297,9 @@ const ResultsLayer = ({
   onSearchTermChange, onFilterCantonChange, onFilterCategoryChange,
   onBackToBrowse, onCardClick
 }: ResultsLayerProps) => {
-  const allCategories = [...new Set(handwerkers.flatMap(hw => hw.categories || []))].sort();
+  const allCategories = Object.values(majorCategories)
+    .flatMap(cat => cat.subcategories)
+    .sort();
 
   return (
     <>
