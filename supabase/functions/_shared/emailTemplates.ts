@@ -1,8 +1,9 @@
 // Email template library for BÜEZE.CH
 // Swiss-inspired, clean design with consistent branding
 
-import { getUrgencyLabel } from './categoryLabels.ts';
+import { getUrgencyLabel, getCategoryLabel } from './categoryLabels.ts';
 import { subcategoryLabels } from './subcategoryLabels.ts';
+import { majorCategorySubcategories, getMajorCategoryForSubcategory } from './majorCategoryMapping.ts';
 import { FRONTEND_URL, SUPPORT_EMAIL } from './siteConfig.ts';
 import { DEFAULT_BILLING_SETTINGS, type BillingSettings } from './companyConfig.ts';
 
