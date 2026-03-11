@@ -1,67 +1,57 @@
 
 
-# Deep QA: Routing & URL Issues Found
+# Root Cause: Race Condition in `startedAsGuest` Initialization
 
-## Issues Identified
+## Finding
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+`startedAsGuest` is initialized as `null` (line 52). The auth check runs async in `useEffect` (line 155). Until it resolves, `startedAsGuest` is `null`.
 
----
-
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
-
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
-
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
-
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
-
+The step configuration on line 109 uses a ternary:
 ```tsx
-const [searchParams] = useSearchParams();
-
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
+const stepConfig = startedAsGuest
+  ? { 1: 'contact', 2: 'services', 3: 'summary' }  // 3 steps, 33%
+  : { 1: 'services', 2: 'summary' };                 // 2 steps, 50%
 ```
 
----
+Since `null` is falsy, the component initially renders the **authenticated flow** (2 steps, 50% progress) even for guest users. This means:
+- Progress bar shows "50% fertig" instead of "33%"
+- Step 1 renders 'services' (categories) instead of 'contact' (names, email, password)
+- The user cannot enter their name or create an account
 
-## Fix 2: AGB route — Add top-level `/agb` with redirect
+Once `checkAuth` resolves and sets `startedAsGuest(true)`, the form flips to 3 steps and "33%". But if the user interacts before that, they see the wrong form. On slow connections, the race window is wider.
 
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
+## Fix
 
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+Show a loading state while `startedAsGuest` is `null`. The form should only render once the auth check has completed and the step configuration is determined.
 
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
+### File: `src/pages/HandwerkerOnboarding.tsx`
 
----
+1. Add an early return after the Header/Footer wrapper when `startedAsGuest === null`, showing a centered loading spinner with "Wird geladen..." text
+2. This prevents the form from rendering with the wrong step config
 
-## Fix 3: Stale comments in sitemap generator (optional)
+```tsx
+// After the opening return, before the form card:
+if (startedAsGuest === null) {
+  return (
+    <div className="min-h-screen ...">
+      <Header />
+      <main className="flex-1 flex items-center justify-center py-12">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-muted-foreground">Wird geladen...</p>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+```
 
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
+This is a one-file, single-point fix. The `Loader2` icon is already imported (line 19). No other files need changes.
 
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
-
----
-
-## Summary
-
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
+### Why this is the right fix
+- It addresses the root cause (rendering before auth state is known) rather than symptoms
+- It's consistent with how other protected pages handle the loading state
+- The auth check typically resolves in <200ms, so users will barely notice the spinner
+- No changes to the step logic, progress calculation, or `useMultiStepForm` hook needed
 
