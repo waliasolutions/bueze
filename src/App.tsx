@@ -162,6 +162,7 @@ const App = () => {
           <Toaster />
           
           <CookieBanner />
+          <BillingSettingsProvider>
           <ViewModeProvider>
           <RouteErrorBoundary>
             <Suspense fallback={<PageLoader />}>
