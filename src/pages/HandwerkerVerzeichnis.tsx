@@ -204,7 +204,6 @@ const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, 
   const categoriesWithSubs = Object.values(majorCategories)
     .map(category => {
       const subs = category.subcategories
-        .filter(subId => availableCategories.has(subId))
         .map(subId => subcategoryLabels[subId])
         .filter(Boolean);
       return { ...category, subs };
