@@ -34,7 +34,7 @@ const DEFAULTS: BillingSettings = {
 async function fetchBillingSettings(): Promise<BillingSettings> {
   // Query the anon-readable public view
   const { data, error } = await supabase
-    .from('billing_settings_public' as any)
+    .from('billing_settings_public')
     .select('*')
     .limit(1)
     .single();

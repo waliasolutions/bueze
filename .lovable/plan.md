@@ -1,56 +1,67 @@
 
 
-# QA Report: Recent Billing Settings SSOT Update
+# Deep QA: Routing & URL Issues Found
 
-## Issues Found
+## Issues Identified
 
-### 1. SSOT Violation: Hardcoded "Büeze.ch GmbH" in Datenschutz.tsx (HIGH)
-**File**: `src/pages/legal/Datenschutz.tsx` lines 14, 23, 63
-- The SEO meta description and schema markup still hardcode `"Büeze.ch GmbH"` instead of using `b.company_legal_name`
-- Line 63: body text still hardcodes `"Büeze.ch GmbH"` — should use `{b.company_legal_name}`
-
-### 2. SSOT Violation: Hardcoded "Büeze.ch GmbH" in AGB.tsx (HIGH)
-**File**: `src/pages/legal/AGB.tsx` lines 41, 223
-- Line 41: Uses `b.company_street` etc. but hardcodes `"Büeze.ch GmbH"` — should use `{b.company_legal_name}`
-- Line 223: `"Eigentum der Büeze.ch GmbH"` — should use `{b.company_legal_name}`
-
-### 3. SSOT Violation: Hardcoded "Gamprin-Bendern, Liechtenstein" in AGB.tsx (MEDIUM)
-**File**: `src/pages/legal/AGB.tsx` line 240
-- `"Gerichtsstand ist Gamprin-Bendern, Liechtenstein"` — should use `{b.company_city}, {b.company_country}`
-
-### 4. Duplicate Defaults: Two Identical Fallback Objects (DRY violation)
-- `src/hooks/useBillingSettings.ts` has `DEFAULTS` object
-- `supabase/functions/_shared/companyConfig.ts` has `DEFAULT_BILLING_SETTINGS` object
-- These are identical copies. The edge function copy is acceptable (different runtime), but the frontend `DEFAULTS` could be shared with a `src/config/billingDefaults.ts` if any other frontend file needs them. Currently only used in the hook, so this is minor.
-
-### 5. `as any` Type Cast in useBillingSettings.ts (LOW)
-**File**: `src/hooks/useBillingSettings.ts` line 37
-- `.from('billing_settings_public' as any)` — the view IS in the generated types (confirmed in types.ts line 2055), so the `as any` cast is unnecessary. Should use the proper type.
-
-### 6. No Routing Issue Found
-- `/admin/billing` route is correctly registered in `App.tsx`
-- AdminSidebar has the "Abrechnung" link pointing to `/admin/billing`
-- No duplicate or conflicting routes detected
-
-### 7. AdminBillingSettings: No Loading State for `isLoading` from Context (LOW)
-The `AdminBillingSettings` page fetches directly from `billing_settings` table (correct for admin write access) but doesn't use the billing context at all. This is fine — admin needs the base table, not the public view. No issue here.
-
-### 8. Checkout MwSt Logic: Correct (Verified)
-- `Checkout.tsx` lines 519-532 correctly read `billing.mwst_rate` from context
-- Shows `mwst_note` when rate is 0, shows percentage when > 0
-- Total calculation includes tax dynamically. No hardcoded 8.1% remains.
+| # | Severity | Issue | Location |
+|---|----------|-------|----------|
+| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
+| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
+| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
 
 ---
 
-## Summary of Fixes Needed
+## Fix 1: `/auth?mode=reset` — Make it work or fix the link
 
-| # | Issue | File | Fix |
-|---|-------|------|-----|
-| 1 | Hardcoded "Büeze.ch GmbH" in SEO meta | `Datenschutz.tsx` L14,23 | Use template literal with `b.company_legal_name` |
-| 2 | Hardcoded "Büeze.ch GmbH" in body text | `Datenschutz.tsx` L63 | Replace with `{b.company_legal_name}` |
-| 3 | Hardcoded "Büeze.ch GmbH" in AGB | `AGB.tsx` L41, L223 | Replace with `{b.company_legal_name}` |
-| 4 | Hardcoded "Gamprin-Bendern, Liechtenstein" | `AGB.tsx` L240 | Replace with `{b.company_city}, {b.company_country}` |
-| 5 | Unnecessary `as any` type cast | `useBillingSettings.ts` L37 | Remove `as any` |
+**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
 
-All five fixes are small string replacements — no architectural changes needed.
+**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
+
+**File**: `src/pages/Auth.tsx`
+- Add `useSearchParams` import
+- Read `mode` param on mount
+- If `mode === 'reset'`, set `isDialogOpen` to `true`
+
+```tsx
+const [searchParams] = useSearchParams();
+
+useEffect(() => {
+  if (searchParams.get('mode') === 'reset') {
+    setIsDialogOpen(true);
+  }
+}, [searchParams]);
+```
+
+---
+
+## Fix 2: AGB route — Add top-level `/agb` with redirect
+
+**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
+
+**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+
+**File**: `src/App.tsx`
+- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
+
+---
+
+## Fix 3: Stale comments in sitemap generator (optional)
+
+**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
+
+**File**: `supabase/functions/generate-sitemap/index.ts`
+- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
+
+---
+
+## Summary
+
+| # | Fix | Files | Effort |
+|---|-----|-------|--------|
+| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
+| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
+| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
+
+No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
 

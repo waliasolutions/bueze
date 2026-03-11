@@ -38,7 +38,7 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">1. Geltungsbereich</h2>
                 <p className="text-ink-700 mb-4">
                   Diese Allgemeinen Geschäftsbedingungen (AGB) regeln die Nutzung der Online-Plattform BÜEZE.CH (nachfolgend „Plattform") der
-                  Büeze.ch GmbH, {b.company_street}, {b.company_zip} {b.company_city}, {b.company_country}.
+                  {b.company_legal_name}, {b.company_street}, {b.company_zip} {b.company_city}, {b.company_country}.
                 </p>
                 <p className="text-ink-700 mb-4">
                   Sie gelten für alle Nutzerinnen und Nutzer der Plattform, insbesondere:
@@ -220,7 +220,7 @@ const AGB = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">10. Geistiges Eigentum</h2>
                 <p className="text-ink-700 mb-4">
-                  Alle Inhalte, Texte, Logos, Designs und Softwareelemente der Plattform sind Eigentum der Büeze.ch GmbH oder entsprechend lizenziert.
+                  Alle Inhalte, Texte, Logos, Designs und Softwareelemente der Plattform sind Eigentum der {b.company_legal_name} oder entsprechend lizenziert.
                   Jegliche Nutzung ausserhalb der Plattform bedarf der schriftlichen Zustimmung.
                 </p>
               </section>
@@ -237,7 +237,7 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">12. Anwendbares Recht und Gerichtsstand</h2>
                 <p className="text-ink-700 mb-4">
                   Es gilt ausschliesslich liechtensteinisches Recht.
-                  Gerichtsstand ist Gamprin-Bendern, Liechtenstein.
+                  Gerichtsstand ist {b.company_city}, {b.company_country}.
                 </p>
               </section>
 
