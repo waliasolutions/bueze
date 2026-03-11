@@ -38,7 +38,7 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">1. Geltungsbereich</h2>
                 <p className="text-ink-700 mb-4">
                   Diese Allgemeinen Geschäftsbedingungen (AGB) regeln die Nutzung der Online-Plattform BÜEZE.CH (nachfolgend „Plattform") der
-                  Büeze.ch GmbH, Industriestrasse 28, 9487 Gamprin-Bendern, Liechtenstein.
+                  Büeze.ch GmbH, {b.company_street}, {b.company_zip} {b.company_city}, {b.company_country}.
                 </p>
                 <p className="text-ink-700 mb-4">
                   Sie gelten für alle Nutzerinnen und Nutzer der Plattform, insbesondere:
