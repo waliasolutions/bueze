@@ -1,57 +1,30 @@
 
 
-# Root Cause: Race Condition in `startedAsGuest` Initialization
+# Force Fresh Start on Handwerker Onboarding
 
-## Finding
-
-`startedAsGuest` is initialized as `null` (line 52). The auth check runs async in `useEffect` (line 155). Until it resolves, `startedAsGuest` is `null`.
-
-The step configuration on line 109 uses a ternary:
-```tsx
-const stepConfig = startedAsGuest
-  ? { 1: 'contact', 2: 'services', 3: 'summary' }  // 3 steps, 33%
-  : { 1: 'services', 2: 'summary' };                 // 2 steps, 50%
-```
-
-Since `null` is falsy, the component initially renders the **authenticated flow** (2 steps, 50% progress) even for guest users. This means:
-- Progress bar shows "50% fertig" instead of "33%"
-- Step 1 renders 'services' (categories) instead of 'contact' (names, email, password)
-- The user cannot enter their name or create an account
-
-Once `checkAuth` resolves and sets `startedAsGuest(true)`, the form flips to 3 steps and "33%". But if the user interacts before that, they see the wrong form. On slow connections, the race window is wider.
+## Problem
+1. Some registrants see a cached/old version of the onboarding form due to localStorage draft recovery
+2. The "Weitermachen" / "Fortsetzen" recovery dialog adds confusion — onboarding should always start fresh
 
 ## Fix
 
-Show a loading state while `startedAsGuest` is `null`. The form should only render once the auth check has completed and the step configuration is determined.
-
 ### File: `src/pages/HandwerkerOnboarding.tsx`
 
-1. Add an early return after the Header/Footer wrapper when `startedAsGuest === null`, showing a centered loading spinner with "Wird geladen..." text
-2. This prevents the form from rendering with the wrong step config
+**1. Remove all draft save/load/recovery logic:**
+- Delete the auto-save `useEffect` (lines 236-254) that calls `saveVersionedData`
+- Delete the load-from-localStorage `useEffect` (lines 256-304) that calls `loadVersionedData` and sets `showRecoveryDialog`
+- Delete the entire recovery dialog JSX (lines 1382-1481)
+- Remove unused state: `showRecoveryDialog`, `recoveryData`, `lastSaved`
+- Remove unused imports: `saveVersionedData`, `loadVersionedData`, `STORAGE_KEYS`, `STORAGE_VERSIONS`, `Clock`
 
-```tsx
-// After the opening return, before the form card:
-if (startedAsGuest === null) {
-  return (
-    <div className="min-h-screen ...">
-      <Header />
-      <main className="flex-1 flex items-center justify-center py-12">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-muted-foreground">Wird geladen...</p>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  );
-}
-```
+**2. Clear any existing stale drafts on mount:**
+- Add a one-time `useEffect` that clears `localStorage.removeItem('handwerker-onboarding-draft')` and `sessionStorage.removeItem('pending-recovery-data')` so returning users with old cached data get a clean slate
 
-This is a one-file, single-point fix. The `Loader2` icon is already imported (line 19). No other files need changes.
+**3. Keep `clearVersionedData` import** only if used elsewhere in the file (e.g., on successful submission). If only used in recovery dialog, remove it too.
 
-### Why this is the right fix
-- It addresses the root cause (rendering before auth state is known) rather than symptoms
-- It's consistent with how other protected pages handle the loading state
-- The auth check typically resolves in <200ms, so users will barely notice the spinner
-- No changes to the step logic, progress calculation, or `useMultiStepForm` hook needed
+### Files Changed
+
+| File | Change |
+|---|---|
+| `src/pages/HandwerkerOnboarding.tsx` | Remove draft save/load/recovery logic, clear stale cache on mount |
 
