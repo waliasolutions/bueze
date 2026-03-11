@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useBillingContext } from "@/contexts/BillingSettingsProvider";
 import {
   SUBSCRIPTION_PLANS,
   FREE_TIER_PROPOSALS_LIMIT,
@@ -24,6 +25,7 @@ import {
 type ApprovalStatus = 'loading' | 'approved' | 'pending' | 'no_profile' | 'not_authenticated';
 
 export default function Checkout() {
+  const { settings: billing } = useBillingContext();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
@@ -514,8 +516,8 @@ export default function Checkout() {
                         <span>{formatPrice(plan.price)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>MwSt. (8.1%)</span>
-                        <span>{formatPrice(Math.round(plan.price * 0.081))}</span>
+                        <span>{billing.mwst_rate > 0 ? `MwSt. (${billing.mwst_rate}%)` : billing.mwst_note}</span>
+                        <span>{billing.mwst_rate > 0 ? formatPrice(Math.round(plan.price * billing.mwst_rate / 100)) : 'CHF 0.00'}</span>
                       </div>
                     </div>
                     <Separator />
@@ -527,7 +529,7 @@ export default function Checkout() {
                   <span>
                     {plan.price === 0 
                       ? "CHF 0" 
-                      : formatPrice(Math.round(plan.price * 1.081))
+                      : formatPrice(Math.round(plan.price * (1 + billing.mwst_rate / 100)))
                     }
                   </span>
                 </div>

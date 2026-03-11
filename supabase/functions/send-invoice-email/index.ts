@@ -1,6 +1,7 @@
 // Edge function: send-invoice-email
 // Sends an invoice email with PDF attachment to the handwerker.
-// Triggered by the DB trigger on invoices table (when pdf_storage_path is set).
+// Called by generate-invoice-pdf with billingSnapshot as parameter,
+// or manually triggered for resends (reads snapshot from DB).
 
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
@@ -9,13 +10,14 @@ import { invoiceEmailTemplate } from '../_shared/emailTemplates.ts';
 import { getPlanName } from '../_shared/planLabels.ts';
 import { formatSwissDate } from '../_shared/dateFormatter.ts';
 import { encode as base64Encode } from 'https://deno.land/std@0.190.0/encoding/base64.ts';
+import { fetchBillingSettings, type BillingSettings } from '../_shared/companyConfig.ts';
 
 Deno.serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
   if (corsResponse) return corsResponse;
 
   try {
-    const { invoiceId } = await req.json();
+    const { invoiceId, billingSnapshot: snapshotFromParam } = await req.json();
 
     if (!invoiceId) {
       return errorResponse('Missing required field: invoiceId', 400);
@@ -39,7 +41,18 @@ Deno.serve(async (req) => {
       return errorResponse('Invoice PDF not yet generated', 400);
     }
 
-    // 2. Fetch user email
+    // 2. Resolve billing snapshot: parameter > invoice record > live settings
+    let companyData: BillingSettings;
+    if (snapshotFromParam) {
+      companyData = snapshotFromParam as BillingSettings;
+    } else if (invoice.billing_snapshot) {
+      companyData = invoice.billing_snapshot as BillingSettings;
+    } else {
+      // Fallback for old invoices without snapshot
+      companyData = await fetchBillingSettings(supabase);
+    }
+
+    // 3. Fetch user email
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('email, full_name')
@@ -51,7 +64,7 @@ Deno.serve(async (req) => {
       return errorResponse('User email not found', 404);
     }
 
-    // 3. Download PDF from storage
+    // 4. Download PDF from storage
     const { data: pdfData, error: downloadError } = await supabase.storage
       .from('invoices')
       .download(invoice.pdf_storage_path);
@@ -65,7 +78,7 @@ Deno.serve(async (req) => {
     const arrayBuffer = await pdfData.arrayBuffer();
     const pdfBase64 = base64Encode(arrayBuffer);
 
-    // 4. Format email data
+    // 5. Format email data
     const planName = getPlanName(invoice.plan_type);
     const amountFormatted = `CHF ${(invoice.amount / 100).toFixed(2)}`;
 
@@ -78,12 +91,12 @@ Deno.serve(async (req) => {
       currency: invoice.currency,
       periodStart: invoice.issued_at ? formatSwissDate(invoice.issued_at) : undefined,
       periodEnd: invoice.due_date ? formatSwissDate(invoice.due_date) : undefined,
-    });
+    }, companyData);
 
-    // 5. Send email with PDF attachment
+    // 6. Send email with PDF attachment
     const emailResult = await sendEmail({
       to: profile.email,
-      subject: `Rechnung ${invoice.invoice_number} – Büeze.ch`,
+      subject: `Rechnung ${invoice.invoice_number} – ${companyData.company_name}`,
       htmlBody: emailHtml,
       attachments: [{
         filename: `${invoice.invoice_number}.pdf`,

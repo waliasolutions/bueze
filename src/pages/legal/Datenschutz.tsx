@@ -4,8 +4,10 @@ import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
+import { useBillingContext } from '@/contexts/BillingSettingsProvider';
 
 const Datenschutz = () => {
+  const { settings: b } = useBillingContext();
   const schemaMarkup = wrapInGraph(
     generateWebPageSchema(
       "Datenschutzerklärung",
@@ -37,18 +39,18 @@ const Datenschutz = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">1. Verantwortliche Stelle</h2>
                 <div className="text-ink-700 space-y-2">
-                  <p><strong>Büeze.ch GmbH</strong></p>
-                  <p>Industriestrasse 28<br />9487 Gamprin-Bendern<br />Liechtenstein</p>
+                  <p><strong>{b.company_legal_name}</strong></p>
+                  <p>{b.company_street}<br />{b.company_zip} {b.company_city}<br />{b.company_country}</p>
                   <p>
                     E-Mail:{' '}
-                    <a href="mailto:info@bueeze.ch" className="text-brand-500 hover:text-brand-600">
-                      info@bueeze.ch
+                    <a href={`mailto:${b.company_email}`} className="text-brand-500 hover:text-brand-600">
+                      {b.company_email}
                     </a>
                   </p>
                   <p>
                     Telefon:{' '}
-                    <a href="tel:+41415582233" className="text-brand-500 hover:text-brand-600">
-                      +41 41 558 22 33
+                    <a href={`tel:${b.company_phone.replace(/\s/g, '')}`} className="text-brand-500 hover:text-brand-600">
+                      {b.company_phone}
                     </a>
                   </p>
                 </div>
@@ -397,19 +399,19 @@ const Datenschutz = () => {
                   Bei Fragen zum Datenschutz oder zur Ausübung Ihrer Rechte kontaktieren Sie uns bitte:
                 </p>
                 <div className="text-ink-700 space-y-2">
-                  <p><strong>Büeze.ch GmbH</strong></p>
+                  <p><strong>{b.company_legal_name}</strong></p>
                   <p>Datenschutz</p>
-                  <p>Industriestrasse 28<br />9487 Gamprin-Bendern<br />Liechtenstein</p>
+                  <p>{b.company_street}<br />{b.company_zip} {b.company_city}<br />{b.company_country}</p>
                   <p>
                     E-Mail:{' '}
-                    <a href="mailto:info@bueeze.ch" className="text-brand-500 hover:text-brand-600">
-                      info@bueeze.ch
+                    <a href={`mailto:${b.company_email}`} className="text-brand-500 hover:text-brand-600">
+                      {b.company_email}
                     </a>
                   </p>
                   <p>
                     Telefon:{' '}
-                    <a href="tel:+41415582233" className="text-brand-500 hover:text-brand-600">
-                      +41 41 558 22 33
+                    <a href={`tel:${b.company_phone.replace(/\s/g, '')}`} className="text-brand-500 hover:text-brand-600">
+                      {b.company_phone}
                     </a>
                   </p>
                 </div>

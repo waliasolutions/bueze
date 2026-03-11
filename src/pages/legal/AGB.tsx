@@ -4,8 +4,10 @@ import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
+import { useBillingContext } from '@/contexts/BillingSettingsProvider';
 
 const AGB = () => {
+  const { settings: b } = useBillingContext();
   const schemaMarkup = wrapInGraph(
     generateWebPageSchema(
       "Allgemeine Geschäftsbedingungen (AGB)",
@@ -36,7 +38,7 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">1. Geltungsbereich</h2>
                 <p className="text-ink-700 mb-4">
                   Diese Allgemeinen Geschäftsbedingungen (AGB) regeln die Nutzung der Online-Plattform BÜEZE.CH (nachfolgend „Plattform") der
-                  Büeze.ch GmbH, Industriestrasse 28, 9487 Gamprin-Bendern, Liechtenstein.
+                  Büeze.ch GmbH, {b.company_street}, {b.company_zip} {b.company_city}, {b.company_country}.
                 </p>
                 <p className="text-ink-700 mb-4">
                   Sie gelten für alle Nutzerinnen und Nutzer der Plattform, insbesondere:
@@ -243,12 +245,12 @@ const AGB = () => {
                 <h2 className="text-2xl font-bold mb-4">Kontakt</h2>
                 <p className="text-ink-700 mb-2">
                   <strong>BÜEZE.CH</strong><br />
-                  Büeze.ch GmbH<br />
-                  Industriestrasse 28<br />
-                  9487 Gamprin-Bendern<br />
-                  Telefon: +41 41 558 22 33<br />
-                  E-Mail: info@bueeze.ch<br />
-                  www.bueeze.ch
+                  {b.company_legal_name}<br />
+                  {b.company_street}<br />
+                  {b.company_zip} {b.company_city}<br />
+                  Telefon: {b.company_phone}<br />
+                  E-Mail: {b.company_email}<br />
+                  {b.company_website}
                 </p>
               </section>
             </CardContent>

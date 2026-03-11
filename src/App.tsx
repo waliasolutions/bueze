@@ -12,6 +12,7 @@ import RouteErrorBoundary from "@/components/RouteErrorBoundary";
 import PageLoader from "@/components/PageLoader";
 import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { ViewModeProvider } from "@/contexts/ViewModeContext";
+import { BillingSettingsProvider } from "@/contexts/BillingSettingsProvider";
 import { AdminSuspenseFallback } from "@/components/admin/AdminPageSkeleton";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 
@@ -161,6 +162,7 @@ const App = () => {
           <Toaster />
           
           <CookieBanner />
+          <BillingSettingsProvider>
           <ViewModeProvider>
           <RouteErrorBoundary>
             <Suspense fallback={<PageLoader />}>
@@ -257,6 +259,7 @@ const App = () => {
             </Suspense>
           </RouteErrorBoundary>
           </ViewModeProvider>
+          </BillingSettingsProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

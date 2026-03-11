@@ -4,6 +4,7 @@
 import { getUrgencyLabel } from './categoryLabels.ts';
 import { subcategoryLabels } from './subcategoryLabels.ts';
 import { FRONTEND_URL, SUPPORT_EMAIL } from './siteConfig.ts';
+import { DEFAULT_BILLING_SETTINGS, type BillingSettings } from './companyConfig.ts';
 
 /**
  * Safe interpolation helper - prevents "undefined" or "null" from appearing in emails.
@@ -16,7 +17,9 @@ export const safe = (value: unknown, fallback = ''): string => {
   return String(value);
 };
 
-export const emailWrapper = (content: string) => `
+export const emailWrapper = (content: string, company?: Partial<BillingSettings>) => {
+  const c = { ...DEFAULT_BILLING_SETTINGS, ...company };
+  return `
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -99,9 +102,9 @@ export const emailWrapper = (content: string) => `
     </div>
     ${content}
     <div class="footer">
-      <p><strong>Büeze.ch GmbH</strong><br>
-      Industriestrasse 28 | 9487 Gamprin-Bendern | Liechtenstein</p>
-      <p><a href="${FRONTEND_URL}">www.bueeze.ch</a> | <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></p>
+      <p><strong>${c.company_legal_name}</strong><br>
+      ${c.company_street} | ${c.company_zip} ${c.company_city} | ${c.company_country}</p>
+      <p><a href="${FRONTEND_URL}">${c.company_website}</a> | <a href="mailto:${c.company_email}">${c.company_email}</a></p>
       <p style="margin-top: 15px; color: #999;">
         Diese E-Mail wurde automatisch generiert. Bitte antworten Sie nicht direkt auf diese Nachricht.
       </p>
@@ -110,6 +113,7 @@ export const emailWrapper = (content: string) => `
 </body>
 </html>
 `;
+};
 
 interface NewLeadData {
   category: string;
@@ -1147,7 +1151,7 @@ interface InvoiceEmailData {
   periodEnd?: string;
 }
 
-export const invoiceEmailTemplate = (data: InvoiceEmailData) => {
+export const invoiceEmailTemplate = (data: InvoiceEmailData, company?: Partial<BillingSettings>) => {
   const periodText = data.periodStart && data.periodEnd
     ? `<p style="margin: 5px 0;"><strong>Laufzeit:</strong> ${safe(data.periodStart)} – ${safe(data.periodEnd)}</p>`
     : '';
@@ -1180,5 +1184,5 @@ export const invoiceEmailTemplate = (data: InvoiceEmailData) => {
         Bei Fragen kontaktieren Sie uns unter <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a>.
       </p>
     </div>
-  `);
+  `, company);
 };

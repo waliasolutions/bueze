@@ -110,3 +110,12 @@ verify_jwt = false
 
 [functions.check-subscription-expiry]
 verify_jwt = false
+
+[functions.generate-invoice-pdf]
+verify_jwt = false
+
+[functions.send-invoice-email]
+verify_jwt = false
+
+[functions.send-delivery-emails]
+verify_jwt = false

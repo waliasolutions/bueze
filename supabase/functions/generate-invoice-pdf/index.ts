@@ -6,7 +6,8 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { generateInvoicePdf } from '../_shared/invoicePdf.ts';
 import { getPlanName } from '../_shared/planLabels.ts';
-import { formatSwissDate, addMonths } from '../_shared/dateFormatter.ts';
+import { addMonths } from '../_shared/dateFormatter.ts';
+import { fetchBillingSettings, type BillingSettings } from '../_shared/companyConfig.ts';
 
 Deno.serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -22,7 +23,10 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const now = new Date();
 
-    // 1. Generate invoice number via SQL function
+    // 1. Fetch billing settings from DB (SSOT for company data + tax rate)
+    const billingSettings = await fetchBillingSettings(supabase);
+
+    // 2. Generate invoice number via SQL function
     const { data: invoiceNumResult, error: seqError } = await supabase
       .rpc('generate_invoice_number');
 
@@ -32,7 +36,7 @@ Deno.serve(async (req) => {
     }
     const invoiceNumber = invoiceNumResult as string;
 
-    // 2. Fetch user profile + handwerker profile for billing snapshot
+    // 3. Fetch user profile + handwerker profile for billing snapshot
     const [profileResult, handwerkerResult] = await Promise.all([
       supabase
         .from('profiles')
@@ -56,10 +60,10 @@ Deno.serve(async (req) => {
     const billingZip = hwProfile?.business_zip || hwProfile?.personal_zip || null;
     const billingCity = hwProfile?.business_city || hwProfile?.personal_city || null;
 
-    // Calculate amounts (no MWST for Liechtenstein company selling to Swiss customers — simplified)
-    const taxRate = 0;
-    const netAmount = amount;
-    const taxAmount = 0;
+    // Calculate amounts using billing_settings tax rate (SSOT)
+    const taxRate = billingSettings.mwst_rate;
+    const netAmount = taxRate > 0 ? Math.round(amount / (1 + taxRate / 100)) : amount;
+    const taxAmount = amount - netAmount;
     const totalAmount = amount;
 
     // Determine subscription period
@@ -69,7 +73,10 @@ Deno.serve(async (req) => {
 
     const planName = getPlanName(planType);
 
-    // 3. Insert invoice record (without pdf_storage_path — will update after upload)
+    // 4. Build billing snapshot (immutable record of company data at invoice time)
+    const billingSnapshot: BillingSettings = { ...billingSettings };
+
+    // 5. Insert invoice record with snapshot
     const { data: invoice, error: insertError } = await supabase
       .from('invoices')
       .insert({
@@ -92,6 +99,7 @@ Deno.serve(async (req) => {
         billing_address: billingAddress,
         billing_zip: billingZip,
         billing_city: billingCity,
+        billing_snapshot: billingSnapshot,
       })
       .select('id')
       .single();
@@ -101,7 +109,7 @@ Deno.serve(async (req) => {
       return errorResponse('Failed to create invoice record', 500);
     }
 
-    // 4. Generate PDF bytes
+    // 6. Generate PDF bytes using snapshot data
     const pdfBytes = await generateInvoicePdf({
       invoiceNumber,
       issuedAt: now.toISOString(),
@@ -121,9 +129,10 @@ Deno.serve(async (req) => {
       currency: 'CHF',
       periodStart: now.toISOString(),
       periodEnd: periodEnd.toISOString(),
+      company: billingSnapshot,
     });
 
-    // 5. Upload to Supabase Storage
+    // 7. Upload to Supabase Storage
     const storagePath = `${userId}/${invoiceNumber}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('invoices')
@@ -137,7 +146,7 @@ Deno.serve(async (req) => {
       return errorResponse('Failed to upload invoice PDF', 500);
     }
 
-    // 6. Update invoice with storage path (this triggers the email via DB trigger)
+    // 8. Update invoice with storage path
     const { error: updateError } = await supabase
       .from('invoices')
       .update({ pdf_storage_path: storagePath })
@@ -145,6 +154,25 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       console.error('Failed to update invoice with PDF path:', updateError);
+    }
+
+    // 9. Invoke send-invoice-email with snapshot passed as parameter (no race condition)
+    try {
+      const invokeUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-invoice-email`;
+      await fetch(invokeUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+        },
+        body: JSON.stringify({
+          invoiceId: invoice.id,
+          billingSnapshot: billingSnapshot,
+        }),
+      });
+    } catch (emailErr) {
+      console.error('Failed to invoke send-invoice-email:', emailErr);
+      // Non-fatal — invoice is created, email can be resent later
     }
 
     console.log(`Invoice ${invoiceNumber} generated for user ${userId}, PDF uploaded to ${storagePath}`);

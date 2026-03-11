@@ -6,17 +6,19 @@ import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { footerDefaults } from '@/config/contentDefaults';
 import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
+import { useBillingContext } from '@/contexts/BillingSettingsProvider';
 
 interface FooterProps {
   content?: { fields?: any } | null;
 }
 
 export const Footer = ({ content }: FooterProps) => {
+  const { settings: billing } = useBillingContext();
   const fields = content?.fields;
   const companyDescription = fields?.companyDescription || footerDefaults.companyDescription;
-  const email = fields?.email || footerDefaults.email;
-  const phone = fields?.phone || footerDefaults.phone;
-  const address = fields?.address || footerDefaults.address;
+  const email = fields?.email || billing.company_email;
+  const phone = fields?.phone || billing.company_phone;
+  const address = fields?.address || `${billing.company_street}, ${billing.company_zip} ${billing.company_city}`;
   const socialLinks = {
     facebook: fields?.socialLinks?.facebook || footerDefaults.socialLinks.facebook,
     instagram: fields?.socialLinks?.instagram || footerDefaults.socialLinks.instagram,
@@ -157,7 +159,7 @@ export const Footer = ({ content }: FooterProps) => {
 
           <div className="text-center">
             <p className="text-sm text-ink-300">
-              © {new Date().getFullYear()} Büeze.ch GmbH. Alle Rechte vorbehalten.
+              © {new Date().getFullYear()} {billing.company_legal_name}. Alle Rechte vorbehalten.
             </p>
           </div>
         </div>
