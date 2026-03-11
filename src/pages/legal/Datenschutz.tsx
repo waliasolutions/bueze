@@ -11,7 +11,7 @@ const Datenschutz = () => {
   const schemaMarkup = wrapInGraph(
     generateWebPageSchema(
       "Datenschutzerklärung",
-      "Datenschutzerklärung der Büeze.ch GmbH. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten.",
+      `Datenschutzerklärung der ${b.company_legal_name}. Erfahren Sie, wie wir Ihre Daten auf der Handwerker-Vermittlungsplattform schützen und verarbeiten.`,
       "https://bueeze.ch/datenschutz"
     )
   );
