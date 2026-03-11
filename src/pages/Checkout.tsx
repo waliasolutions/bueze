@@ -25,6 +25,7 @@ import {
 type ApprovalStatus = 'loading' | 'approved' | 'pending' | 'no_profile' | 'not_authenticated';
 
 export default function Checkout() {
+  const { settings: billing } = useBillingContext();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
