@@ -52,9 +52,10 @@ interface ReceivedProposal extends ProposalWithHandwerkerInfo {
 
 interface ReceivedProposalsProps {
   userId: string;
+  onProposalStatusChange?: () => void;
 }
 
-export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) => {
+export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId, onProposalStatusChange }) => {
   const [proposals, setProposals] = useState<ReceivedProposal[]>([]);
   const [filteredProposals, setFilteredProposals] = useState<ReceivedProposal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -246,6 +247,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
     setSelectedIds(new Set());
     await invalidateProposalQueries(queryClient, undefined, undefined, userId);
     fetchProposals();
+    if (result.success) onProposalStatusChange?.();
   };
 
   const handleAccept = async (proposalId: string) => {
@@ -262,6 +264,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
       setComparisonIds(new Set());
       await invalidateProposalQueries(queryClient, proposalId, undefined, userId);
       fetchProposals();
+      onProposalStatusChange?.();
     }
   };
 
@@ -277,6 +280,7 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId }) 
     if (result.success) {
       await invalidateProposalQueries(queryClient, proposalId, undefined, userId);
       fetchProposals();
+      onProposalStatusChange?.();
     }
   };
 
