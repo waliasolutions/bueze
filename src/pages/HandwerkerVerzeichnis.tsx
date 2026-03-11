@@ -154,7 +154,6 @@ const HandwerkerVerzeichnis = () => {
               onCantonClick={handleCantonClick}
               onCategoryClick={handleCategoryClick}
               availableCantons={availableCantons}
-              availableCategories={availableCategories}
             />
           ) : (
             <ResultsLayer
