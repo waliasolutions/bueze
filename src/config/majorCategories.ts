@@ -241,8 +241,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     subcategories: [
       'aufloesung_entsorgung',
       'umzug',
-      'reinigung',
-      'reinigung_hauswartung'
+      'reinigung'
     ],
     color: 'from-gray-500 to-slate-600',
     showOnHome: false,
