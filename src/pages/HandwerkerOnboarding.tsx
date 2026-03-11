@@ -206,90 +206,10 @@ const HandwerkerOnboarding = () => {
     }
   }, []);
 
-  // Helper function to check if form has meaningful progress
-  const hasSignificantProgress = () => {
-    if (currentStep > 1) return true;
-    
-    const hasFilledFields = 
-      formData.companyName.trim() !== "" ||
-      formData.firstName.trim() !== "" ||
-      formData.lastName.trim() !== "" ||
-      formData.email.trim() !== "";
-    
-    const hasSelectedCategories = selectedMajorCategories.length > 0;
-    
-    return hasFilledFields || hasSelectedCategories;
-  };
-
-  // Auto-save form data to localStorage
+  // Force fresh start — clear any stale cached drafts from previous versions
   useEffect(() => {
-    const saveToLocalStorage = () => {
-      if (!hasSignificantProgress()) return;
-      
-      const dataToSave = {
-        formData: { ...formData, password: '' }, // Never save password
-        selectedMajorCategories,
-      };
-      saveVersionedData(
-        STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT,
-        dataToSave,
-        STORAGE_VERSIONS.HANDWERKER_ONBOARDING_DRAFT
-      );
-      setLastSaved(new Date());
-    };
-
-    const timeoutId = setTimeout(saveToLocalStorage, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [formData, selectedMajorCategories]);
-
-  // Load saved form data from localStorage on mount
-  useEffect(() => {
-    const loadFromLocalStorage = () => {
-      const { data, wasRecovered, lastSaved: savedAt } = loadVersionedData<{
-        formData: typeof formData;
-        selectedMajorCategories: string[];
-      }>({
-        key: STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT,
-        currentVersion: STORAGE_VERSIONS.HANDWERKER_ONBOARDING_DRAFT,
-        ttlHours: 168,
-        migrations: {
-          2: (oldData: unknown) => oldData,
-          3: (oldData: unknown) => {
-            // Strip currentStep from v2 data — no longer tracked
-            const { currentStep, ...rest } = oldData as Record<string, unknown>;
-            return rest;
-          },
-        },
-      });
-
-      if (wasRecovered && data && savedAt) {
-        const now = new Date();
-        const diffDays = Math.floor((now.getTime() - savedAt.getTime()) / (1000 * 60 * 60 * 24));
-        
-        let lastSaveTimeStr;
-        if (diffDays === 0) {
-          lastSaveTimeStr = `Heute um ${savedAt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
-        } else if (diffDays === 1) {
-          lastSaveTimeStr = `Gestern um ${savedAt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
-        } else {
-          lastSaveTimeStr = savedAt.toLocaleDateString('de-CH', { 
-            day: '2-digit', 
-            month: 'long',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        }
-        
-        setRecoveryData({
-          lastSaveTime: lastSaveTimeStr,
-        });
-        setShowRecoveryDialog(true);
-        
-        sessionStorage.setItem('pending-recovery-data', JSON.stringify(data));
-      }
-    };
-
-    loadFromLocalStorage();
+    localStorage.removeItem('handwerker-onboarding-draft');
+    sessionStorage.removeItem('pending-recovery-data');
   }, []);
 
   const validateStep = (step: number): boolean => {
