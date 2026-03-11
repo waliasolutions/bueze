@@ -9,6 +9,7 @@ import { usePageContent } from '@/hooks/usePageContent';
 import { MobileStickyFooter } from '@/components/MobileStickyFooter';
 import { generateFAQSchema, generateOrganizationSchema, generateWebsiteSchema, generateLocalBusinessSchema, wrapInGraph } from '@/lib/schemaHelpers';
 import { homepageSeoDefaults } from '@/config/contentDefaults';
+import { useBillingContext } from '@/contexts/BillingSettingsProvider';
 
 const Index = () => {
   const { content } = usePageContent('homepage');
