@@ -166,6 +166,57 @@ export type Database = {
         }
         Relationships: []
       }
+      billing_settings: {
+        Row: {
+          company_city: string
+          company_country: string
+          company_email: string
+          company_legal_name: string
+          company_name: string
+          company_phone: string
+          company_street: string
+          company_website: string
+          company_zip: string
+          id: string
+          mwst_note: string | null
+          mwst_number: string | null
+          mwst_rate: number
+          updated_at: string | null
+        }
+        Insert: {
+          company_city?: string
+          company_country?: string
+          company_email?: string
+          company_legal_name?: string
+          company_name?: string
+          company_phone?: string
+          company_street?: string
+          company_website?: string
+          company_zip?: string
+          id?: string
+          mwst_note?: string | null
+          mwst_number?: string | null
+          mwst_rate?: number
+          updated_at?: string | null
+        }
+        Update: {
+          company_city?: string
+          company_country?: string
+          company_email?: string
+          company_legal_name?: string
+          company_name?: string
+          company_phone?: string
+          company_street?: string
+          company_website?: string
+          company_zip?: string
+          id?: string
+          mwst_note?: string | null
+          mwst_number?: string | null
+          mwst_rate?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       clarity_insights: {
         Row: {
           coordinates: Json | null
@@ -965,6 +1016,7 @@ export type Database = {
           billing_city: string | null
           billing_company: string | null
           billing_name: string
+          billing_snapshot: Json | null
           billing_zip: string | null
           created_at: string
           currency: string
@@ -990,6 +1042,7 @@ export type Database = {
           billing_city?: string | null
           billing_company?: string | null
           billing_name?: string
+          billing_snapshot?: Json | null
           billing_zip?: string | null
           created_at?: string
           currency?: string
@@ -1015,6 +1068,7 @@ export type Database = {
           billing_city?: string | null
           billing_company?: string | null
           billing_name?: string
+          billing_snapshot?: Json | null
           billing_zip?: string | null
           created_at?: string
           currency?: string
@@ -1998,6 +2052,23 @@ export type Database = {
       }
     }
     Views: {
+      billing_settings_public: {
+        Row: {
+          company_city: string | null
+          company_country: string | null
+          company_email: string | null
+          company_legal_name: string | null
+          company_name: string | null
+          company_phone: string | null
+          company_street: string | null
+          company_website: string | null
+          company_zip: string | null
+          mwst_note: string | null
+          mwst_number: string | null
+          mwst_rate: number | null
+        }
+        Relationships: []
+      }
       expiring_documents: {
         Row: {
           company_name: string | null
