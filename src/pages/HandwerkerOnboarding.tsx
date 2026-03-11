@@ -15,8 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { SWISS_CANTONS } from "@/config/cantons";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { AlertCircle, Building2, Briefcase, X, CheckCircle, Clock, ChevronLeft, ChevronRight, Loader2, User, FileText, Eye, EyeOff, MapPin } from "lucide-react";
+
+import { AlertCircle, Building2, Briefcase, X, CheckCircle, ChevronLeft, ChevronRight, Loader2, User, FileText, Eye, EyeOff, MapPin } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { majorCategories } from "@/config/majorCategories";
 import { subcategoryLabels } from "@/config/subcategoryLabels";
@@ -26,13 +26,7 @@ import { PostalCodeInput } from "@/components/PostalCodeInput";
 import { ServiceAreaSelector } from "@/components/ServiceAreaSelector";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ServiceRadius, buildServiceAreas, parseServiceAreas } from "@/lib/serviceAreaHelpers";
-import { 
-  saveVersionedData, 
-  loadVersionedData, 
-  clearVersionedData,
-  STORAGE_KEYS,
-  STORAGE_VERSIONS 
-} from "@/lib/localStorageVersioning";
+
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
 import { validatePassword } from "@/lib/validationHelpers";
 import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
@@ -59,7 +53,6 @@ const HandwerkerOnboarding = () => {
   const [emailChanged, setEmailChanged] = useState(false);
   
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   // Simplified service areas - PLZ + radius approach
   const [businessPlz, setBusinessPlz] = useState('');
@@ -69,10 +62,6 @@ const HandwerkerOnboarding = () => {
   const [customCantons, setCustomCantons] = useState<string[]>([]);
   
   const [showPassword, setShowPassword] = useState(false);
-  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
-  const [recoveryData, setRecoveryData] = useState<{
-    lastSaveTime: string;
-  } | null>(null);
 
   const [formData, setFormData] = useState({
     // Step 1: Contact + Company (required)
@@ -217,90 +206,10 @@ const HandwerkerOnboarding = () => {
     }
   }, []);
 
-  // Helper function to check if form has meaningful progress
-  const hasSignificantProgress = () => {
-    if (currentStep > 1) return true;
-    
-    const hasFilledFields = 
-      formData.companyName.trim() !== "" ||
-      formData.firstName.trim() !== "" ||
-      formData.lastName.trim() !== "" ||
-      formData.email.trim() !== "";
-    
-    const hasSelectedCategories = selectedMajorCategories.length > 0;
-    
-    return hasFilledFields || hasSelectedCategories;
-  };
-
-  // Auto-save form data to localStorage
+  // Force fresh start — clear any stale cached drafts from previous versions
   useEffect(() => {
-    const saveToLocalStorage = () => {
-      if (!hasSignificantProgress()) return;
-      
-      const dataToSave = {
-        formData: { ...formData, password: '' }, // Never save password
-        selectedMajorCategories,
-      };
-      saveVersionedData(
-        STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT,
-        dataToSave,
-        STORAGE_VERSIONS.HANDWERKER_ONBOARDING_DRAFT
-      );
-      setLastSaved(new Date());
-    };
-
-    const timeoutId = setTimeout(saveToLocalStorage, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [formData, selectedMajorCategories]);
-
-  // Load saved form data from localStorage on mount
-  useEffect(() => {
-    const loadFromLocalStorage = () => {
-      const { data, wasRecovered, lastSaved: savedAt } = loadVersionedData<{
-        formData: typeof formData;
-        selectedMajorCategories: string[];
-      }>({
-        key: STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT,
-        currentVersion: STORAGE_VERSIONS.HANDWERKER_ONBOARDING_DRAFT,
-        ttlHours: 168,
-        migrations: {
-          2: (oldData: unknown) => oldData,
-          3: (oldData: unknown) => {
-            // Strip currentStep from v2 data — no longer tracked
-            const { currentStep, ...rest } = oldData as Record<string, unknown>;
-            return rest;
-          },
-        },
-      });
-
-      if (wasRecovered && data && savedAt) {
-        const now = new Date();
-        const diffDays = Math.floor((now.getTime() - savedAt.getTime()) / (1000 * 60 * 60 * 24));
-        
-        let lastSaveTimeStr;
-        if (diffDays === 0) {
-          lastSaveTimeStr = `Heute um ${savedAt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
-        } else if (diffDays === 1) {
-          lastSaveTimeStr = `Gestern um ${savedAt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
-        } else {
-          lastSaveTimeStr = savedAt.toLocaleDateString('de-CH', { 
-            day: '2-digit', 
-            month: 'long',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        }
-        
-        setRecoveryData({
-          lastSaveTime: lastSaveTimeStr,
-        });
-        setShowRecoveryDialog(true);
-        
-        sessionStorage.setItem('pending-recovery-data', JSON.stringify(data));
-      }
-    };
-
-    loadFromLocalStorage();
+    localStorage.removeItem('handwerker-onboarding-draft');
+    sessionStorage.removeItem('pending-recovery-data');
   }, []);
 
   const validateStep = (step: number): boolean => {
@@ -587,8 +496,8 @@ const HandwerkerOnboarding = () => {
         throw new Error('Failed to create profile');
       }
 
-      // Clear saved draft
-      clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
+      // Clear any residual draft data
+      localStorage.removeItem('handwerker-onboarding-draft');
 
       // Assign handwerker role and save pending plan (non-blocking)
       (async () => {
@@ -1285,29 +1194,7 @@ const HandwerkerOnboarding = () => {
                     Schritt {currentStep} von {totalSteps}
                   </CardDescription>
                 </div>
-                {lastSaved && (
-                  <p className="text-xs text-muted-foreground">
-                    Zuletzt gespeichert: {lastSaved.toLocaleTimeString('de-CH')}
-                  </p>
-                )}
               </div>
-              {localStorage.getItem(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
-                    toast({
-                      title: "Entwurf gelöscht",
-                      description: "Ihre gespeicherten Daten wurden entfernt.",
-                    });
-                    window.location.reload();
-                  }}
-                  className="text-xs text-muted-foreground hover:text-destructive mt-2"
-                >
-                  Entwurf löschen
-                </Button>
-              )}
               <div className="flex items-center justify-between mt-4">
                 <Badge variant="secondary" className="text-sm px-3 py-1">
                   {Math.round(progress)}% fertig
@@ -1379,106 +1266,6 @@ const HandwerkerOnboarding = () => {
             </CardFooter>
           </Card>
 
-          {/* Recovery Dialog */}
-          <AlertDialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
-            <AlertDialogContent className="max-w-md">
-              <AlertDialogHeader>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center">
-                    <Clock className="h-6 w-6 text-brand-600" />
-                  </div>
-                  <div>
-                    <AlertDialogTitle className="text-xl">Willkommen zurück!</AlertDialogTitle>
-                    <AlertDialogDescription className="text-base mt-1">
-                      Wir haben Ihren Fortschritt gespeichert
-                    </AlertDialogDescription>
-                  </div>
-                </div>
-              </AlertDialogHeader>
-
-              {recoveryData && (
-                <div className="space-y-4 py-4">
-
-                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Zuletzt bearbeitet</p>
-                      <p className="text-sm font-medium">{recoveryData.lastSaveTime}</p>
-                    </div>
-                  </div>
-
-                  <Alert className="border-brand-300 bg-brand-50">
-                    <CheckCircle className="h-4 w-4 text-brand-600" />
-                    <AlertDescription className="text-sm ml-2">
-                      Ihre Daten werden automatisch gespeichert und bleiben 7 Tage verfügbar.
-                    </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-
-              <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-                <Button
-                  onClick={() => {
-                    clearVersionedData(STORAGE_KEYS.HANDWERKER_ONBOARDING_DRAFT);
-                    sessionStorage.removeItem('pending-recovery-data');
-                    
-                    setCurrentStep(1);
-                    setFormData({
-                      firstName: "",
-                      lastName: "",
-                      email: "",
-                      phoneNumber: "",
-                      password: "",
-                      companyName: "",
-                      companyLegalForm: "einzelfirma",
-                      categories: [],
-                      serviceAreas: [],
-                      hourlyRateMin: "",
-                      hourlyRateMax: "",
-                      bio: "",
-                    });
-                    setSelectedMajorCategories([]);
-                    setBusinessPlz('');
-                    setBusinessCity('');
-                    setBusinessCanton('');
-                    setServiceRadius('canton');
-                    setCustomCantons([]);
-                    setErrors({});
-                    setTouched({});
-                    
-                    setShowRecoveryDialog(false);
-                    toast({
-                      title: "Neu gestartet",
-                      description: "Das Formular wurde zurückgesetzt.",
-                    });
-                  }}
-                  variant="outline"
-                  className="w-full sm:w-auto"
-                >
-                  Neu beginnen
-                </Button>
-                <Button
-                  onClick={() => {
-                    const pendingData = sessionStorage.getItem('pending-recovery-data');
-                    if (pendingData) {
-                      const parsed = JSON.parse(pendingData);
-                      setFormData({ ...formData, ...parsed.formData });
-                      setSelectedMajorCategories(parsed.selectedMajorCategories || []);
-                    }
-                    sessionStorage.removeItem('pending-recovery-data');
-                    setShowRecoveryDialog(false);
-                    toast({
-                      title: "Fortschritt wiederhergestellt",
-                      description: "Ihre gespeicherten Daten wurden geladen.",
-                    });
-                  }}
-                  className="w-full sm:w-auto bg-brand-600 hover:bg-brand-700"
-                >
-                  Fortsetzen
-                </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </main>
       <Footer />
