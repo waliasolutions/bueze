@@ -568,15 +568,7 @@ const HandwerkerOnboarding = () => {
       case 'contact':
         return (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <User className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Kontakt & Firma</h3>
-                <p className="text-base text-muted-foreground">Ihre persönlichen Daten und Firmendaten</p>
-              </div>
-            </div>
+            <h3 className="text-xl font-bold mb-6">Kontakt & Firma</h3>
 
             {/* Inline Login Form (shown when email exists) */}
             {showLoginForm && (
@@ -838,22 +830,7 @@ const HandwerkerOnboarding = () => {
       case 'services':
         return (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <Briefcase className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Dienstleistungen</h3>
-                <p className="text-base text-muted-foreground">Kategorien und Einsatzgebiete (optional)</p>
-              </div>
-            </div>
-
-            <Alert className="border-brand-300 bg-brand-50 mb-6">
-              <AlertCircle className="h-5 w-5 text-brand-600" />
-              <AlertDescription className="text-base ml-2">
-                Diese Angaben sind optional und können jederzeit in Ihrem Profil ergänzt werden.
-              </AlertDescription>
-            </Alert>
+            <h3 className="text-xl font-bold mb-6">Dienstleistungen <span className="text-sm font-normal text-muted-foreground">(optional)</span></h3>
 
             {/* Category Selection - Using SSOT CategorySelector */}
             <Card className="border-2">
@@ -959,17 +936,7 @@ const HandwerkerOnboarding = () => {
       case 'summary':
         return (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <FileText className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Zusammenfassung</h3>
-                <p className="text-base text-muted-foreground">
-                  Überprüfen Sie Ihre Angaben vor dem Absenden
-                </p>
-              </div>
-            </div>
+            <h3 className="text-xl font-bold mb-6">Zusammenfassung</h3>
 
             <div className="space-y-4">
               {/* Contact & Company Summary */}
@@ -1186,23 +1153,6 @@ const HandwerkerOnboarding = () => {
           </div>
 
           <Card className="shadow-xl">
-            <CardHeader className="pb-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl">Handwerkerprofil erstellen</CardTitle>
-                  <CardDescription className="text-base mt-1">
-                    Schritt {currentStep} von {totalSteps}
-                  </CardDescription>
-                </div>
-              </div>
-              <div className="flex items-center justify-between mt-4">
-                <Badge variant="secondary" className="text-sm px-3 py-1">
-                  {Math.round(progress)}% fertig
-                </Badge>
-              </div>
-              <Progress value={progress} className="mt-4 h-2" />
-            </CardHeader>
-
             <CardContent className="pt-6">
               {renderStepContent()}
             </CardContent>
