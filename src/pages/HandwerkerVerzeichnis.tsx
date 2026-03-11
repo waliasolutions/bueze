@@ -119,9 +119,6 @@ const HandwerkerVerzeichnis = () => {
     return result;
   }, [handwerkers]);
 
-  const availableCategories = useMemo(() =>
-    new Set(handwerkers.flatMap(hw => hw.categories || [])),
-  [handwerkers]);
 
   const handleBackToBrowse = () => {
     setShowResults(false);
