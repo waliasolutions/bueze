@@ -119,9 +119,6 @@ const HandwerkerVerzeichnis = () => {
     return result;
   }, [handwerkers]);
 
-  const availableCategories = useMemo(() =>
-    new Set(handwerkers.flatMap(hw => hw.categories || [])),
-  [handwerkers]);
 
   const handleBackToBrowse = () => {
     setShowResults(false);
@@ -154,7 +151,6 @@ const HandwerkerVerzeichnis = () => {
               onCantonClick={handleCantonClick}
               onCategoryClick={handleCategoryClick}
               availableCantons={availableCantons}
-              availableCategories={availableCategories}
             />
           ) : (
             <ResultsLayer
@@ -195,16 +191,14 @@ interface BrowseLayerProps {
   onCantonClick: (canton: string) => void;
   onCategoryClick: (category: string) => void;
   availableCantons: Set<string>;
-  availableCategories: Set<string>;
 }
 
-const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, onCategoryClick, availableCantons, availableCategories }: BrowseLayerProps) => {
+const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, onCategoryClick, availableCantons }: BrowseLayerProps) => {
   const filteredCantons = SWISS_CANTONS.filter(c => availableCantons.has(c.value));
 
   const categoriesWithSubs = Object.values(majorCategories)
     .map(category => {
       const subs = category.subcategories
-        .filter(subId => availableCategories.has(subId))
         .map(subId => subcategoryLabels[subId])
         .filter(Boolean);
       return { ...category, subs };
@@ -298,7 +292,9 @@ const ResultsLayer = ({
   onSearchTermChange, onFilterCantonChange, onFilterCategoryChange,
   onBackToBrowse, onCardClick
 }: ResultsLayerProps) => {
-  const allCategories = [...new Set(handwerkers.flatMap(hw => hw.categories || []))].sort();
+  const allCategories = Object.values(majorCategories)
+    .flatMap(cat => cat.subcategories)
+    .sort();
 
   return (
     <>
