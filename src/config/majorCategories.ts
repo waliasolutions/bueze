@@ -36,7 +36,9 @@ export const majorCategories: Record<string, MajorCategory> = {
       'fundament',
       'kernbohrungen',
       'abbruch_durchbruch',
-      'renovierung_sonstige'
+      'renovierung_sonstige',
+      'maler',
+      'gipser'
     ],
     color: 'from-amber-500 to-orange-600',
     showOnHome: true,

@@ -46,6 +46,8 @@ export const subcategoryLabels: Record<string, string> = {
   'fassadenbauer': 'Fassadenbauer',
   'schlosserei': 'Schlosserei',
   'spengler': 'Spengler',
+  'maler': 'Maler',
+  'gipser': 'Gipser',
 
   // Bodenbeläge
   'parkett_laminat': 'Parkett und Laminat',
@@ -91,8 +93,6 @@ export const subcategoryLabels: Record<string, string> = {
   'innenausbau_sonstige': 'Sonstige Innenarbeiten',
   'schreiner': 'Schreiner',
   'fenster_tueren': 'Fenster & Türen',
-  'maler': 'Maler',
-  'gipser': 'Gipser',
 
   // Garten & Aussenbereich
   'gartenbau': 'Gartenbau',
