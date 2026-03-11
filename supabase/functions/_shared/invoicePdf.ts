@@ -4,18 +4,7 @@
 import { PDFDocument, rgb, StandardFonts } from 'https://esm.sh/pdf-lib@1.17.1';
 import { formatSwissDate } from './dateFormatter.ts';
 import { getPlanName } from './planLabels.ts';
-
-// Büeze.ch company details (used as invoice sender)
-const COMPANY = {
-  name: 'Büeze.ch',
-  legalName: 'Büeze GmbH',
-  street: 'Industriestrasse 28',
-  zip: '9487',
-  city: 'Gamprin-Bendern',
-  country: 'Liechtenstein',
-  email: 'info@bueeze.ch',
-  website: 'www.bueeze.ch',
-};
+import type { BillingSettings } from './companyConfig.ts';
 
 // Color constants
 const BRAND_BLUE = rgb(0, 0.4, 0.8);     // #0066CC
@@ -46,6 +35,8 @@ export interface InvoicePdfData {
   // Optional: subscription period
   periodStart?: string | null;
   periodEnd?: string | null;
+  // Company data (from billing_settings snapshot)
+  company: BillingSettings;
 }
 
 function formatCHF(amountInRappen: number): string {
@@ -66,6 +57,8 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
 
   const margin = 50;
   let y = height - margin;
+
+  const company = data.company;
 
   // Helper functions
   const drawText = (text: string, x: number, yPos: number, opts: { font?: typeof fontRegular; size?: number; color?: typeof TEXT_BLACK } = {}) => {
@@ -97,12 +90,15 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   const rightX = width - margin;
   let companyY = height - margin;
   const companyLines = [
-    COMPANY.legalName,
-    COMPANY.street,
-    `${COMPANY.zip} ${COMPANY.city}`,
-    COMPANY.country,
-    COMPANY.email,
+    company.company_legal_name,
+    company.company_street,
+    `${company.company_zip} ${company.company_city}`,
+    company.company_country,
+    company.company_email,
   ];
+  if (company.mwst_number) {
+    companyLines.push(company.mwst_number);
+  }
   for (const line of companyLines) {
     const textWidth = fontRegular.widthOfTextAtSize(line, 9);
     drawText(line, rightX - textWidth, companyY, { size: 9, color: TEXT_GRAY });
@@ -226,7 +222,9 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   y -= 18;
 
   // Tax
-  const taxLabel = data.taxRate > 0 ? `MWST (${data.taxRate}%):` : 'MWST (befreit):';
+  const taxLabel = data.taxRate > 0
+    ? `MWST (${data.taxRate}%):`
+    : `MWST (${company.mwst_note || 'befreit'}):`;
   drawText(taxLabel, totalsX, y, { size: 10, color: TEXT_GRAY });
   const taxStr = formatCHF(data.taxAmount);
   const taxW = fontRegular.widthOfTextAtSize(taxStr, 10);
@@ -268,8 +266,8 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   const footerY = margin + 30;
   drawLine(margin, footerY + 15, width - margin);
   drawText('Vielen Dank für Ihr Vertrauen.', margin, footerY, { size: 9, color: TEXT_GRAY });
-  drawText(`${COMPANY.legalName} · ${COMPANY.street} · ${COMPANY.zip} ${COMPANY.city} · ${COMPANY.country}`, margin, footerY - 14, { size: 8, color: TEXT_GRAY });
-  drawText(`${COMPANY.email} · ${COMPANY.website}`, margin, footerY - 26, { size: 8, color: TEXT_GRAY });
+  drawText(`${company.company_legal_name} · ${company.company_street} · ${company.company_zip} ${company.company_city} · ${company.company_country}`, margin, footerY - 14, { size: 8, color: TEXT_GRAY });
+  drawText(`${company.company_email} · ${company.company_website}`, margin, footerY - 26, { size: 8, color: TEXT_GRAY });
 
   return doc.save();
 }
