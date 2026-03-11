@@ -195,10 +195,9 @@ interface BrowseLayerProps {
   onCantonClick: (canton: string) => void;
   onCategoryClick: (category: string) => void;
   availableCantons: Set<string>;
-  availableCategories: Set<string>;
 }
 
-const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, onCategoryClick, availableCantons, availableCategories }: BrowseLayerProps) => {
+const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, onCategoryClick, availableCantons }: BrowseLayerProps) => {
   const filteredCantons = SWISS_CANTONS.filter(c => availableCantons.has(c.value));
 
   const categoriesWithSubs = Object.values(majorCategories)
