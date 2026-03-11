@@ -1,67 +1,39 @@
 
 
-# Deep QA: Routing & URL Issues Found
+# Move "Maler" and "Gipser" to "Bau & Renovation" — Updated Plan
 
-## Issues Identified
+## Addressing Your Feedback
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+### 1. Cache Invalidation
+This project uses **Vite + React SPA** deployed on **Vercel** — not Next.js/ISR. Vite produces fingerprinted asset filenames (e.g., `index-abc123.js`), so any code change automatically busts the cache. The `vercel.json` already sets `Cache-Control: immutable` only on hashed assets. No additional cache invalidation is needed.
 
----
+### 2. Existing Database Payloads / JSONB Storage
+Searched the entire codebase — there is **no** `lead_preferences` or `historical_matches` table. The parent category ID is **never stored** in any database column or JSONB field. Leads store only the leaf-level `category` enum value (e.g., `'maler'`), and handwerker profiles store categories as a `handwerker_category[]` array of enum values. The parent-to-child mapping exists only in config files. No data migration script is needed.
 
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
+### 3. Active Leads During Deployment
+The lead matching logic in `majorCategoryMapping.ts` works by mapping **subcategories to their parent**. An existing lead with `category = 'maler'` will still match correctly because:
+- The `handwerkerMatchesCategory` function checks direct matches first (`handwerkerCategories.includes(leadCategory)`) — this still works
+- Then it finds the subcategory's major category via `getMajorCategoryForSubcategory('maler')` — after the change this returns `'bau_renovation'` instead of `'innenausbau_schreiner'`, which means it will now match handwerkers with **any** `bau_renovation` subcategory (correct new behavior)
+- Edge functions are deployed atomically, so there's no split-second where old code runs with new config
 
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
+**One edge case**: A handwerker who selected `innenausbau_schreiner` as a major category (not `maler` specifically) would **stop** matching `maler` leads after this change. This is the **intended behavior** — Maler is no longer under Innenausbau.
 
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
+## Changes (5 files)
 
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
+### 1. `src/config/majorCategories.ts`
+Add `'maler'` and `'gipser'` to `bau_renovation.subcategories` array (after `'renovierung_sonstige'`).
 
-```tsx
-const [searchParams] = useSearchParams();
+### 2. `src/config/subcategoryLabels.ts`
+Change `majorCategoryId` from `'innenausbau_schreiner'` to `'bau_renovation'` for `maler` (line 455) and `gipser` (line 463).
 
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
-```
+### 3. `supabase/functions/_shared/majorCategoryMapping.ts`
+Add `'maler'` and `'gipser'` to the `bau_renovation` array.
 
----
+### 4. `supabase/functions/_shared/subcategoryLabels.ts`
+Move `'maler'` and `'gipser'` label entries from the "Innenausbau & Schreiner" comment section to the "Bau & Renovation" comment section (cosmetic organization).
 
-## Fix 2: AGB route — Add top-level `/agb` with redirect
+### 5. `supabase/functions/generate-sitemap/index.ts`
+Move `'maler'` and `'gipser'` slugs from the Innenausbau line to the Bau & Renovation line.
 
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
-
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
-
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
-
----
-
-## Fix 3: Stale comments in sitemap generator (optional)
-
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
-
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
-
----
-
-## Summary
-
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
+No database migration needed. No cache invalidation needed. No data backfill needed.
 
