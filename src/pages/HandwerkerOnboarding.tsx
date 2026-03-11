@@ -936,17 +936,7 @@ const HandwerkerOnboarding = () => {
       case 'summary':
         return (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-brand-500 flex items-center justify-center">
-                <FileText className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold">Zusammenfassung</h3>
-                <p className="text-base text-muted-foreground">
-                  Überprüfen Sie Ihre Angaben vor dem Absenden
-                </p>
-              </div>
-            </div>
+            <h3 className="text-xl font-bold mb-6">Zusammenfassung</h3>
 
             <div className="space-y-4">
               {/* Contact & Company Summary */}
