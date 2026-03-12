@@ -1,67 +1,45 @@
 
 
-# Deep QA: Routing & URL Issues Found
+# Fix Orphaned Records: Pagination + UI + Admin Filtering
 
-## Issues Identified
+## Problems
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+1. **Auth user pagination missing** -- `listUsers()` returns only ~50 users per page. Users beyond page 1 (including admins) are falsely reported as orphans.
+2. **Table query limits** -- Supabase defaults to 1000 rows per query; large tables are partially scanned.
+3. **UI: emails crammed into one cell** -- Multiple emails are `.join(', ')`-ed into a single truncated table cell, making them unreadable.
 
----
+## Plan
 
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
+### 1. Fix `find-orphaned-records/index.ts` -- paginate auth users
 
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
+Replace the single `listUsers()` call with a loop:
 
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
-
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
-
-```tsx
-const [searchParams] = useSearchParams();
-
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
+```ts
+const authUserIds = new Set<string>();
+let page = 1;
+while (true) {
+  const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+  if (error) throw error;
+  data.users.forEach(u => authUserIds.add(u.id));
+  if (data.users.length < 1000) break;
+  page++;
+}
 ```
 
----
+Add `.limit(5000)` to all table `.select()` calls (consistent with existing admin query pattern).
 
-## Fix 2: AGB route — Add top-level `/agb` with redirect
+### 2. Fix `cleanup-orphaned-records/index.ts` -- same pagination fix
 
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
+Same paginated `listUsers()` loop and `.limit(5000)` on table queries.
 
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+### 3. Improve the admin UI in `OrphanedRecordsCleanup.tsx`
 
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
+- Show each orphaned email/entry as its **own row** instead of joining them into a single cell. For profiles and handwerker profiles, list each email on a separate line with the user ID.
+- For count-only entries (notifications, reviews, etc.), keep the current single-row display.
+- This makes it easy to see exactly which accounts are orphaned.
 
----
-
-## Fix 3: Stale comments in sitemap generator (optional)
-
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
-
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
-
----
-
-## Summary
-
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
+### Files to edit
+- `supabase/functions/find-orphaned-records/index.ts` -- paginate listUsers, add .limit(5000)
+- `supabase/functions/cleanup-orphaned-records/index.ts` -- paginate listUsers, add .limit(5000)
+- `src/pages/admin/OrphanedRecordsCleanup.tsx` -- show individual emails as separate rows
 
