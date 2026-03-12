@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     }
 
     // Fallback params: same as primary but without optional email/VAT/SKU fields
-    const { 'fields[email][value]': _e, 'fields[email][mandatory]': _m, vatRate: _v, sku: _s, ...fallbackParams } = primaryParams;
+    const { 'fields[email][value]': _e, 'fields[email][mandatory]': _m, sku: _s, ...fallbackParams } = primaryParams;
 
     const payrexxUrl = `https://api.payrexx.com/v1.0/Gateway/?instance=${encodeURIComponent(PAYREXX_INSTANCE)}`;
 
