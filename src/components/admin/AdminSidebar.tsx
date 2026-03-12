@@ -19,6 +19,7 @@ import {
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 interface AdminSidebarProps {
   onNavigate?: () => void;
@@ -74,18 +75,13 @@ const navSections: NavSection[] = [
       { label: 'GTM', href: '/admin/gtm', icon: Settings },
     ],
   },
-  {
-    title: 'Wartung',
-    items: [
-      { label: 'Verwaiste Daten', href: '/admin/orphaned-records', icon: Briefcase },
-    ],
-  },
 ];
 
 export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { role } = useAdminAuth();
 
   const isActive = (href?: string) => {
     if (!href) return false;
@@ -114,7 +110,19 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
     ],
   };
 
-  const allSections = [...navSections, accountSection];
+  // Wartung section only for super_admin
+  const wartungSection: NavSection = {
+    title: 'Wartung',
+    items: [
+      { label: 'Verwaiste Daten', href: '/admin/orphaned-records', icon: Briefcase },
+    ],
+  };
+
+  const allSections = [
+    ...navSections,
+    ...(role === 'super_admin' ? [wartungSection] : []),
+    accountSection,
+  ];
 
   // Check if we're in mobile sheet (onNavigate prop is present)
   const isMobileSheet = !!onNavigate;

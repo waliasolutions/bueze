@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,6 +83,7 @@ function extractCountRows(report: ScanReport): CountRow[] {
 }
 
 export default function OrphanedRecordsCleanup() {
+  const { role, isChecking } = useAdminAuth();
   const [scanning, setScanning] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
@@ -143,6 +146,10 @@ export default function OrphanedRecordsCleanup() {
       setCleaning(false);
     }
   };
+
+  if (!isChecking && role !== 'super_admin') {
+    return <Navigate to="/admin" replace />;
+  }
 
   const detailRows = scanReport ? extractDetailRows(scanReport) : [];
   const countRows = scanReport ? extractCountRows(scanReport) : [];
