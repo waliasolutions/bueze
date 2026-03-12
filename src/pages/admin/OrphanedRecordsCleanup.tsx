@@ -83,6 +83,7 @@ function extractCountRows(report: ScanReport): CountRow[] {
 }
 
 export default function OrphanedRecordsCleanup() {
+  const { role, isChecking } = useAdminAuth();
   const [scanning, setScanning] = useState(false);
   const [cleaning, setCleaning] = useState(false);
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
