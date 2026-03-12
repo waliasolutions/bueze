@@ -614,6 +614,7 @@ export interface AdminRegistrationData {
   submittedAt: string;
 }
 
+export const adminRegistrationNotificationTemplate = (data: AdminRegistrationData) => {
   // Group categories by their major category using SSOT
   let categoriesText = '';
   if (!data.categories || data.categories.length === 0) {
