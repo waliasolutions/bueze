@@ -1,67 +1,25 @@
 
+# Payrexx Payment System — Go-Live Fixes (Completed)
 
-# Deep QA: Routing & URL Issues Found
+## All Critical & Medium Issues Resolved
 
-## Issues Identified
+### ✅ Critical Fix 1: Service-Role Gateway Creation
+`create-payrexx-gateway` now supports a service-role code path. When called server-to-server (e.g., from `check-subscription-expiry`), it accepts `userId` and `userEmail` from the body instead of relying on `auth.getUser()`. Grace period renewal emails now include direct Payrexx payment links.
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+### ✅ Critical Fix 2: Cron Jobs Created
+- `check-subscription-expiry`: daily at 02:00 UTC
+- `send-pending-payment-reminder`: daily at 10:00 UTC
 
----
+### ✅ Critical Fix 3: Webhook Signature Verification
+`payrexx-webhook` now verifies HMAC-SHA256 signatures using `PAYREXX_API_KEY`. If the `ApiSignature` field is present in the webhook payload, it's validated against the expected hash. Mismatches are rejected with a logged warning.
 
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
+### ✅ Medium Fix 4: Failed Payment Duplicate Handling
+Failed payment inserts now use `upsert` with `onConflict: 'payrexx_transaction_id'` and `ignoreDuplicates: true` to prevent errors from duplicate failed webhooks.
 
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
+### ✅ Medium Fix 5: PATH A0 Period Calculation
+Plan downgrades now use `PLAN_CONFIGS[newPlanType].periodMonths` for correct period calculation (e.g., 6 months for `6_month` plan instead of always 30 days).
 
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
+### ⚠️ Known: Stale Cron Job
+`reset-monthly-proposal-quotas` (job ID 2) references non-existent `public.subscriptions` table. Cannot be removed due to permission constraints — silently fails, no impact. Can be removed via Supabase Dashboard SQL Editor with superuser access.
 
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
-
-```tsx
-const [searchParams] = useSearchParams();
-
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
-```
-
----
-
-## Fix 2: AGB route — Add top-level `/agb` with redirect
-
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
-
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
-
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
-
----
-
-## Fix 3: Stale comments in sitemap generator (optional)
-
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
-
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
-
----
-
-## Summary
-
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
-
+## System Status: Ready for Go-Live ✅
