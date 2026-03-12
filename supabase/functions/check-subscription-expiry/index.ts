@@ -10,7 +10,7 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper, safe } from '../_shared/emailTemplates.ts';
-import { getPlanName, FREE_TIER_PROPOSALS_LIMIT, PLAN_AMOUNTS, PLAN_GATEWAY_NAMES } from '../_shared/planLabels.ts';
+import { getPlanName, FREE_TIER_PROPOSALS_LIMIT, PLAN_AMOUNTS, PLAN_GATEWAY_NAMES, PLAN_CONFIGS } from '../_shared/planLabels.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 import { addDays, startOfDaySwiss, endOfDaySwiss, formatSwissDate, addMonths } from '../_shared/dateFormatter.ts';
 
@@ -65,7 +65,7 @@ serve(async (req) => {
             proposals_limit: -1,
             proposals_used_this_period: 0,
             current_period_start: nowISO,
-            current_period_end: thirtyDaysFromNow.toISOString(),
+            current_period_end: addMonths(now, PLAN_CONFIGS[newPlanType]?.periodMonths || 1).toISOString(),
             pending_plan: null,
             renewal_reminder_sent: false,
             updated_at: nowISO,
@@ -217,6 +217,7 @@ serve(async (req) => {
         const graceEndDate = formatSwissDate(addDays(sub.current_period_end, GRACE_PERIOD_DAYS));
 
         // Generate Payrexx checkout link via create-payrexx-gateway invocation
+        // Uses service-role key so we must pass userId + userEmail in the body
         let checkoutUrl = `${FRONTEND_URL}/checkout`;
         try {
           const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('create-payrexx-gateway', {
@@ -225,6 +226,7 @@ serve(async (req) => {
               successUrl: `${FRONTEND_URL}/handwerker-dashboard?payment=success`,
               cancelUrl: `${FRONTEND_URL}/handwerker-dashboard?payment=cancelled`,
               userId: sub.user_id,
+              userEmail: email,
             },
           });
 

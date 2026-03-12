@@ -65,22 +65,41 @@ Deno.serve(async (req) => {
       return errorResponse('Unauthorized', 401);
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    });
-
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData.user) {
-      return errorResponse('Unauthorized', 401);
-    }
-    const userId = userData.user.id;
-    const userEmail = userData.user.email;
-    if (!userEmail) {
-      return errorResponse('User email not found', 400);
-    }
-
     // --- Step 2: Parse & validate request ---
-    const { planType, successUrl, cancelUrl, failedUrl, saveCard } = await req.json();
+    const { planType, successUrl, cancelUrl, failedUrl, saveCard, userId: bodyUserId, userEmail: bodyUserEmail } = await req.json();
+
+    // Determine caller identity: service-role (server-to-server) or user JWT
+    let userId: string;
+    let userEmail: string;
+
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const token = authHeader.replace('Bearer ', '');
+
+    // Check if caller is using the service role key (server-to-server call)
+    if (token === SUPABASE_SERVICE_ROLE_KEY) {
+      // Service-role path: userId and userEmail MUST be provided in the body
+      if (!bodyUserId || !bodyUserEmail) {
+        return errorResponse('Service-role calls must provide userId and userEmail in body', 400);
+      }
+      userId = bodyUserId;
+      userEmail = bodyUserEmail;
+      console.log(`[Payrexx] Service-role gateway creation for user ${userId}`);
+    } else {
+      // User JWT path: extract from auth
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } }
+      });
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        return errorResponse('Unauthorized', 401);
+      }
+      userId = userData.user.id;
+      userEmail = userData.user.email!;
+      if (!userEmail) {
+        return errorResponse('User email not found', 400);
+      }
+    }
 
     if (!planType || !successUrl || !cancelUrl) {
       return errorResponse('Missing required fields: planType, successUrl, cancelUrl', 400);
