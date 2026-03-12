@@ -2391,6 +2391,7 @@ export type Database = {
         | "garten_umgebung"
         | "reinigung_hauswartung"
         | "raeumung_entsorgung"
+        | "geruestbauer"
       lead_status:
         | "draft"
         | "active"
@@ -2689,6 +2690,7 @@ export const Constants = {
         "garten_umgebung",
         "reinigung_hauswartung",
         "raeumung_entsorgung",
+        "geruestbauer",
       ],
       lead_status: [
         "draft",

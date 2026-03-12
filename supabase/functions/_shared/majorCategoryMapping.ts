@@ -11,7 +11,7 @@ export const majorCategorySubcategories: Record<string, string[]> = {
   bau_renovation: [
     'mauerarbeit', 'holzbau', 'metallbau', 'betonarbeiten',
     'fundament', 'kernbohrungen', 'abbruch_durchbruch', 'renovierung_sonstige',
-    'maler', 'gipser'
+    'maler', 'gipser', 'geruestbauer'
   ],
   bodenbelaege: [
     'parkett_laminat', 'teppich_pvc_linoleum', 'bodenfliese',
