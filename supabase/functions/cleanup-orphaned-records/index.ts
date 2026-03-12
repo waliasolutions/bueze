@@ -4,10 +4,7 @@ import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 
 /**
  * Admin function to cleanup orphaned records
- * This performs actual deletion of orphaned records found by find-orphaned-records
- * 
  * CAUTION: This is a destructive operation and should only be run by admins
- * after reviewing the orphaned records report
  */
 
 interface CleanupReport {
@@ -30,6 +27,20 @@ interface CleanupReport {
   total_deleted: number;
   cleanup_timestamp: string;
   errors: string[];
+}
+
+/** Paginate through all auth users to build a complete set of IDs */
+async function getAllAuthUserIds(supabase: ReturnType<typeof createSupabaseAdmin>): Promise<Set<string>> {
+  const authUserIds = new Set<string>();
+  let page = 1;
+  while (true) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) throw new Error(`Fehler beim Abrufen der Auth-Benutzer (Seite ${page}): ${error.message}`);
+    data.users.forEach(u => authUserIds.add(u.id));
+    if (data.users.length < 1000) break;
+    page++;
+  }
+  return authUserIds;
 }
 
 serve(async (req) => {
@@ -86,32 +97,23 @@ serve(async (req) => {
       errors: [],
     };
 
-    // Get all auth user IDs
-    const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
-    if (authUsersError) {
-      throw new Error(`Fehler beim Abrufen der Auth-Benutzer: ${authUsersError.message}`);
-    }
-
-    const authUserIds = new Set(authUsers.users.map(u => u.id));
-    console.log(`[CLEANUP-ORPHANS] ${authUserIds.size} Auth-Benutzer gefunden`);
+    // Get ALL auth user IDs (paginated)
+    const authUserIds = await getAllAuthUserIds(supabase);
+    console.log(`[CLEANUP-ORPHANS] ${authUserIds.size} Auth-Benutzer gefunden (alle Seiten)`);
 
     // Helper to delete orphaned records from a table
     const deleteOrphans = async (
       tableName: string,
       userIdColumn: string,
-      condition?: { column: string; value: any }
     ): Promise<number> => {
       try {
-        // First get all records
-        let query = supabase.from(tableName).select(userIdColumn);
-        if (condition) {
-          query = query.not(condition.column, 'is', condition.value);
-        }
-        const { data: records } = await query;
+        const { data: records } = await supabase
+          .from(tableName)
+          .select(userIdColumn)
+          .limit(5000);
 
         if (!records || records.length === 0) return 0;
 
-        // Find orphaned IDs
         const typedRecords = records as Record<string, any>[];
         const orphanedIds = typedRecords
           .filter(r => r[userIdColumn] && !authUserIds.has(r[userIdColumn]))
@@ -119,7 +121,6 @@ serve(async (req) => {
 
         if (orphanedIds.length === 0) return 0;
 
-        // Delete them
         const { data: deleted, error } = await supabase
           .from(tableName)
           .delete()
@@ -140,9 +141,9 @@ serve(async (req) => {
 
     // Delete orphaned records in correct order (dependencies first)
     
-    // 1. Messages (depends on conversations)
+    // 1. Messages
     try {
-      const { data: messages } = await supabase.from('messages').select('id, sender_id, recipient_id');
+      const { data: messages } = await supabase.from('messages').select('id, sender_id, recipient_id').limit(5000);
       if (messages) {
         const orphanedMsgIds = messages
           .filter(m => !authUserIds.has(m.sender_id) || !authUserIds.has(m.recipient_id))
@@ -158,7 +159,7 @@ serve(async (req) => {
 
     // 2. Conversations
     try {
-      const { data: convs } = await supabase.from('conversations').select('id, homeowner_id, handwerker_id');
+      const { data: convs } = await supabase.from('conversations').select('id, homeowner_id, handwerker_id').limit(5000);
       if (convs) {
         const orphanedConvIds = convs
           .filter(c => !authUserIds.has(c.homeowner_id) || !authUserIds.has(c.handwerker_id))
@@ -174,7 +175,7 @@ serve(async (req) => {
 
     // 3. Reviews
     try {
-      const { data: reviews } = await supabase.from('reviews').select('id, reviewer_id, reviewed_id');
+      const { data: reviews } = await supabase.from('reviews').select('id, reviewer_id, reviewed_id').limit(5000);
       if (reviews) {
         const orphanedRevIds = reviews
           .filter(r => !authUserIds.has(r.reviewer_id) || !authUserIds.has(r.reviewed_id))
@@ -188,34 +189,16 @@ serve(async (req) => {
       report.errors.push(`Bewertungen: ${err instanceof Error ? err.message : 'Unbekannt'}`);
     }
 
-    // 4. Lead views
+    // 4-13. Simple table cleanups
     report.deleted_lead_views = await deleteOrphans('lead_views', 'viewer_id');
-
-    // 5. Lead proposals
     report.deleted_lead_proposals = await deleteOrphans('lead_proposals', 'handwerker_id');
-
-    // 6. Lead purchases
     report.deleted_lead_purchases = await deleteOrphans('lead_purchases', 'buyer_id');
-
-    // 7. Leads
     report.deleted_leads = await deleteOrphans('leads', 'owner_id');
-
-    // 8. Magic tokens
     report.deleted_magic_tokens = await deleteOrphans('magic_tokens', 'user_id');
-
-    // 9. Payment history
     report.deleted_payment_history = await deleteOrphans('payment_history', 'user_id');
-
-    // 10. Handwerker documents
     report.deleted_handwerker_documents = await deleteOrphans('handwerker_documents', 'user_id');
-
-    // 11. Client notifications
     report.deleted_client_notifications = await deleteOrphans('client_notifications', 'user_id');
-
-    // 12. Handwerker notifications
     report.deleted_handwerker_notifications = await deleteOrphans('handwerker_notifications', 'user_id');
-
-    // 13. Handwerker subscriptions
     report.deleted_subscriptions = await deleteOrphans('handwerker_subscriptions', 'user_id');
 
     // 14. Handwerker profiles (only with user_id that doesn't exist)
@@ -223,7 +206,8 @@ serve(async (req) => {
       const { data: hwProfiles } = await supabase
         .from('handwerker_profiles')
         .select('id, user_id')
-        .not('user_id', 'is', null);
+        .not('user_id', 'is', null)
+        .limit(5000);
       
       if (hwProfiles) {
         const orphanedHwIds = hwProfiles
@@ -243,7 +227,7 @@ serve(async (req) => {
 
     // 16. Profiles
     try {
-      const { data: profiles } = await supabase.from('profiles').select('id');
+      const { data: profiles } = await supabase.from('profiles').select('id').limit(5000);
       if (profiles) {
         const orphanedProfileIds = profiles
           .filter(p => !authUserIds.has(p.id))
@@ -326,7 +310,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('[CLEANUP-ORPHANS] Fehler:', error);
     
-    // Create admin notification for cleanup failure
     try {
       const supabase = createSupabaseAdmin();
       await supabase.from('admin_notifications').insert({

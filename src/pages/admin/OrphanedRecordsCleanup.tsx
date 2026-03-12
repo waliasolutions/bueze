@@ -33,18 +33,38 @@ interface ScanReport {
   scan_timestamp: string;
 }
 
-interface ScanResult {
+interface DetailRow {
   table: string;
-  count: number;
-  details?: string;
+  email: string;
+  userId: string;
 }
 
-function reportToRows(report: ScanReport): ScanResult[] {
+interface CountRow {
+  table: string;
+  count: number;
+}
+
+function extractDetailRows(report: ScanReport): DetailRow[] {
+  const rows: DetailRow[] = [];
+
+  for (const p of report.orphaned_profiles) {
+    rows.push({ table: 'Profile', email: p.email || '–', userId: p.id });
+  }
+  for (const p of report.orphaned_handwerker_profiles) {
+    rows.push({ table: 'Handwerker-Profil', email: p.email || '–', userId: p.user_id });
+  }
+  for (const r of report.orphaned_user_roles) {
+    rows.push({ table: 'Benutzerrolle', email: '–', userId: r.user_id });
+  }
+  for (const s of report.orphaned_subscriptions) {
+    rows.push({ table: 'Abonnement', email: '–', userId: s.user_id });
+  }
+
+  return rows;
+}
+
+function extractCountRows(report: ScanReport): CountRow[] {
   return [
-    { table: 'Profile', count: report.orphaned_profiles.length, details: report.orphaned_profiles.map(p => p.email).join(', ') },
-    { table: 'Benutzerrollen', count: report.orphaned_user_roles.length },
-    { table: 'Handwerker-Profile', count: report.orphaned_handwerker_profiles.length, details: report.orphaned_handwerker_profiles.map(p => p.email || p.user_id).join(', ') },
-    { table: 'Abonnements', count: report.orphaned_subscriptions.length },
     { table: 'Kunden-Benachrichtigungen', count: report.orphaned_client_notifications },
     { table: 'Handwerker-Benachrichtigungen', count: report.orphaned_handwerker_notifications },
     { table: 'Bewertungen', count: report.orphaned_reviews },
@@ -66,7 +86,6 @@ export default function OrphanedRecordsCleanup() {
   const [scanReport, setScanReport] = useState<ScanReport | null>(null);
   const [cleanupDone, setCleanupDone] = useState(false);
 
-  // History from admin_notifications
   const { data: history, refetch: refetchHistory } = useQuery({
     queryKey: ['orphan-cleanup-history'],
     queryFn: async () => {
@@ -125,13 +144,12 @@ export default function OrphanedRecordsCleanup() {
     }
   };
 
-  const rows = scanReport ? reportToRows(scanReport) : [];
+  const detailRows = scanReport ? extractDetailRows(scanReport) : [];
+  const countRows = scanReport ? extractCountRows(scanReport) : [];
 
   return (
     <AdminLayout title="Verwaiste Datensätze" description="Datensätze finden und bereinigen, die keinem aktiven Benutzer mehr zugeordnet sind.">
       <div className="space-y-6">
-        {/* Actions */}
-
         {/* Actions */}
         <Card>
           <CardHeader>
@@ -140,7 +158,7 @@ export default function OrphanedRecordsCleanup() {
               Sucht nach Einträgen in allen Tabellen, deren zugehöriger Auth-Benutzer nicht mehr existiert.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex gap-3">
+          <CardContent className="flex flex-wrap gap-3">
             <Button onClick={handleScan} disabled={scanning || cleaning}>
               {scanning ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
               {scanning ? 'Wird gescannt...' : 'Scan starten'}
@@ -189,25 +207,53 @@ export default function OrphanedRecordsCleanup() {
                 Scan vom {format(new Date(scanReport.scan_timestamp), 'dd.MM.yyyy HH:mm', { locale: de })}
               </CardDescription>
             </CardHeader>
-            {rows.length > 0 && (
-              <CardContent>
+
+            {/* Detail rows: profiles, handwerker, roles, subscriptions — one row per entry */}
+            {detailRows.length > 0 && (
+              <CardContent className="pt-0">
+                <h4 className="text-sm font-medium mb-2">Verwaiste Benutzer-Einträge</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tabelle</TableHead>
+                      <TableHead>E-Mail</TableHead>
+                      <TableHead className="hidden sm:table-cell">User-ID</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailRows.map((row, i) => (
+                      <TableRow key={`${row.userId}-${row.table}-${i}`}>
+                        <TableCell>
+                          <Badge variant="outline" className="font-normal">{row.table}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm break-all">{row.email}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-xs text-muted-foreground font-mono break-all">
+                          {row.userId}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            )}
+
+            {/* Count rows: notifications, reviews, etc. */}
+            {countRows.length > 0 && (
+              <CardContent className={detailRows.length > 0 ? 'pt-0' : ''}>
+                <h4 className="text-sm font-medium mb-2">Weitere verwaiste Datensätze</h4>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Tabelle</TableHead>
                       <TableHead className="text-right">Anzahl</TableHead>
-                      <TableHead>Details</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rows.map(row => (
+                    {countRows.map(row => (
                       <TableRow key={row.table}>
                         <TableCell className="font-medium">{row.table}</TableCell>
                         <TableCell className="text-right">
                           <Badge variant="destructive">{row.count}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
-                          {row.details || '–'}
                         </TableCell>
                       </TableRow>
                     ))}
