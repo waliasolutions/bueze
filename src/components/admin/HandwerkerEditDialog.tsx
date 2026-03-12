@@ -178,7 +178,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
           </div>
 
           {/* Categories Section */}
-          <p className="text-sm font-semibold text-muted-foreground pt-2">Kategorien ({currentCats.length} ausgewählt)</p>
+          <p className="text-sm font-semibold text-muted-foreground pt-2">Kategorien ({totalVisualChecks} ausgewählt)</p>
           <div className="space-y-1 border rounded-md p-2">
             {Object.values(majorCategories).map((major) => {
               const selectedCount = major.subcategories.filter(s => currentCats.includes(s)).length;
