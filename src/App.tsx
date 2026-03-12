@@ -241,6 +241,7 @@ const App = () => {
                         <Route path="invoices" element={<AdminInvoices />} />
                         <Route path="billing" element={<AdminBillingSettings />} />
                         <Route path="deletion-audit" element={<DeletionAudit />} />
+                        <Route path="orphaned-records" element={<OrphanedRecordsCleanup />} />
                       </Routes>
                     </Suspense>
                   </AdminAuthProvider>
