@@ -210,43 +210,8 @@ serve(async (req) => {
       .maybeSingle();
 
     // ============================================
-    // CRITICAL: Delete auth user FIRST
-    // If this fails, we abort to prevent orphaned data
-    // ============================================
-    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
-    if (deleteAuthError) {
-      console.error('[DELETE-USER] CRITICAL: Failed to delete auth user:', deleteAuthError);
-      
-      const authErrorMessage = `Authentifizierungsbenutzer konnte nicht gelöscht werden: ${deleteAuthError.message}. Es wurden keine Daten gelöscht, um verwaiste Datensätze zu vermeiden.`;
-      
-      // Log failed attempt
-      await logDeletionAudit(supabase, {
-        deletedUserId: userId,
-        deletedEmail,
-        deletedBy,
-        deletionType: 'full',
-        deletionStats: {},
-        success: false,
-        errorMessage: authErrorMessage,
-        verified: false,
-        orphanedRecords: {},
-      });
-      
-      // Create admin notification for critical failure
-      await createAdminNotification(supabase, {
-        type: 'deletion_failed',
-        title: 'Löschung fehlgeschlagen',
-        message: `Benutzer ${deletedEmail} konnte nicht gelöscht werden: ${deleteAuthError.message}`,
-        metadata: { deletedEmail, userId, error: deleteAuthError.message },
-      });
-      
-      throw new Error(authErrorMessage);
-    }
-    deletionStats.auth_user = 1;
-    console.log(`[DELETE-USER] Auth user ${userId} deleted successfully`);
-
-    // ============================================
-    // Clean up all related data (auth user triggers may have handled some)
+    // DELETE ALL PUBLIC DATA FIRST
+    // This prevents cascade conflicts when deleting the auth user
     // ============================================
     
     // 1. Messages
@@ -365,7 +330,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_profiles = hwProfiles?.length || 0;
 
-    // 12. Client notifications
+    // 13. Client notifications
     const { data: clientNotifs } = await supabase
       .from('client_notifications')
       .delete()
@@ -373,7 +338,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.client_notifications = clientNotifs?.length || 0;
 
-    // 13. Handwerker notifications
+    // 14. Handwerker notifications
     const { data: hwNotifs } = await supabase
       .from('handwerker_notifications')
       .delete()
@@ -381,7 +346,7 @@ serve(async (req) => {
       .select('id');
     deletionStats.handwerker_notifications = hwNotifs?.length || 0;
 
-    // 14. Payment history
+    // 15. Payment history
     const { data: payments } = await supabase
       .from('payment_history')
       .delete()
@@ -389,7 +354,23 @@ serve(async (req) => {
       .select('id');
     deletionStats.payment_history = payments?.length || 0;
 
-    // 15. User roles (should be cascade deleted, but ensure cleanup)
+    // 16. Invoices
+    const { data: invoices } = await supabase
+      .from('invoices')
+      .delete()
+      .eq('user_id', userId)
+      .select('id');
+    deletionStats.invoices = invoices?.length || 0;
+
+    // 17. Password reset tokens
+    const { data: resetTokens } = await supabase
+      .from('password_reset_tokens')
+      .delete()
+      .eq('user_id', userId)
+      .select('id');
+    deletionStats.password_reset_tokens = resetTokens?.length || 0;
+
+    // 18. User roles
     const { data: roles } = await supabase
       .from('user_roles')
       .delete()
@@ -397,13 +378,57 @@ serve(async (req) => {
       .select('id');
     deletionStats.user_roles = roles?.length || 0;
 
-    // 16. Profile (should be cascade deleted, but ensure cleanup)
+    // 19. Profile
     const { data: profiles } = await supabase
       .from('profiles')
       .delete()
       .eq('id', userId)
       .select('id');
     deletionStats.profiles = profiles?.length || 0;
+
+    // ============================================
+    // NOW delete the auth user (all FK references already removed)
+    // ============================================
+    const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
+    if (deleteAuthError) {
+      console.error('[DELETE-USER] Failed to delete auth user:', deleteAuthError);
+      
+      // Data is already deleted — log as partial success
+      deletionType = 'partial';
+      
+      await logDeletionAudit(supabase, {
+        deletedUserId: userId,
+        deletedEmail,
+        deletedBy,
+        deletionType: 'partial',
+        deletionStats,
+        success: true,
+        errorMessage: `Auth-Benutzer konnte nicht gelöscht werden: ${deleteAuthError.message}. Alle zugehörigen Daten wurden entfernt.`,
+        verified: false,
+        orphanedRecords: { auth_user: 1 },
+      });
+      
+      await createAdminNotification(supabase, {
+        type: 'deletion_warning',
+        title: 'Teillöschung — Auth-Konto verblieben',
+        message: `Alle Daten für ${deletedEmail} wurden gelöscht, aber das Auth-Konto konnte nicht entfernt werden: ${deleteAuthError.message}. Bitte im Supabase Dashboard manuell löschen.`,
+        metadata: { deletedEmail, userId, error: deleteAuthError.message, deletionStats },
+      });
+
+      const result: DeletionResult = {
+        success: true,
+        deletionType: 'partial',
+        deletionStats,
+        verified: false,
+        orphanedRecords: { auth_user: 1 },
+        message: 'Alle Daten gelöscht. Auth-Konto konnte nicht entfernt werden — bitte im Supabase Dashboard manuell löschen.',
+        warnings: [`Auth-Konto Löschung fehlgeschlagen: ${deleteAuthError.message}`],
+      };
+
+      return successResponse(result);
+    }
+    deletionStats.auth_user = 1;
+    console.log(`[DELETE-USER] Auth user ${userId} deleted successfully`);
 
     // ============================================
     // VERIFICATION: Check if email is truly freed
@@ -498,226 +523,127 @@ serve(async (req) => {
 });
 
 /**
- * Verify that an email is truly freed after deletion
- * Checks all tables that might still reference the user
+ * Verify that a user's email is completely freed from the system.
+ * Returns a record of table → count of remaining rows.
  */
 async function verifyEmailFreed(
-  supabase: any,
+  supabase: ReturnType<typeof createSupabaseAdmin>,
   email: string,
   userId: string | null
 ): Promise<Record<string, number>> {
-  const orphanedRecords: Record<string, number> = {};
+  const orphaned: Record<string, number> = {};
 
-  // Check profiles table
   if (email) {
-    const { count: profileCount } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true })
-      .eq('email', email);
-    orphanedRecords.profiles = profileCount || 0;
-  }
-
-  // Check handwerker_profiles
-  if (email) {
-    const { count: hwProfileCount } = await supabase
+    // Check handwerker_profiles by email
+    const { data: hwByEmail } = await supabase
       .from('handwerker_profiles')
-      .select('*', { count: 'exact', head: true })
+      .select('id')
       .eq('email', email);
-    orphanedRecords.handwerker_profiles = hwProfileCount || 0;
+    orphaned.handwerker_profiles_by_email = hwByEmail?.length || 0;
+
+    // Check profiles by email
+    const { data: profByEmail } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email);
+    orphaned.profiles_by_email = profByEmail?.length || 0;
   }
 
-  // Check user_roles by user_id
   if (userId) {
-    const { count: rolesCount } = await supabase
-      .from('user_roles')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    orphanedRecords.user_roles = rolesCount || 0;
-  }
+    // Check various tables by user_id
+    const tables = [
+      { name: 'profiles', col: 'id' },
+      { name: 'user_roles', col: 'user_id' },
+      { name: 'handwerker_profiles', col: 'user_id' },
+      { name: 'handwerker_subscriptions', col: 'user_id' },
+      { name: 'client_notifications', col: 'user_id' },
+      { name: 'handwerker_notifications', col: 'user_id' },
+      { name: 'payment_history', col: 'user_id' },
+      { name: 'invoices', col: 'user_id' },
+    ];
 
-  // Check reviews (as reviewer or reviewed)
-  if (userId) {
-    const { count: reviewsCount } = await supabase
-      .from('reviews')
-      .select('*', { count: 'exact', head: true })
-      .or(`reviewer_id.eq.${userId},reviewed_id.eq.${userId}`);
-    orphanedRecords.reviews = reviewsCount || 0;
-  }
-
-  // Check lead_proposals
-  if (userId) {
-    const { count: proposalsCount } = await supabase
-      .from('lead_proposals')
-      .select('*', { count: 'exact', head: true })
-      .eq('handwerker_id', userId);
-    orphanedRecords.lead_proposals = proposalsCount || 0;
-  }
-
-  // Check lead_views
-  if (userId) {
-    const { count: viewsCount } = await supabase
-      .from('lead_views')
-      .select('*', { count: 'exact', head: true })
-      .eq('viewer_id', userId);
-    orphanedRecords.lead_views = viewsCount || 0;
-  }
-
-  // Check lead_purchases
-  if (userId) {
-    const { count: purchasesCount } = await supabase
-      .from('lead_purchases')
-      .select('*', { count: 'exact', head: true })
-      .eq('buyer_id', userId);
-    orphanedRecords.lead_purchases = purchasesCount || 0;
-  }
-
-  // Check leads (owned by user)
-  if (userId) {
-    const { count: leadsCount } = await supabase
-      .from('leads')
-      .select('*', { count: 'exact', head: true })
-      .eq('owner_id', userId);
-    orphanedRecords.leads = leadsCount || 0;
-  }
-
-  // Check magic_tokens
-  if (userId) {
-    const { count: tokensCount } = await supabase
-      .from('magic_tokens')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    orphanedRecords.magic_tokens = tokensCount || 0;
-  }
-
-  // Check payment_history
-  if (userId) {
-    const { count: paymentsCount } = await supabase
-      .from('payment_history')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    orphanedRecords.payment_history = paymentsCount || 0;
-  }
-
-  // Check handwerker_documents
-  if (userId) {
-    const { count: docsCount } = await supabase
-      .from('handwerker_documents')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    orphanedRecords.handwerker_documents = docsCount || 0;
-  }
-
-  // Check messages
-  if (userId) {
-    const { count: msgsCount } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`);
-    orphanedRecords.messages = msgsCount || 0;
-  }
-
-  // Check conversations
-  if (userId) {
-    const { count: convsCount } = await supabase
-      .from('conversations')
-      .select('*', { count: 'exact', head: true })
-      .or(`homeowner_id.eq.${userId},handwerker_id.eq.${userId}`);
-    orphanedRecords.conversations = convsCount || 0;
-  }
-
-  // Check handwerker_subscriptions
-  if (userId) {
-    const { count: subsCount } = await supabase
-      .from('handwerker_subscriptions')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    orphanedRecords.handwerker_subscriptions = subsCount || 0;
-  }
-
-  // Check notifications
-  if (userId) {
-    const { count: clientNotifCount } = await supabase
-      .from('client_notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    orphanedRecords.client_notifications = clientNotifCount || 0;
-
-    const { count: hwNotifCount } = await supabase
-      .from('handwerker_notifications')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId);
-    orphanedRecords.handwerker_notifications = hwNotifCount || 0;
-  }
-
-  return orphanedRecords;
-}
-
-/**
- * Create admin notification for deletion events
- */
-async function createAdminNotification(
-  supabase: any,
-  data: {
-    type: string;
-    title: string;
-    message: string;
-    metadata: Record<string, any>;
-  }
-): Promise<void> {
-  try {
-    const { error } = await supabase.from('admin_notifications').insert({
-      type: data.type,
-      title: data.title,
-      message: data.message,
-      metadata: data.metadata,
-    });
-
-    if (error) {
-      console.error('[DELETE-USER] Failed to create admin notification:', error);
-    } else {
-      console.log('[DELETE-USER] Admin notification created:', data.title);
+    for (const { name, col } of tables) {
+      const { data } = await supabase
+        .from(name)
+        .select('id')
+        .eq(col, userId);
+      orphaned[`${name}_by_id`] = data?.length || 0;
     }
-  } catch (err) {
-    console.error('[DELETE-USER] Exception creating admin notification:', err);
   }
+
+  return orphaned;
 }
 
 /**
- * Log deletion attempt to audit table
+ * Log a deletion event to the audit table.
  */
 async function logDeletionAudit(
-  supabase: any,
-  data: {
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  params: {
     deletedUserId: string | null;
     deletedEmail: string;
     deletedBy: string | null;
-    deletionType: 'full' | 'guest' | 'partial';
+    deletionType: string;
     deletionStats: Record<string, number>;
     success: boolean;
     errorMessage: string | null;
     verified: boolean;
     orphanedRecords: Record<string, number>;
   }
-): Promise<void> {
+) {
   try {
-    const { error } = await supabase.from('deletion_audit').insert({
-      deleted_user_id: data.deletedUserId,
-      deleted_email: data.deletedEmail,
-      deleted_by: data.deletedBy,
-      deletion_type: data.deletionType,
-      deletion_stats: data.deletionStats,
-      success: data.success,
-      error_message: data.errorMessage,
-      verified_clean: data.verified,
-      orphaned_records: data.orphanedRecords,
-    });
-
+    const { error } = await supabase
+      .from('deletion_audit')
+      .insert({
+        deleted_user_id: params.deletedUserId,
+        deleted_email: params.deletedEmail,
+        deleted_by: params.deletedBy,
+        deletion_type: params.deletionType,
+        deletion_stats: params.deletionStats,
+        success: params.success,
+        error_message: params.errorMessage,
+        verified_clean: params.verified,
+        orphaned_records: params.orphanedRecords,
+      });
+    
     if (error) {
-      console.error('[DELETE-USER] Failed to log audit:', error);
+      console.error('[DELETE-USER] Failed to insert audit log:', error);
     } else {
       console.log('[DELETE-USER] Audit logged successfully');
     }
   } catch (err) {
-    console.error('[DELETE-USER] Exception logging audit:', err);
+    console.error('[DELETE-USER] Audit logging error:', err);
+  }
+}
+
+/**
+ * Create an admin notification for deletion events.
+ */
+async function createAdminNotification(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  params: {
+    type: string;
+    title: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }
+) {
+  try {
+    const { error } = await supabase
+      .from('admin_notifications')
+      .insert({
+        type: params.type,
+        title: params.title,
+        message: params.message,
+        metadata: params.metadata || {},
+      });
+
+    if (error) {
+      console.error('[DELETE-USER] Failed to create admin notification:', error);
+    } else {
+      console.log(`[DELETE-USER] Admin notification created: ${params.title}`);
+    }
+  } catch (err) {
+    console.error('[DELETE-USER] Admin notification error:', err);
   }
 }
