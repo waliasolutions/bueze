@@ -246,7 +246,25 @@ serve(async (req) => {
       .select('id');
     deletionStats.lead_views = views?.length || 0;
 
-    // 5. Lead proposals
+    // 5a. Get this user's proposal IDs first
+    const { data: userProposals } = await supabase
+      .from('lead_proposals')
+      .select('id')
+      .eq('handwerker_id', userId);
+    const userProposalIds = userProposals?.map(p => p.id) || [];
+
+    // 5b. Clear accepted_proposal_id on leads referencing this user's proposals (FK constraint)
+    if (userProposalIds.length > 0) {
+      const { data: clearedLeads } = await supabase
+        .from('leads')
+        .update({ accepted_proposal_id: null })
+        .in('accepted_proposal_id', userProposalIds)
+        .select('id');
+      deletionStats.leads_accepted_proposal_cleared = clearedLeads?.length || 0;
+      console.log(`[DELETE-USER] Cleared accepted_proposal_id on ${clearedLeads?.length || 0} leads`);
+    }
+
+    // 5c. Now delete lead proposals (FK is cleared)
     const { data: props } = await supabase
       .from('lead_proposals')
       .delete()
