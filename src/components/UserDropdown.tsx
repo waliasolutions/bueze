@@ -170,6 +170,16 @@ export const UserDropdown = () => {
         
         <DropdownMenuSeparator className="bg-line-200" />
         
+        {isAdmin && (
+          <>
+            <DropdownMenuItem onClick={() => navigate('/admin/dashboard')} className="cursor-pointer">
+              <Shield className="mr-2 h-4 w-4 text-red-600" />
+              <span>Admin-Bereich</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-line-200" />
+          </>
+        )}
+        
         {navItems.map((item) => (
           <DropdownMenuItem 
             key={item.href} 
