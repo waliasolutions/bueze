@@ -1,5 +1,6 @@
 // Email template library for BÜEZE.CH
 // Swiss-inspired, clean design with consistent branding
+// v2 – mwst_mode support
 
 import { getUrgencyLabel, getCategoryLabel } from './categoryLabels.ts';
 import { subcategoryLabels } from './subcategoryLabels.ts';
