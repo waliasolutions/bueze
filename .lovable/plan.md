@@ -1,67 +1,31 @@
 
 
-# Deep QA: Routing & URL Issues Found
+# Delete Orphaned `info@mentorgeruest.ch` Account
 
-## Issues Identified
+## Problem
+The email `info@mentorgeruest.ch` (user ID: `c5168941-241e-41f2-88e6-4c97af9d7673`) has orphaned records from a failed registration due to internet issues. It exists in `auth.users`, `profiles`, and `user_roles` but has no handwerker profile or other data. This blocks re-registration.
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+## Records to Delete
+- `auth.users` row: `c5168941-241e-41f2-88e6-4c97af9d7673`
+- `profiles` row: `c5168941-241e-41f2-88e6-4c97af9d7673`
+- `user_roles` row: `4f23973e-ee47-4ba3-aed0-6083dbd7a0a1` (user_id = above)
 
----
+## Plan
 
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
+**One database migration** with:
 
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
+```sql
+-- Delete from user_roles first (FK dependency)
+DELETE FROM public.user_roles WHERE user_id = 'c5168941-241e-41f2-88e6-4c97af9d7673';
 
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
+-- Delete from profiles
+DELETE FROM public.profiles WHERE id = 'c5168941-241e-41f2-88e6-4c97af9d7673';
 
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
-
-```tsx
-const [searchParams] = useSearchParams();
-
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
+-- Delete from auth.users (uses admin privileges in migration context)
+DELETE FROM auth.users WHERE id = 'c5168941-241e-41f2-88e6-4c97af9d7673';
 ```
 
----
+After this, `info@mentorgeruest.ch` can be registered fresh as a new handwerker.
 
-## Fix 2: AGB route — Add top-level `/agb` with redirect
-
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
-
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
-
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
-
----
-
-## Fix 3: Stale comments in sitemap generator (optional)
-
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
-
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
-
----
-
-## Summary
-
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
+No code changes needed — migration only.
 
