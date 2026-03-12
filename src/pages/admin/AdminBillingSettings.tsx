@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, Building2 } from 'lucide-react';
 
@@ -21,6 +22,7 @@ interface BillingSettingsForm {
   mwst_number: string;
   mwst_rate: string;
   mwst_note: string;
+  mwst_mode: 'none' | 'exclusive';
 }
 
 const AdminBillingSettings = () => {
@@ -41,6 +43,7 @@ const AdminBillingSettings = () => {
     mwst_number: '',
     mwst_rate: '0',
     mwst_note: '',
+    mwst_mode: 'none',
   });
 
   useEffect(() => {
@@ -71,6 +74,7 @@ const AdminBillingSettings = () => {
           mwst_number: data.mwst_number || '',
           mwst_rate: String(data.mwst_rate ?? 0),
           mwst_note: data.mwst_note || '',
+          mwst_mode: ((data as any).mwst_mode === 'exclusive' ? 'exclusive' : 'none') as 'none' | 'exclusive',
         });
       }
     } catch (err: any) {
@@ -100,7 +104,8 @@ const AdminBillingSettings = () => {
           mwst_number: form.mwst_number || null,
           mwst_rate: parseFloat(form.mwst_rate) || 0,
           mwst_note: form.mwst_note,
-        })
+          mwst_mode: form.mwst_mode,
+        } as any)
         .eq('id', settingsId);
 
       if (error) throw error;
@@ -116,6 +121,8 @@ const AdminBillingSettings = () => {
   const updateField = (field: keyof BillingSettingsForm, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
+
+  const isMwstNone = form.mwst_mode === 'none';
 
   if (loading) {
     return (
@@ -192,23 +199,45 @@ const AdminBillingSettings = () => {
           <CardHeader>
             <CardTitle>MwSt-Einstellungen</CardTitle>
             <CardDescription>
-              Steuersatz und Hinweise für Rechnungen.
+              Steuermodus und Steuersatz für Rechnungen.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="mwst_mode">MwSt-Modus</Label>
+              <Select value={form.mwst_mode} onValueChange={(v) => updateField('mwst_mode', v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Keine MwSt — wird auf Rechnungen nicht ausgewiesen</SelectItem>
+                  <SelectItem value="exclusive">Exklusiv — MwSt wird auf den Nettobetrag aufgeschlagen</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {isMwstNone
+                  ? 'Rechnungen zeigen keine MwSt-Zeile. Betrag = Netto = Total.'
+                  : 'MwSt wird separat auf der Rechnung ausgewiesen (Netto + MwSt = Total).'}
+              </p>
+            </div>
+            <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 transition-opacity ${isMwstNone ? 'opacity-40 pointer-events-none' : ''}`}>
               <div className="space-y-2">
                 <Label htmlFor="mwst_number">MwSt-Nummer</Label>
-                <Input id="mwst_number" value={form.mwst_number} onChange={e => updateField('mwst_number', e.target.value)} placeholder="z.B. CHE-123.456.789" />
+                <Input id="mwst_number" value={form.mwst_number} onChange={e => updateField('mwst_number', e.target.value)} placeholder="z.B. CHE-123.456.789" disabled={isMwstNone} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="mwst_rate">MwSt-Satz (%)</Label>
-                <Input id="mwst_rate" type="number" step="0.1" min="0" max="100" value={form.mwst_rate} onChange={e => updateField('mwst_rate', e.target.value)} />
+                <Input id="mwst_rate" type="number" step="0.1" min="0" max="100" value={form.mwst_rate} onChange={e => updateField('mwst_rate', e.target.value)} disabled={isMwstNone} />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="mwst_note">MwSt-Hinweis (auf Rechnungen)</Label>
               <Input id="mwst_note" value={form.mwst_note} onChange={e => updateField('mwst_note', e.target.value)} placeholder="z.B. MWST befreit (Liechtenstein)" />
+              <p className="text-xs text-muted-foreground">
+                {isMwstNone
+                  ? 'Wird als kleine Notiz unter dem Total angezeigt.'
+                  : 'Wird bei der MwSt-Zeile auf der Rechnung angezeigt.'}
+              </p>
             </div>
           </CardContent>
         </Card>

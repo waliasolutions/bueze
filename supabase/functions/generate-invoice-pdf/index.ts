@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const now = new Date();
 
-    // 1. Fetch billing settings from DB (SSOT for company data + tax rate)
+    // 1. Fetch billing settings from DB (SSOT for company data + tax config)
     const billingSettings = await fetchBillingSettings(supabase);
 
     // 2. Generate invoice number via SQL function
@@ -60,11 +60,24 @@ Deno.serve(async (req) => {
     const billingZip = hwProfile?.business_zip || hwProfile?.personal_zip || null;
     const billingCity = hwProfile?.business_city || hwProfile?.personal_city || null;
 
-    // Calculate amounts using billing_settings tax rate (SSOT)
+    // Calculate amounts based on mwst_mode
+    const mwstMode = billingSettings.mwst_mode;
     const taxRate = billingSettings.mwst_rate;
-    const netAmount = taxRate > 0 ? Math.round(amount / (1 + taxRate / 100)) : amount;
-    const taxAmount = amount - netAmount;
-    const totalAmount = amount;
+    let netAmount: number;
+    let taxAmount: number;
+    let totalAmount: number;
+
+    if (mwstMode === 'exclusive' && taxRate > 0) {
+      // Exclusive: amount from Payrexx is the net price, tax is added on top
+      netAmount = amount;
+      taxAmount = Math.round(amount * taxRate / 100);
+      totalAmount = netAmount + taxAmount;
+    } else {
+      // None: no tax at all
+      netAmount = amount;
+      taxAmount = 0;
+      totalAmount = amount;
+    }
 
     // Determine subscription period
     const periodMonths: Record<string, number> = { monthly: 1, '6_month': 6, annual: 12 };
@@ -85,7 +98,7 @@ Deno.serve(async (req) => {
         payment_id: paymentId || null,
         amount: totalAmount,
         currency: 'CHF',
-        tax_rate: taxRate,
+        tax_rate: mwstMode === 'exclusive' ? taxRate : 0,
         tax_amount: taxAmount,
         net_amount: netAmount,
         plan_type: planType,
@@ -123,7 +136,7 @@ Deno.serve(async (req) => {
       planType,
       description: `${planName} Abonnement`,
       netAmount,
-      taxRate,
+      taxRate: mwstMode === 'exclusive' ? taxRate : 0,
       taxAmount,
       amount: totalAmount,
       currency: 'CHF',

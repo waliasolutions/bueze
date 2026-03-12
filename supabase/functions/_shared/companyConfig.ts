@@ -15,6 +15,7 @@ export interface BillingSettings {
   mwst_number: string | null;
   mwst_rate: number;
   mwst_note: string;
+  mwst_mode: 'none' | 'exclusive';
 }
 
 export const DEFAULT_BILLING_SETTINGS: BillingSettings = {
@@ -30,6 +31,7 @@ export const DEFAULT_BILLING_SETTINGS: BillingSettings = {
   mwst_number: null,
   mwst_rate: 0,
   mwst_note: 'MWST befreit (Liechtenstein)',
+  mwst_mode: 'none',
 };
 
 /**
@@ -64,6 +66,7 @@ export async function fetchBillingSettings(
       mwst_number: data.mwst_number ?? null,
       mwst_rate: Number(data.mwst_rate ?? 0),
       mwst_note: data.mwst_note ?? DEFAULT_BILLING_SETTINGS.mwst_note,
+      mwst_mode: (data.mwst_mode === 'exclusive' ? 'exclusive' : 'none') as 'none' | 'exclusive',
     };
   } catch (err) {
     console.error('Error fetching billing_settings:', err);

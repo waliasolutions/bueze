@@ -59,6 +59,8 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   let y = height - margin;
 
   const company = data.company;
+  const mwstMode = company.mwst_mode ?? 'none';
+  const showMwst = mwstMode === 'exclusive' && data.taxRate > 0;
 
   // Helper functions
   const drawText = (text: string, x: number, yPos: number, opts: { font?: typeof fontRegular; size?: number; color?: typeof TEXT_BLACK } = {}) => {
@@ -96,7 +98,8 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
     company.company_country,
     company.company_email,
   ];
-  if (company.mwst_number) {
+  // Only show MwSt number when mode is 'exclusive'
+  if (mwstMode === 'exclusive' && company.mwst_number) {
     companyLines.push(company.mwst_number);
   }
   for (const line of companyLines) {
@@ -214,30 +217,36 @@ export async function generateInvoicePdf(data: InvoicePdfData): Promise<Uint8Arr
   // ==========================================
   const totalsX = col2 - 60;
 
-  // Subtotal
-  drawText('Zwischensumme:', totalsX, y, { size: 10, color: TEXT_GRAY });
-  const subStr = formatCHF(data.netAmount);
-  const subW = fontRegular.widthOfTextAtSize(subStr, 10);
-  drawText(subStr, col3 - subW, y, { size: 10 });
-  y -= 18;
+  if (showMwst) {
+    // Subtotal
+    drawText('Zwischensumme:', totalsX, y, { size: 10, color: TEXT_GRAY });
+    const subStr = formatCHF(data.netAmount);
+    const subW = fontRegular.widthOfTextAtSize(subStr, 10);
+    drawText(subStr, col3 - subW, y, { size: 10 });
+    y -= 18;
 
-  // Tax
-  const taxLabel = data.taxRate > 0
-    ? `MWST (${data.taxRate}%):`
-    : `MWST (${company.mwst_note || 'befreit'}):`;
-  drawText(taxLabel, totalsX, y, { size: 10, color: TEXT_GRAY });
-  const taxStr = formatCHF(data.taxAmount);
-  const taxW = fontRegular.widthOfTextAtSize(taxStr, 10);
-  drawText(taxStr, col3 - taxW, y, { size: 10 });
-  y -= 5;
-  drawLine(totalsX, y, width - margin);
-  y -= 18;
+    // Tax line
+    const taxLabel = `MWST (${data.taxRate}%):`;
+    drawText(taxLabel, totalsX, y, { size: 10, color: TEXT_GRAY });
+    const taxStr = formatCHF(data.taxAmount);
+    const taxW = fontRegular.widthOfTextAtSize(taxStr, 10);
+    drawText(taxStr, col3 - taxW, y, { size: 10 });
+    y -= 5;
+    drawLine(totalsX, y, width - margin);
+    y -= 18;
+  }
 
   // Total (bold, larger)
   drawText('Total:', totalsX, y, { font: fontBold, size: 12 });
   const totalStr = formatCHF(data.amount);
   const totalW = fontBold.widthOfTextAtSize(totalStr, 12);
   drawText(totalStr, col3 - totalW, y, { font: fontBold, size: 12, color: BRAND_BLUE });
+
+  // MwSt note for 'none' mode (optional small note below total)
+  if (mwstMode === 'none' && company.mwst_note) {
+    y -= 16;
+    drawText(company.mwst_note, totalsX, y, { size: 8, color: TEXT_GRAY });
+  }
 
   y -= 40;
   drawLine(margin, y, width - margin);
