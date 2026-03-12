@@ -147,12 +147,12 @@ export default function OrphanedRecordsCleanup() {
     }
   };
 
-  const detailRows = scanReport ? extractDetailRows(scanReport) : [];
-  const countRows = scanReport ? extractCountRows(scanReport) : [];
-
   if (!isChecking && role !== 'super_admin') {
     return <Navigate to="/admin" replace />;
   }
+
+  const detailRows = scanReport ? extractDetailRows(scanReport) : [];
+  const countRows = scanReport ? extractCountRows(scanReport) : [];
 
   return (
     <AdminLayout title="Verwaiste Datensätze" description="Datensätze finden und bereinigen, die keinem aktiven Benutzer mehr zugeordnet sind.">
