@@ -567,8 +567,8 @@ const Profile = () => {
               {isHandwerker && (
                 <TabsTrigger value="payments" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">
                   <Receipt className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Rechnungen</span>
-                  <span className="sm:hidden">Rechnung</span>
+                   <span className="hidden sm:inline">Quittungen</span>
+                   <span className="sm:hidden">Quittung</span>
                 </TabsTrigger>
               )}
               <TabsTrigger value="settings" className="flex-1 sm:flex-none text-xs sm:text-sm px-2 sm:px-3 py-2 min-h-[40px]">

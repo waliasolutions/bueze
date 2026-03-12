@@ -177,10 +177,10 @@ export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({ userId
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => navigate('/handwerker-invoices')}
+                     onClick={() => navigate('/handwerker-invoices')}
                     >
                       <FileText className="h-4 w-4 mr-1" />
-                      Rechnungen
+                      Quittungen
                     </Button>
                   ) : (
                     <span className="text-muted-foreground text-sm">—</span>
