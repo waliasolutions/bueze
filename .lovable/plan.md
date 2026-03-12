@@ -1,67 +1,45 @@
 
 
-# Deep QA: Routing & URL Issues Found
+# Rename "Rechnungen" → "Quittungen" + Add Month Filter
 
-## Issues Identified
+## Analysis Results
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+### SSOT/DRY Status
+- **Invoice config** (`src/config/invoiceConfig.ts`) is SSOT for status labels, formatting — used by both `HandwerkerInvoices` and `AdminInvoices`. Good.
+- **Plan labels** (`src/config/subscriptionPlans.ts`) SSOT for `getPlanLabel()` and `PLAN_BADGE_VARIANT` — used consistently. Good.
+- **Edge function mirror** (`supabase/functions/_shared/invoiceLabels.ts`, `planLabels.ts`) correctly duplicated with comments referencing the frontend SSOT.
 
----
+### Cancellation & Downgrade Logic
+The `check-subscription-expiry` edge function handles all paths correctly:
+- **Path A**: `pending_plan = 'free'` + expired → immediate downgrade to free tier (5 proposals limit)
+- **Path B**: Non-cancelled, expired < 7 days → grace period, sends renewal email with Payrexx link
+- **Path C**: Non-cancelled, expired > 7 days → downgrade to free
+- **Path A0**: Paid plan change (`pending_plan` = different paid plan) → switches plan at period end
+- All paths reset `proposals_used_this_period`, set correct `proposals_limit` (FREE_TIER_PROPOSALS_LIMIT from SSOT)
 
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
+This is solid and correctly connected to subscriptions.
 
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
+## Changes
 
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
+### 1. Rename terminology: "Rechnungen" → "Quittungen" (7 files)
 
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
+All user-facing labels change from "Rechnung/Rechnungen" to "Quittung/Quittungen". Admin-facing labels stay as "Rechnungen" since admins manage billing.
 
-```tsx
-const [searchParams] = useSearchParams();
+**Files to update:**
+- `src/pages/HandwerkerInvoices.tsx` — page title, badge, empty state, stats, error messages
+- `src/components/PaymentHistoryTable.tsx` — button label "Rechnungen" → "Quittungen"
+- `src/pages/Profile.tsx` — tab label "Rechnungen" → "Quittungen"
+- `src/config/invoiceConfig.ts` — no change needed (status labels like "Bezahlt" are status-specific, not document-type-specific)
 
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
-```
+### 2. Add Month Filter to HandwerkerInvoices
 
----
+Add a month/year selector (Select dropdown) that filters invoices by `issued_at` month. Default: "Alle" (no filter). Options generated from the distinct months present in the invoice data.
 
-## Fix 2: AGB route — Add top-level `/agb` with redirect
+- Client-side filtering (invoices are already fully fetched)
+- Filter placed between stats cards and the table
+- Stats cards update to reflect the filtered subset
 
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
+### 3. No backend or schema changes needed
 
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
-
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
-
----
-
-## Fix 3: Stale comments in sitemap generator (optional)
-
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
-
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
-
----
-
-## Summary
-
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
+The subscription/cancellation/downgrade logic is correctly implemented and SSOT-connected. No fixes required.
 
