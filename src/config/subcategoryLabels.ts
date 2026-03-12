@@ -463,6 +463,14 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     majorCategoryId: 'bau_renovation',
     keywords: ['Gipser']
   },
+  geruestbauer: {
+    value: 'geruestbauer',
+    label: 'Gerüstbauer',
+    slug: 'geruestbauer',
+    shortDescription: 'Gerüstbau und -vermietung',
+    majorCategoryId: 'bau_renovation',
+    keywords: ['Gerüst', 'Gerüstbau', 'Baugerüst', 'Fassadengerüst']
+  },
   bodenleger: {
     value: 'bodenleger',
     label: 'Bodenleger',

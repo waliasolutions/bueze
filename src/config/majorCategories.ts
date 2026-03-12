@@ -38,7 +38,8 @@ export const majorCategories: Record<string, MajorCategory> = {
       'abbruch_durchbruch',
       'renovierung_sonstige',
       'maler',
-      'gipser'
+      'gipser',
+      'geruestbauer'
     ],
     color: 'from-amber-500 to-orange-600',
     showOnHome: true,

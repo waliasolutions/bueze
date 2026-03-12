@@ -1,90 +1,67 @@
 
 
-# Plan: Add "Gerüstbauer" Subcategory + Admin Category Editing
+# Deep QA: Routing & URL Issues Found
 
-## Part 1: Add "geruestbauer" to all SSOT files
+## Issues Identified
 
-The enum key will be `geruestbauer` under `bau_renovation`. Six files need updating — all are SSOT sources that the rest of the app derives from.
-
-### 1.1 Database Migration
-```sql
-ALTER TYPE handwerker_category ADD VALUE IF NOT EXISTS 'geruestbauer';
-```
-This makes the value valid in the `categories` column on `handwerker_profiles` and `leads`.
-
-### 1.2 Frontend Config (2 files)
-
-**`src/config/subcategoryLabels.ts`** — add entry after `spengler`:
-```typescript
-geruestbauer: {
-  value: 'geruestbauer',
-  label: 'Gerüstbauer',
-  slug: 'geruestbauer',
-  shortDescription: 'Gerüstbau und -vermietung',
-  majorCategoryId: 'bau_renovation',
-  keywords: ['Gerüst', 'Gerüstbau', 'Baugerüst', 'Fassadengerüst']
-},
-```
-
-**`src/config/majorCategories.ts`** — add `'geruestbauer'` to `bau_renovation.subcategories` array (line 42, before closing bracket).
-
-### 1.3 Backend Config (2 files)
-
-**`supabase/functions/_shared/subcategoryLabels.ts`** — add:
-```typescript
-'geruestbauer': 'Gerüstbauer',
-```
-
-**`supabase/functions/_shared/majorCategoryMapping.ts`** — add `'geruestbauer'` to the `bau_renovation` array.
-
-### Why this is sufficient
-All other consumers (forms, directory, filters, emails, lead matching, category landing pages) already read from these SSOT files via `getCategoryLabel()`, `majorCategorySubcategories`, and `subcategoryLabels`. No additional touchpoints needed — the new value will automatically appear in:
-- Client lead submission form (SubmitLead)
-- Handwerker onboarding & profile edit
-- Handwerker directory filters
-- Admin notification emails (via the SSOT fix already done)
-- Lead matching logic
-- Category landing pages
+| # | Severity | Issue | Location |
+|---|----------|-------|----------|
+| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
+| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
+| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
 
 ---
 
-## Part 2: Admin Category Editing in HandwerkerEditDialog
+## Fix 1: `/auth?mode=reset` — Make it work or fix the link
 
-Currently the dialog only edits contact + address. Add a categories section.
+**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
 
-### Changes to `HandwerkerEditDialog.tsx`:
+**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
 
-1. **Extend `HandwerkerEditData` interface** — add `categories: string[]`
-2. **Import** `majorCategories` from config and `subcategoryLabels` from config
-3. **Add categories section** to the form UI (after address, before footer):
-   - Group checkboxes by major category using `majorCategories`
-   - Each major category as a collapsible header
-   - Subcategories as checkboxes underneath
-   - Toggle-all per major category
-4. **Include `categories` in the `handleSave` update call**
-5. **Add `updateCategories` helper** that sets the categories array on the form state
+**File**: `src/pages/Auth.tsx`
+- Add `useSearchParams` import
+- Read `mode` param on mount
+- If `mode === 'reset'`, set `isDialogOpen` to `true`
 
-### Changes to `HandwerkerManagement.tsx`:
+```tsx
+const [searchParams] = useSearchParams();
 
-- The `Handwerker` interface already has `categories: string[]`
-- The `setEditingHandwerker(h)` already passes the full handwerker object including categories
-- The `HandwerkerEditData` type just needs to accept `categories` — no changes needed in the parent
-
-### UI Approach
-Use a compact multi-select with checkboxes grouped by major category. Each major category header shows a label and a "select all" toggle. Subcategories are listed as checkboxes below. This mirrors the existing pattern in `HandwerkerOnboarding` and `HandwerkerProfileEdit` but in a dialog context.
+useEffect(() => {
+  if (searchParams.get('mode') === 'reset') {
+    setIsDialogOpen(true);
+  }
+}, [searchParams]);
+```
 
 ---
 
-## Files Changed Summary
+## Fix 2: AGB route — Add top-level `/agb` with redirect
 
-| File | Change |
-|------|--------|
-| DB migration | `ALTER TYPE handwerker_category ADD VALUE 'geruestbauer'` |
-| `src/config/subcategoryLabels.ts` | Add `geruestbauer` entry |
-| `src/config/majorCategories.ts` | Add to `bau_renovation.subcategories` |
-| `supabase/functions/_shared/subcategoryLabels.ts` | Add `'geruestbauer': 'Gerüstbauer'` |
-| `supabase/functions/_shared/majorCategoryMapping.ts` | Add to `bau_renovation` array |
-| `src/components/admin/HandwerkerEditDialog.tsx` | Add categories to interface, form UI, and save logic |
+**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
 
-No new files. No new dependencies. Pure additive changes.
+**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+
+**File**: `src/App.tsx`
+- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
+
+---
+
+## Fix 3: Stale comments in sitemap generator (optional)
+
+**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
+
+**File**: `supabase/functions/generate-sitemap/index.ts`
+- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
+
+---
+
+## Summary
+
+| # | Fix | Files | Effort |
+|---|-----|-------|--------|
+| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
+| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
+| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
+
+No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
 

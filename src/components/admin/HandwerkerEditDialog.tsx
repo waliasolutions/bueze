@@ -5,9 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { SWISS_CANTONS } from '@/config/cantons';
-import { Loader2 } from 'lucide-react';
+import { majorCategories } from '@/config/majorCategories';
+import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { Loader2, ChevronDown } from 'lucide-react';
 
 interface HandwerkerEditData {
   id: string;
@@ -20,6 +24,7 @@ interface HandwerkerEditData {
   business_zip: string | null;
   business_city: string | null;
   business_canton: string | null;
+  categories: string[];
 }
 
 interface HandwerkerEditDialogProps {
@@ -34,12 +39,11 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<HandwerkerEditData | null>(null);
 
-  // Sync form state when handwerker changes
   const activeForm = form ?? handwerker;
 
   const handleOpen = (isOpen: boolean) => {
     if (isOpen && handwerker) {
-      setForm({ ...handwerker });
+      setForm({ ...handwerker, categories: [...(handwerker.categories || [])] });
     } else {
       setForm(null);
     }
@@ -49,6 +53,27 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
   const updateField = (field: keyof HandwerkerEditData, value: string) => {
     if (!activeForm) return;
     setForm({ ...activeForm, [field]: value || null });
+  };
+
+  const toggleCategory = (cat: string) => {
+    if (!activeForm) return;
+    const cats = activeForm.categories || [];
+    const updated = cats.includes(cat)
+      ? cats.filter(c => c !== cat)
+      : [...cats, cat];
+    setForm({ ...activeForm, categories: updated });
+  };
+
+  const toggleMajorCategory = (majorId: string) => {
+    if (!activeForm) return;
+    const major = majorCategories[majorId];
+    if (!major) return;
+    const cats = activeForm.categories || [];
+    const allSelected = major.subcategories.every(s => cats.includes(s));
+    const updated = allSelected
+      ? cats.filter(c => !major.subcategories.includes(c))
+      : [...new Set([...cats, ...major.subcategories])];
+    setForm({ ...activeForm, categories: updated });
   };
 
   const handleSave = async () => {
@@ -67,6 +92,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
           business_zip: activeForm.business_zip,
           business_city: activeForm.business_city,
           business_canton: activeForm.business_canton,
+          categories: activeForm.categories as any,
         })
         .eq('id', activeForm.id);
 
@@ -85,12 +111,14 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
 
   if (!activeForm) return null;
 
+  const currentCats = activeForm.categories || [];
+
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Handwerker bearbeiten</DialogTitle>
-          <DialogDescription>Kontakt- und Adressdaten bearbeiten</DialogDescription>
+          <DialogDescription>Kontakt-, Adress- und Kategoriedaten bearbeiten</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -147,6 +175,51 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Categories Section */}
+          <p className="text-sm font-semibold text-muted-foreground pt-2">Kategorien ({currentCats.length} ausgewählt)</p>
+          <div className="space-y-1 border rounded-md p-2">
+            {Object.values(majorCategories).map((major) => {
+              const selectedCount = major.subcategories.filter(s => currentCats.includes(s)).length;
+              const allSelected = major.subcategories.length > 0 && selectedCount === major.subcategories.length;
+
+              return (
+                <Collapsible key={major.id}>
+                  <div className="flex items-center gap-2 py-1.5 px-1">
+                    <Checkbox
+                      checked={allSelected}
+                      onCheckedChange={() => toggleMajorCategory(major.id)}
+                      aria-label={`Alle ${major.label} auswählen`}
+                    />
+                    <CollapsibleTrigger className="flex items-center gap-1 flex-1 text-sm font-medium hover:underline">
+                      {major.label}
+                      {selectedCount > 0 && (
+                        <span className="text-xs text-muted-foreground">({selectedCount})</span>
+                      )}
+                      <ChevronDown className="h-3.5 w-3.5 ml-auto shrink-0 transition-transform duration-200" />
+                    </CollapsibleTrigger>
+                  </div>
+                  <CollapsibleContent>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 pl-7 pb-2">
+                      {major.subcategories.map((sub) => {
+                        const info = subcategoryLabels[sub];
+                        return (
+                          <label key={sub} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                            <Checkbox
+                              checked={currentCats.includes(sub)}
+                              onCheckedChange={() => toggleCategory(sub)}
+                              className="h-3.5 w-3.5"
+                            />
+                            {info?.label || sub}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
           </div>
         </div>
 
