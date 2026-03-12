@@ -110,7 +110,19 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
     ],
   };
 
-  const allSections = [...navSections, accountSection];
+  // Wartung section only for super_admin
+  const wartungSection: NavSection = {
+    title: 'Wartung',
+    items: [
+      { label: 'Verwaiste Daten', href: '/admin/orphaned-records', icon: Briefcase },
+    ],
+  };
+
+  const allSections = [
+    ...navSections,
+    ...(role === 'super_admin' ? [wartungSection] : []),
+    accountSection,
+  ];
 
   // Check if we're in mobile sheet (onNavigate prop is present)
   const isMobileSheet = !!onNavigate;
