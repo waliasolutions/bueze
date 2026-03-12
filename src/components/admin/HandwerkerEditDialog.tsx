@@ -112,6 +112,10 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
   if (!activeForm) return null;
 
   const currentCats = activeForm.categories || [];
+  const checkedMajorCount = Object.values(majorCategories).filter(
+    m => m.subcategories.length > 0 && m.subcategories.every(s => currentCats.includes(s))
+  ).length;
+  const totalVisualChecks = currentCats.length + checkedMajorCount;
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
@@ -178,7 +182,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
           </div>
 
           {/* Categories Section */}
-          <p className="text-sm font-semibold text-muted-foreground pt-2">Kategorien ({currentCats.length} ausgewählt)</p>
+          <p className="text-sm font-semibold text-muted-foreground pt-2">Kategorien ({totalVisualChecks} ausgewählt)</p>
           <div className="space-y-1 border rounded-md p-2">
             {Object.values(majorCategories).map((major) => {
               const selectedCount = major.subcategories.filter(s => currentCats.includes(s)).length;
