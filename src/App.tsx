@@ -69,6 +69,7 @@ const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
 const AdminInvoices = lazy(() => import("./pages/admin/AdminInvoices"));
 const AdminBillingSettings = lazy(() => import("./pages/admin/AdminBillingSettings"));
 const DeletionAudit = lazy(() => import("./pages/admin/DeletionAudit"));
+const OrphanedRecordsCleanup = lazy(() => import("./pages/admin/OrphanedRecordsCleanup"));
 
 // Legal pages - low priority
 const AGB = lazy(() => import("./pages/legal/AGB"));
@@ -240,6 +241,7 @@ const App = () => {
                         <Route path="invoices" element={<AdminInvoices />} />
                         <Route path="billing" element={<AdminBillingSettings />} />
                         <Route path="deletion-audit" element={<DeletionAudit />} />
+                        <Route path="orphaned-records" element={<OrphanedRecordsCleanup />} />
                       </Routes>
                     </Suspense>
                   </AdminAuthProvider>

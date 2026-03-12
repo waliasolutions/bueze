@@ -74,6 +74,12 @@ const navSections: NavSection[] = [
       { label: 'GTM', href: '/admin/gtm', icon: Settings },
     ],
   },
+  {
+    title: 'Wartung',
+    items: [
+      { label: 'Verwaiste Daten', href: '/admin/orphaned-records', icon: Briefcase },
+    ],
+  },
 ];
 
 export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
