@@ -1,67 +1,34 @@
 
 
-# Deep QA: Routing & URL Issues Found
+# Fix: Category Count Mismatch in Admin Edit Dialog
 
-## Issues Identified
+## Problem
+Line 181 shows `currentCats.length` as the total count. But the major category checkboxes act as "select all" toggles — they appear checked only when ALL subcategories are selected. The count says e.g. "3 ausgewählt" but visually only 2 subcategory checkboxes are ticked, because the major category checkbox showing as checked is not counted separately (it's derived, not stored).
 
-| # | Severity | Issue | Location |
-|---|----------|-------|----------|
-| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
-| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
-| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
+## Fix
+The count on line 181 is actually correct in terms of data — `currentCats` contains exactly the subcategories stored in the DB. The visual confusion is that the major category checkbox shows as checked (when all subs are selected) making users think there should be +1 in the count.
 
----
+**Solution**: Change the header count to show both the number of selected subcategories AND how many major categories are fully selected, making it clearer:
 
-## Fix 1: `/auth?mode=reset` — Make it work or fix the link
-
-**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
-
-**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
-
-**File**: `src/pages/Auth.tsx`
-- Add `useSearchParams` import
-- Read `mode` param on mount
-- If `mode === 'reset'`, set `isDialogOpen` to `true`
-
-```tsx
-const [searchParams] = useSearchParams();
-
-useEffect(() => {
-  if (searchParams.get('mode') === 'reset') {
-    setIsDialogOpen(true);
-  }
-}, [searchParams]);
+Replace line 181:
+```typescript
+<p className="text-sm font-semibold text-muted-foreground pt-2">Kategorien ({currentCats.length} ausgewählt)</p>
 ```
+With a count that includes the visually-checked major categories:
+```typescript
+const checkedMajorCount = Object.values(majorCategories).filter(
+  m => m.subcategories.length > 0 && m.subcategories.every(s => currentCats.includes(s))
+).length;
+const totalVisualChecks = currentCats.length + checkedMajorCount;
+```
+Then display: `Kategorien ({totalVisualChecks} ausgewählt)`
 
----
+This way, if "Bau & Renovation" has all subs selected and shows a checked checkbox, it counts toward the total — matching what the admin sees visually.
 
-## Fix 2: AGB route — Add top-level `/agb` with redirect
+## Files Changed
+| File | Change |
+|------|--------|
+| `src/components/admin/HandwerkerEditDialog.tsx` | Add `checkedMajorCount` computation, update count display (3 lines) |
 
-**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
-
-**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
-
-**File**: `src/App.tsx`
-- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
-
----
-
-## Fix 3: Stale comments in sitemap generator (optional)
-
-**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
-
-**File**: `supabase/functions/generate-sitemap/index.ts`
-- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
-
----
-
-## Summary
-
-| # | Fix | Files | Effort |
-|---|-----|-------|--------|
-| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
-| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
-| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
-
-No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
+No new dependencies. Pure display fix.
 
