@@ -217,6 +217,7 @@ serve(async (req) => {
         const graceEndDate = formatSwissDate(addDays(sub.current_period_end, GRACE_PERIOD_DAYS));
 
         // Generate Payrexx checkout link via create-payrexx-gateway invocation
+        // Uses service-role key so we must pass userId + userEmail in the body
         let checkoutUrl = `${FRONTEND_URL}/checkout`;
         try {
           const { data: gatewayData, error: gatewayError } = await supabase.functions.invoke('create-payrexx-gateway', {
@@ -225,6 +226,7 @@ serve(async (req) => {
               successUrl: `${FRONTEND_URL}/handwerker-dashboard?payment=success`,
               cancelUrl: `${FRONTEND_URL}/handwerker-dashboard?payment=cancelled`,
               userId: sub.user_id,
+              userEmail: email,
             },
           });
 
