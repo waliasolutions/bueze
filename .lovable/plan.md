@@ -1,32 +1,67 @@
 
 
-# Fix: Category Count Includes Non-Visible Major Category Keys
+# Deep QA: Routing & URL Issues Found
 
-## Problem
-Some handwerkers have **major category keys** (e.g., `'bau_renovation'`) stored directly in their `categories` array alongside subcategories. The current count uses `currentCats.length` which includes these major keys, but the UI only renders checkboxes for subcategories — causing a mismatch (e.g., "3 ausgewählt" but only 2 checkboxes are ticked).
+## Issues Identified
 
-## Root Cause
-The `CategorySelector` component in multi mode stores both major category IDs and subcategory IDs in the selection array. Old data or the onboarding flow may have saved major keys to the DB. The admin dialog's count doesn't filter these out.
+| # | Severity | Issue | Location |
+|---|----------|-------|----------|
+| 1 | **Medium** | `/auth?mode=reset` link is dead — Auth.tsx ignores query params, so the reset dialog never auto-opens | `HandwerkerOnboarding.tsx` line 755 |
+| 2 | **Low** | AGB route inconsistency — Impressum and Datenschutz are top-level (`/impressum`, `/datenschutz`) but AGB is nested at `/legal/agb` with no top-level redirect | `App.tsx`, `contentDefaults.ts` |
+| 3 | **Info** | Sitemap generator comments reference deprecated `/browse-leads` and `/lead-submission-success` paths (comments only, no functional impact) | `generate-sitemap/index.ts` |
 
-## Fix (1 file)
+---
 
-**`src/components/admin/HandwerkerEditDialog.tsx`**
+## Fix 1: `/auth?mode=reset` — Make it work or fix the link
 
-1. Build a `Set` of all known subcategory IDs from `majorCategories`
-2. Filter `currentCats` to only count entries that are actual subcategories
-3. Use the filtered count for the display
+**Problem**: `HandwerkerOnboarding.tsx` links to `/auth?mode=reset` for "Passwort vergessen?", but `Auth.tsx` never reads `searchParams`. The user lands on the login page with no reset dialog.
 
-```typescript
-// Collect all valid subcategory IDs
-const allSubcatIds = new Set(
-  Object.values(majorCategories).flatMap(m => m.subcategories)
-);
-// Only count subcategories that have visible checkboxes
-const visibleSubcatCount = currentCats.filter(c => allSubcatIds.has(c)).length;
-const totalVisualChecks = visibleSubcatCount + checkedMajorCount;
+**Fix**: Read `mode` from search params in `Auth.tsx` and auto-open the reset dialog when `mode=reset`.
+
+**File**: `src/pages/Auth.tsx`
+- Add `useSearchParams` import
+- Read `mode` param on mount
+- If `mode === 'reset'`, set `isDialogOpen` to `true`
+
+```tsx
+const [searchParams] = useSearchParams();
+
+useEffect(() => {
+  if (searchParams.get('mode') === 'reset') {
+    setIsDialogOpen(true);
+  }
+}, [searchParams]);
 ```
 
-This ensures the count matches exactly what the admin sees — subcategory checkboxes plus fully-checked major category headers. Major category keys stored in the DB but not rendered as checkboxes are excluded from the count.
+---
 
-No new files. No new dependencies. Single computation change.
+## Fix 2: AGB route — Add top-level `/agb` with redirect
+
+**Problem**: `/impressum` and `/datenschutz` are top-level routes, but AGB lives at `/legal/agb`. Inconsistent URL structure. No redirect from `/agb` exists.
+
+**Fix**: Add `/agb` as a redirect to `/legal/agb` for consistency, matching the pattern already used for Impressum/Datenschutz redirects.
+
+**File**: `src/App.tsx`
+- Add: `<Route path="/agb" element={<Navigate to="/legal/agb" replace />} />`
+
+---
+
+## Fix 3: Stale comments in sitemap generator (optional)
+
+**Problem**: Comments reference `/browse-leads` and `/lead-submission-success` — both deprecated. No functional impact but misleading for future maintenance.
+
+**File**: `supabase/functions/generate-sitemap/index.ts`
+- Update comments to reflect current routes (`/search`, `/auftrag-erfolgreich`)
+
+---
+
+## Summary
+
+| # | Fix | Files | Effort |
+|---|-----|-------|--------|
+| 1 | Auto-open reset dialog via `?mode=reset` | `Auth.tsx` | 2 min |
+| 2 | Add `/agb` → `/legal/agb` redirect | `App.tsx` | 1 min |
+| 3 | Update stale route comments | `generate-sitemap/index.ts` | 1 min |
+
+No other broken routes found. All `navigate()`, `<Link to=...>`, and `href=...` references point to valid routes defined in `App.tsx`.
 
