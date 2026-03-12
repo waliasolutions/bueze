@@ -10,7 +10,7 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { emailWrapper, safe } from '../_shared/emailTemplates.ts';
-import { getPlanName, FREE_TIER_PROPOSALS_LIMIT, PLAN_AMOUNTS, PLAN_GATEWAY_NAMES } from '../_shared/planLabels.ts';
+import { getPlanName, FREE_TIER_PROPOSALS_LIMIT, PLAN_AMOUNTS, PLAN_GATEWAY_NAMES, PLAN_CONFIGS } from '../_shared/planLabels.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 import { addDays, startOfDaySwiss, endOfDaySwiss, formatSwissDate, addMonths } from '../_shared/dateFormatter.ts';
 
