@@ -19,6 +19,7 @@ import {
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 interface AdminSidebarProps {
   onNavigate?: () => void;
