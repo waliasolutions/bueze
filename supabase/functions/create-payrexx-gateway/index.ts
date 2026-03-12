@@ -125,7 +125,6 @@ Deno.serve(async (req) => {
       skipResultPage: '1',
       'fields[email][value]': userEmail,
       'fields[email][mandatory]': '1',
-      vatRate: '8.1',
       sku: `BUEZE_${planType.toUpperCase()}`,
     };
 
