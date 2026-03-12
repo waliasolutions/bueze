@@ -130,12 +130,7 @@ export default function OrphanedRecordsCleanup() {
   return (
     <AdminLayout title="Verwaiste Datensätze" description="Datensätze finden und bereinigen, die keinem aktiven Benutzer mehr zugeordnet sind.">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Verwaiste Datensätze</h1>
-          <p className="text-muted-foreground">
-            Datensätze finden und bereinigen, die keinem aktiven Benutzer mehr zugeordnet sind.
-          </p>
-        </div>
+        {/* Actions */}
 
         {/* Actions */}
         <Card>
