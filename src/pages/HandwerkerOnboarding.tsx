@@ -474,6 +474,9 @@ const HandwerkerOnboarding = () => {
         hourly_rate_max: formData.hourlyRateMax?.trim() ? parseInt(formData.hourlyRateMax) : null,
         verification_status: 'pending',
         is_verified: false,
+        business_zip: businessPlz || null,
+        business_city: businessCity || null,
+        business_canton: businessCanton || null,
       };
 
       const { data: profileData, error } = await supabase
