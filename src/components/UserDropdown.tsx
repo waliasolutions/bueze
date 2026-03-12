@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, LogOut } from 'lucide-react';
+import { User, LogOut, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -169,6 +169,16 @@ export const UserDropdown = () => {
         </DropdownMenuLabel>
         
         <DropdownMenuSeparator className="bg-line-200" />
+        
+        {isAdmin && (
+          <>
+            <DropdownMenuItem onClick={() => navigate('/admin/dashboard')} className="cursor-pointer">
+              <Shield className="mr-2 h-4 w-4 text-red-600" />
+              <span>Admin-Bereich</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-line-200" />
+          </>
+        )}
         
         {navItems.map((item) => (
           <DropdownMenuItem 
