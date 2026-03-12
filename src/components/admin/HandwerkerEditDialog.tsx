@@ -112,6 +112,10 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
   if (!activeForm) return null;
 
   const currentCats = activeForm.categories || [];
+  const checkedMajorCount = Object.values(majorCategories).filter(
+    m => m.subcategories.length > 0 && m.subcategories.every(s => currentCats.includes(s))
+  ).length;
+  const totalVisualChecks = currentCats.length + checkedMajorCount;
 
   return (
     <Dialog open={open} onOpenChange={handleOpen}>
