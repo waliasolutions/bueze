@@ -219,10 +219,10 @@ export default function OrphanedRecordsCleanup() {
         )}
 
         {cleanupDone && (
-          <Card className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
+          <Card className="border-primary/20 bg-primary/5">
             <CardContent className="pt-6 flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <p className="font-medium text-green-800 dark:text-green-200">Bereinigung erfolgreich abgeschlossen.</p>
+              <CheckCircle className="h-5 w-5 text-primary" />
+              <p className="font-medium">Bereinigung erfolgreich abgeschlossen.</p>
             </CardContent>
           </Card>
         )}
