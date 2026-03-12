@@ -178,6 +178,7 @@ export type Database = {
           company_website: string
           company_zip: string
           id: string
+          mwst_mode: string
           mwst_note: string | null
           mwst_number: string | null
           mwst_rate: number
@@ -194,6 +195,7 @@ export type Database = {
           company_website?: string
           company_zip?: string
           id?: string
+          mwst_mode?: string
           mwst_note?: string | null
           mwst_number?: string | null
           mwst_rate?: number
@@ -210,6 +212,7 @@ export type Database = {
           company_website?: string
           company_zip?: string
           id?: string
+          mwst_mode?: string
           mwst_note?: string | null
           mwst_number?: string | null
           mwst_rate?: number
@@ -2063,9 +2066,40 @@ export type Database = {
           company_street: string | null
           company_website: string | null
           company_zip: string | null
+          mwst_mode: string | null
           mwst_note: string | null
           mwst_number: string | null
           mwst_rate: number | null
+        }
+        Insert: {
+          company_city?: string | null
+          company_country?: string | null
+          company_email?: string | null
+          company_legal_name?: string | null
+          company_name?: string | null
+          company_phone?: string | null
+          company_street?: string | null
+          company_website?: string | null
+          company_zip?: string | null
+          mwst_mode?: string | null
+          mwst_note?: string | null
+          mwst_number?: string | null
+          mwst_rate?: number | null
+        }
+        Update: {
+          company_city?: string | null
+          company_country?: string | null
+          company_email?: string | null
+          company_legal_name?: string | null
+          company_name?: string | null
+          company_phone?: string | null
+          company_street?: string | null
+          company_website?: string | null
+          company_zip?: string | null
+          mwst_mode?: string | null
+          mwst_note?: string | null
+          mwst_number?: string | null
+          mwst_rate?: number | null
         }
         Relationships: []
       }
