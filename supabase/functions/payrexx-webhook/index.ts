@@ -365,10 +365,10 @@ Deno.serve(async (req) => {
         console.log(`User ${userId} already has paid plan ${existingSub.plan_type}, not reverting on failed payment`);
       }
 
-      // Record failed payment
+      // Record failed payment (use upsert to handle duplicate failed webhooks)
       await supabase
         .from('payment_history')
-        .insert({
+        .upsert({
           user_id: userId,
           amount: amount,
           currency: (currency || 'CHF').toUpperCase(),
@@ -380,7 +380,7 @@ Deno.serve(async (req) => {
           description: isAutoRenewFailure
             ? `Automatische Verlängerung fehlgeschlagen: ${planType} Abonnement`
             : `Fehlgeschlagene Zahlung: ${planType} Abonnement`,
-        });
+        }, { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true });
 
       // Notify user
       const failedMessage = isAutoRenewFailure

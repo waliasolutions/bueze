@@ -65,7 +65,7 @@ serve(async (req) => {
             proposals_limit: -1,
             proposals_used_this_period: 0,
             current_period_start: nowISO,
-            current_period_end: thirtyDaysFromNow.toISOString(),
+            current_period_end: addMonths(now, PLAN_CONFIGS[newPlanType]?.periodMonths || 1).toISOString(),
             pending_plan: null,
             renewal_reminder_sent: false,
             updated_at: nowISO,
