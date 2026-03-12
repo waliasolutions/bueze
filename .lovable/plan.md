@@ -19,7 +19,26 @@ Failed payment inserts now use `upsert` with `onConflict: 'payrexx_transaction_i
 ### ✅ Medium Fix 5: PATH A0 Period Calculation
 Plan downgrades now use `PLAN_CONFIGS[newPlanType].periodMonths` for correct period calculation (e.g., 6 months for `6_month` plan instead of always 30 days).
 
-### ⚠️ Known: Stale Cron Job
-`reset-monthly-proposal-quotas` (job ID 2) references non-existent `public.subscriptions` table. Cannot be removed due to permission constraints — silently fails, no impact. Can be removed via Supabase Dashboard SQL Editor with superuser access.
+### ✅ Medium Fix 6: VAT Rate Removed
+Removed hardcoded `vatRate: '8.1'` from `create-payrexx-gateway`. The company is MWST-exempt (Liechtenstein), so no VAT line should appear on the Payrexx payment page.
+
+### ⚠️ Manual Steps Required (Permission-Restricted)
+These cannot be done via Lovable and must be executed in the **Supabase Dashboard SQL Editor**:
+
+1. **Remove stale cron jobs**:
+   ```sql
+   SELECT cron.unschedule(2);  -- reset-monthly-proposal-quotas (references non-existent table)
+   SELECT cron.unschedule(3);  -- cleanup-pending-uploads-daily (references non-existent function)
+   ```
+
+2. **Drop duplicate index** (optional, cosmetic):
+   ```sql
+   DROP INDEX IF EXISTS idx_payment_history_payrexx_txn_unique;
+   ```
+
+3. **Pre-launch verification**:
+   - Verify `PAYREXX_API_KEY` and `PAYREXX_INSTANCE` are set to production values
+   - Verify `PAYREXX_TEST_MODE` is false or removed
+   - Configure Payrexx webhook URL in Payrexx Dashboard
 
 ## System Status: Ready for Go-Live ✅
