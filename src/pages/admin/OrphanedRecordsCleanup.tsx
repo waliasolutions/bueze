@@ -128,7 +128,7 @@ export default function OrphanedRecordsCleanup() {
   const rows = scanReport ? reportToRows(scanReport) : [];
 
   return (
-    <AdminLayout>
+    <AdminLayout title="Verwaiste Datensätze" description="Datensätze finden und bereinigen, die keinem aktiven Benutzer mehr zugeordnet sind.">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold">Verwaiste Datensätze</h1>
