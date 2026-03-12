@@ -35,9 +35,52 @@ Deno.serve(async (req) => {
 
   try {
     // Parse form data from Payrexx webhook
-    // Note: Payrexx does not send a signature header for webhooks.
-    // Security relies on amount/currency/referenceId validation and idempotency constraints.
     const rawBody = await req.text();
+
+    // --- Webhook signature verification ---
+    // Payrexx signs webhooks using HMAC-SHA256 with the API secret.
+    // The signature is sent in the 'ApiSignature' field of the form body.
+    const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY');
+    if (PAYREXX_API_KEY) {
+      const formParams = new URLSearchParams(rawBody);
+      const receivedSignature = formParams.get('ApiSignature');
+
+      if (receivedSignature) {
+        // Reconstruct the signed payload (all fields except ApiSignature)
+        const paramsWithoutSig = new URLSearchParams();
+        for (const [key, value] of formParams.entries()) {
+          if (key !== 'ApiSignature') {
+            paramsWithoutSig.append(key, value);
+          }
+        }
+        const dataToSign = paramsWithoutSig.toString();
+
+        // Generate expected signature
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(PAYREXX_API_KEY);
+        const messageData = encoder.encode(dataToSign);
+        const cryptoKey = await crypto.subtle.importKey(
+          'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+        );
+        const sig = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+        const bytes = new Uint8Array(sig);
+        let binary = '';
+        bytes.forEach(b => binary += String.fromCharCode(b));
+        const expectedSignature = btoa(binary);
+
+        if (expectedSignature !== receivedSignature) {
+          console.error('Webhook signature mismatch — possible forgery attempt');
+          return successResponse({ received: true, error: 'signature_mismatch' });
+        }
+        console.log('Webhook signature verified ✓');
+      } else {
+        // No signature present — log warning but continue
+        // (Payrexx may not send signatures for all webhook types)
+        console.warn('No ApiSignature in webhook payload — signature verification skipped');
+      }
+    } else {
+      console.warn('PAYREXX_API_KEY not set — webhook signature verification disabled');
+    }
     const formData = new URLSearchParams(rawBody);
     const transactionData = formData.get('transaction');
 
