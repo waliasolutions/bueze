@@ -81,6 +81,7 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { role } = useAdminAuth();
 
   const isActive = (href?: string) => {
     if (!href) return false;
