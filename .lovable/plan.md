@@ -1,47 +1,44 @@
 
+# Payrexx Payment System — Go-Live Fixes (Completed)
 
-# Update AGB Page — Expand to 17 Sections
+## All Critical & Medium Issues Resolved
 
-## Approach
+### ✅ Critical Fix 1: Service-Role Gateway Creation
+`create-payrexx-gateway` now supports a service-role code path. When called server-to-server (e.g., from `check-subscription-expiry`), it accepts `userId` and `userEmail` from the body instead of relying on `auth.getUser()`. Grace period renewal emails now include direct Payrexx payment links.
 
-Rewrite `src/pages/legal/AGB.tsx` with the expanded section structure. Maintain SSOT by importing prices from `SUBSCRIPTION_PLANS` and company data from `useBillingContext()`. Use helper functions from `subscriptionPlans.ts` (`formatPrice`) to avoid hardcoded prices.
+### ✅ Critical Fix 2: Cron Jobs Created
+- `check-subscription-expiry`: daily at 02:00 UTC
+- `send-pending-payment-reminder`: daily at 10:00 UTC
 
-## New Section Structure
+### ✅ Critical Fix 3: Webhook Signature Verification
+`payrexx-webhook` now verifies HMAC-SHA256 signatures using `PAYREXX_API_KEY`. If the `ApiSignature` field is present in the webhook payload, it's validated against the expected hash. Mismatches are rejected with a logged warning.
 
-| # | Title | Source |
-|---|-------|--------|
-| 1 | Geltungsbereich | Existing (keep) |
-| 2 | Zweck der Plattform | Existing (keep) |
-| 3 | Registrierung und Nutzung | Existing (keep) |
-| 4 | Leistungsumfang und Abonnements | Existing (keep, use SUBSCRIPTION_PLANS for prices) |
-| **5** | **Zahlungsabwicklung (Payrexx)** | **NEW** — Payrexx as PCI-DSS compliant processor, their AGB apply, no card data stored on büeze.ch |
-| **6** | **Zahlungsverzug** | **NEW** — Non-payment → downgrade to Free tier, no grace period mentioned |
-| 7 | Vertragsdauer und Kündigung | Existing §6 (renumbered) |
-| **8** | **Stornierung und Rückerstattung** | **NEW** — No refunds; exceptions: duplicate payments, platform errors |
-| **9** | **Nicht angenommene Anfragen** | **NEW** — 10-day expiry, no guarantee of proposals, re-post allowed |
-| **10** | **Pflichten der Plattform** | **NEW** — Obligations to both parties |
-| 11 | Bewertungen | Existing §7 (renumbered) |
-| 12 | Haftungsausschluss (allgemein) | Existing §8 (renumbered) |
-| **13** | **Haftung gegenüber Kunden** | **NEW** — Platform is mediator only, no liability for craftsman work |
-| **14** | **Haftung gegenüber Handwerkern** | **NEW** — No guarantee of leads/revenue, liability capped at subscription fees |
-| 15 | Datenschutz | Existing §9 (renumbered) |
-| 16 | Geistiges Eigentum | Existing §10 (renumbered) |
-| **17** | **Anwendbares Recht und Gerichtsstand** | **EXPANDED** — Vaduz courts, German proceedings, 30-day complaint period, mediation recommendation, severability |
-| — | Kontakt | Existing (keep) |
+### ✅ Medium Fix 4: Failed Payment Duplicate Handling
+Failed payment inserts now use `upsert` with `onConflict: 'payrexx_transaction_id'` and `ignoreDuplicates: true` to prevent errors from duplicate failed webhooks.
 
-## SSOT / DRY Details
+### ✅ Medium Fix 5: PATH A0 Period Calculation
+Plan downgrades now use `PLAN_CONFIGS[newPlanType].periodMonths` for correct period calculation (e.g., 6 months for `6_month` plan instead of always 30 days).
 
-- Import `SUBSCRIPTION_PLANS, formatPrice` from `@/config/subscriptionPlans` to render plan prices dynamically (e.g., `formatPrice(SUBSCRIPTION_PLANS.monthly.price)` instead of hardcoded "CHF 90")
-- Continue using `useBillingContext()` for company name, address, MWST info
-- Single file edit — no new components needed (it's a legal text page, not reusable UI)
+### ✅ Medium Fix 6: VAT Rate Removed
+Removed hardcoded `vatRate: '8.1'` from `create-payrexx-gateway`. The company is MWST-exempt (Liechtenstein), so no VAT line should appear on the Payrexx payment page.
 
-## Changes
+### ⚠️ Manual Steps Required (Permission-Restricted)
+These cannot be done via Lovable and must be executed in the **Supabase Dashboard SQL Editor**:
 
-**File**: `src/pages/legal/AGB.tsx`
-- Add import for `SUBSCRIPTION_PLANS, formatPrice`
-- Replace hardcoded prices in §4 with SSOT references
-- Add MWST note dynamically: `b.mwst_note` instead of hardcoded "exkl. MwSt."
-- Insert 5 new sections (§5, §6, §8, §9, §10, §13, §14)
-- Expand §17 with Vaduz courts, complaint period, severability
-- Renumber all existing sections accordingly
+1. **Remove stale cron jobs**:
+   ```sql
+   SELECT cron.unschedule(2);  -- reset-monthly-proposal-quotas (references non-existent table)
+   SELECT cron.unschedule(3);  -- cleanup-pending-uploads-daily (references non-existent function)
+   ```
 
+2. **Drop duplicate index** (optional, cosmetic):
+   ```sql
+   DROP INDEX IF EXISTS idx_payment_history_payrexx_txn_unique;
+   ```
+
+3. **Pre-launch verification**:
+   - Verify `PAYREXX_API_KEY` and `PAYREXX_INSTANCE` are set to production values
+   - Verify `PAYREXX_TEST_MODE` is false or removed
+   - Configure Payrexx webhook URL in Payrexx Dashboard
+
+## System Status: Ready for Go-Live ✅

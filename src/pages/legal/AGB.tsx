@@ -5,9 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
 import { useBillingContext } from '@/contexts/BillingSettingsProvider';
+import { SUBSCRIPTION_PLANS, formatPrice } from '@/config/subscriptionPlans';
 
 const AGB = () => {
   const { settings: b } = useBillingContext();
+  const plans = SUBSCRIPTION_PLANS;
+
   const schemaMarkup = wrapInGraph(
     generateWebPageSchema(
       "Allgemeine Geschäftsbedingungen (AGB)",
@@ -34,11 +37,13 @@ const AGB = () => {
               <p className="text-muted-foreground">Letzte Aktualisierung: {new Date().toLocaleDateString('de-CH')}</p>
             </CardHeader>
             <CardContent className="prose prose-slate max-w-none">
+
+              {/* §1 Geltungsbereich */}
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">1. Geltungsbereich</h2>
                 <p className="text-ink-700 mb-4">
                   Diese Allgemeinen Geschäftsbedingungen (AGB) regeln die Nutzung der Online-Plattform BÜEZE.CH (nachfolgend „Plattform") der
-                  {b.company_legal_name}, {b.company_street}, {b.company_zip} {b.company_city}, {b.company_country}.
+                  {' '}{b.company_legal_name}, {b.company_street}, {b.company_zip} {b.company_city}, {b.company_country}.
                 </p>
                 <p className="text-ink-700 mb-4">
                   Sie gelten für alle Nutzerinnen und Nutzer der Plattform, insbesondere:
@@ -52,6 +57,7 @@ const AGB = () => {
                 </p>
               </section>
 
+              {/* §2 Zweck der Plattform */}
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">2. Zweck der Plattform</h2>
                 <p className="text-ink-700 mb-4">
@@ -64,6 +70,7 @@ const AGB = () => {
                 </p>
               </section>
 
+              {/* §3 Registrierung und Nutzung */}
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">3. Registrierung und Nutzung</h2>
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
@@ -73,9 +80,10 @@ const AGB = () => {
                 </ul>
               </section>
 
+              {/* §4 Leistungsumfang und Abonnements */}
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">4. Leistungsumfang und Abonnements</h2>
-                
+
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold mb-2">4.1 Offertenprozess</h3>
                   <ol className="list-decimal pl-6 text-ink-700 space-y-2">
@@ -93,7 +101,7 @@ const AGB = () => {
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold mb-2">4.2 Kontingente und Limits</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
-                    <li>Free-Nutzer: 5 Offerten pro Monat, Reset am 1. des Folgemonats</li>
+                    <li>Free-Nutzer: {plans.free.proposalsLimit} Offerten pro Monat, Reset am 1. des Folgemonats</li>
                     <li>Abo-Nutzer (Monatlich, 6-Monate, Jährlich): Unbegrenzte Offerten</li>
                     <li>Abgelehnte Offerten werden nicht auf das Kontingent angerechnet</li>
                     <li>Nur eingereichte Offerten zählen zur monatlichen Limite</li>
@@ -104,12 +112,12 @@ const AGB = () => {
                 <p className="text-ink-700 mb-4">
                   BÜEZE.CH bietet Handwerkern folgende Nutzungspakete an:
                 </p>
-                
+
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold mb-2">4.3 Free-Paket</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
                     <li>Kostenlos nutzbar</li>
-                    <li>5 Offerten pro Monat</li>
+                    <li>{plans.free.proposalsLimit} Offerten pro Monat</li>
                     <li>Zugriff auf alle aktiven Anfragen</li>
                     <li>Kontaktdaten nach Annahme durch Kunden</li>
                     <li>10-Tage-Frist für Offerteneingabe</li>
@@ -120,7 +128,7 @@ const AGB = () => {
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold mb-2">4.4 Monatliches Abo</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
-                    <li>CHF 90 / Monat</li>
+                    <li>{formatPrice(plans.monthly.price)} / Monat</li>
                     <li>Unbegrenzte Offerten</li>
                     <li>Erweiterte Suchfilter und Benachrichtigungen</li>
                     <li>Kontaktdaten nach Annahme durch Kunden</li>
@@ -132,7 +140,7 @@ const AGB = () => {
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold mb-2">4.5 6-Monats-Abo</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
-                    <li>CHF 510 / 6 Monate (–10 %)</li>
+                    <li>{formatPrice(plans['6_month'].price)} / 6 Monate ({plans['6_month'].savings})</li>
                     <li>Unbegrenzte Offerten</li>
                     <li>Erweiterte Suchfilter und Benachrichtigungen</li>
                     <li>Sofortiger Zugriff auf alle aktiven Anfragen</li>
@@ -145,7 +153,7 @@ const AGB = () => {
                 <div className="mb-6">
                   <h3 className="text-xl font-semibold mb-2">4.6 Jahresabo</h3>
                   <ul className="list-disc pl-6 text-ink-700 space-y-2">
-                    <li>CHF 960 / Jahr (–20 %)</li>
+                    <li>{formatPrice(plans.annual.price)} / Jahr ({plans.annual.savings})</li>
                     <li>Unbegrenzte Offerten</li>
                     <li>Erweiterte Suchfilter und Benachrichtigungen</li>
                     <li>Sofortiger Zugriff auf alle aktiven Anfragen</li>
@@ -156,22 +164,35 @@ const AGB = () => {
                 </div>
 
                 <p className="text-ink-700 font-semibold">
-                  Alle Preise verstehen sich exkl. MwSt.
+                  Alle Preise verstehen sich {b.mwst_note ? b.mwst_note.toLowerCase() : 'exkl. MwSt.'}.
                 </p>
               </section>
 
+              {/* §5 Zahlungsabwicklung (Payrexx) — NEW */}
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">5. Zahlung und Freischaltung</h2>
+                <h2 className="text-2xl font-bold mb-4">5. Zahlungsabwicklung (Payrexx)</h2>
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
-                  <li>Alle Leistungen werden im Voraus bezahlt.</li>
-                  <li>Die Bezahlung erfolgt über die auf der Plattform angebotenen Zahlungsmethoden (z. B. Kreditkarte, Twint, PostFinance, Banküberweisung).</li>
+                  <li>Sämtliche Zahlungen werden über den akkreditierten Schweizer Zahlungsdienstleister Payrexx AG abgewickelt.</li>
+                  <li>Payrexx ist PCI-DSS-zertifiziert. Kreditkarten- und Zahlungsdaten werden ausschliesslich von Payrexx verarbeitet und gespeichert; BÜEZE.CH speichert zu keinem Zeitpunkt Kartendaten.</li>
+                  <li>Es gelten ergänzend die Allgemeinen Geschäftsbedingungen von Payrexx (einsehbar unter payrexx.com).</li>
+                  <li>Unterstützte Zahlungsmethoden umfassen unter anderem Kreditkarte, TWINT, PostFinance und Banküberweisung.</li>
                   <li>Nach erfolgter Zahlung wird der gebuchte Leistungsumfang sofort freigeschaltet.</li>
-                  <li>Da alle Zahlungen im Voraus erfolgen, besteht kein Zahlungsverzug.</li>
                 </ul>
               </section>
 
+              {/* §6 Zahlungsverzug — NEW */}
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">6. Vertragsdauer und Kündigung</h2>
+                <h2 className="text-2xl font-bold mb-4">6. Zahlungsverzug</h2>
+                <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                  <li>Alle Leistungen werden im Voraus bezahlt. Bei Nichtzahlung oder fehlgeschlagener Verlängerungszahlung wird das Konto automatisch auf das kostenlose Free-Paket ({plans.free.proposalsLimit} Offerten/Monat) herabgestuft.</li>
+                  <li>Mit der Herabstufung entfallen sämtliche Vorteile des bisherigen Abonnements. Bereits laufende Offerten bleiben bestehen, neue Offerten unterliegen dem Free-Kontingent.</li>
+                  <li>BÜEZE.CH ist nicht verpflichtet, den Nutzer vor der Herabstufung gesondert zu mahnen.</li>
+                </ul>
+              </section>
+
+              {/* §7 Vertragsdauer und Kündigung (ex §6) */}
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">7. Vertragsdauer und Kündigung</h2>
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
                   <li>Die Vertragsdauer richtet sich nach der gewählten Abolaufzeit.</li>
                   <li>Ohne fristgerechte Kündigung verlängert sich das Abo automatisch um die gleiche Laufzeit.</li>
@@ -181,8 +202,59 @@ const AGB = () => {
                 </ul>
               </section>
 
+              {/* §8 Stornierung und Rückerstattung — NEW */}
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">7. Bewertungen</h2>
+                <h2 className="text-2xl font-bold mb-4">8. Stornierung und Rückerstattung</h2>
+                <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                  <li>Bereits bezahlte Abonnements werden grundsätzlich nicht rückerstattet.</li>
+                  <li>Ausnahmen bestehen ausschliesslich bei:
+                    <ul className="list-disc pl-6 mt-2 space-y-1">
+                      <li>nachweislich doppelt ausgeführten Zahlungen,</li>
+                      <li>technischen Fehlern der Plattform, die eine Nutzung des bezahlten Leistungsumfangs verunmöglicht haben.</li>
+                    </ul>
+                  </li>
+                  <li>Rückerstattungsanträge sind schriftlich an {b.company_email} zu richten und müssen innerhalb von 30 Tagen nach der betreffenden Zahlung eingereicht werden.</li>
+                  <li>BÜEZE.CH prüft jeden Antrag einzeln und entscheidet nach eigenem Ermessen.</li>
+                </ul>
+              </section>
+
+              {/* §9 Nicht angenommene Anfragen — NEW */}
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">9. Nicht angenommene Anfragen</h2>
+                <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                  <li>Jede Anfrage hat eine Frist von 10 Tagen, innerhalb derer Handwerker Offerten einreichen können.</li>
+                  <li>BÜEZE.CH garantiert nicht, dass für jede Anfrage Offerten eingehen. Die Plattform ist ein Vermittlungsdienst, kein Leistungsversprechen.</li>
+                  <li>Nach Ablauf der 10-Tage-Frist ohne eingegangene Offerten verfällt die Anfrage automatisch.</li>
+                  <li>Der Kunde kann jederzeit eine neue, identische oder angepasste Anfrage erfassen.</li>
+                  <li>Das Erfassen von Anfragen ist für Kunden kostenlos und unbegrenzt möglich.</li>
+                </ul>
+              </section>
+
+              {/* §10 Pflichten der Plattform — NEW */}
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">10. Pflichten der Plattform</h2>
+                <p className="text-ink-700 mb-4">BÜEZE.CH verpflichtet sich gegenüber allen Nutzern zu Folgendem:</p>
+                <div className="mb-4">
+                  <h3 className="text-lg font-semibold mb-2">Gegenüber Kunden:</h3>
+                  <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                    <li>Bereitstellung einer funktionierenden Plattform zur Erfassung von Anfragen und zum Empfang von Offerten.</li>
+                    <li>Weiterleitung eingehender Offerten an den Auftraggeber.</li>
+                    <li>Schutz personenbezogener Daten gemäss Datenschutzerklärung.</li>
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Gegenüber Handwerkern:</h3>
+                  <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                    <li>Bereitstellung relevanter Anfragen gemäss den hinterlegten Kategorien und Servicegebieten.</li>
+                    <li>Korrekte Abrechnung und transparente Darstellung des Abonnement-Status.</li>
+                    <li>Sorgfältige Verwaltung der Profilverifizierung.</li>
+                  </ul>
+                </div>
+              </section>
+
+              {/* §11 Bewertungen (ex §7) */}
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">11. Bewertungen</h2>
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
                   <li>Bewertungen können ausschliesslich nach vollständiger Erledigung und Abschluss eines vermittelten Auftrags abgegeben werden.</li>
                   <li>Es darf ausschliesslich die erbrachte handwerkliche Leistung bewertet werden; persönliche Angriffe, diskriminierende Äusserungen oder sachfremde Inhalte sind unzulässig.</li>
@@ -193,11 +265,10 @@ const AGB = () => {
                 </ul>
               </section>
 
+              {/* §12 Haftungsausschluss (allgemein) (ex §8) */}
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">8. Haftungsausschluss</h2>
-                <p className="text-ink-700 mb-4">
-                  BÜEZE.CH haftet nicht für:
-                </p>
+                <h2 className="text-2xl font-bold mb-4">12. Haftungsausschluss (allgemein)</h2>
+                <p className="text-ink-700 mb-4">BÜEZE.CH haftet nicht für:</p>
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
                   <li>die Richtigkeit, Vollständigkeit oder Qualität der von Nutzern bereitgestellten Informationen,</li>
                   <li>das Zustandekommen, die Durchführung oder Nichterfüllung eines Auftrags zwischen Handwerker und Kunde,</li>
@@ -208,8 +279,31 @@ const AGB = () => {
                 </p>
               </section>
 
+              {/* §13 Haftung gegenüber Kunden — NEW */}
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">9. Datenschutz</h2>
+                <h2 className="text-2xl font-bold mb-4">13. Haftung gegenüber Kunden</h2>
+                <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                  <li>BÜEZE.CH agiert ausschliesslich als Vermittlerin und ist nicht Vertragspartei der zwischen Kunde und Handwerker geschlossenen Vereinbarungen.</li>
+                  <li>BÜEZE.CH übernimmt keinerlei Haftung für die Qualität, Vollständigkeit, Terminierung oder Mängelfreiheit der durch Handwerker erbrachten Arbeiten.</li>
+                  <li>Reklamationen und Gewährleistungsansprüche sind direkt gegenüber dem jeweiligen Handwerker geltend zu machen.</li>
+                  <li>BÜEZE.CH prüft die Qualifikation und Zuverlässigkeit registrierter Handwerker im Rahmen des Verifizierungsprozesses, gibt jedoch keine Garantie für deren Leistungsfähigkeit.</li>
+                </ul>
+              </section>
+
+              {/* §14 Haftung gegenüber Handwerkern — NEW */}
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">14. Haftung gegenüber Handwerkern</h2>
+                <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                  <li>BÜEZE.CH garantiert weder eine Mindestanzahl an Anfragen noch ein bestimmtes Auftragsvolumen oder Umsatzniveau.</li>
+                  <li>Die Anzahl verfügbarer Anfragen hängt von der Nachfrage in der jeweiligen Region und Kategorie ab und kann variieren.</li>
+                  <li>Die Haftung von BÜEZE.CH gegenüber Handwerkern ist in jedem Fall auf die Höhe der im laufenden Abrechnungszeitraum bezahlten Abonnementgebühren beschränkt.</li>
+                  <li>Entgangener Gewinn, indirekte Schäden oder Folgeschäden sind von der Haftung ausgeschlossen.</li>
+                </ul>
+              </section>
+
+              {/* §15 Datenschutz (ex §9) */}
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">15. Datenschutz</h2>
                 <p className="text-ink-700 mb-4">
                   Der Schutz personenbezogener Daten hat für BÜEZE.CH oberste Priorität.
                   Alle Daten werden gemäss dem Schweizer Datenschutzgesetz (DSG) verarbeitet.
@@ -217,30 +311,38 @@ const AGB = () => {
                 </p>
               </section>
 
+              {/* §16 Geistiges Eigentum (ex §10) */}
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">10. Geistiges Eigentum</h2>
+                <h2 className="text-2xl font-bold mb-4">16. Geistiges Eigentum</h2>
                 <p className="text-ink-700 mb-4">
                   Alle Inhalte, Texte, Logos, Designs und Softwareelemente der Plattform sind Eigentum der {b.company_legal_name} oder entsprechend lizenziert.
                   Jegliche Nutzung ausserhalb der Plattform bedarf der schriftlichen Zustimmung.
                 </p>
               </section>
 
+              {/* §17 Anwendbares Recht und Gerichtsstand — EXPANDED */}
               <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">11. Änderungen der AGB</h2>
+                <h2 className="text-2xl font-bold mb-4">17. Anwendbares Recht und Gerichtsstand</h2>
+                <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                  <li>Es gilt ausschliesslich liechtensteinisches Recht unter Ausschluss der kollisionsrechtlichen Verweisungsnormen.</li>
+                  <li>Ausschliesslicher Gerichtsstand ist Vaduz, Fürstentum Liechtenstein.</li>
+                  <li>Die Verfahrenssprache ist Deutsch.</li>
+                  <li>Vor Einleitung eines gerichtlichen Verfahrens ist der Nutzer verpflichtet, seine Beschwerde schriftlich an {b.company_email} zu richten. BÜEZE.CH verpflichtet sich, innerhalb von 30 Tagen eine Stellungnahme abzugeben.</li>
+                  <li>Den Parteien wird empfohlen, vor Anrufung eines Gerichts eine Mediation in Anspruch zu nehmen.</li>
+                  <li>Sollten einzelne Bestimmungen dieser AGB unwirksam oder undurchführbar sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen hiervon unberührt. An die Stelle der unwirksamen Bestimmung tritt eine wirksame Regelung, die dem wirtschaftlichen Zweck der unwirksamen Bestimmung am nächsten kommt.</li>
+                </ul>
+              </section>
+
+              {/* §18 Änderungen der AGB (ex §11) */}
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">18. Änderungen der AGB</h2>
                 <p className="text-ink-700 mb-4">
                   BÜEZE.CH behält sich das Recht vor, diese AGB jederzeit zu ändern.
                   Änderungen werden auf der Website veröffentlicht und gelten ab dem Veröffentlichungsdatum als akzeptiert.
                 </p>
               </section>
 
-              <section className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">12. Anwendbares Recht und Gerichtsstand</h2>
-                <p className="text-ink-700 mb-4">
-                  Es gilt ausschliesslich liechtensteinisches Recht.
-                  Gerichtsstand ist {b.company_city}, {b.company_country}.
-                </p>
-              </section>
-
+              {/* Kontakt */}
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Kontakt</h2>
                 <p className="text-ink-700 mb-2">
@@ -253,6 +355,7 @@ const AGB = () => {
                   {b.company_website}
                 </p>
               </section>
+
             </CardContent>
           </Card>
         </div>
