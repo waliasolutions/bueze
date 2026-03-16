@@ -1,36 +1,44 @@
 
+# Payrexx Payment System — Go-Live Fixes (Completed)
 
-# Fix 3 Build Errors + baumpflege DB Migration
+## All Critical & Medium Issues Resolved
 
-## 1. Add `EMAIL_SENDER` export to `siteConfig.ts`
+### ✅ Critical Fix 1: Service-Role Gateway Creation
+`create-payrexx-gateway` now supports a service-role code path. When called server-to-server (e.g., from `check-subscription-expiry`), it accepts `userId` and `userEmail` from the body instead of relying on `auth.getUser()`. Grace period renewal emails now include direct Payrexx payment links.
 
-**File**: `supabase/functions/_shared/siteConfig.ts`
+### ✅ Critical Fix 2: Cron Jobs Created
+- `check-subscription-expiry`: daily at 02:00 UTC
+- `send-pending-payment-reminder`: daily at 10:00 UTC
 
-Add: `export const EMAIL_SENDER = 'Büeze.ch <noreply@bueeze.ch>';`
+### ✅ Critical Fix 3: Webhook Signature Verification
+`payrexx-webhook` now verifies HMAC-SHA256 signatures using `PAYREXX_API_KEY`. If the `ApiSignature` field is present in the webhook payload, it's validated against the expected hash. Mismatches are rejected with a logged warning.
 
-This resolves both TS2305 errors in `smtp2go.ts` (line 4) and `reset-user-password/index.ts` (line 4).
+### ✅ Medium Fix 4: Failed Payment Duplicate Handling
+Failed payment inserts now use `upsert` with `onConflict: 'payrexx_transaction_id'` and `ignoreDuplicates: true` to prevent errors from duplicate failed webhooks.
 
-## 2. Remove duplicate `reinigung_hauswartung` key in `subcategoryLabels.ts`
+### ✅ Medium Fix 5: PATH A0 Period Calculation
+Plan downgrades now use `PLAN_CONFIGS[newPlanType].periodMonths` for correct period calculation (e.g., 6 months for `6_month` plan instead of always 30 days).
 
-**File**: `supabase/functions/_shared/subcategoryLabels.ts`
+### ✅ Medium Fix 6: VAT Rate Removed
+Removed hardcoded `vatRate: '8.1'` from `create-payrexx-gateway`. The company is MWST-exempt (Liechtenstein), so no VAT line should appear on the Payrexx payment page.
 
-Line 12 already has `'reinigung_hauswartung': 'Reinigung & Hauswartung'` as a major category. Line 107 duplicates it with value `'Hauswartung'`. Remove line 107. The major category entry on line 12 is the correct SSOT label.
+### ⚠️ Manual Steps Required (Permission-Restricted)
+These cannot be done via Lovable and must be executed in the **Supabase Dashboard SQL Editor**:
 
-## 3. Database migration: add `baumpflege` to enum
+1. **Remove stale cron jobs**:
+   ```sql
+   SELECT cron.unschedule(2);  -- reset-monthly-proposal-quotas (references non-existent table)
+   SELECT cron.unschedule(3);  -- cleanup-pending-uploads-daily (references non-existent function)
+   ```
 
-Single migration file with:
+2. **Drop duplicate index** (optional, cosmetic):
+   ```sql
+   DROP INDEX IF EXISTS idx_payment_history_payrexx_txn_unique;
+   ```
 
-```sql
-ALTER TYPE handwerker_category ADD VALUE IF NOT EXISTS 'baumpflege';
-```
+3. **Pre-launch verification**:
+   - Verify `PAYREXX_API_KEY` and `PAYREXX_INSTANCE` are set to production values
+   - Verify `PAYREXX_TEST_MODE` is false or removed
+   - Configure Payrexx webhook URL in Payrexx Dashboard
 
-PostgreSQL 15 (Supabase) supports `ADD VALUE IF NOT EXISTS` inside transactions, so no special handling needed. The statement is idempotent.
-
-## Summary
-
-| Change | File |
-|--------|------|
-| Add `EMAIL_SENDER` export | `supabase/functions/_shared/siteConfig.ts` |
-| Remove duplicate key (line 107) | `supabase/functions/_shared/subcategoryLabels.ts` |
-| Add `baumpflege` enum value | DB migration |
-
+## System Status: Ready for Go-Live ✅

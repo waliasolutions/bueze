@@ -2423,10 +2423,10 @@ export type Database = {
         | "bodenbelaege"
         | "kueche"
         | "garten_umgebung"
-        | "baumpflege"
         | "reinigung_hauswartung"
         | "raeumung_entsorgung"
         | "geruestbauer"
+        | "baumpflege"
       lead_status:
         | "draft"
         | "active"
@@ -2723,10 +2723,10 @@ export const Constants = {
         "bodenbelaege",
         "kueche",
         "garten_umgebung",
-        "baumpflege",
         "reinigung_hauswartung",
         "raeumung_entsorgung",
         "geruestbauer",
+        "baumpflege",
       ],
       lead_status: [
         "draft",
