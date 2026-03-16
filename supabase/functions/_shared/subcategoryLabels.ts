@@ -99,6 +99,7 @@ export const subcategoryLabels: Record<string, string> = {
   'gartenbau': 'Gartenbau',
   'pflasterarbeiten': 'Pflasterarbeiten',
   'zaun_torbau': 'Zaun- und Torbau',
+  'baumpflege': 'Baumpflege',
   'aussenarbeiten_sonstige': 'Sonstige Aussenarbeiten',
 
   // Reinigung & Hauswartung
