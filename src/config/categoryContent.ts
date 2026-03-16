@@ -863,6 +863,45 @@ export const categoryContent: Record<string, CategoryContent> = {
     metaDescription: 'Garagen und Carports vom Fachmann. Kostenlose Offerten.'
   },
 
+  'baumpflege': {
+    formCategory: 'baumpflege',
+    title: 'Baumpflege – Professioneller Baumschnitt & Baumfällung',
+    description: 'Professionelle Baumpflege für gesunde und sichere Bäume. Von Kronenpflege über Baumschnitt bis zur Baumfällung – finden Sie erfahrene Baumpfleger aus Ihrer Region.',
+    services: [
+      {
+        icon: TreePine,
+        title: 'Baumschnitt & Kronenpflege',
+        description: 'Fachgerechter Rückschnitt für gesundes Baumwachstum. Kronenpflege, Auslichtung und Formschnitt durch erfahrene Baumpfleger.',
+      },
+      {
+        icon: Hammer,
+        title: 'Baumfällung & Rodung',
+        description: 'Sichere Baumfällung auch in schwierigem Gelände oder bei beengten Platzverhältnissen. Inklusive Entsorgung des Schnittguts.',
+      },
+      {
+        icon: Sprout,
+        title: 'Baumpflanzung & Beratung',
+        description: 'Standortberatung, Baumartenauswahl und fachgerechte Pflanzung für langfristig gesunde Bäume in Ihrem Garten.',
+      },
+    ],
+    faq: [
+      {
+        question: 'Wann ist die beste Zeit für Baumschnitt?',
+        answer: 'Die meisten Bäume werden im Winter (November bis Februar) geschnitten. Obstbäume im Spätwinter. Ihr Baumpfleger berät Sie zum optimalen Zeitpunkt.',
+      },
+      {
+        question: 'Brauche ich eine Bewilligung für eine Baumfällung?',
+        answer: 'In vielen Schweizer Gemeinden ist eine Fällbewilligung erforderlich. Ihr Baumpfleger kennt die lokalen Vorschriften und unterstützt Sie beim Antrag.',
+      },
+      {
+        question: 'Was kostet professionelle Baumpflege?',
+        answer: 'Die Kosten hängen von Baumgrösse, Standort und Aufwand ab. Mit Büeze.ch vergleichen Sie mehrere Offerten kostenlos und unverbindlich.',
+      },
+    ],
+    metaTitle: 'Baumpflege & Baumschnitt Schweiz | Büeze.ch',
+    metaDescription: 'Professionelle Baumpflege: Baumschnitt, Baumfällung, Kronenpflege. Kostenlose Offerten von Baumpflegern aus Ihrer Region.',
+  },
+
   'aussenarbeiten-sonstige': {
     formCategory: 'aussenarbeiten_sonstige',
     title: 'Sonstige Aussenarbeiten',

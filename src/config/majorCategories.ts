@@ -268,8 +268,8 @@ export const majorCategories: Record<string, MajorCategory> = {
     icon: TreePine,
     description: 'Gartenbau, Landschaftsgestaltung und Aussenarbeiten',
     subcategories: [
-      'gartenbau', 'pflasterarbeiten', 'zaun_torbau', 
-      'aussenarbeiten_sonstige'
+      'gartenbau', 'pflasterarbeiten', 'zaun_torbau',
+      'baumpflege', 'aussenarbeiten_sonstige'
     ],
     color: 'from-green-600 to-emerald-700',
     showOnHome: false,

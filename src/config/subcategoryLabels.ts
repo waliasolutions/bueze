@@ -551,6 +551,14 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     majorCategoryId: 'garten_umgebung',
     keywords: ['Zaun', 'Tor']
   },
+  baumpflege: {
+    value: 'baumpflege',
+    label: 'Baumpflege',
+    slug: 'baumpflege',
+    shortDescription: 'Baumpflege & Baumschnitt',
+    majorCategoryId: 'garten_umgebung',
+    keywords: ['Baum', 'Baumpflege', 'Baumschnitt', 'Baumfällung']
+  },
   fenster_tueren: {
     value: 'fenster_tueren',
     label: 'Fenster & Türen',
