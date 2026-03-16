@@ -2423,7 +2423,6 @@ export type Database = {
         | "bodenbelaege"
         | "kueche"
         | "garten_umgebung"
-        | "baumpflege"
         | "reinigung_hauswartung"
         | "raeumung_entsorgung"
         | "geruestbauer"
@@ -2723,7 +2722,6 @@ export const Constants = {
         "bodenbelaege",
         "kueche",
         "garten_umgebung",
-        "baumpflege",
         "reinigung_hauswartung",
         "raeumung_entsorgung",
         "geruestbauer",
