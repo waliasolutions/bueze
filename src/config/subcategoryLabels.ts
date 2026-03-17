@@ -516,7 +516,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Dachdecker',
     slug: 'dachdecker',
     shortDescription: 'Dacharbeiten',
-    majorCategoryId: 'bau_renovation',
+    majorCategoryId: 'gebaeudehuelle',
     keywords: ['Dach']
   },
   fassadenbauer: {
@@ -524,7 +524,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Fassadenbauer',
     slug: 'fassadenbauer',
     shortDescription: 'Fassadenarbeiten',
-    majorCategoryId: 'bau_renovation',
+    majorCategoryId: 'gebaeudehuelle',
     keywords: ['Fassade']
   },
   gartenbau: {
@@ -564,7 +564,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Fenster & Türen',
     slug: 'fenster-tueren',
     shortDescription: 'Fenster, Türen',
-    majorCategoryId: 'innenausbau_schreiner',
+    majorCategoryId: 'glas_fenster',
     keywords: ['Fenster', 'Türen']
   },
   kuechenbau: {
@@ -628,7 +628,7 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     label: 'Spengler',
     slug: 'spengler',
     shortDescription: 'Spenglerarbeiten',
-    majorCategoryId: 'bau_renovation',
+    majorCategoryId: 'gebaeudehuelle',
     keywords: ['Spengler']
   },
   sanitaer: {
@@ -638,5 +638,109 @@ export const subcategoryLabels: Record<string, SubcategoryInfo> = {
     shortDescription: 'Alle Sanitärarbeiten',
     majorCategoryId: 'sanitaer',
     keywords: ['Sanitär', 'Installation', 'Wasser']
+  },
+
+  // Gebäudehülle — neue Unterkategorien
+  fassadenreinigung: {
+    value: 'fassadenreinigung',
+    label: 'Fassadenreinigung',
+    slug: 'fassadenreinigung',
+    shortDescription: 'Fassaden professionell reinigen',
+    majorCategoryId: 'gebaeudehuelle',
+    keywords: ['Fassadenreinigung', 'Hochdruckreinigung', 'Fassade reinigen', 'Algen', 'Moos']
+  },
+  dachfenster: {
+    value: 'dachfenster',
+    label: 'Dachfenster',
+    slug: 'dachfenster',
+    shortDescription: 'Dachfenster einbauen und ersetzen',
+    majorCategoryId: 'gebaeudehuelle',
+    keywords: ['Dachfenster', 'Velux', 'Dachflächenfenster', 'Oberlicht']
+  },
+
+  // Storen & Beschattung
+  storen_rollaeden: {
+    value: 'storen_rollaeden',
+    label: 'Storen / Rollläden',
+    slug: 'storen-rollaeden',
+    shortDescription: 'Storen und Rollläden montieren',
+    majorCategoryId: 'storen_beschattung',
+    keywords: ['Storen', 'Rollläden', 'Rollladen', 'Sonnenschutz', 'Jalousien']
+  },
+  lamellenstoren: {
+    value: 'lamellenstoren',
+    label: 'Lamellenstoren',
+    slug: 'lamellenstoren',
+    shortDescription: 'Lamellenstoren und Raffstoren',
+    majorCategoryId: 'storen_beschattung',
+    keywords: ['Lamellenstoren', 'Raffstoren', 'Lamellen', 'Sonnenschutz']
+  },
+  markisen: {
+    value: 'markisen',
+    label: 'Markisen',
+    slug: 'markisen',
+    shortDescription: 'Markisen für Terrasse und Balkon',
+    majorCategoryId: 'storen_beschattung',
+    keywords: ['Markise', 'Markisen', 'Sonnensegel', 'Terrassenmarkise', 'Balkonmarkise']
+  },
+  sonnenstoren_reparatur: {
+    value: 'sonnenstoren_reparatur',
+    label: 'Sonnenstoren Reparatur',
+    slug: 'sonnenstoren-reparatur',
+    shortDescription: 'Storen reparieren und warten',
+    majorCategoryId: 'storen_beschattung',
+    keywords: ['Storenreparatur', 'Sonnenstoren', 'Reparatur', 'Wartung', 'Motor']
+  },
+
+  // Glas & Fenster
+  glaser: {
+    value: 'glaser',
+    label: 'Glaser',
+    slug: 'glaser',
+    shortDescription: 'Glasarbeiten aller Art',
+    majorCategoryId: 'glas_fenster',
+    keywords: ['Glaser', 'Glaserei', 'Glas', 'Verglasung']
+  },
+  glasbruch_reparatur: {
+    value: 'glasbruch_reparatur',
+    label: 'Glasbruch Reparatur',
+    slug: 'glasbruch-reparatur',
+    shortDescription: 'Glasbruch schnell reparieren',
+    majorCategoryId: 'glas_fenster',
+    keywords: ['Glasbruch', 'Glasreparatur', 'Notfall', 'Scheibe kaputt', 'Glasschaden']
+  },
+  fensterersatz: {
+    value: 'fensterersatz',
+    label: 'Fensterersatz',
+    slug: 'fensterersatz',
+    shortDescription: 'Fenster ersetzen und erneuern',
+    majorCategoryId: 'glas_fenster',
+    keywords: ['Fensterersatz', 'Fenstertausch', 'neue Fenster', 'Isolierglas', 'Energiesanierung']
+  },
+
+  // Bautrocknung & Wasserschäden
+  wasserschaden_sanierung: {
+    value: 'wasserschaden_sanierung',
+    label: 'Wasserschaden Sanierung',
+    slug: 'wasserschaden-sanierung',
+    shortDescription: 'Wasserschäden sanieren',
+    majorCategoryId: 'bautrocknung_wasserschaeden',
+    keywords: ['Wasserschaden', 'Sanierung', 'Leckortung', 'Rohrbruch', 'Überflutung']
+  },
+  bautrocknung: {
+    value: 'bautrocknung',
+    label: 'Bautrocknung',
+    slug: 'bautrocknung',
+    shortDescription: 'Professionelle Bautrocknung',
+    majorCategoryId: 'bautrocknung_wasserschaeden',
+    keywords: ['Bautrocknung', 'Trocknung', 'Entfeuchtung', 'Trocknungsgeräte']
+  },
+  schimmelbehandlung: {
+    value: 'schimmelbehandlung',
+    label: 'Schimmelbehandlung',
+    slug: 'schimmelbehandlung',
+    shortDescription: 'Schimmel entfernen und vorbeugen',
+    majorCategoryId: 'bautrocknung_wasserschaeden',
+    keywords: ['Schimmel', 'Schimmelpilz', 'Schimmelentfernung', 'Schimmelsanierung', 'Feuchtigkeit']
   }
 };

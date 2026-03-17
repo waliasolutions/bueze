@@ -15,6 +15,10 @@ export const categoryLabels: Record<string, string> = {
   'garten_umgebung': 'Garten & Aussenbereich',
   'reinigung_hauswartung': 'Reinigung & Hauswartung',
   'raeumung_entsorgung': 'Räumung & Entsorgung',
+  'gebaeudehuelle': 'Gebäudehülle',
+  'storen_beschattung': 'Storen & Beschattung',
+  'glas_fenster': 'Glas & Fenster',
+  'bautrocknung_wasserschaeden': 'Bautrocknung & Wasserschäden',
 };
 
 export const urgencyLabels: Record<string, string> = {

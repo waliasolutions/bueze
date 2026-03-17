@@ -109,4 +109,28 @@ export const subcategoryLabels: Record<string, string> = {
   'aufloesung_entsorgung': 'Auflösung und Entsorgung',
   'individuelle_anfrage': 'Individuelle Anfrage',
   'umzug': 'Umzug',
+
+  // Gebäudehülle
+  'gebaeudehuelle': 'Gebäudehülle',
+  'fassadenreinigung': 'Fassadenreinigung',
+  'dachfenster': 'Dachfenster',
+
+  // Storen & Beschattung
+  'storen_beschattung': 'Storen & Beschattung',
+  'storen_rollaeden': 'Storen / Rollläden',
+  'lamellenstoren': 'Lamellenstoren',
+  'markisen': 'Markisen',
+  'sonnenstoren_reparatur': 'Sonnenstoren Reparatur',
+
+  // Glas & Fenster
+  'glas_fenster': 'Glas & Fenster',
+  'glaser': 'Glaser',
+  'glasbruch_reparatur': 'Glasbruch Reparatur',
+  'fensterersatz': 'Fensterersatz',
+
+  // Bautrocknung & Wasserschäden
+  'bautrocknung_wasserschaeden': 'Bautrocknung & Wasserschäden',
+  'wasserschaden_sanierung': 'Wasserschaden Sanierung',
+  'bautrocknung': 'Bautrocknung',
+  'schimmelbehandlung': 'Schimmelbehandlung',
 };
