@@ -128,6 +128,7 @@ const HandwerkerVerzeichnis = () => {
     setFilterCanton('all');
     setFilterCategory('all');
     setSearchTerm('');
+    window.scrollTo(0, 0);
   };
 
   return (
