@@ -98,17 +98,20 @@ const HandwerkerVerzeichnis = () => {
   const handleSearch = () => {
     if (searchTerm.trim()) {
       setShowResults(true);
+      window.scrollTo(0, 0);
     }
   };
 
   const handleCantonClick = (canton: string) => {
     setFilterCanton(canton);
     setShowResults(true);
+    window.scrollTo(0, 0);
   };
 
   const handleCategoryClick = (category: string) => {
     setFilterCategory(category);
     setShowResults(true);
+    window.scrollTo(0, 0);
   };
 
   const availableCantons = useMemo(() => {
@@ -125,6 +128,7 @@ const HandwerkerVerzeichnis = () => {
     setFilterCanton('all');
     setFilterCategory('all');
     setSearchTerm('');
+    window.scrollTo(0, 0);
   };
 
   return (
