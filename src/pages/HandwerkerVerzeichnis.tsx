@@ -105,6 +105,7 @@ const HandwerkerVerzeichnis = () => {
   const handleCantonClick = (canton: string) => {
     setFilterCanton(canton);
     setShowResults(true);
+    window.scrollTo(0, 0);
   };
 
   const handleCategoryClick = (category: string) => {
