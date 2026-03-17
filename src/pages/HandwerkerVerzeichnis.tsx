@@ -98,6 +98,7 @@ const HandwerkerVerzeichnis = () => {
   const handleSearch = () => {
     if (searchTerm.trim()) {
       setShowResults(true);
+      window.scrollTo(0, 0);
     }
   };
 
