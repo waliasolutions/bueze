@@ -111,6 +111,7 @@ const HandwerkerVerzeichnis = () => {
   const handleCategoryClick = (category: string) => {
     setFilterCategory(category);
     setShowResults(true);
+    window.scrollTo(0, 0);
   };
 
   const availableCantons = useMemo(() => {
