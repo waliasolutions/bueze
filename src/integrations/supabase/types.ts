@@ -2427,6 +2427,22 @@ export type Database = {
         | "raeumung_entsorgung"
         | "geruestbauer"
         | "baumpflege"
+        | "gebaeudehuelle"
+        | "fassadenreinigung"
+        | "dachfenster"
+        | "storen_beschattung"
+        | "storen_rollaeden"
+        | "lamellenstoren"
+        | "markisen"
+        | "sonnenstoren_reparatur"
+        | "glas_fenster"
+        | "glaser"
+        | "glasbruch_reparatur"
+        | "fensterersatz"
+        | "bautrocknung_wasserschaeden"
+        | "wasserschaden_sanierung"
+        | "bautrocknung"
+        | "schimmelbehandlung"
       lead_status:
         | "draft"
         | "active"
@@ -2727,6 +2743,22 @@ export const Constants = {
         "raeumung_entsorgung",
         "geruestbauer",
         "baumpflege",
+        "gebaeudehuelle",
+        "fassadenreinigung",
+        "dachfenster",
+        "storen_beschattung",
+        "storen_rollaeden",
+        "lamellenstoren",
+        "markisen",
+        "sonnenstoren_reparatur",
+        "glas_fenster",
+        "glaser",
+        "glasbruch_reparatur",
+        "fensterersatz",
+        "bautrocknung_wasserschaeden",
+        "wasserschaden_sanierung",
+        "bautrocknung",
+        "schimmelbehandlung",
       ],
       lead_status: [
         "draft",

@@ -105,6 +105,10 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       'innenausbau_schreiner': 'Schreiner',
       'raeumung_entsorgung': 'Räumung',
       'reinigung_hauswartung': 'Reinigung',
+      'gebaeudehuelle': 'Gebäude',
+      'storen_beschattung': 'Storen',
+      'glas_fenster': 'Glas',
+      'bautrocknung_wasserschaeden': 'Trocknung',
     };
     return shortLabels[categoryId] || label;
   };

@@ -37,7 +37,7 @@ export const majorCategorySubcategories: Record<string, string[]> = {
     'arbeitsplatten', 'kueche_sonstige'
   ],
   innenausbau_schreiner: [
-    'schreiner', 'moebelbau', 'fenster_tueren', 'treppen',
+    'schreiner', 'moebelbau', 'treppen',
     'holzarbeiten_innen', 'metallarbeiten_innen', 'innenausbau_sonstige'
   ],
   raeumung_entsorgung: [
@@ -49,6 +49,22 @@ export const majorCategorySubcategories: Record<string, string[]> = {
   reinigung_hauswartung: [
     'reinigung',
     'reinigung_hauswartung'
+  ],
+  gebaeudehuelle: [
+    'dachdecker', 'spengler', 'fassadenbauer',
+    'fassadenreinigung', 'dachfenster'
+  ],
+  storen_beschattung: [
+    'storen_rollaeden', 'lamellenstoren',
+    'markisen', 'sonnenstoren_reparatur'
+  ],
+  glas_fenster: [
+    'glaser', 'glasbruch_reparatur',
+    'fensterersatz', 'fenster_tueren'
+  ],
+  bautrocknung_wasserschaeden: [
+    'wasserschaden_sanierung', 'bautrocknung',
+    'schimmelbehandlung'
   ]
 };
 

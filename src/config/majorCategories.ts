@@ -1,6 +1,7 @@
-import { 
-  Construction, Layers, Zap, Flame, Droplet, 
-  ChefHat, Hammer, Trash2, LucideIcon, TreePine, Sparkles
+import {
+  Construction, Layers, Zap, Flame, Droplet,
+  ChefHat, Hammer, Trash2, LucideIcon, TreePine, Sparkles,
+  Building2, PanelTop, GlassWater, Droplets
 } from 'lucide-react';
 
 interface FAQItem {
@@ -210,7 +211,6 @@ export const majorCategories: Record<string, MajorCategory> = {
     subcategories: [
       'schreiner',
       'moebelbau',
-      'fenster_tueren',
       'treppen',
       'holzarbeiten_innen',
       'metallarbeiten_innen',
@@ -308,6 +308,122 @@ export const majorCategories: Record<string, MajorCategory> = {
       'Flexible Einsatzzeiten',
       'Umweltfreundliche Reinigungsmittel',
       'Regelmässige oder einmalige Reinigung',
+      'Mehrere Offerten kostenlos vergleichen'
+    ]
+  },
+  gebaeudehuelle: {
+    id: 'gebaeudehuelle',
+    slug: 'gebaeudehuelle',
+    label: 'Gebäudehülle',
+    icon: Building2,
+    description: 'Dach, Fassade, Spenglerei und Gebäudeschutz',
+    subcategories: [
+      'dachdecker',
+      'spengler',
+      'fassadenbauer',
+      'fassadenreinigung',
+      'dachfenster'
+    ],
+    color: 'from-emerald-600 to-green-700',
+    showOnHome: false,
+    faq: [
+      { question: 'Wann sollte das Dach erneuert werden?', answer: 'Ein Dach hält je nach Material 30-50 Jahre. Regelmässige Inspektionen helfen, den Zustand zu beurteilen. Bei undichten Stellen, fehlenden Ziegeln oder sichtbaren Schäden sollten Sie einen Dachdecker kontaktieren.' },
+      { question: 'Was kostet eine Fassadensanierung?', answer: 'Die Kosten hängen von Gebäudegrösse, Zustand und gewähltem Material ab. Eine Fassadenreinigung ist günstiger als eine komplette Neugestaltung. Mit Büeze.ch vergleichen Sie mehrere Offerten kostenlos.' },
+      { question: 'Brauche ich eine Baubewilligung für Fassadenarbeiten?', answer: 'Für Farbänderungen oder grössere Umgestaltungen der Fassade ist in vielen Gemeinden eine Baubewilligung erforderlich. Ihr Fassadenbauer berät Sie zu den lokalen Vorschriften.' },
+      { question: 'Was macht ein Spengler?', answer: 'Spengler kümmern sich um Dachrinnen, Blechverkleidungen, Kamineinfassungen und die Entwässerung am Dach. Sie sind spezialisiert auf die wasserdichte Verbindung zwischen Dach und Fassade.' }
+    ],
+    benefits: [
+      'Fachgerechter Schutz Ihrer Gebäudehülle',
+      'Erfahrene Dachdecker und Spengler',
+      'Beratung zu energieeffizienter Fassadensanierung',
+      'Dachfenster-Einbau vom Spezialisten',
+      'Garantie auf alle Arbeiten',
+      'Mehrere Offerten kostenlos vergleichen'
+    ]
+  },
+  storen_beschattung: {
+    id: 'storen_beschattung',
+    slug: 'storen-beschattung',
+    label: 'Storen & Beschattung',
+    icon: PanelTop,
+    description: 'Storen, Rollläden, Markisen und Sonnenschutz',
+    subcategories: [
+      'storen_rollaeden',
+      'lamellenstoren',
+      'markisen',
+      'sonnenstoren_reparatur'
+    ],
+    color: 'from-amber-500 to-yellow-600',
+    showOnHome: false,
+    faq: [
+      { question: 'Welche Storen eignen sich für mein Zuhause?', answer: 'Rollläden bieten maximalen Schutz und Isolation, Lamellenstoren ermöglichen flexible Lichtregulierung, Markisen schützen Terrassen und Balkone. Ihr Storenfachmann berät Sie individuell.' },
+      { question: 'Lohnt sich eine Motorisierung?', answer: 'Motorisierte Storen bieten hohen Komfort, besonders bei grossen Fensterfronten. Sie können per Fernbedienung, Zeitschaltuhr oder Smart-Home-System gesteuert werden.' },
+      { question: 'Kann man bestehende Storen reparieren?', answer: 'Ja, in vielen Fällen können defekte Lamellen, Gurte oder Motoren repariert werden. Ein Storenfachmann beurteilt, ob eine Reparatur oder ein Ersatz sinnvoller ist.' },
+      { question: 'Was kosten neue Storen?', answer: 'Die Kosten hängen von Typ, Grösse und Ausstattung ab. Einfache Rollläden sind günstiger als motorisierte Lamellenstoren. Mit Büeze.ch vergleichen Sie Offerten transparent.' }
+    ],
+    benefits: [
+      'Professionelle Montage von Storen und Rollläden',
+      'Beratung zu Sonnenschutzlösungen',
+      'Reparatur und Wartung bestehender Anlagen',
+      'Motorisierung und Smart-Home-Integration',
+      'Garantie auf alle Arbeiten',
+      'Mehrere Offerten kostenlos vergleichen'
+    ]
+  },
+  glas_fenster: {
+    id: 'glas_fenster',
+    slug: 'glas-fenster',
+    label: 'Glas & Fenster',
+    icon: GlassWater,
+    description: 'Glaser, Glasreparatur und Fensterersatz',
+    subcategories: [
+      'glaser',
+      'glasbruch_reparatur',
+      'fensterersatz',
+      'fenster_tueren'
+    ],
+    color: 'from-sky-500 to-blue-600',
+    showOnHome: false,
+    faq: [
+      { question: 'Wie schnell kann ein Glasbruch repariert werden?', answer: 'Bei Notfällen reagieren viele Glaser innerhalb weniger Stunden. Für geplante Arbeiten wie Fensterersatz vereinbaren Sie einen passenden Termin.' },
+      { question: 'Lohnt sich ein Fensterersatz?', answer: 'Alte Fenster verursachen hohe Heizkosten. Moderne Isolierglasfenster sparen Energie und verbessern den Wohnkomfort. Zudem gibt es kantonale Förderprogramme für energetische Sanierungen.' },
+      { question: 'Welches Glas eignet sich wofür?', answer: 'Einscheibenglas reicht für Innenbereiche, Isolierglas ist Standard für Fenster, Verbundglas bietet erhöhte Sicherheit. Ihr Glaser berät Sie zur optimalen Lösung.' },
+      { question: 'Was kostet ein neues Fenster?', answer: 'Die Kosten hängen von Grösse, Verglasung und Rahmenmaterial ab. Ein einzelnes Fenster kostet anders als eine komplette Fensterfrontumrüstung. Mit Büeze.ch vergleichen Sie mehrere Offerten.' }
+    ],
+    benefits: [
+      'Schnelle Hilfe bei Glasbruch und Notfällen',
+      'Fachgerechter Fensterersatz mit Energieberatung',
+      'Beratung zu Förderungen für energetische Sanierung',
+      'Alle Glasarten: Isolier-, Sicherheits- und Spezialglas',
+      'Garantie auf alle Arbeiten',
+      'Mehrere Offerten kostenlos vergleichen'
+    ]
+  },
+  bautrocknung_wasserschaeden: {
+    id: 'bautrocknung_wasserschaeden',
+    slug: 'bautrocknung-wasserschaeden',
+    label: 'Bautrocknung & Wasserschäden',
+    icon: Droplets,
+    description: 'Wasserschadensanierung, Bautrocknung und Schimmelbehandlung',
+    subcategories: [
+      'wasserschaden_sanierung',
+      'bautrocknung',
+      'schimmelbehandlung'
+    ],
+    color: 'from-teal-500 to-cyan-700',
+    showOnHome: false,
+    faq: [
+      { question: 'Was tun bei einem Wasserschaden?', answer: 'Sofort die Wasserzufuhr stoppen, den Strom im betroffenen Bereich abschalten und einen Fachbetrieb kontaktieren. Je schneller reagiert wird, desto geringer der Schaden. Dokumentieren Sie alles für die Versicherung.' },
+      { question: 'Wie lange dauert eine Bautrocknung?', answer: 'Das hängt vom Ausmass der Durchfeuchtung ab. Eine leichte Durchfeuchtung kann in 1-2 Wochen getrocknet sein, schwere Schäden brauchen mehrere Wochen. Professionelle Trocknungsgeräte beschleunigen den Prozess.' },
+      { question: 'Zahlt die Versicherung den Wasserschaden?', answer: 'Gebäude- und Hausratversicherungen decken in der Regel Wasserschäden ab. Dokumentieren Sie den Schaden mit Fotos und melden Sie ihn sofort. Ihr Sanierungsbetrieb unterstützt Sie bei der Schadensmeldung.' },
+      { question: 'Wie erkennt man Schimmelbefall?', answer: 'Sichtbare Flecken, muffiger Geruch oder feuchte Stellen an Wänden deuten auf Schimmel hin. Eine professionelle Analyse klärt das Ausmass. Schimmelbehandlung sollte immer vom Fachmann durchgeführt werden.' }
+    ],
+    benefits: [
+      'Schnelle Notfallhilfe bei Wasserschäden',
+      'Professionelle Bautrocknung mit Industriegeräten',
+      'Fachgerechte Schimmelsanierung',
+      'Unterstützung bei Versicherungsmeldungen',
+      'Garantie auf alle Sanierungsarbeiten',
       'Mehrere Offerten kostenlos vergleichen'
     ]
   }

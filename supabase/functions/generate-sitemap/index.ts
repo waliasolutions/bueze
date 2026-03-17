@@ -48,7 +48,15 @@ const subcategorySlugs = [
   // Sicherheit
   'alarmanlagen', 'videoüberwachung', 'schloesser-schluessel', 'sicherheit-sonstige',
   // Umzug & Transport
-  'umzug', 'transport', 'lagerung', 'umzug-sonstige'
+  'umzug', 'transport', 'lagerung', 'umzug-sonstige',
+  // Gebäudehülle
+  'fassadenreinigung', 'dachfenster',
+  // Storen & Beschattung
+  'storen-rollaeden', 'lamellenstoren', 'markisen', 'sonnenstoren-reparatur',
+  // Glas & Fenster
+  'glaser', 'glasbruch-reparatur', 'fensterersatz',
+  // Bautrocknung & Wasserschäden
+  'wasserschaden-sanierung', 'bautrocknung', 'schimmelbehandlung'
 ];
 
 // Major category slugs
@@ -65,7 +73,11 @@ const majorCategorySlugs = [
   'dach-fassade',
   'garten-umgebung',
   'sicherheit',
-  'umzug-transport'
+  'umzug-transport',
+  'gebaeudehuelle',
+  'storen-beschattung',
+  'glas-fenster',
+  'bautrocknung-wasserschaeden'
 ];
 
 Deno.serve(async (req) => {

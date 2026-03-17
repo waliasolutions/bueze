@@ -1,4 +1,4 @@
-import { TreePine, Layers, Zap, Paintbrush, Truck, Grid3x3, Package, Sprout, Lightbulb, Palette, Box, Home, ChefHat, Wrench, Cable, Shield, Wifi, Smartphone, Car, Hammer, Droplet, Bath, Flame, Sun, Wind, Snowflake, DoorOpen, Package2, Trash2 } from 'lucide-react';
+import { TreePine, Layers, Zap, Paintbrush, Truck, Grid3x3, Package, Sprout, Lightbulb, Palette, Box, Home, ChefHat, Wrench, Cable, Shield, Wifi, Smartphone, Car, Hammer, Droplet, Bath, Flame, Sun, Wind, Snowflake, DoorOpen, Package2, Trash2, PanelTop, GlassWater } from 'lucide-react';
 import { LucideIcon } from 'lucide-react';
 
 interface ServiceType {
@@ -926,5 +926,165 @@ export const categoryContent: Record<string, CategoryContent> = {
     ],
     metaTitle: 'Aussenarbeiten | Büeze.ch',
     metaDescription: 'Aussenarbeiten rund ums Haus. Kostenlose Offerten.'
+  },
+
+  // ─── Gebäudehülle ─────────────────────────────────────────
+  'gebaeudehuelle': {
+    formCategory: 'gebaeudehuelle',
+    title: 'Gebäudehülle – Dach, Fassade & Spenglerei',
+    description: 'Vom Dach über die Fassade bis zur Spenglerei: Finden Sie Spezialisten für die Gebäudehülle Ihres Hauses. Erhalten Sie kostenlos mehrere Offerten und vergleichen Sie in Ruhe.',
+    services: [
+      {
+        icon: Home,
+        title: 'Dacharbeiten & Spenglerei',
+        description: 'Ob Dachsanierung, neue Eindeckung oder Spenglerarbeiten – erfahrene Dachdecker und Spengler sorgen für eine dichte und langlebige Gebäudehülle. Von der Reparatur einzelner Ziegel bis zur kompletten Dachsanierung.'
+      },
+      {
+        icon: Layers,
+        title: 'Fassadenbau & -sanierung',
+        description: 'Eine intakte Fassade schützt Ihr Gebäude vor Witterung und steigert den Wert. Professionelle Fassadenbauer beraten Sie zu Material, Dämmung und Gestaltung – inklusive energetischer Beratung.'
+      },
+      {
+        icon: Sun,
+        title: 'Dachfenster & Fassadenreinigung',
+        description: 'Mehr Licht durch professionell eingebaute Dachfenster oder eine saubere Fassade durch Hochdruckreinigung. Spezialisten aus Ihrer Region erledigen das fachgerecht.'
+      }
+    ],
+    faq: [
+      {
+        question: 'Wann sollte das Dach erneuert werden?',
+        answer: 'Ein Dach hält je nach Material 30-50 Jahre. Bei undichten Stellen, fehlenden Ziegeln oder sichtbaren Schäden sollten Sie einen Dachdecker kontaktieren. Regelmässige Inspektionen helfen, den Zustand zu beurteilen.'
+      },
+      {
+        question: 'Was kostet eine Fassadensanierung?',
+        answer: 'Die Kosten hängen von Gebäudegrösse, Zustand und Material ab. Eine einfache Reinigung ist günstiger als eine komplette Neugestaltung. Mit Büeze.ch vergleichen Sie mehrere Offerten kostenlos.'
+      },
+      {
+        question: 'Was macht ein Spengler genau?',
+        answer: 'Spengler kümmern sich um Dachrinnen, Blechverkleidungen, Kamineinfassungen und die Entwässerung am Dach. Sie stellen die wasserdichte Verbindung zwischen Dach und Fassade sicher.'
+      }
+    ],
+    metaTitle: 'Gebäudehülle: Dachdecker, Spengler & Fassade | Büeze.ch',
+    metaDescription: 'Dach, Fassade & Spenglerei – finden Sie Spezialisten für Ihre Gebäudehülle. Kostenlose Offerten von geprüften Handwerkern aus Ihrer Region.'
+  },
+
+  // ─── Storen & Beschattung ─────────────────────────────────
+  'storen-beschattung': {
+    formCategory: 'storen_beschattung',
+    title: 'Storen & Beschattung – Sonnenschutz vom Profi',
+    description: 'Rollläden, Lamellenstoren, Markisen und Reparaturen: Finden Sie den passenden Storenfachmann für Ihren Sonnenschutz. Kostenlos mehrere Offerten vergleichen.',
+    services: [
+      {
+        icon: PanelTop,
+        title: 'Storen & Rollläden',
+        description: 'Von klassischen Rollläden bis zu modernen Lamellenstoren – professionelle Montage für optimalen Sonnenschutz, Privatsphäre und Wärmedämmung. Auch motorisierte Varianten mit Smart-Home-Anbindung.'
+      },
+      {
+        icon: Sun,
+        title: 'Markisen & Sonnensegel',
+        description: 'Geniessen Sie Ihren Aussenbereich auch bei Sonne: Markisen und Sonnensegel bieten angenehmen Schatten auf Terrasse und Balkon. Fachleute beraten Sie zur passenden Lösung.'
+      },
+      {
+        icon: Wrench,
+        title: 'Reparatur & Wartung',
+        description: 'Defekte Lamellen, ausgeleierte Gurte oder ein kaputt gegangener Motor? Storenfachleute reparieren und warten Ihre bestehenden Anlagen schnell und zuverlässig.'
+      }
+    ],
+    faq: [
+      {
+        question: 'Welche Storen eignen sich für mein Zuhause?',
+        answer: 'Rollläden bieten maximalen Schutz und Isolation, Lamellenstoren ermöglichen flexible Lichtregulierung, Markisen schützen Terrassen. Ihr Storenfachmann berät Sie individuell.'
+      },
+      {
+        question: 'Lohnt sich eine Motorisierung?',
+        answer: 'Motorisierte Storen bieten hohen Komfort, besonders bei grossen Fensterfronten. Sie können per Fernbedienung, Zeitschaltuhr oder Smart-Home gesteuert werden.'
+      },
+      {
+        question: 'Was kosten neue Storen?',
+        answer: 'Die Kosten hängen von Typ, Grösse und Ausstattung ab. Mit Büeze.ch vergleichen Sie Offerten transparent und finden den besten Preis.'
+      }
+    ],
+    metaTitle: 'Storen & Beschattung: Rollläden, Markisen & mehr | Büeze.ch',
+    metaDescription: 'Storen, Rollläden, Markisen & Sonnenschutz – professionelle Montage und Reparatur. Kostenlose Offerten von Storenfachleuten aus Ihrer Region.'
+  },
+
+  // ─── Glas & Fenster ───────────────────────────────────────
+  'glas-fenster': {
+    formCategory: 'glas_fenster',
+    title: 'Glas & Fenster – Glaser und Fensterersatz',
+    description: 'Von der Glasbruch-Reparatur bis zum kompletten Fensterersatz: Finden Sie Glaser und Fensterspezialisten aus Ihrer Region. Kostenlos mehrere Offerten einholen.',
+    services: [
+      {
+        icon: GlassWater,
+        title: 'Glasarbeiten & Glaserei',
+        description: 'Professionelle Glaser für alle Glasarbeiten: Zuschnitt, Einbau, Spezialverglasungen. Ob Isolierglas, Sicherheitsglas oder dekoratives Glas – Ihr Glaser liefert und montiert fachgerecht.'
+      },
+      {
+        icon: Shield,
+        title: 'Glasbruch & Notreparatur',
+        description: 'Bei einem Glasbruch zählt jede Stunde. Viele Glaser bieten Notdienste mit schneller Reaktionszeit. Provisorische Sicherung und fachgerechter Ersatz – alles aus einer Hand.'
+      },
+      {
+        icon: Home,
+        title: 'Fensterersatz & Energiesanierung',
+        description: 'Alte Fenster durch moderne Isolierglasfenster ersetzen spart Energie und steigert den Wohnkomfort. Profitieren Sie von kantonalen Förderprogrammen und lassen Sie sich beraten.'
+      }
+    ],
+    faq: [
+      {
+        question: 'Wie schnell kann ein Glasbruch repariert werden?',
+        answer: 'Bei Notfällen reagieren viele Glaser innerhalb weniger Stunden. Für geplante Arbeiten wie Fensterersatz vereinbaren Sie einen passenden Termin.'
+      },
+      {
+        question: 'Lohnt sich ein Fensterersatz?',
+        answer: 'Alte Fenster verursachen hohe Heizkosten. Moderne Isolierglasfenster sparen Energie und es gibt kantonale Förderprogramme für energetische Sanierungen.'
+      },
+      {
+        question: 'Welches Glas eignet sich wofür?',
+        answer: 'Einscheibenglas für Innen, Isolierglas für Fenster, Verbundglas für Sicherheit. Ihr Glaser berät Sie zur optimalen Lösung für Ihren Bedarf.'
+      }
+    ],
+    metaTitle: 'Glas & Fenster: Glaser, Glasbruch & Fensterersatz | Büeze.ch',
+    metaDescription: 'Glaser, Glasbruch-Reparatur und Fensterersatz – finden Sie Fensterspezialisten aus Ihrer Region. Kostenlose Offerten auf Büeze.ch.'
+  },
+
+  // ─── Bautrocknung & Wasserschäden ─────────────────────────
+  'bautrocknung-wasserschaeden': {
+    formCategory: 'bautrocknung_wasserschaeden',
+    title: 'Bautrocknung & Wasserschäden – Schnelle Hilfe',
+    description: 'Wasserschaden, Bautrocknung oder Schimmelbefall? Finden Sie sofort Spezialisten für Notfälle und Sanierungen. Kostenlos Offerten einholen.',
+    services: [
+      {
+        icon: Droplet,
+        title: 'Wasserschaden Sanierung',
+        description: 'Von der Leckortung über die Trocknung bis zur kompletten Sanierung: Fachbetriebe kümmern sich um alle Aspekte eines Wasserschadens. Schnelle Reaktionszeiten bei Notfällen.'
+      },
+      {
+        icon: Wind,
+        title: 'Professionelle Bautrocknung',
+        description: 'Mit Industrietrocknungsgeräten wird Feuchtigkeit aus Wänden, Böden und Decken entfernt. Professionelle Bautrocknung verhindert Folgeschäden und Schimmelbildung.'
+      },
+      {
+        icon: Shield,
+        title: 'Schimmelbehandlung',
+        description: 'Schimmelbefall muss fachgerecht behandelt werden. Spezialisten analysieren die Ursache, entfernen den Schimmel und ergreifen Massnahmen zur Vorbeugung.'
+      }
+    ],
+    faq: [
+      {
+        question: 'Was tun bei einem Wasserschaden?',
+        answer: 'Sofort die Wasserzufuhr stoppen, Strom im betroffenen Bereich abschalten und einen Fachbetrieb kontaktieren. Dokumentieren Sie alles für die Versicherung.'
+      },
+      {
+        question: 'Zahlt die Versicherung den Wasserschaden?',
+        answer: 'Gebäude- und Hausratversicherungen decken in der Regel Wasserschäden ab. Melden Sie den Schaden sofort und dokumentieren Sie ihn mit Fotos.'
+      },
+      {
+        question: 'Wie erkennt man Schimmelbefall?',
+        answer: 'Sichtbare Flecken, muffiger Geruch oder feuchte Stellen an Wänden deuten auf Schimmel hin. Eine professionelle Analyse klärt das Ausmass.'
+      }
+    ],
+    metaTitle: 'Bautrocknung & Wasserschäden: Sanierung & Schimmel | Büeze.ch',
+    metaDescription: 'Wasserschaden, Bautrocknung, Schimmelbehandlung – schnelle Hilfe von Spezialisten. Kostenlose Offerten auf Büeze.ch.'
   },
 };
