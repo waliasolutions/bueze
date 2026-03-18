@@ -832,16 +832,16 @@ const HandwerkerDashboard = () => {
           {/* Grace Period Banner — subscription expired but not yet downgraded */}
           {subscriptionData && subscriptionData.plan_type !== 'free' && new Date(subscriptionData.current_period_end) < new Date() && (() => {
             const graceEndDate = new Date(subscriptionData.current_period_end);
-            graceEndDate.setDate(graceEndDate.getDate() + 7);
+            graceEndDate.setDate(graceEndDate.getDate() + 1);
             const now = new Date();
-            const daysLeft = Math.max(0, Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+            const hoursLeft = Math.max(0, Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60)));
             return (
               <Alert className="mb-6 border-orange-400 bg-orange-50">
                 <AlertCircle className="h-4 w-4 text-orange-600" />
                 <AlertTitle className="text-orange-900">Abonnement-Verlängerung ausstehend</AlertTitle>
                 <AlertDescription className="text-orange-800">
                   <p className="mb-3">
-                    Ihre Abonnement-Verlängerung steht aus. Bitte schliessen Sie die Zahlung innerhalb von <strong>{daysLeft} {daysLeft === 1 ? 'Tag' : 'Tagen'}</strong> ab, um den Zugang zu behalten.
+                    Ihre Abonnement-Verlängerung steht aus. Bitte schliessen Sie die Zahlung innerhalb von <strong>{hoursLeft} {hoursLeft === 1 ? 'Stunde' : 'Stunden'}</strong> ab, um den Zugang zu behalten.
                   </p>
                   <Button onClick={() => navigate('/checkout')} size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
                     Jetzt erneuern

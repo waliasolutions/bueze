@@ -14,7 +14,7 @@ import { getPlanName, FREE_TIER_PROPOSALS_LIMIT, PLAN_AMOUNTS, PLAN_GATEWAY_NAME
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 import { addDays, startOfDaySwiss, endOfDaySwiss, formatSwissDate, addMonths } from '../_shared/dateFormatter.ts';
 
-const GRACE_PERIOD_DAYS = 7;
+const GRACE_PERIOD_DAYS = 1; // 24-hour grace period
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -190,7 +190,7 @@ serve(async (req) => {
     console.log(`[check-subscription-expiry] Downgraded ${cancelledCount} cancelled subscriptions`);
 
     // ============================================================
-    // PATH B: Non-cancelled, within grace period (expired but < 7 days ago)
+    // PATH B: Non-cancelled, within grace period (expired but < 24 hours ago)
     // Send renewal email with Payrexx checkout link, don't downgrade yet
     // ============================================================
     // Skip auto-renew users — Payrexx handles their billing automatically
@@ -252,7 +252,7 @@ serve(async (req) => {
               </p>
               <p style="font-size: 16px; color: #4a4a68; margin-bottom: 24px;">
                 Ihr <strong>${planName}</strong> Abonnement muss verlängert werden. Gemäss unseren AGB wird Ihr Abonnement automatisch verlängert.
-                Bitte schliessen Sie die Zahlung bis <strong>${graceEndDate}</strong> ab, um Ihren Zugang zu behalten.
+                Bitte schliessen Sie die Zahlung innerhalb von <strong>24 Stunden</strong> ab, um Ihren Zugang zu behalten.
               </p>
               <div style="text-align: center; margin: 32px 0;">
                 <a href="${checkoutUrl}" style="background-color: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
@@ -260,7 +260,7 @@ serve(async (req) => {
                 </a>
               </div>
               <p style="font-size: 14px; color: #6b7280; margin-top: 16px;">
-                Falls die Zahlung nicht bis ${graceEndDate} eingeht, wird Ihr Konto auf den kostenlosen Plan umgestellt.
+                Falls die Zahlung nicht innerhalb von 24 Stunden eingeht, wird Ihr Konto auf den kostenlosen Plan umgestellt.
               </p>
             `),
           });
@@ -277,7 +277,7 @@ serve(async (req) => {
           user_id: sub.user_id,
           type: 'subscription_renewal_required',
           title: 'Abonnement-Verlängerung erforderlich',
-          message: `Bitte schliessen Sie die Zahlung für Ihr ${planName} Abonnement bis ${graceEndDate} ab.`,
+          message: `Bitte schliessen Sie die Zahlung für Ihr ${planName} Abonnement innerhalb von 24 Stunden ab.`,
           metadata: { plan_type: sub.plan_type, checkout_url: checkoutUrl },
         });
       } catch (err) {
@@ -288,7 +288,7 @@ serve(async (req) => {
     console.log(`[check-subscription-expiry] Sent ${renewalEmailsSent} renewal emails`);
 
     // ============================================================
-    // PATH C: Non-cancelled, grace period expired (> 7 days past expiry)
+    // PATH C: Non-cancelled, grace period expired (> 24 hours past expiry)
     // Downgrade to free
     // ============================================================
     // Skip auto-renew users — Payrexx handles their billing automatically
