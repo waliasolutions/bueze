@@ -14,7 +14,7 @@ import { getPlanName, FREE_TIER_PROPOSALS_LIMIT, PLAN_AMOUNTS, PLAN_GATEWAY_NAME
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 import { addDays, startOfDaySwiss, endOfDaySwiss, formatSwissDate, addMonths } from '../_shared/dateFormatter.ts';
 
-const GRACE_PERIOD_DAYS = 7;
+const GRACE_PERIOD_DAYS = 1; // 24-hour grace period
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
