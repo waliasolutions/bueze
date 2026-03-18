@@ -288,7 +288,7 @@ serve(async (req) => {
     console.log(`[check-subscription-expiry] Sent ${renewalEmailsSent} renewal emails`);
 
     // ============================================================
-    // PATH C: Non-cancelled, grace period expired (> 7 days past expiry)
+    // PATH C: Non-cancelled, grace period expired (> 24 hours past expiry)
     // Downgrade to free
     // ============================================================
     // Skip auto-renew users — Payrexx handles their billing automatically
