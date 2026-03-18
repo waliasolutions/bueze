@@ -85,6 +85,36 @@ const MajorCategoryLanding = () => {
           description: 'Vom Gartenbau bis zur Terrassengestaltung – finden Sie Profis für Ihren Aussenbereich und vergleichen Sie kostenlos Offerten.',
           intro: 'Ein gepflegter Garten ist Lebensqualität. Finden Sie professionelle Gartenbauer in der Schweiz für Landschaftsbau, Gartengestaltung und mehr. Vergleichen Sie kostenlos Offerten von erfahrenen Fachbetrieben.'
         };
+      case 'reinigung-hauswartung':
+        return {
+          title: 'Reinigung & Hauswartung – Fachbetriebe finden | Büeze.ch',
+          description: 'Ob Unterhaltsreinigung, Grundreinigung oder Hauswartung – finden Sie zuverlässige Reinigungsfirmen in Ihrer Region und vergleichen Sie kostenlos Offerten.',
+          intro: 'Sauberkeit und gepflegte Liegenschaften sind keine Selbstverständlichkeit. Finden Sie professionelle Reinigungsfirmen und Hauswarte in der Schweiz – für Privat und Gewerbe. Vergleichen Sie kostenlos Offerten von geprüften Fachbetrieben.'
+        };
+      case 'gebaeudehuelle':
+        return {
+          title: 'Gebäudehülle – Dachdecker & Fassadenbauer | Büeze.ch',
+          description: 'Von Dachreparatur bis Fassadensanierung – finden Sie qualifizierte Fachbetriebe für die Gebäudehülle und holen Sie kostenlos Offerten ein.',
+          intro: 'Die Gebäudehülle schützt Ihr Haus vor Wind, Regen und Kälte. Finden Sie erfahrene Dachdecker, Spengler und Fassadenbauer in der Schweiz. Vergleichen Sie kostenlos Offerten von geprüften Fachbetrieben.'
+        };
+      case 'storen-beschattung':
+        return {
+          title: 'Storen & Beschattung – Fachbetriebe finden | Büeze.ch',
+          description: 'Rollläden, Lamellenstoren oder Markisen – finden Sie Storenfachleute in Ihrer Nähe und vergleichen Sie kostenlos verschiedene Offerten.',
+          intro: 'Effektive Beschattung schützt vor Hitze und spart Energie. Finden Sie professionelle Storenfachleute in der Schweiz für Einbau, Reparatur und Wartung. Vergleichen Sie kostenlos Offerten von erfahrenen Betrieben.'
+        };
+      case 'glas-fenster':
+        return {
+          title: 'Glaser & Fensterersatz in der Schweiz | Büeze.ch',
+          description: 'Glasbruch, Fensterersatz oder neue Türen – finden Sie Glaser und Fensterfachleute in Ihrer Region und vergleichen Sie kostenlos Offerten.',
+          intro: 'Fenster und Glas sind mehr als Durchblick – sie bestimmen Energieeffizienz, Sicherheit und Wohnkomfort. Finden Sie qualifizierte Glaser und Fensterfachleute in der Schweiz. Vergleichen Sie kostenlos Offerten.'
+        };
+      case 'bautrocknung-wasserschaeden':
+        return {
+          title: 'Wasserschaden & Bautrocknung – Sofort-Hilfe | Büeze.ch',
+          description: 'Wasserschaden oder Schimmelbefall? Finden Sie Fachbetriebe für Sanierung und Bautrocknung in Ihrer Region – schnell, zuverlässig, kostenlose Offerten.',
+          intro: 'Wasserschäden müssen sofort professionell behandelt werden. Finden Sie Fachbetriebe für Wasserschadensanierung, Bautrocknung und Schimmelbehandlung in der Schweiz. Schnelle Hilfe – vergleichen Sie kostenlos Offerten.'
+        };
       case 'raeumung-entsorgung':
         return {
           title: 'Räumung & Entsorgung in der Schweiz | Büeze.ch',
@@ -538,6 +568,225 @@ const MajorCategoryLanding = () => {
               </>
             )}
             
+            {majorCategorySlug === 'garten-aussenbereich' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Garten & Aussenbereich: Mehr als nur Rasenmähen
+                </h2>
+
+                <p className="text-lg leading-relaxed">
+                  Ein gepflegter Garten und ein ansprechender Aussenbereich steigern den Wert Ihrer Liegenschaft erheblich – und sorgen für Lebensqualität. Professionelle Gartenbauer denken in Gesamtkonzepten: Welche Pflanzen harmonieren miteinander? Wie entwässert das Gelände bei Starkregen? Wo macht eine Pergola Sinn? Diese Fragen beantwortet ein erfahrener Fachbetrieb bereits in der Planungsphase.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Gartenbau & Pflasterarbeiten: Qualität liegt im Untergrund
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Terrassen und Wege sehen schön aus – aber nur solange der Unterbau stimmt. Frost, Feuchtigkeit und Belastung heben Pflastersteine auf, wenn der Kieskoffer zu dünn oder die Drainage schlecht ist. Ein professioneller Pflasterer arbeitet mit dem richtigen Gefälle, damit Regenwasser sicher abfliesst. Naturstein, Betonplatten oder Pflasterklinker – jedes Material hat andere Anforderungen an Unterbau und Verlegung.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Zaunbau und Tore sind nicht nur Ästhetik, sondern auch Sicherheit und Privatsphäre. Ob Holzzaun, Metallgitter oder Hecke als Sichtschutz: Lassen Sie sich vom Fachmann beraten, welche Lösung zu Ihrer Liegenschaft passt und welche Abstände zum Nachbargrundstück eingehalten werden müssen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Baumpflege: Sicherheit geht vor Schönheit
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Grosse Bäume sind wertvoll – aber auch potenzielle Gefahren. Abgestorbene Äste, Sturm­schäden oder Krankheiten können dazu führen, dass Äste brechen. Professionelle Baumpflege mit Seilklettertechnik und geeignetem Werkzeug ist keine Hobbyarbeit. Zertifizierte Baumpfleger erkennen Krankheiten früh, führen gezielte Rückschnitte durch und haften mit entsprechender Versicherung.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Herbst ist die beste Zeit für Gehölzschnitte – Pflanzen sind im Ruhezustand</li>
+                  <li>Pflasterflächen immer mit ausreichend Gefälle anlegen (min. 2%)</li>
+                  <li>Baumpflegearbeiten nur durch Fachleute mit Haftpflichtversicherung</li>
+                  <li>Frühzeitig planen: Gartenbauer sind im Frühling stark ausgelastet</li>
+                </ul>
+              </>
+            )}
+
+            {majorCategorySlug === 'reinigung-hauswartung' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Reinigung & Hauswartung: Sauber und gepflegt rundum
+                </h2>
+
+                <p className="text-lg leading-relaxed">
+                  Professionelle Reinigung ist mehr als Putzen – sie erhält den Wert Ihrer Liegenschaft. Schmutz, Kalk und Ablagerungen greifen Oberflächen an. Wer regelmässig reinigt, spart langfristig teure Sanierungskosten. Ob Büro, Mietwohnung oder Industriehalle: Professionelle Reinigungsfirmen arbeiten mit dem richtigen Equipment und umweltverträglichen Reinigungsmitteln.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Unterhaltsreinigung vs. Grundreinigung – was wann nötig ist
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Die Unterhaltsreinigung findet regelmässig statt – täglich, wöchentlich oder nach Vereinbarung. Sie hält das Gebäude sauber und hygienisch. Die Grundreinigung geht tiefer: Böden werden maschinell behandelt, Fugen gereinigt, hartnäckige Ablagerungen entfernt. Empfehlenswert 1–2 Mal pro Jahr oder nach Renovationen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Für Verwaltungen und Stockwerkeigentümerschaften lohnt sich ein Rahmenvertrag mit einer Reinigungsfirma. So sind Leistungen, Frequenz und Preise klar geregelt – und bei Beanstandungen gibt es einen festen Ansprechpartner.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Hauswartung: Mehr als Kehren und Schneeräumen
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Ein guter Hauswart ist das Gesicht einer Liegenschaft. Er übernimmt Kleinreparaturen, meldet Schäden frühzeitig, kümmert sich um Grünflächen und koordiniert Handwerker. In der Schweiz sind Hauswartverträge oft nach dem Muster des Hauseigentümerverbands (HEV) aufgebaut – klären Sie vorab, welche Leistungen inklusive sind.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Reinigungsplan schriftlich festhalten – so gibt es keine Unklarheiten</li>
+                  <li>Auf Umweltzertifikate (z. B. Öko-Test, naturemade) der Reinigungsmittel achten</li>
+                  <li>Hauswart-Vertrag klar regeln: Was ist inklusive, was wird separat verrechnet?</li>
+                  <li>Regelmässige Qualitätskontrolle vereinbaren und dokumentieren</li>
+                </ul>
+              </>
+            )}
+
+            {majorCategorySlug === 'gebaeudehuelle' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Gebäudehülle: Was Ihr Dach und Ihre Fassade leisten müssen
+                </h2>
+
+                <p className="text-lg leading-relaxed">
+                  Die Gebäudehülle ist die erste Verteidigungslinie Ihres Hauses gegen Witterung. Ein undichtes Dach oder eine schlecht isolierte Fassade führt nicht nur zu Wasserschäden – sie kostet Sie auch viel Geld bei den Heizkosten. Investitionen in eine hochwertige Gebäudehülle amortisieren sich oft innert weniger Jahre durch geringere Energiekosten.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Dachdecker & Spengler: Wann reparieren, wann erneuern?
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Ein Ziegeldach hat eine Lebensdauer von 40–60 Jahren, Blechdächer können noch länger halten – wenn sie fachgerecht gewartet werden. Einzelne gebrochene Ziegel lassen sich günstig ersetzen. Wenn aber Holzunterbau oder Dämmung Feuchtigkeitsschäden aufweisen, ist eine Komplettsanierung günstiger als ständige Einzelreparaturen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Spengler übernehmen alles rund um Blecharbeiten: Dachrinnen, Kaminverkleidungen, Anschlüsse an Dachflächenfenstern. Diese Details sind oft die Schwachstellen, wo Wasser eindringt. Eine regelmässige Kontrolle durch einen Fachmann – am besten im Herbst vor der Regenperiode – lohnt sich.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Fassadensanierung & -reinigung: Mehr als Optik
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Ein Wärmedämmverbundsystem (WDVS) an der Aussenfassade kann den Heizenergieverbrauch um bis zu 30% senken. Bund und Kantone unterstützen solche Massnahmen mit Förderprogrammen. Ihr Fassadenbauer kennt die aktuellen Fördermöglichkeiten und unterstützt Sie beim Antrag.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Fassadenreinigung sollte vor einer Sanierung erfolgen – so lässt sich der tatsächliche Zustand des Untergrunds beurteilen. Algen, Moose und Verschmutzungen werden professionell mit Niederdruckreinigung und geeigneten Reinigungsmitteln entfernt, ohne die Oberfläche zu beschädigen.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Dach jährlich inspizieren – nach Sturm immer sofort prüfen lassen</li>
+                  <li>WDVS-Fassaden mit kantonalen Fördergeldern finanzieren (Gebäudeprogramm)</li>
+                  <li>Fassadenreinigung stets vor Neuanstrich oder Sanierung durchführen</li>
+                  <li>Dachrinnen im Herbst von Laub befreien – verstopfte Rinnen verursachen Wasserschäden</li>
+                </ul>
+              </>
+            )}
+
+            {majorCategorySlug === 'storen-beschattung' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Storen & Beschattung: Schutz vor Hitze und neugierigen Blicken
+                </h2>
+
+                <p className="text-lg leading-relaxed">
+                  Gute Beschattung ist mehr als Komfort – sie ist Energiesparen. Wer die Sonne bereits am Eindringen hindert, muss viel weniger kühlen. Studien zeigen, dass effektive Aussenjalousien den sommerlichen Wärmeeintrag um bis zu 70% reduzieren können. Gleichzeitig schützen Storen Ihre Privatsphäre und Ihre Möbel vor UV-Ausbleichung.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Rollläden, Lamellenstoren oder Markisen – was passt wohin?
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Rollläden bieten maximalen Lichtschutz und Einbruchschutz – ideal für Schlafzimmer und erdgeschossige Fenster. Lamellenstoren (Jalousien) ermöglichen feinstufige Licht- und Sichtregulierung und sind in Büros sehr beliebt. Markisen schützen Terrassen und Balkone vor Sonne und leichtem Regen, eignen sich aber weniger für sturmanfällige Lagen.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Sonnenstoren – textile Beschattungen aussen am Fenster – kombinieren gute Sichtbarkeit nach draussen mit wirksamen Sonnenschutz. Sie sind die energieeffizienteste Lösung für Wohnräume mit grosser Süd- oder Westfassade.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Reparatur oder Ersatz? Was sich wann lohnt
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Defekte Storen müssen nicht zwingend ersetzt werden. Kaputte Führungsschienen, gerissene Gurten oder blockierte Motoren lassen sich oft günstig reparieren. Wenn aber das Tuch ausgeblichen und rissig ist oder der Mechanismus grundlegend verschlissen ist, lohnt sich ein Neukauf – vor allem, wenn Sie gleichzeitig auf Motorisierung und Smart-Home-Anbindung umstellen möchten.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Motorisierung mit Smart-Home lohnt sich: automatisches Einfahren bei Wind und Sturm</li>
+                  <li>Windwächter einplanen – schützt Storen und Markisen vor Sturmschäden</li>
+                  <li>Frühzeitig bestellen: Im Frühling sind Wartezeiten von 4–8 Wochen üblich</li>
+                  <li>Lamellen regelmässig abwischen – verhindert Verhärtung von Schmutz</li>
+                </ul>
+              </>
+            )}
+
+            {majorCategorySlug === 'glas-fenster' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Glas & Fenster: Energieeffizienz und Sicherheit im Blick
+                </h2>
+
+                <p className="text-lg leading-relaxed">
+                  Fenster aus den 1980er- und 90er-Jahren verlieren enorme Mengen Heizwärme. Moderne Dreifachverglasung hat einen U-Wert von unter 0.6 W/m²K – alte Einfachscheiben kommen auf das Zehnfache. Ein Fensterersatz amortisiert sich durch tiefere Heizkosten, und viele Kantone fördern energetische Fenstersanierungen zusätzlich.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Glasbruch-Notfall: Was zu tun ist
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Bei einem Glasbruch zählt schnelles Handeln. Erstens: Gefahrenbereich absperren und Scherben nicht mit blossen Händen aufnehmen. Zweitens: Öffnung provisorisch mit Folie oder Karton abdichten. Drittens: Einen Glaser kontaktieren, der die Scheibe mass anfertigt und montiert.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Viele Glaser bieten Notfalldienste an – besonders wichtig bei Einbruchschäden oder Sturmschäden. Auf Büeze.ch finden Sie Glaser in Ihrer Region, die auch kurzfristig reagieren können.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Fensterersatz: Welches Material passt?
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Holzfenster sind natürlich und hochisolierend, brauchen aber regelmässige Pflege (alle 5–10 Jahre Neuanstrich). PVC-Fenster sind günstig und pflegeleicht, aber weniger nachhaltig. Aluminiumfenster sind robust, langlebig und modern – aber teurer. Holz-Metall-Kombifenster vereinen Vorteile beider Materialien und sind in der Schweiz besonders beliebt.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Einbruchschutz: RC2-Beschläge und -Rahmen sind empfohlen für erhöhte Sicherheit</li>
+                  <li>Kantonale Fördergelder für Fensterersatz prüfen (Gebäudeprogramm)</li>
+                  <li>In Städten: Schallschutzfenster können den Lärmpegel erheblich senken</li>
+                  <li>Kondensat an der Scheibenmitte zeigt schlechte Isolierung – Zeit für Ersatz</li>
+                </ul>
+              </>
+            )}
+
             {majorCategorySlug === 'raeumung-entsorgung' && (
               <>
                 <h2 className="text-3xl font-bold text-ink-900 mb-6">
@@ -577,6 +826,53 @@ const MajorCategoryLanding = () => {
                   <li>Fragen Sie nach Pauschalpreisen statt Stundenansätzen</li>
                   <li>Klären Sie, ob Endreinigung im Preis enthalten ist</li>
                   <li>Bei Erbschaften: Bewahren Sie wichtige Dokumente separat auf</li>
+                </ul>
+              </>
+            )}
+
+            {majorCategorySlug === 'bautrocknung-wasserschaeden' && (
+              <>
+                <h2 className="text-3xl font-bold text-ink-900 mb-6">
+                  Wasserschaden & Bautrocknung: Schnelles Handeln schützt Ihr Heim
+                </h2>
+
+                <p className="text-lg leading-relaxed">
+                  Ein Wasserschaden ist kein Problem, das auf morgen warten kann. Innerhalb von 24 bis 48 Stunden beginnt in feuchten Wänden und Böden Schimmelbildung – und die ist nicht nur unansehnlich, sondern gesundheitsschädlich. Je schneller Fachleute mit der Trocknung beginnen, desto geringer der Schaden und desto tiefer die Sanierungskosten.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Sofortmassnahmen nach einem Wasserschaden
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Als Erstes: Strom im betroffenen Bereich ausschalten – nasses Mauerwerk leitet Strom. Dann die Wasserzufuhr absperren, falls der Schaden durch eine Leckage verursacht wurde. Danach Fotos machen und die Versicherung informieren. Bevor Sie Sanierungsarbeiten beginnen, sollte die Versicherung den Schaden dokumentieren.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Professionelle Schadensbetriebe übernehmen die gesamte Koordination: Feuchtemessung, Bautrocknung, Schimmelbehandlung und Wiederherstellung. Viele arbeiten direkt mit Versicherungen zusammen und erledigen die Abrechnung für Sie.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Bautrocknung & Schimmelbehandlung: Die richtigen Methoden
+                </h3>
+
+                <p className="text-lg leading-relaxed">
+                  Für die Bautrocknung gibt es verschiedene Verfahren: Kondensationstrockner entziehen der Luft Feuchtigkeit, Infrarotheizungen trocknen tiefer liegende Schichten. Oft werden beide Methoden kombiniert. Wie lange die Trocknung dauert, hängt vom Baustoff ab – Beton trocknet langsamer als Gipskarton. Ein Trocknungsprotokoll mit regelmässigen Feuchtemessungen dokumentiert den Fortschritt.
+                </p>
+
+                <p className="text-lg leading-relaxed">
+                  Schimmel darf niemals einfach übergestrichen werden. Der Pilz wächst hinter der Farbe weiter. Professionelle Schimmelbehandlung umfasst mechanische Entfernung, biozide Behandlung und – wenn nötig – den Rückbau befallener Bauteile.
+                </p>
+
+                <h3 className="text-2xl font-semibold text-ink-900 mt-8 mb-4">
+                  Praktische Tipps
+                </h3>
+
+                <ul className="list-disc pl-6 space-y-2 text-lg">
+                  <li>Versicherungspolice kennen bevor der Schaden eintritt – was ist gedeckt?</li>
+                  <li>Schaden umfassend fotografieren bevor aufgeräumt wird</li>
+                  <li>Trocknungsprotokoll vom Fachbetrieb verlangen – wichtig für die Versicherungsabrechnung</li>
+                  <li>Schimmel niemals selbst übermalen – professionelle Behandlung ist Pflicht</li>
                 </ul>
               </>
             )}
