@@ -190,7 +190,7 @@ serve(async (req) => {
     console.log(`[check-subscription-expiry] Downgraded ${cancelledCount} cancelled subscriptions`);
 
     // ============================================================
-    // PATH B: Non-cancelled, within grace period (expired but < 7 days ago)
+    // PATH B: Non-cancelled, within grace period (expired but < 24 hours ago)
     // Send renewal email with Payrexx checkout link, don't downgrade yet
     // ============================================================
     // Skip auto-renew users — Payrexx handles their billing automatically
