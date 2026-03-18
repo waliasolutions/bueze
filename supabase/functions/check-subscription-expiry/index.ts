@@ -252,7 +252,7 @@ serve(async (req) => {
               </p>
               <p style="font-size: 16px; color: #4a4a68; margin-bottom: 24px;">
                 Ihr <strong>${planName}</strong> Abonnement muss verlängert werden. Gemäss unseren AGB wird Ihr Abonnement automatisch verlängert.
-                Bitte schliessen Sie die Zahlung bis <strong>${graceEndDate}</strong> ab, um Ihren Zugang zu behalten.
+                Bitte schliessen Sie die Zahlung innerhalb von <strong>24 Stunden</strong> ab, um Ihren Zugang zu behalten.
               </p>
               <div style="text-align: center; margin: 32px 0;">
                 <a href="${checkoutUrl}" style="background-color: #2563eb; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600;">
