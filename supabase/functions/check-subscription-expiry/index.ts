@@ -277,7 +277,7 @@ serve(async (req) => {
           user_id: sub.user_id,
           type: 'subscription_renewal_required',
           title: 'Abonnement-Verlängerung erforderlich',
-          message: `Bitte schliessen Sie die Zahlung für Ihr ${planName} Abonnement bis ${graceEndDate} ab.`,
+          message: `Bitte schliessen Sie die Zahlung für Ihr ${planName} Abonnement innerhalb von 24 Stunden ab.`,
           metadata: { plan_type: sub.plan_type, checkout_url: checkoutUrl },
         });
       } catch (err) {
