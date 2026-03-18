@@ -260,7 +260,7 @@ serve(async (req) => {
                 </a>
               </div>
               <p style="font-size: 14px; color: #6b7280; margin-top: 16px;">
-                Falls die Zahlung nicht bis ${graceEndDate} eingeht, wird Ihr Konto auf den kostenlosen Plan umgestellt.
+                Falls die Zahlung nicht innerhalb von 24 Stunden eingeht, wird Ihr Konto auf den kostenlosen Plan umgestellt.
               </p>
             `),
           });
