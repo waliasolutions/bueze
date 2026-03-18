@@ -1,44 +1,65 @@
 
-# Payrexx Payment System — Go-Live Fixes (Completed)
 
-## All Critical & Medium Issues Resolved
+# Deep QA: Bewertungen (Ratings) System
 
-### ✅ Critical Fix 1: Service-Role Gateway Creation
-`create-payrexx-gateway` now supports a service-role code path. When called server-to-server (e.g., from `check-subscription-expiry`), it accepts `userId` and `userEmail` from the body instead of relying on `auth.getUser()`. Grace period renewal emails now include direct Payrexx payment links.
+## Overall Assessment
 
-### ✅ Critical Fix 2: Cron Jobs Created
-- `check-subscription-expiry`: daily at 02:00 UTC
-- `send-pending-payment-reminder`: daily at 10:00 UTC
+The rating system is well-architected with proper SSOT patterns. However, there is **one critical issue** found.
 
-### ✅ Critical Fix 3: Webhook Signature Verification
-`payrexx-webhook` now verifies HMAC-SHA256 signatures using `PAYREXX_API_KEY`. If the `ApiSignature` field is present in the webhook payload, it's validated against the expected hash. Mismatches are rejected with a logged warning.
+---
 
-### ✅ Medium Fix 4: Failed Payment Duplicate Handling
-Failed payment inserts now use `upsert` with `onConflict: 'payrexx_transaction_id'` and `ignoreDuplicates: true` to prevent errors from duplicate failed webhooks.
+## Issue: `send-rating-reminder` cron job is NOT scheduled
 
-### ✅ Medium Fix 5: PATH A0 Period Calculation
-Plan downgrades now use `PLAN_CONFIGS[newPlanType].periodMonths` for correct period calculation (e.g., 6 months for `6_month` plan instead of always 30 days).
+The Edge Function `send-rating-reminder` exists and is fully implemented, but there is **no pg_cron job** to trigger it. The function is designed to send email reminders to clients 7 days after a handwerker marks a lead as delivered, if no review has been submitted yet.
 
-### ✅ Medium Fix 6: VAT Rate Removed
-Removed hardcoded `vatRate: '8.1'` from `create-payrexx-gateway`. The company is MWST-exempt (Liechtenstein), so no VAT line should appear on the Payrexx payment page.
+Without this cron job, clients never receive rating reminder emails, which likely reduces the number of reviews submitted.
 
-### ⚠️ Manual Steps Required (Permission-Restricted)
-These cannot be done via Lovable and must be executed in the **Supabase Dashboard SQL Editor**:
+**Fix:** Add a cron job via migration:
 
-1. **Remove stale cron jobs**:
-   ```sql
-   SELECT cron.unschedule(2);  -- reset-monthly-proposal-quotas (references non-existent table)
-   SELECT cron.unschedule(3);  -- cleanup-pending-uploads-daily (references non-existent function)
-   ```
+```sql
+SELECT cron.schedule(
+  'send-rating-reminder',
+  '0 9 * * *',  -- Daily at 09:00 UTC (11:00 Swiss summer / 10:00 Swiss winter)
+  $$SELECT net.http_post(
+    url := 'https://ztthhdlhuhtwaaennfia.supabase.co/functions/v1/send-rating-reminder',
+    headers := '{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp0dGhoZGxodWh0d2FhZW5uZmlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkwNDg2NzYsImV4cCI6MjA2NDYyNDY3Nn0.4_aty-J0w_eHsP9sTid0yID7ZNJhd1HGvLf8OJY1A8A'}'::jsonb,
+    body := '{}'::jsonb
+  )$$
+);
+```
 
-2. **Drop duplicate index** (optional, cosmetic):
-   ```sql
-   DROP INDEX IF EXISTS idx_payment_history_payrexx_txn_unique;
-   ```
+One migration, no code changes needed.
 
-3. **Pre-launch verification**:
-   - Verify `PAYREXX_API_KEY` and `PAYREXX_INSTANCE` are set to production values
-   - Verify `PAYREXX_TEST_MODE` is false or removed
-   - Configure Payrexx webhook URL in Payrexx Dashboard
+---
 
-## System Status: Ready for Go-Live ✅
+## Everything Else: Working Correctly ✓
+
+### Client Flow ✓
+- **RatingPrompt** on Dashboard shows unrated delivered leads
+- **RatingForm** validates delivery status before allowing submission, handles duplicates (23505), validates profanity/spam
+- Low-rating reviews (1-2 stars) auto-create admin notifications
+- Unique constraint prevents double reviews per lead
+
+### Handwerker Flow ✓
+- **HandwerkerReviewResponse** on HandwerkerDashboard shows all received reviews with average
+- **ReviewCard** allows handwerker to respond to reviews (write/edit response)
+- Response saved to `handwerker_response` + `response_at` fields
+
+### Email Notifications ✓
+- **New review → Handwerker email**: DB trigger `on_new_review` → `send-rating-notification` → `ratingReceivedHandwerkerTemplate` ✓
+- **Handwerker responds → Client email**: DB trigger `on_rating_response` → `send-rating-response-notification` → `ratingResponseClientTemplate` ✓
+- **In-app notification**: `send-rating-notification` also inserts into `handwerker_notifications` ✓
+- **Rating reminder**: Function exists but cron not scheduled ✗
+
+### Admin Flow ✓
+- **ReviewsManagement** page with stats, filters, search
+- Toggle visibility (public/hidden), delete reviews
+- Detail dialog with full ReviewCard (can respond on behalf)
+- Low-rating admin notifications working
+- `handwerker_rating_stats` view correctly aggregates public reviews only
+
+### Data Integrity ✓
+- `is_verified` flag set based on accepted proposal existence
+- `handwerker_rating_stats` view filters on `is_public = true`
+- Review validation: profanity filter, spam detection, personal info warnings
+
