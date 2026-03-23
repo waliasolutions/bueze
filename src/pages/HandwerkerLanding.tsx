@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Target, Coins, LayoutDashboard, ShieldCheck, UserPlus, ClipboardCheck, Briefcase, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { majorCategories } from '@/config/majorCategories';
 import { generateFAQSchema, generateServiceSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 const HandwerkerLanding = () => {
@@ -247,6 +249,37 @@ const HandwerkerLanding = () => {
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </section>
+
+      {/* Categories Section - Interlinking */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
+              Unsere Kategorien
+            </h2>
+            <p className="text-xl text-ink-700">
+              Aufträge in diesen Bereichen warten auf Sie
+            </p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            {Object.values(majorCategories).map((category) => {
+              const CatIcon = category.icon;
+              return (
+                <Link
+                  key={category.id}
+                  to={`/kategorien/${category.slug}`}
+                  className="flex items-center gap-3 p-4 rounded-lg border border-border hover:border-brand-500 hover:bg-pastel-blue-50 transition-colors"
+                >
+                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${category.color} flex items-center justify-center text-white flex-shrink-0`}>
+                    <CatIcon className="w-5 h-5" />
+                  </div>
+                  <span className="font-medium text-ink-900 text-sm">{category.label}</span>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </section>
 

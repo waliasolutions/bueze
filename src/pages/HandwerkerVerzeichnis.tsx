@@ -14,9 +14,11 @@ import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
+import { generateFAQSchema, wrapInGraph } from '@/lib/schemaHelpers';
 
 interface PublicHandwerker {
   id: string;
@@ -131,11 +133,22 @@ const HandwerkerVerzeichnis = () => {
     window.scrollTo(0, 0);
   };
 
+  const verzeichnisFaqItems = [
+    { question: 'Wie finde ich den richtigen Handwerker?', answer: 'Nutzen Sie unsere Filter nach Kanton und Kategorie, um Handwerker in Ihrer Region und mit den passenden Fachgebieten zu finden. Sie können auch nach Firmennamen oder Ort suchen.' },
+    { question: 'Sind alle Handwerker im Verzeichnis geprüft?', answer: 'Ja, alle im Verzeichnis gelisteten Handwerker sind von unserem Team verifiziert. Wir prüfen Gewerbeberechtigung, Qualifikationen und Referenzen, bevor ein Profil freigeschaltet wird.' },
+    { question: 'Kann ich Handwerker direkt kontaktieren?', answer: 'Sie können die Profile der Handwerker einsehen und deren Kontaktdaten nutzen. Für eine strukturierte Anfrage mit Offerten-Vergleich empfehlen wir, ein kostenloses Projekt auf Büeze.ch zu erstellen.' },
+    { question: 'Ist das Handwerker-Verzeichnis kostenlos?', answer: 'Ja, das Verzeichnis ist für Auftraggeber komplett kostenlos zugänglich. Sie können unbegrenzt Profile durchsuchen und Handwerker kontaktieren.' }
+  ];
+
+  const schemaMarkup = wrapInGraph(generateFAQSchema(verzeichnisFaqItems));
+
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
-        title="Handwerkerverzeichnis – Verifizierte Schweizer Handwerker | Büeze.ch"
-        description="Finden Sie verifizierte Schweizer Handwerker in Ihrer Region. Qualitätsgeprüfte Fachleute für alle Handwerksarbeiten."
+        title="Handwerker-Verzeichnis Schweiz | Geprüfte Betriebe | Büeze.ch"
+        description="Durchsuchen Sie unser Verzeichnis geprüfter Handwerker in der Schweiz. Filtern Sie nach Kanton, Kategorie und finden Sie den passenden Fachbetrieb."
+        canonical="https://bueeze.ch/handwerker-verzeichnis"
+        schemaMarkup={schemaMarkup}
       />
       <Header />
       <main className="container mx-auto px-4 py-8 pt-24">
@@ -181,6 +194,36 @@ const HandwerkerVerzeichnis = () => {
           />
         </div>
       </main>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4 max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4 text-center">
+            Häufig gestellte Fragen
+          </h2>
+          <p className="text-xl text-ink-700 text-center mb-12">
+            Alles zum Handwerker-Verzeichnis
+          </p>
+
+          <Accordion type="single" collapsible className="space-y-4">
+            {verzeichnisFaqItems.map((item, index) => (
+              <AccordionItem
+                key={index}
+                value={`item-${index}`}
+                className="bg-white rounded-lg shadow-sm border border-border px-6"
+              >
+                <AccordionTrigger className="text-left font-semibold text-ink-900 hover:text-brand-600 py-5">
+                  {item.question}
+                </AccordionTrigger>
+                <AccordionContent className="text-ink-700 leading-relaxed pb-5">
+                  {item.answer}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
       <Footer />
     </div>
   );

@@ -25,8 +25,8 @@ const PricingPage = () => {
   };
 
   const seoData = content?.seo || {
-    title: "Preise für Handwerker | Büeze.ch",
-    description: "Einfache und faire Preise für Handwerksbetriebe. Starten Sie kostenlos mit 5 Offerten pro Monat oder wählen Sie ein Abo für unbegrenzte Projektanfragen.",
+    title: "Handwerker-Abo Preise | Ab CHF 0/Monat | Büeze.ch",
+    description: "Transparente Preise für Handwerker: Kostenloser Free-Plan mit 5 Offerten/Monat oder unbegrenzte Offerten ab CHF 90/Monat. Keine versteckten Kosten.",
     canonical: "https://bueeze.ch/pricing"
   };
 

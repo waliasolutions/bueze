@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Home, Search, ArrowLeft, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DynamicHelmet } from "@/components/DynamicHelmet";
 
 const NotFound = () => {
   const location = useLocation();
@@ -21,6 +22,11 @@ const NotFound = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <DynamicHelmet
+        title="Seite nicht gefunden | Büeze.ch"
+        description="Die angeforderte Seite existiert nicht oder wurde verschoben."
+        robotsMeta="noindex,nofollow"
+      />
       <Card className="w-full max-w-md text-center">
         <CardHeader>
           <CardTitle className="text-6xl font-bold text-primary mb-4">404</CardTitle>

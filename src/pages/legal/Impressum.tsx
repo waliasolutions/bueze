@@ -4,7 +4,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
-import { generateWebPageSchema, wrapInGraph } from '@/lib/schemaHelpers';
+import { generateWebPageSchema, generateLocalBusinessSchema, wrapInGraph } from '@/lib/schemaHelpers';
 import { useBillingContext } from '@/contexts/BillingSettingsProvider';
 
 const Impressum = () => {
@@ -15,7 +15,15 @@ const Impressum = () => {
       "Impressum",
       `Impressum und rechtliche Informationen zur ${b.company_legal_name}, dem Betreiber der Handwerker-Vermittlungsplattform Büeze.ch.`,
       "https://bueeze.ch/impressum"
-    )
+    ),
+    {
+      ...generateLocalBusinessSchema(b),
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 47.1617,
+        "longitude": 9.5093
+      }
+    }
   );
 
   return (

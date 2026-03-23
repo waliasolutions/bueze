@@ -17,8 +17,8 @@ const KategorienLanding = () => {
   const { content } = usePageContent('kategorien-overview');
 
   const seoData = content?.seo || {
-    title: "Handwerker-Kategorien | Büeze.ch",
-    description: "Von Elektroinstallationen über Sanitär bis zu Malerarbeiten – entdecken Sie alle Handwerksbereiche auf Büeze.ch und finden Sie den passenden Fachbetrieb für Ihr Projekt.",
+    title: "Alle Handwerker-Kategorien Schweiz | Büeze.ch",
+    description: "Finden Sie Handwerker in über 60 Kategorien: Elektriker, Sanitär, Maler, Schreiner & mehr. Kostenlos Offerten vergleichen auf Büeze.ch.",
     canonical: "https://bueeze.ch/kategorien"
   };
 
@@ -120,8 +120,9 @@ const KategorienLanding = () => {
             </p>
           </div>
 
-          {/* Benefits Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+          {/* Benefits List */}
+          <h3 className="text-2xl font-bold text-ink-900 mt-12 mb-6">Ihre Vorteile mit Büeze.ch</h3>
+          <ul className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 list-none p-0">
             {[
               { icon: Shield, text: 'Geprüfte Handwerksbetriebe schweizweit' },
               { icon: CheckCircle, text: 'Kostenlos & unverbindlich für Auftraggeber' },
@@ -130,17 +131,17 @@ const KategorienLanding = () => {
               { icon: Award, text: 'Geprüfte Fachbetriebe' },
               { icon: MapPin, text: 'Schweizweite Abdeckung' },
             ].map((benefit, index) => {
-              const Icon = benefit.icon;
+              const BenefitIcon = benefit.icon;
               return (
-                <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-pastel-grey-50">
+                <li key={index} className="flex items-start gap-3 p-4 rounded-lg bg-pastel-grey-50">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white flex-shrink-0">
-                    <Icon className="w-5 h-5" />
+                    <BenefitIcon className="w-5 h-5" />
                   </div>
-                  <p className="text-ink-700 font-medium leading-relaxed">{benefit.text}</p>
-                </div>
+                  <span className="text-ink-700 font-medium leading-relaxed">{benefit.text}</span>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
       </section>
 

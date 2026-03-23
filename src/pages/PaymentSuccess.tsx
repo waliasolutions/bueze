@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DynamicHelmet } from "@/components/DynamicHelmet";
 
 export default function PaymentSuccess() {
   const navigate = useNavigate();
@@ -21,6 +22,10 @@ export default function PaymentSuccess() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+      <DynamicHelmet
+        title="Zahlung erfolgreich | Büeze.ch"
+        robotsMeta="noindex,nofollow"
+      />
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       <p className="text-muted-foreground">Zahlung wird verarbeitet...</p>
       {showFallback && (
