@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { categoryContent } from '@/config/categoryContent';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { ArrowRight } from 'lucide-react';
-import { getMajorCategoryBySubcategory } from '@/config/majorCategories';
+import { getMajorCategoryBySubcategory, majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
 import NotFound from './NotFound';
@@ -186,6 +186,47 @@ const CategoryLanding = () => {
           </Accordion>
         </div>
       </section>
+
+      {/* Related Categories Section */}
+      {majorCategory && (() => {
+        const siblingSubcategories = majorCategory.subcategories
+          .map(subId => subcategoryLabels[subId])
+          .filter(Boolean)
+          .filter(sub => sub.slug !== categorySlug)
+          .slice(0, 4);
+
+        return siblingSubcategories.length > 0 ? (
+          <section className="py-16 bg-white">
+            <div className="container mx-auto px-4 max-w-4xl">
+              <h2 className="text-3xl font-bold text-ink-900 mb-8 text-center">
+                Verwandte Dienstleistungen
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {siblingSubcategories.map((sub) => (
+                  <Link
+                    key={sub.value}
+                    to={`/category/${sub.slug}`}
+                    className="flex items-center gap-3 p-4 rounded-lg border border-border hover:border-brand-500 hover:bg-pastel-blue-50 transition-colors"
+                  >
+                    <ArrowRight className="w-5 h-5 text-brand-600 flex-shrink-0" />
+                    <span className="font-medium text-ink-900">{sub.label}</span>
+                  </Link>
+                ))}
+              </div>
+              {majorCategory.subcategories.length > 5 && (
+                <div className="text-center mt-6">
+                  <Link
+                    to={`/kategorien/${majorCategory.slug}`}
+                    className="text-brand-600 hover:text-brand-700 font-medium"
+                  >
+                    Alle {majorCategory.label}-Dienstleistungen ansehen
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : null;
+      })()}
 
       {/* Final CTA Section */}
       <section className="py-20 bg-gradient-to-br from-brand-50 to-pastel-blue-100 border-t border-border">

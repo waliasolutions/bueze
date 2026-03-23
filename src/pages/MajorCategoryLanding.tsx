@@ -7,7 +7,7 @@ import { usePageContent } from '@/hooks/usePageContent';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { HowItWorks } from '@/components/HowItWorks';
@@ -244,9 +244,28 @@ const MajorCategoryLanding = () => {
         </div>
       </section>
       
+      {/* Benefits Section */}
+      {majorCategory.benefits && majorCategory.benefits.length > 0 && (
+        <section className="py-16 bg-pastel-blue-50">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <h2 className="text-3xl font-bold text-ink-900 mb-8 text-center">
+              Ihre Vorteile
+            </h2>
+            <ul className="grid md:grid-cols-2 gap-4 list-none p-0">
+              {majorCategory.benefits.map((benefit, index) => (
+                <li key={index} className="flex items-start gap-3 p-4 rounded-lg bg-white">
+                  <CheckCircle className="w-6 h-6 text-brand-600 flex-shrink-0 mt-0.5" />
+                  <span className="text-ink-700 font-medium">{benefit}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
+
       {/* How It Works Section */}
       <HowItWorks />
-      
+
       {/* FAQ Section */}
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4 max-w-3xl">

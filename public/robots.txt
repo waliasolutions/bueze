@@ -44,6 +44,7 @@ Disallow: /api/
 # Allow public pages
 Allow: /
 Allow: /handwerker
+Allow: /handwerker-verzeichnis
 Allow: /kategorien/
 Allow: /category/
 Allow: /legal/agb
@@ -52,3 +53,6 @@ Allow: /datenschutz
 Allow: /pricing
 
 Sitemap: https://bueeze.ch/sitemap.xml
+
+# LLMs.txt
+# See: https://bueeze.ch/llms.txt

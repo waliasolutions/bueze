@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { DynamicHelmet } from "@/components/DynamicHelmet";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useBillingContext } from "@/contexts/BillingSettingsProvider";
@@ -301,6 +302,10 @@ export default function Checkout() {
   // Approved - streamlined checkout
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+      <DynamicHelmet
+        title="Checkout | Büeze.ch"
+        robotsMeta="noindex,nofollow"
+      />
       <Header />
       <div className="container mx-auto px-4 py-8 pt-24 max-w-5xl">
         {/* Header */}

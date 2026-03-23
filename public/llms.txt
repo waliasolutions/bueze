@@ -1,0 +1,61 @@
+# Büeze.ch
+
+> Büeze.ch ist der Schweizer Marktplatz für geprüfte Handwerker. Auftraggeber beschreiben ihr Projekt kostenlos und erhalten Offerten von verifizierten Fachbetrieben aus ihrer Region.
+
+## Über Büeze.ch
+
+Büeze.ch verbindet Auftraggeber mit geprüften Handwerkern in der Schweiz. Die Plattform ist für Auftraggeber kostenlos und unverbindlich. Handwerker können sich registrieren und erhalten passende Projektanfragen aus ihrer Region.
+
+- Website: https://bueeze.ch
+- Sprache: Deutsch (de-CH)
+- Markt: Schweiz
+- Betreiber: Büeze.ch GmbH, Industriestrasse 28, 9487 Gamprin-Bendern, Liechtenstein
+- Kontakt: info@bueeze.ch | +41 41 558 22 33
+
+## So funktioniert es
+
+1. Auftraggeber beschreiben ihr Projekt (kostenlos & unverbindlich)
+2. Geprüfte Handwerker senden Offerten
+3. Auftraggeber vergleichen und wählen den passenden Handwerker
+
+## Handwerker-Kategorien
+
+- Bau & Renovation: Hochbau, Umbau, Abbruch, Renovationsarbeiten
+- Bodenbeläge: Parkett, Laminat, Fliesen, Vinyl
+- Elektroinstallationen: Hausinstallationen, Smart Home, Ladestationen
+- Heizung, Klima & Solar: Heizung, Wärmepumpen, Klimaanlagen, Solaranlagen
+- Sanitär: Badezimmer, Rohrleitungen, Boiler, Notfall-Sanitär
+- Küche: Küchenplanung, Montage, Renovation
+- Innenausbau & Schreiner: Möbelbau, Fenster, Türen, Schreinerarbeiten
+- Räumung & Entsorgung: Entrümpelung, Muldenservice, Demontage
+- Garten & Aussenbereich: Gartenbau, Landschaftspflege, Zaunbau
+- Reinigung & Hauswartung: Gebäudereinigung, Umzugsreinigung, Hauswartung
+- Gebäudehülle: Fassade, Dach, Abdichtung, Isolation
+- Storen & Beschattung: Sonnenschutz, Rollladen, Markisen
+- Glas & Fenster: Fenstermontage, Glasreparatur, Wintergarten
+- Bautrocknung & Wasserschäden: Trocknung, Leckortung, Sanierung
+
+## Wichtige Seiten
+
+- Startseite: https://bueeze.ch/
+- Alle Kategorien: https://bueeze.ch/kategorien
+- Handwerker-Verzeichnis: https://bueeze.ch/handwerker-verzeichnis
+- Für Handwerker: https://bueeze.ch/handwerker
+- Preise: https://bueeze.ch/pricing
+- Impressum: https://bueeze.ch/impressum
+- Datenschutz: https://bueeze.ch/datenschutz
+- AGB: https://bueeze.ch/legal/agb
+
+## Für Auftraggeber
+
+- Kostenlos und unverbindlich Anfragen erstellen
+- Bis zu 3 Offerten von geprüften Handwerkern erhalten
+- Kontaktdaten werden erst nach Zusage ausgetauscht
+- Keine versteckten Kosten oder Vermittlungsgebühren
+
+## Für Handwerker
+
+- Kostenloser Free-Plan mit 5 Offerten pro Monat
+- Abo-Pläne ab CHF 90/Monat für unbegrenzte Offerten
+- Keine Kosten pro Kontakt oder Vermittlung
+- Passende Aufträge aus der eigenen Region
