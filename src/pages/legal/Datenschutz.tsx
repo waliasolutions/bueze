@@ -111,7 +111,7 @@ const Datenschutz = () => {
                 <h2 className="text-2xl font-bold mb-4">4. Zweck der Datenverarbeitung</h2>
                 <div className="text-ink-700 space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">4.1 Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO / Art. 31 Abs. 1 nDSG)</h3>
+                    <h3 className="text-lg font-semibold mb-2">4.1 Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO / Art. 31 Abs. 2 lit. a nDSG)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li>Bereitstellung der Plattform-Funktionen</li>
                       <li>Vermittlung zwischen Auftraggebern und Handwerkern</li>
@@ -122,7 +122,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">4.2 Berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO / Art. 31 Abs. 1 nDSG)</h3>
+                    <h3 className="text-lg font-semibold mb-2">4.2 Berechtigte Interessen (Art. 6 Abs. 1 lit. f DSGVO / Art. 31 Abs. 2 lit. a nDSG)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li>Verbesserung der Plattform und Nutzererfahrung</li>
                       <li>Betrugsbekämpfung und Sicherheit</li>
@@ -132,7 +132,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">4.3 Gesetzliche Verpflichtungen (Art. 6 Abs. 1 lit. c DSGVO / Art. 31 Abs. 2 nDSG)</h3>
+                    <h3 className="text-lg font-semibold mb-2">4.3 Gesetzliche Verpflichtungen (Art. 6 Abs. 1 lit. c DSGVO / Art. 31 Abs. 1 nDSG)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li>Erfüllung buchhalterischer und steuerlicher Pflichten</li>
                       <li>Aufbewahrung von Geschäftsunterlagen</li>
@@ -147,14 +147,22 @@ const Datenschutz = () => {
                 <p className="text-ink-700 mb-4">
                   Wir geben Ihre Daten nur in folgenden Fällen an Dritte weiter:
                 </p>
+                <p className="text-ink-700 mb-4">
+                  <strong>Wichtig:</strong> Ihre personenbezogenen Daten werden ausschliesslich für die in dieser Datenschutzerklärung
+                  genannten Zwecke verwendet – insbesondere für die Vermittlung zwischen Auftraggebern und Handwerkern sowie den
+                  Betrieb der Plattform. Wir verkaufen Ihre Daten niemals an Dritte und geben sie auch nicht für andere als die
+                  hier beschriebenen Zwecke weiter.
+                </p>
 
                 <div className="space-y-4 text-ink-700">
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.1 Datenbank und Hosting</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.1 Datenbank und Hosting (Supabase)</h3>
                     <ul className="list-disc pl-6 space-y-1">
+                      <li><strong>Anbieter:</strong> Supabase Inc. (Backend-as-a-Service)</li>
                       <li><strong>Zweck:</strong> Speicherung und Verwaltung aller Plattformdaten</li>
-                      <li><strong>Standort:</strong> Hosting nach EU und CH Standard</li>
-                      <li><strong>Datenschutz:</strong> Unsere Hosting-Infrastruktur entspricht den strengen Anforderungen der DSGVO und des Schweizer Datenschutzgesetzes (nDSG)</li>
+                      <li><strong>Standort:</strong> Deutschland (AWS eu-central-1, Frankfurt am Main). Sämtliche Daten werden auf Servern eines Partneranbieters (Amazon Web Services) in Deutschland gehostet.</li>
+                      <li><strong>Datenschutz:</strong> Die Hosting-Infrastruktur befindet sich vollständig innerhalb der EU und entspricht den Anforderungen der DSGVO sowie des Schweizer Datenschutzgesetzes (nDSG). Supabase ist vertraglich als Auftragsverarbeiter gemäss Art. 9 nDSG gebunden.</li>
+                      <li><strong>Verschlüsselung:</strong> Sämtliche Datenübertragungen zwischen Nutzern und unseren Servern erfolgen über hochgesicherte, verschlüsselte Kanäle (TLS 1.2+). Daten werden zudem verschlüsselt gespeichert (AES-256 at rest).</li>
                     </ul>
                   </div>
 
@@ -164,6 +172,15 @@ const Datenschutz = () => {
                       <li><strong>Zweck:</strong> Verarbeitung von Zahlungen über Schweizer Zahlungsmethoden</li>
                       <li><strong>Standort:</strong> Schweiz</li>
                       <li><strong>Datenschutz:</strong> <a href="https://www.payrexx.com/de-ch/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-brand-500 hover:text-brand-600">https://www.payrexx.com/de-ch/legal/privacy</a></li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">5.3 Supabase Storage (Dateispeicherung)</h3>
+                    <ul className="list-disc pl-6 space-y-1">
+                      <li><strong>Zweck:</strong> Speicherung von Profilbildern, Portfolio-Fotos und Projektdokumenten</li>
+                      <li><strong>Standort:</strong> Deutschland (AWS eu-central-1, Frankfurt am Main)</li>
+                      <li><strong>Datenschutz:</strong> Dateien werden verschlüsselt gespeichert und nur authentifizierten Nutzern mit entsprechender Berechtigung zugänglich gemacht</li>
                     </ul>
                   </div>
 
@@ -222,8 +239,15 @@ const Datenschutz = () => {
                 </p>
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
                   <li>EU-Standardvertragsklauseln (SCC) für Transfers in Drittländer</li>
-                  <li>Angemessenheitsbeschlüsse der EU-Kommission</li>
+                  <li>Angemessenheitsbeschlüsse der EU-Kommission bzw. des Bundesrats</li>
                   <li>Zertifizierungen und Binding Corporate Rules der Dienstleister</li>
+                </ul>
+                <p className="text-ink-700 mt-4 mb-2"><strong>Betroffene Länder und Schutzmechanismen:</strong></p>
+                <ul className="list-disc pl-6 text-ink-700 space-y-2">
+                  <li><strong>Deutschland</strong> (Supabase/AWS) – EU-Angemessenheitsbeschluss, DSGVO-konform</li>
+                  <li><strong>Schweiz</strong> (Payrexx) – kein Transfer ins Ausland</li>
+                  <li><strong>Neuseeland</strong> (SMTP2GO) – Angemessenheitsbeschluss des Bundesrats</li>
+                  <li><strong>USA</strong> (Google Analytics, Google Tag Manager) – EU-Standardvertragsklauseln (SCC) sowie Angemessenheitsentscheid gemäss Swiss-U.S. Data Privacy Framework</li>
                 </ul>
               </section>
 
@@ -265,15 +289,15 @@ const Datenschutz = () => {
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
                   <li><strong>Auskunftsrecht (Art. 25 nDSG / Art. 15 DSGVO):</strong> Sie können Auskunft über die von uns 
                   verarbeiteten Daten verlangen.</li>
-                  <li><strong>Recht auf Berichtigung (Art. 32 nDSG / Art. 16 DSGVO):</strong> Sie können die Korrektur 
+                  <li><strong>Recht auf Berichtigung (Art. 6 Abs. 5 nDSG / Art. 16 DSGVO):</strong> Sie können die Korrektur 
                   falscher Daten verlangen.</li>
-                  <li><strong>Recht auf Löschung (Art. 32 nDSG / Art. 17 DSGVO):</strong> Sie können die Löschung Ihrer 
+                  <li><strong>Recht auf Löschung (Art. 6 Abs. 5 nDSG / Art. 17 DSGVO):</strong> Sie können die Löschung Ihrer 
                   Daten verlangen, sofern keine gesetzlichen Aufbewahrungspflichten bestehen.</li>
                   <li><strong>Recht auf Einschränkung der Verarbeitung (Art. 18 DSGVO):</strong> Sie können die Einschränkung 
                   der Verarbeitung verlangen.</li>
                   <li><strong>Recht auf Datenübertragbarkeit (Art. 28 nDSG / Art. 20 DSGVO):</strong> Sie können Ihre Daten 
                   in einem strukturierten, gängigen Format erhalten.</li>
-                  <li><strong>Widerspruchsrecht (Art. 30 nDSG / Art. 21 DSGVO):</strong> Sie können der Verarbeitung Ihrer 
+                  <li><strong>Widerspruchsrecht (Art. 21 DSGVO):</strong> Sie können der Verarbeitung Ihrer 
                   Daten aus Gründen Ihrer besonderen Situation widersprechen.</li>
                   <li><strong>Widerruf der Einwilligung:</strong> Sie können erteilte Einwilligungen jederzeit mit Wirkung 
                   für die Zukunft widerrufen.</li>
@@ -345,8 +369,9 @@ const Datenschutz = () => {
                   Zerstörung, Manipulation und unberechtigtem Zugriff zu schützen:
                 </p>
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
-                  <li>SSL/TLS-Verschlüsselung für alle Datenübertragungen</li>
-                  <li>Verschlüsselte Speicherung sensibler Daten</li>
+                  <li>Sämtliche Kommunikation und Datenübertragungen zwischen Ihrem Endgerät und unseren Servern erfolgen ausschliesslich über hochgesicherte, verschlüsselte Kanäle (TLS 1.2+/TLS 1.3)</li>
+                  <li>Verschlüsselte Speicherung sensibler Daten (AES-256 at rest)</li>
+                  <li>Ende-zu-Ende verschlüsselte Verbindungen zu allen eingebundenen Drittanbietern</li>
                   <li>Zugriffsbeschränkungen und Authentifizierung</li>
                   <li>Regelmässige Sicherheits-Audits</li>
                   <li>Backup-Systeme</li>
