@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate, formatDateTime } from "@/lib/swissTime";
+import { addDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -831,8 +832,7 @@ const HandwerkerDashboard = () => {
 
           {/* Grace Period Banner — subscription expired but not yet downgraded */}
           {subscriptionData && subscriptionData.plan_type !== 'free' && new Date(subscriptionData.current_period_end) < new Date() && (() => {
-            const graceEndDate = new Date(subscriptionData.current_period_end);
-            graceEndDate.setDate(graceEndDate.getDate() + 1);
+            const graceEndDate = addDays(new Date(subscriptionData.current_period_end), 1);
             const now = new Date();
             const hoursLeft = Math.max(0, Math.ceil((graceEndDate.getTime() - now.getTime()) / (1000 * 60 * 60)));
             return (

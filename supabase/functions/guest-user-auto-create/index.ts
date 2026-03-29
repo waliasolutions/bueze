@@ -5,6 +5,7 @@ import { sendEmail } from '../_shared/smtp2go.ts';
 
 import { guestWelcomeTemplate } from '../_shared/emailTemplates.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
+import { addDays } from '../_shared/dateFormatter.ts';
 
 function generateSecurePassword(length = 16): string {
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
@@ -64,8 +65,7 @@ serve(async (req) => {
     await supabase.from('user_roles').insert({ user_id: newUser.user.id, role: 'client' });
 
     const token = crypto.randomUUID().replace(/-/g, '');
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    const expiresAt = addDays(new Date(), 30);
 
     await supabase.from('magic_tokens').insert({
       token,
