@@ -23,7 +23,8 @@ import {
   Shield,
   Download
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { format } from 'date-fns';
+import { startOfMonth, endOfMonth } from '@/lib/swissTime';
 import { de } from 'date-fns/locale';
 import { 
   ChartContainer, 

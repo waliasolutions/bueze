@@ -3,6 +3,7 @@
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { FRONTEND_URL } from './siteConfig.ts';
+import { addDays } from './dateFormatter.ts';
 
 export interface ClientProfile {
   id: string;
@@ -146,8 +147,7 @@ export async function createMagicToken(
   }
 ): Promise<{ token: string; magicLink: string } | null> {
   const token = crypto.randomUUID().replace(/-/g, '');
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + (options.expiryDays || 7));
+  const expiresAt = addDays(new Date(), options.expiryDays || 7);
 
   const { error } = await supabase.from('magic_tokens').insert({
     token,

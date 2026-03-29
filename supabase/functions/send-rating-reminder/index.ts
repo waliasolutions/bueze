@@ -88,8 +88,7 @@ serve(async (req: Request) => {
     const hwMap = new Map((hwProfiles || []).map(p => [p.user_id, p]));
 
     // Batch create magic tokens
-    const tokenExpiresAt = new Date();
-    tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 30);
+    const tokenExpiresAt = addDays(new Date(), 30);
     const tokenRecords = unreviewedLeads.map(lead => {
       const proposal = ((lead.lead_proposals as unknown as { id: string; handwerker_id: string }[]) ?? [])[0] ?? null;
       return {

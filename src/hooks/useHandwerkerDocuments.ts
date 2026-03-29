@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HandwerkerDocument {
@@ -111,8 +112,7 @@ export function useHandwerkerDocuments(userId: string | null): UseHandwerkerDocu
   const expiringCount = documents.filter(d => {
     if (!d.expiry_date) return false;
     const expiry = new Date(d.expiry_date);
-    const thirtyDaysFromNow = new Date(today);
-    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    const thirtyDaysFromNow = addDays(today, 30);
     return expiry >= today && expiry <= thirtyDaysFromNow;
   }).length;
 

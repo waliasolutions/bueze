@@ -4,7 +4,7 @@
  * Ensures consistent handling of Swiss timezone (Europe/Zurich / CET/CEST)
  */
 
-import { format as dateFnsFormat, formatDistanceToNow, differenceInHours, differenceInDays } from 'date-fns';
+import { format as dateFnsFormat, formatDistanceToNow, differenceInHours, differenceInDays, addMonths as dfnsAddMonths } from 'date-fns';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
 import { de } from 'date-fns/locale';
 
@@ -102,7 +102,7 @@ export function now(): Date {
  */
 export function startOfMonth(date?: Date | string): Date {
   const d = date ? toSwissTime(date) : now();
-  return new Date(d.getFullYear(), d.getMonth(), 1);
+  return fromZonedTime(new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0), SWISS_TIMEZONE);
 }
 
 /**
@@ -110,7 +110,7 @@ export function startOfMonth(date?: Date | string): Date {
  */
 export function endOfMonth(date?: Date | string): Date {
   const d = date ? toSwissTime(date) : now();
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+  return fromZonedTime(new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999), SWISS_TIMEZONE);
 }
 
 /**
@@ -118,9 +118,7 @@ export function endOfMonth(date?: Date | string): Date {
  */
 export function addMonths(date: Date | string, months: number): Date {
   const d = toSwissTime(date);
-  const result = new Date(d);
-  result.setMonth(result.getMonth() + months);
-  return result;
+  return fromZonedTime(dfnsAddMonths(d, months), SWISS_TIMEZONE);
 }
 
 /**

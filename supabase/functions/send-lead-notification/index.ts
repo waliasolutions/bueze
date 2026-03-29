@@ -6,7 +6,7 @@ import { fetchClientProfile } from '../_shared/profileHelpers.ts';
 import { FRONTEND_URL, SUPPORT_EMAIL } from '../_shared/siteConfig.ts';
 import { getCategoryLabel } from '../_shared/categoryLabels.ts';
 import { newLeadNotificationTemplate, newLeadAdminNotificationTemplate } from '../_shared/emailTemplates.ts';
-import { formatSwissDateTime } from '../_shared/dateFormatter.ts';
+import { formatSwissDateTime, addDays } from '../_shared/dateFormatter.ts';
 
 import { handwerkerMatchesCategory } from '../_shared/majorCategoryMapping.ts';
 
@@ -203,8 +203,7 @@ serve(async (req) => {
     );
 
     // Batch-create all magic tokens (avoids N+1 inserts)
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+    const expiresAt = addDays(new Date(), 7);
     const tokenRecords = matchingHandwerkers.map(hw => ({
       token: crypto.randomUUID().replace(/-/g, ''),
       user_id: hw.user_id,

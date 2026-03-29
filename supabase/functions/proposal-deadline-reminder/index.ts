@@ -5,6 +5,7 @@ import { sendEmail } from '../_shared/smtp2go.ts';
 import { proposalDeadlineClientTemplate, proposalDeadlineHandwerkerTemplate } from '../_shared/emailTemplates.ts';
 import { formatSwissDateLong, addDays, startOfDaySwiss, endOfDaySwiss } from '../_shared/dateFormatter.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
+import { createMagicToken } from '../_shared/profileHelpers.ts';
 
 serve(async (req) => {
   const corsResponse = handleCorsPreflightRequest(req);
@@ -123,19 +124,14 @@ serve(async (req) => {
             .single();
 
           if (profile?.email) {
-            const token = crypto.randomUUID().replace(/-/g, '');
-            const expiresAt = new Date();
-            expiresAt.setDate(expiresAt.getDate() + 7);
-
-            await supabase.from('magic_tokens').insert({
-              token,
-              user_id: handwerkerId,
-              resource_type: 'lead',
-              resource_id: lead.id,
-              expires_at: expiresAt.toISOString(),
+            const tokenResult = await createMagicToken(supabase, {
+              userId: handwerkerId,
+              resourceType: 'lead',
+              resourceId: lead.id,
+              expiryDays: 7,
             });
-
-            const magicLink = `${FRONTEND_URL}/opportunity/${lead.id}?token=${token}`;
+            if (!tokenResult) continue;
+            const magicLink = tokenResult.magicLink;
 
             const handwerkerEmailHtml = proposalDeadlineHandwerkerTemplate({
               handwerkerName: profile.full_name || 'Handwerker',

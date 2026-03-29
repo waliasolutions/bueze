@@ -40,7 +40,8 @@ import {
   XCircle,
   RotateCcw,
 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
+import { startOfMonth, endOfMonth } from '@/lib/swissTime';
 import { de } from 'date-fns/locale';
 import { getInvoiceStatusConfig, formatInvoiceAmount } from '@/config/invoiceConfig';
 import { getPlanLabel, PLAN_BADGE_VARIANT } from '@/config/subscriptionPlans';
