@@ -104,7 +104,7 @@ const AGB = () => {
                 <ul className="list-disc pl-6 text-ink-700 space-y-2">
                   <li>Free-Nutzer: {plans.free.proposalsLimit} Offerten pro Monat, Zurücksetzung am 1. des Folgemonats.</li>
                   <li>Abo-Nutzer (monatlich, 6 Monate, jährlich): unbegrenzte Offerten.</li>
-                  <li>Abgelehnte Offerten werden nicht auf das Kontingent angerechnet.</li>
+                  
                   <li>Nur eingereichte Offerten zählen zur monatlichen Limite.</li>
                   <li>10-Tage-Frist für die Offerteneingabe pro Anfrage.</li>
                 </ul>
