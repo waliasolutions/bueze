@@ -1,27 +1,53 @@
 
 
-# Add Google Ads gtag.js globally via GlobalScriptManager
+# Fix: Clean up invalid phone data & add phone input validation
 
-## Approach
+## Root Cause
 
-The project already has `GlobalScriptManager.tsx` as the SSOT for third-party script injection — used on every page via `App.tsx`. The Google Ads tag will be added there, respecting cookie consent (marketing consent, since this is an advertising tag).
+All 26 profiles with `info@bueeze.ch` in the phone field were created on April 13, 2026 — likely via a bulk admin operation that accidentally put the company email into the phone field. The system has no input validation on phone fields, so any text (including email addresses) is accepted.
 
-## Change
+## Changes
 
-**File: `src/components/GlobalScriptManager.tsx`**
+### 1. Data cleanup — Clear the 26 invalid phone entries
 
-Add a new block after the GTM injection that:
-1. Checks marketing cookie consent (`consent.marketing === true`)
-2. Injects the gtag.js loader script (`https://www.googletagmanager.com/gtag/js?id=AW-18090737196`)
-3. Injects the inline gtag config script
-4. Uses a `data-gtag-ads` attribute to prevent duplicate injection
-5. Also handles the consent-change listener to reload if marketing consent is newly granted
+Use the Supabase insert tool to run:
+```sql
+UPDATE profiles SET phone = NULL WHERE phone = 'info@bueeze.ch';
+```
 
-The Google Ads ID (`AW-18090737196`) will be hardcoded since it's a platform-owned tag, not a per-tenant setting like the GTM container ID.
+### 2. Add phone sanitization helper — `src/lib/displayFormatters.ts`
 
-## Why marketing consent (not analytics)
+Add a `sanitizePhoneInput(value: string): string` function that strips all characters except digits, `+`, spaces, and parentheses. This becomes the SSOT for phone input filtering.
 
-Google Ads conversion tracking is advertising/marketing functionality. The cookie banner already distinguishes `analytics` and `marketing` categories. Using `marketing` is legally correct and consistent with the consent model.
+```typescript
+export function sanitizePhoneInput(value: string): string {
+  return value.replace(/[^0-9+\s()/-]/g, '');
+}
+```
 
-## Files changed: 1 · New files: 0
+### 3. Apply sanitization to all 5 phone input fields
+
+| File | Field |
+|------|-------|
+| `src/pages/HandwerkerOnboarding.tsx` | phoneNumber |
+| `src/pages/HandwerkerProfileEdit.tsx` | phoneNumber |
+| `src/pages/SubmitLead.tsx` | phone (via zod field) |
+| `src/components/admin/HandwerkerEditDialog.tsx` | phone_number |
+| `src/pages/admin/HandwerkerApprovals.tsx` | phone_number |
+
+Each `onChange` handler will pass the value through `sanitizePhoneInput()` before setting state — preventing letters, `@`, and other non-phone characters from being typed.
+
+`AdminBillingSettings.tsx` phone field is excluded (company phone is admin-only internal config).
+
+### 4. Add database-level CHECK constraint (migration)
+
+```sql
+ALTER TABLE public.profiles
+  ADD CONSTRAINT profiles_phone_format_check
+  CHECK (phone IS NULL OR phone ~ '^[0-9+\s()/-]+$');
+```
+
+This prevents any future invalid phone data at the DB level, regardless of which code path writes it.
+
+**Files changed: 6 · New migration: 1 · Data update: 1**
 
