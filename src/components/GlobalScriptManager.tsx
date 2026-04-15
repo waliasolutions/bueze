@@ -7,16 +7,15 @@ export const GlobalScriptManager = () => {
   useEffect(() => {
     if (!settings) return;
 
-    // Check cookie consent before injecting GTM
-    const checkConsent = () => {
+    // Check cookie consent before injecting scripts
+    const getConsent = () => {
       const consentString = localStorage.getItem('bueeze_cookie_consent');
-      if (!consentString) return false; // No consent given yet
+      if (!consentString) return null;
       
       try {
-        const consent = JSON.parse(consentString);
-        return consent.analytics === true; // Only inject if analytics is accepted
+        return JSON.parse(consentString) as { analytics?: boolean; marketing?: boolean };
       } catch {
-        return false;
+        return null;
       }
     };
 
