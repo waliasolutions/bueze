@@ -152,7 +152,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
           </div>
           <div className="space-y-1">
             <Label htmlFor="edit-phone">Telefon</Label>
-            <Input id="edit-phone" value={activeForm.phone_number || ''} onChange={(e) => updateField('phone_number', e.target.value)} />
+            <Input id="edit-phone" value={activeForm.phone_number || ''} onChange={(e) => updateField('phone_number', sanitizePhoneInput(e.target.value))} />
           </div>
 
           {/* Address Section */}

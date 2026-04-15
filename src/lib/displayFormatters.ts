@@ -129,3 +129,14 @@ export function formatAddress(parts: {
   
   return segments.join(', ');
 }
+
+/**
+ * Sanitize phone input — strips all characters except digits, +, spaces,
+ * parentheses, dashes, and slashes.
+ *
+ * Use on every phone `onChange` handler to prevent non-phone characters
+ * (letters, @, etc.) from being entered.
+ */
+export function sanitizePhoneInput(value: string): string {
+  return value.replace(/[^0-9+\s()/-]/g, '');
+}

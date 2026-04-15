@@ -730,7 +730,7 @@ const HandwerkerOnboarding = () => {
                     id="phoneNumber"
                     type="tel"
                     value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: sanitizePhoneInput(e.target.value) })}
                     onBlur={() => markTouched('phoneNumber')}
                     placeholder="+41 79 123 45 67"
                     className="h-12 text-base"

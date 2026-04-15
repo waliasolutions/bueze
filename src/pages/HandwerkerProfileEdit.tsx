@@ -1177,7 +1177,7 @@ const HandwerkerProfileEdit = () => {
                             id="phoneNumber"
                             type="tel"
                             value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            onChange={(e) => setPhoneNumber(sanitizePhoneInput(e.target.value))}
                             placeholder="+41 79 123 45 67"
                           />
                         </div>

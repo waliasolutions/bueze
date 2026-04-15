@@ -1173,7 +1173,7 @@ const HandwerkerApprovals = () => {
                     <Input
                       id="phone_number"
                       value={editFormData.phone_number || ''}
-                      onChange={(e) => setEditFormData({ ...editFormData, phone_number: e.target.value })}
+                      onChange={(e) => setEditFormData({ ...editFormData, phone_number: sanitizePhoneInput(e.target.value) })}
                     />
                   </div>
                 </div>
