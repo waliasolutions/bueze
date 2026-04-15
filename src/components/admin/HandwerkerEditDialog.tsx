@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { sanitizePhoneInput } from '@/lib/displayFormatters';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';

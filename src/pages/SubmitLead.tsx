@@ -747,7 +747,8 @@ const SubmitLead = () => {
                                 <Input 
                                   type="tel" 
                                   placeholder="+41 79 123 45 67" 
-                                  {...field} 
+                                  {...field}
+                                  onChange={(e) => field.onChange(sanitizePhoneInput(e.target.value))}
                                 />
                               </FormControl>
                               <FormMessage />

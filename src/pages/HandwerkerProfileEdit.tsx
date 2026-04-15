@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { sanitizePhoneInput } from '@/lib/displayFormatters';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
