@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { sanitizePhoneInput } from '@/lib/displayFormatters';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
@@ -1173,7 +1174,7 @@ const HandwerkerApprovals = () => {
                     <Input
                       id="phone_number"
                       value={editFormData.phone_number || ''}
-                      onChange={(e) => setEditFormData({ ...editFormData, phone_number: e.target.value })}
+                      onChange={(e) => setEditFormData({ ...editFormData, phone_number: sanitizePhoneInput(e.target.value) })}
                     />
                   </div>
                 </div>

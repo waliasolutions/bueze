@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { sanitizePhoneInput } from '@/lib/displayFormatters';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -747,7 +748,8 @@ const SubmitLead = () => {
                                 <Input 
                                   type="tel" 
                                   placeholder="+41 79 123 45 67" 
-                                  {...field} 
+                                  {...field}
+                                  onChange={(e) => field.onChange(sanitizePhoneInput(e.target.value))}
                                 />
                               </FormControl>
                               <FormMessage />

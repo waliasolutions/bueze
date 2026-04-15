@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { sanitizePhoneInput } from "@/lib/displayFormatters";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -730,7 +731,7 @@ const HandwerkerOnboarding = () => {
                     id="phoneNumber"
                     type="tel"
                     value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: sanitizePhoneInput(e.target.value) })}
                     onBlur={() => markTouched('phoneNumber')}
                     placeholder="+41 79 123 45 67"
                     className="h-12 text-base"

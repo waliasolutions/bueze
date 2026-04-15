@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { sanitizePhoneInput } from '@/lib/displayFormatters';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
@@ -1177,7 +1178,7 @@ const HandwerkerProfileEdit = () => {
                             id="phoneNumber"
                             type="tel"
                             value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            onChange={(e) => setPhoneNumber(sanitizePhoneInput(e.target.value))}
                             placeholder="+41 79 123 45 67"
                           />
                         </div>
