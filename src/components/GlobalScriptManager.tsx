@@ -19,13 +19,14 @@ export const GlobalScriptManager = () => {
       }
     };
 
+    const consent = getConsent();
+
     // Validate GTM container ID format before injecting
     const gtmId = settings.gtm_container_id;
     const isValidGtmId = gtmId && /^GTM-[A-Z0-9]+$/.test(gtmId);
 
     // Inject GTM only if analytics consent is given and ID is valid
-    if (isValidGtmId && checkConsent() && !document.querySelector(`script[data-gtm="${gtmId}"]`)) {
-      // GTM script
+    if (isValidGtmId && consent?.analytics && !document.querySelector(`script[data-gtm="${gtmId}"]`)) {
       const gtmScript = document.createElement('script');
       gtmScript.setAttribute('data-gtm', gtmId);
       gtmScript.innerHTML = `
@@ -37,7 +38,6 @@ export const GlobalScriptManager = () => {
       `;
       document.head.appendChild(gtmScript);
 
-      // GTM noscript
       const gtmNoscript = document.createElement('noscript');
       const gtmIframe = document.createElement('iframe');
       gtmIframe.src = `https://www.googletagmanager.com/ns.html?id=${gtmId}`;
@@ -49,11 +49,34 @@ export const GlobalScriptManager = () => {
       document.body.insertBefore(gtmNoscript, document.body.firstChild);
     }
 
+    // Inject Google Ads gtag.js only if marketing consent is given
+    const GOOGLE_ADS_ID = 'AW-18090737196';
+    if (consent?.marketing && !document.querySelector('script[data-gtag-ads]')) {
+      // Loader script
+      const gtagLoader = document.createElement('script');
+      gtagLoader.async = true;
+      gtagLoader.src = `https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ADS_ID}`;
+      gtagLoader.setAttribute('data-gtag-ads', GOOGLE_ADS_ID);
+      document.head.appendChild(gtagLoader);
+
+      // Config script
+      const gtagConfig = document.createElement('script');
+      gtagConfig.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${GOOGLE_ADS_ID}');
+      `;
+      document.head.appendChild(gtagConfig);
+    }
+
     // Listen for consent changes
     const handleConsentUpdate = (event: CustomEvent) => {
-      const consent = event.detail;
-      // If analytics consent is now given and GTM not loaded, reload page
-      if (consent.analytics && isValidGtmId && !document.querySelector(`script[data-gtm="${gtmId}"]`)) {
+      const newConsent = event.detail;
+      const needsReload =
+        (newConsent.analytics && isValidGtmId && !document.querySelector(`script[data-gtm="${gtmId}"]`)) ||
+        (newConsent.marketing && !document.querySelector('script[data-gtag-ads]'));
+      if (needsReload) {
         window.location.reload();
       }
     };
