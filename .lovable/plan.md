@@ -1,53 +1,67 @@
 
 
-# Fix: Clean up invalid phone data & add phone input validation
+# Security Remediation Plan — Final Revision
 
-## Root Cause
+All reviewer feedback incorporated. No open blockers.
 
-All 26 profiles with `info@bueeze.ch` in the phone field were created on April 13, 2026 — likely via a bulk admin operation that accidentally put the company email into the phone field. The system has no input validation on phone fields, so any text (including email addresses) is accepted.
+---
 
-## Changes
+## #7 — Cron Breakage: RESOLVED (No Blocker)
 
-### 1. Data cleanup — Clear the 26 invalid phone entries
+**Finding:** `find-orphaned-records` has NO cron job. The file comment ("Run via Supabase cron: daily at 3 AM") is aspirational — no `pg_cron` schedule exists in any migration. The function is only called from the admin UI (`OrphanedRecordsCleanup.tsx`) which already passes a JWT bearer token via `session.access_token`. Adding the auth check will work immediately with zero breakage.
 
-Use the Supabase insert tool to run:
+The misleading comment will be removed during implementation.
+
+---
+
+## Changes (final, all issues resolved)
+
+### 1. `.gitignore` + `.env.example`
+Add `.env*` / `!.env.example` to `.gitignore`. Create `.env.example` with placeholder vars.
+
+### 2. `send-password-reset/index.ts` (single edit pass)
+- Replace `auth.admin.listUsers()` with `profiles` table lookup by email (column confirmed)
+- Replace raw error response with `errorResponse()` helper
+- Post-deploy: manual test with real + non-existent email
+
+### 3. `delete-user/index.ts` — FK nullification
+Three soft-warn nullify steps placed logically **before the profile delete step** (not line-410):
+- `handwerker_approval_history.admin_id → NULL`
+- `leads.delivered_by → NULL`
+- `handwerker_profiles.verified_by → NULL`
+
+Error logging added to all existing delete steps.
+
+### 4. `delete-user/index.ts` — Recursive storage cleanup
+`listAllFiles` helper defined at module scope (outside the `serve()` handler) to avoid hoisting issues. Applied to buckets: `handwerker-documents`, `invoices`, `handwerker-portfolio`. Soft-warn on errors.
+
+### 5. Migration: `ON DELETE CASCADE` on `invoices.user_id`
 ```sql
-UPDATE profiles SET phone = NULL WHERE phone = 'info@bueeze.ch';
+ALTER TABLE public.invoices
+  DROP CONSTRAINT IF EXISTS invoices_user_id_fkey,
+  ADD CONSTRAINT invoices_user_id_fkey
+    FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 ```
 
-### 2. Add phone sanitization helper — `src/lib/displayFormatters.ts`
+### 6. `payrexx-webhook/index.ts` — Reject unsigned requests
+Hard-reject if API key missing or signature absent.
 
-Add a `sanitizePhoneInput(value: string): string` function that strips all characters except digits, `+`, spaces, and parentheses. This becomes the SSOT for phone input filtering.
+### 7. `find-orphaned-records/index.ts` — Add auth check
+Copy the existing JWT + admin role-check pattern from `cleanup-orphaned-records`. Remove the stale "cron" comment. No cron job exists — only the admin UI calls this function, already passing a JWT.
 
-```typescript
-export function sanitizePhoneInput(value: string): string {
-  return value.replace(/[^0-9+\s()/-]/g, '');
-}
-```
+---
 
-### 3. Apply sanitization to all 5 phone input fields
+## Summary
 
-| File | Field |
-|------|-------|
-| `src/pages/HandwerkerOnboarding.tsx` | phoneNumber |
-| `src/pages/HandwerkerProfileEdit.tsx` | phoneNumber |
-| `src/pages/SubmitLead.tsx` | phone (via zod field) |
-| `src/components/admin/HandwerkerEditDialog.tsx` | phone_number |
-| `src/pages/admin/HandwerkerApprovals.tsx` | phone_number |
+| # | What | File(s) |
+|---|------|---------|
+| 1 | .gitignore + .env.example | `.gitignore`, `.env.example` (new) |
+| 2 | send-password-reset rewrite | `send-password-reset/index.ts` |
+| 3 | delete-user FK nullification + error logging | `delete-user/index.ts` |
+| 4 | delete-user recursive storage cleanup | `delete-user/index.ts` (same) |
+| 5 | invoices FK cascade | New migration |
+| 6 | Payrexx webhook reject unsigned | `payrexx-webhook/index.ts` |
+| 7 | find-orphaned-records auth check | `find-orphaned-records/index.ts` |
 
-Each `onChange` handler will pass the value through `sanitizePhoneInput()` before setting state — preventing letters, `@`, and other non-phone characters from being typed.
-
-`AdminBillingSettings.tsx` phone field is excluded (company phone is admin-only internal config).
-
-### 4. Add database-level CHECK constraint (migration)
-
-```sql
-ALTER TABLE public.profiles
-  ADD CONSTRAINT profiles_phone_format_check
-  CHECK (phone IS NULL OR phone ~ '^[0-9+\s()/-]+$');
-```
-
-This prevents any future invalid phone data at the DB level, regardless of which code path writes it.
-
-**Files changed: 6 · New migration: 1 · Data update: 1**
+**Files changed: 5 · New files: 1 · New migration: 1 · Deferred: 3 (CORS, CSP, pagination)**
 
