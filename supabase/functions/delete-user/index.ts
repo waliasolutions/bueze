@@ -445,19 +445,44 @@ serve(async (req) => {
     deletionStats.password_reset_tokens = resetTokens?.length || 0;
 
     // 18. User roles
-    const { data: roles } = await supabase
+    const { data: roles, error: rolesErr } = await supabase
       .from('user_roles')
       .delete()
       .eq('user_id', userId)
       .select('id');
+    if (rolesErr) console.warn('[DELETE-USER] user_roles delete warning:', rolesErr.message);
     deletionStats.user_roles = roles?.length || 0;
 
+    // ── FK nullification (soft-warn): clear references that would block auth user deletion ──
+    const { error: approvalErr } = await supabase
+      .from('handwerker_approval_history')
+      .update({ admin_id: null })
+      .eq('admin_id', userId);
+    if (approvalErr) console.warn('[DELETE-USER] approval_history nullify warning:', approvalErr.message);
+
+    const { error: deliveredErr } = await supabase
+      .from('leads')
+      .update({ delivered_by: null })
+      .eq('delivered_by', userId);
+    if (deliveredErr) console.warn('[DELETE-USER] leads.delivered_by nullify warning:', deliveredErr.message);
+
+    const { error: verifiedErr } = await supabase
+      .from('handwerker_profiles')
+      .update({ verified_by: null })
+      .eq('verified_by', userId);
+    if (verifiedErr) console.warn('[DELETE-USER] handwerker_profiles.verified_by nullify warning:', verifiedErr.message);
+
+    // ── Storage cleanup (soft-warn): delete user files from storage buckets ──
+    const storageStats = await cleanupUserStorage(supabase, userId);
+    Object.assign(deletionStats, storageStats);
+
     // 19. Profile
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesErr } = await supabase
       .from('profiles')
       .delete()
       .eq('id', userId)
       .select('id');
+    if (profilesErr) console.warn('[DELETE-USER] profiles delete warning:', profilesErr.message);
     deletionStats.profiles = profiles?.length || 0;
 
     // ============================================
