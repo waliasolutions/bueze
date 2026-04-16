@@ -3,15 +3,8 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 
 /**
- * Scheduled function to detect orphaned records
- * Run via Supabase cron: daily at 3 AM
- * 
- * Detects:
- * - Profiles without corresponding auth users
- * - User roles without corresponding auth users
- * - Handwerker profiles with user_id that doesn't exist
- * - Subscriptions without corresponding auth users
- * - Notifications without corresponding auth users
+ * Admin-only function to detect orphaned records.
+ * Called from the admin UI (OrphanedRecordsCleanup.tsx).
  */
 
 interface OrphanReport {
@@ -55,8 +48,33 @@ serve(async (req) => {
 
   try {
     const supabase = createSupabaseAdmin();
-    console.log('[ORPHAN-CHECK] Starte Suche nach verwaisten Datensätzen...');
 
+    // ── Auth: require JWT + admin role ──
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return errorResponse('Nicht autorisiert', 401);
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: caller }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !caller) {
+      return errorResponse('Ungültiges Token', 401);
+    }
+
+    const { data: callerRoles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', caller.id);
+
+    const isAdmin = callerRoles?.some(r => r.role === 'admin' || r.role === 'super_admin');
+    if (!isAdmin) {
+      return errorResponse('Admin-Zugang erforderlich', 403);
+    }
+
+    console.log('[ORPHAN-CHECK] Admin', caller.email, 'hat Scan gestartet');
+
+    // ── Scan logic ──
     const report: OrphanReport = {
       orphaned_profiles: [],
       orphaned_user_roles: [],
@@ -78,16 +96,11 @@ serve(async (req) => {
       scan_timestamp: new Date().toISOString(),
     };
 
-    // Get ALL auth user IDs (paginated)
     const authUserIds = await getAllAuthUserIds(supabase);
     console.log(`[ORPHAN-CHECK] ${authUserIds.size} Auth-Benutzer gefunden (alle Seiten)`);
 
-    // 1. Check for orphaned profiles
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, email')
-      .limit(5000);
-
+    // 1. Orphaned profiles
+    const { data: profiles } = await supabase.from('profiles').select('id, email').limit(5000);
     if (profiles) {
       for (const profile of profiles) {
         if (!authUserIds.has(profile.id)) {
@@ -95,14 +108,9 @@ serve(async (req) => {
         }
       }
     }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_profiles.length} verwaiste Profile gefunden`);
 
-    // 2. Check for orphaned user_roles
-    const { data: userRoles } = await supabase
-      .from('user_roles')
-      .select('id, user_id')
-      .limit(5000);
-
+    // 2. Orphaned user_roles
+    const { data: userRoles } = await supabase.from('user_roles').select('id, user_id').limit(5000);
     if (userRoles) {
       for (const role of userRoles) {
         if (!authUserIds.has(role.user_id)) {
@@ -110,34 +118,19 @@ serve(async (req) => {
         }
       }
     }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_user_roles.length} verwaiste user_roles gefunden`);
 
-    // 3. Check for orphaned handwerker_profiles (with user_id that doesn't exist)
-    const { data: hwProfiles } = await supabase
-      .from('handwerker_profiles')
-      .select('id, email, user_id')
-      .not('user_id', 'is', null)
-      .limit(5000);
-
+    // 3. Orphaned handwerker_profiles
+    const { data: hwProfiles } = await supabase.from('handwerker_profiles').select('id, email, user_id').not('user_id', 'is', null).limit(5000);
     if (hwProfiles) {
       for (const profile of hwProfiles) {
         if (profile.user_id && !authUserIds.has(profile.user_id)) {
-          report.orphaned_handwerker_profiles.push({
-            id: profile.id,
-            email: profile.email,
-            user_id: profile.user_id,
-          });
+          report.orphaned_handwerker_profiles.push({ id: profile.id, email: profile.email, user_id: profile.user_id });
         }
       }
     }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_handwerker_profiles.length} verwaiste handwerker_profiles gefunden`);
 
-    // 4. Check for orphaned subscriptions
-    const { data: subscriptions } = await supabase
-      .from('handwerker_subscriptions')
-      .select('id, user_id')
-      .limit(5000);
-
+    // 4. Orphaned subscriptions
+    const { data: subscriptions } = await supabase.from('handwerker_subscriptions').select('id, user_id').limit(5000);
     if (subscriptions) {
       for (const sub of subscriptions) {
         if (!authUserIds.has(sub.user_id)) {
@@ -145,161 +138,51 @@ serve(async (req) => {
         }
       }
     }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_subscriptions.length} verwaiste Abonnements gefunden`);
 
-    // 5. Count orphaned notifications
-    const { data: clientNotifs } = await supabase
-      .from('client_notifications')
-      .select('user_id')
-      .limit(5000);
+    // 5. Orphaned notifications
+    const { data: clientNotifs } = await supabase.from('client_notifications').select('user_id').limit(5000);
+    if (clientNotifs) report.orphaned_client_notifications = clientNotifs.filter(n => !authUserIds.has(n.user_id)).length;
 
-    if (clientNotifs) {
-      report.orphaned_client_notifications = clientNotifs.filter(
-        n => !authUserIds.has(n.user_id)
-      ).length;
-    }
+    const { data: hwNotifs } = await supabase.from('handwerker_notifications').select('user_id').limit(5000);
+    if (hwNotifs) report.orphaned_handwerker_notifications = hwNotifs.filter(n => !authUserIds.has(n.user_id)).length;
 
-    const { data: hwNotifs } = await supabase
-      .from('handwerker_notifications')
-      .select('user_id')
-      .limit(5000);
+    // 6. Orphaned reviews
+    const { data: reviews } = await supabase.from('reviews').select('reviewer_id, reviewed_id').limit(5000);
+    if (reviews) report.orphaned_reviews = reviews.filter(r => !authUserIds.has(r.reviewer_id) || !authUserIds.has(r.reviewed_id)).length;
 
-    if (hwNotifs) {
-      report.orphaned_handwerker_notifications = hwNotifs.filter(
-        n => !authUserIds.has(n.user_id)
-      ).length;
-    }
+    // 7-9. Orphaned lead data
+    const { data: proposals } = await supabase.from('lead_proposals').select('handwerker_id').limit(5000);
+    if (proposals) report.orphaned_lead_proposals = proposals.filter(p => !authUserIds.has(p.handwerker_id)).length;
 
-    // 6. Check for orphaned reviews
-    const { data: reviews } = await supabase
-      .from('reviews')
-      .select('reviewer_id, reviewed_id')
-      .limit(5000);
+    const { data: leadViews } = await supabase.from('lead_views').select('viewer_id').limit(5000);
+    if (leadViews) report.orphaned_lead_views = leadViews.filter(v => !authUserIds.has(v.viewer_id)).length;
 
-    if (reviews) {
-      report.orphaned_reviews = reviews.filter(
-        r => !authUserIds.has(r.reviewer_id) || !authUserIds.has(r.reviewed_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_reviews} verwaiste Bewertungen gefunden`);
+    const { data: purchases } = await supabase.from('lead_purchases').select('buyer_id').limit(5000);
+    if (purchases) report.orphaned_lead_purchases = purchases.filter(p => !authUserIds.has(p.buyer_id)).length;
 
-    // 7. Check for orphaned lead_proposals
-    const { data: proposals } = await supabase
-      .from('lead_proposals')
-      .select('handwerker_id')
-      .limit(5000);
+    // 10. Orphaned leads
+    const { data: leads } = await supabase.from('leads').select('owner_id').limit(5000);
+    if (leads) report.orphaned_leads = leads.filter(l => !authUserIds.has(l.owner_id)).length;
 
-    if (proposals) {
-      report.orphaned_lead_proposals = proposals.filter(
-        p => !authUserIds.has(p.handwerker_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_lead_proposals} verwaiste Offerten gefunden`);
+    // 11. Orphaned magic_tokens
+    const { data: tokens } = await supabase.from('magic_tokens').select('user_id').not('user_id', 'is', null).limit(5000);
+    if (tokens) report.orphaned_magic_tokens = tokens.filter(t => t.user_id && !authUserIds.has(t.user_id)).length;
 
-    // 8. Check for orphaned lead_views
-    const { data: leadViews } = await supabase
-      .from('lead_views')
-      .select('viewer_id')
-      .limit(5000);
+    // 12. Orphaned payment_history
+    const { data: payments } = await supabase.from('payment_history').select('user_id').limit(5000);
+    if (payments) report.orphaned_payment_history = payments.filter(p => !authUserIds.has(p.user_id)).length;
 
-    if (leadViews) {
-      report.orphaned_lead_views = leadViews.filter(
-        v => !authUserIds.has(v.viewer_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_lead_views} verwaiste Lead-Ansichten gefunden`);
+    // 13. Orphaned handwerker_documents
+    const { data: docs } = await supabase.from('handwerker_documents').select('user_id').limit(5000);
+    if (docs) report.orphaned_handwerker_documents = docs.filter(d => !authUserIds.has(d.user_id)).length;
 
-    // 9. Check for orphaned lead_purchases
-    const { data: purchases } = await supabase
-      .from('lead_purchases')
-      .select('buyer_id')
-      .limit(5000);
+    // 14. Orphaned messages
+    const { data: messages } = await supabase.from('messages').select('sender_id, recipient_id').limit(5000);
+    if (messages) report.orphaned_messages = messages.filter(m => !authUserIds.has(m.sender_id) || !authUserIds.has(m.recipient_id)).length;
 
-    if (purchases) {
-      report.orphaned_lead_purchases = purchases.filter(
-        p => !authUserIds.has(p.buyer_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_lead_purchases} verwaiste Lead-Käufe gefunden`);
-
-    // 10. Check for orphaned leads
-    const { data: leads } = await supabase
-      .from('leads')
-      .select('owner_id')
-      .limit(5000);
-
-    if (leads) {
-      report.orphaned_leads = leads.filter(
-        l => !authUserIds.has(l.owner_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_leads} verwaiste Aufträge gefunden`);
-
-    // 11. Check for orphaned magic_tokens
-    const { data: tokens } = await supabase
-      .from('magic_tokens')
-      .select('user_id')
-      .not('user_id', 'is', null)
-      .limit(5000);
-
-    if (tokens) {
-      report.orphaned_magic_tokens = tokens.filter(
-        t => t.user_id && !authUserIds.has(t.user_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_magic_tokens} verwaiste Magic-Tokens gefunden`);
-
-    // 12. Check for orphaned payment_history
-    const { data: payments } = await supabase
-      .from('payment_history')
-      .select('user_id')
-      .limit(5000);
-
-    if (payments) {
-      report.orphaned_payment_history = payments.filter(
-        p => !authUserIds.has(p.user_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_payment_history} verwaiste Zahlungen gefunden`);
-
-    // 13. Check for orphaned handwerker_documents
-    const { data: docs } = await supabase
-      .from('handwerker_documents')
-      .select('user_id')
-      .limit(5000);
-
-    if (docs) {
-      report.orphaned_handwerker_documents = docs.filter(
-        d => !authUserIds.has(d.user_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_handwerker_documents} verwaiste Dokumente gefunden`);
-
-    // 14. Check for orphaned messages
-    const { data: messages } = await supabase
-      .from('messages')
-      .select('sender_id, recipient_id')
-      .limit(5000);
-
-    if (messages) {
-      report.orphaned_messages = messages.filter(
-        m => !authUserIds.has(m.sender_id) || !authUserIds.has(m.recipient_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_messages} verwaiste Nachrichten gefunden`);
-
-    // 15. Check for orphaned conversations
-    const { data: conversations } = await supabase
-      .from('conversations')
-      .select('homeowner_id, handwerker_id')
-      .limit(5000);
-
-    if (conversations) {
-      report.orphaned_conversations = conversations.filter(
-        c => !authUserIds.has(c.homeowner_id) || !authUserIds.has(c.handwerker_id)
-      ).length;
-    }
-    console.log(`[ORPHAN-CHECK] ${report.orphaned_conversations} verwaiste Konversationen gefunden`);
+    // 15. Orphaned conversations
+    const { data: conversations } = await supabase.from('conversations').select('homeowner_id, handwerker_id').limit(5000);
+    if (conversations) report.orphaned_conversations = conversations.filter(c => !authUserIds.has(c.homeowner_id) || !authUserIds.has(c.handwerker_id)).length;
 
     // Calculate total
     report.total_orphans =
@@ -322,23 +205,15 @@ serve(async (req) => {
 
     console.log(`[ORPHAN-CHECK] Total verwaiste Datensätze: ${report.total_orphans}`);
 
-    // Create admin notification if orphans found
     if (report.total_orphans > 0) {
       const summary = [
         report.orphaned_profiles.length > 0 ? `${report.orphaned_profiles.length} Profile` : '',
         report.orphaned_user_roles.length > 0 ? `${report.orphaned_user_roles.length} Benutzerrollen` : '',
         report.orphaned_handwerker_profiles.length > 0 ? `${report.orphaned_handwerker_profiles.length} Handwerker-Profile` : '',
         report.orphaned_subscriptions.length > 0 ? `${report.orphaned_subscriptions.length} Abonnements` : '',
-        report.orphaned_client_notifications > 0 ? `${report.orphaned_client_notifications} Kunden-Benachrichtigungen` : '',
-        report.orphaned_handwerker_notifications > 0 ? `${report.orphaned_handwerker_notifications} Handwerker-Benachrichtigungen` : '',
         report.orphaned_reviews > 0 ? `${report.orphaned_reviews} Bewertungen` : '',
         report.orphaned_lead_proposals > 0 ? `${report.orphaned_lead_proposals} Offerten` : '',
-        report.orphaned_lead_views > 0 ? `${report.orphaned_lead_views} Lead-Ansichten` : '',
-        report.orphaned_lead_purchases > 0 ? `${report.orphaned_lead_purchases} Lead-Käufe` : '',
         report.orphaned_leads > 0 ? `${report.orphaned_leads} Aufträge` : '',
-        report.orphaned_magic_tokens > 0 ? `${report.orphaned_magic_tokens} Magic-Tokens` : '',
-        report.orphaned_payment_history > 0 ? `${report.orphaned_payment_history} Zahlungen` : '',
-        report.orphaned_handwerker_documents > 0 ? `${report.orphaned_handwerker_documents} Dokumente` : '',
         report.orphaned_messages > 0 ? `${report.orphaned_messages} Nachrichten` : '',
         report.orphaned_conversations > 0 ? `${report.orphaned_conversations} Konversationen` : '',
       ].filter(Boolean).join(', ');
@@ -347,18 +222,13 @@ serve(async (req) => {
         type: 'orphaned_records',
         title: 'Verwaiste Datensätze gefunden',
         message: `${report.total_orphans} verwaiste Datensätze gefunden: ${summary}. Bitte prüfen und bereinigen.`,
-        metadata: {
-          report,
-          orphaned_emails: report.orphaned_profiles.map(p => p.email),
-        },
+        metadata: { report, orphaned_emails: report.orphaned_profiles.map(p => p.email) },
       });
-
-      console.log('[ORPHAN-CHECK] Admin-Benachrichtigung erstellt');
     }
 
     return successResponse({
       success: true,
-      message: report.total_orphans === 0 
+      message: report.total_orphans === 0
         ? 'Keine verwaisten Datensätze gefunden'
         : `${report.total_orphans} verwaiste Datensätze gefunden`,
       report,
@@ -366,22 +236,19 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('[ORPHAN-CHECK] Fehler:', error);
-    
+
     try {
       const supabase = createSupabaseAdmin();
       await supabase.from('admin_notifications').insert({
         type: 'orphan_scan_failed',
         title: 'Verwaiste-Datensätze-Scan fehlgeschlagen',
-        message: `Fehler beim Scannen nach verwaisten Datensätzen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
+        message: `Fehler beim Scannen: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`,
         metadata: { error: error instanceof Error ? error.message : 'Unbekannter Fehler' },
       });
     } catch (notifError) {
       console.error('[ORPHAN-CHECK] Fehler beim Erstellen der Admin-Benachrichtigung:', notifError);
     }
-    
-    return errorResponse(
-      error instanceof Error ? error.message : 'Unbekannter Fehler',
-      500
-    );
+
+    return errorResponse(error instanceof Error ? error.message : 'Unbekannter Fehler', 500);
   }
 });

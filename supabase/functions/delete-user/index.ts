@@ -2,6 +2,62 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 
+/**
+ * Recursively list all files in a storage bucket under a given prefix.
+ * Supabase storage list() only returns direct children — this recurses into subfolders.
+ */
+async function listAllFiles(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  bucket: string,
+  prefix: string
+): Promise<string[]> {
+  const paths: string[] = [];
+  try {
+    const { data, error } = await supabase.storage.from(bucket).list(prefix);
+    if (error || !data) return paths;
+    for (const item of data) {
+      const fullPath = prefix ? `${prefix}/${item.name}` : item.name;
+      if (item.id) {
+        paths.push(fullPath);
+      } else {
+        const nested = await listAllFiles(supabase, bucket, fullPath);
+        paths.push(...nested);
+      }
+    }
+  } catch (err) {
+    console.warn(`[DELETE-USER] Storage listing error for ${bucket}/${prefix}:`, err);
+  }
+  return paths;
+}
+
+/**
+ * Clean up all storage files for a user across relevant buckets.
+ */
+async function cleanupUserStorage(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  userId: string
+): Promise<Record<string, number>> {
+  const stats: Record<string, number> = {};
+  const buckets = ['handwerker-documents', 'invoices', 'handwerker-portfolio'];
+
+  for (const bucket of buckets) {
+    try {
+      const files = await listAllFiles(supabase, bucket, userId);
+      if (files.length > 0) {
+        const { error } = await supabase.storage.from(bucket).remove(files);
+        if (error) {
+          console.warn(`[DELETE-USER] Storage cleanup warning for ${bucket}:`, error.message);
+        }
+        stats[`storage_${bucket}`] = files.length;
+        console.log(`[DELETE-USER] Deleted ${files.length} files from ${bucket}/${userId}`);
+      }
+    } catch (err) {
+      console.warn(`[DELETE-USER] Storage cleanup error for ${bucket}:`, err);
+    }
+  }
+  return stats;
+}
+
 interface DeletionResult {
   success: boolean;
   deletionType: 'full' | 'guest' | 'partial';
@@ -389,19 +445,44 @@ serve(async (req) => {
     deletionStats.password_reset_tokens = resetTokens?.length || 0;
 
     // 18. User roles
-    const { data: roles } = await supabase
+    const { data: roles, error: rolesErr } = await supabase
       .from('user_roles')
       .delete()
       .eq('user_id', userId)
       .select('id');
+    if (rolesErr) console.warn('[DELETE-USER] user_roles delete warning:', rolesErr.message);
     deletionStats.user_roles = roles?.length || 0;
 
+    // ── FK nullification (soft-warn): clear references that would block auth user deletion ──
+    const { error: approvalErr } = await supabase
+      .from('handwerker_approval_history')
+      .update({ admin_id: null })
+      .eq('admin_id', userId);
+    if (approvalErr) console.warn('[DELETE-USER] approval_history nullify warning:', approvalErr.message);
+
+    const { error: deliveredErr } = await supabase
+      .from('leads')
+      .update({ delivered_by: null })
+      .eq('delivered_by', userId);
+    if (deliveredErr) console.warn('[DELETE-USER] leads.delivered_by nullify warning:', deliveredErr.message);
+
+    const { error: verifiedErr } = await supabase
+      .from('handwerker_profiles')
+      .update({ verified_by: null })
+      .eq('verified_by', userId);
+    if (verifiedErr) console.warn('[DELETE-USER] handwerker_profiles.verified_by nullify warning:', verifiedErr.message);
+
+    // ── Storage cleanup (soft-warn): delete user files from storage buckets ──
+    const storageStats = await cleanupUserStorage(supabase, userId);
+    Object.assign(deletionStats, storageStats);
+
     // 19. Profile
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesErr } = await supabase
       .from('profiles')
       .delete()
       .eq('id', userId)
       .select('id');
+    if (profilesErr) console.warn('[DELETE-USER] profiles delete warning:', profilesErr.message);
     deletionStats.profiles = profiles?.length || 0;
 
     // ============================================

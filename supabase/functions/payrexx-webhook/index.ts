@@ -41,46 +41,46 @@ Deno.serve(async (req) => {
     // Payrexx signs webhooks using HMAC-SHA256 with the API secret.
     // The signature is sent in the 'ApiSignature' field of the form body.
     const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY');
-    if (PAYREXX_API_KEY) {
-      const formParams = new URLSearchParams(rawBody);
-      const receivedSignature = formParams.get('ApiSignature');
-
-      if (receivedSignature) {
-        // Reconstruct the signed payload (all fields except ApiSignature)
-        const paramsWithoutSig = new URLSearchParams();
-        for (const [key, value] of formParams.entries()) {
-          if (key !== 'ApiSignature') {
-            paramsWithoutSig.append(key, value);
-          }
-        }
-        const dataToSign = paramsWithoutSig.toString();
-
-        // Generate expected signature
-        const encoder = new TextEncoder();
-        const keyData = encoder.encode(PAYREXX_API_KEY);
-        const messageData = encoder.encode(dataToSign);
-        const cryptoKey = await crypto.subtle.importKey(
-          'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-        );
-        const sig = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-        const bytes = new Uint8Array(sig);
-        let binary = '';
-        bytes.forEach(b => binary += String.fromCharCode(b));
-        const expectedSignature = btoa(binary);
-
-        if (expectedSignature !== receivedSignature) {
-          console.error('Webhook signature mismatch — possible forgery attempt');
-          return successResponse({ received: true, error: 'signature_mismatch' });
-        }
-        console.log('Webhook signature verified ✓');
-      } else {
-        // No signature present — log warning but continue
-        // (Payrexx may not send signatures for all webhook types)
-        console.warn('No ApiSignature in webhook payload — signature verification skipped');
-      }
-    } else {
-      console.warn('PAYREXX_API_KEY not set — webhook signature verification disabled');
+    if (!PAYREXX_API_KEY) {
+      console.error('PAYREXX_API_KEY not set — cannot verify webhook signatures');
+      return errorResponse('Webhook verification not configured', 500);
     }
+
+    const formParams = new URLSearchParams(rawBody);
+    const receivedSignature = formParams.get('ApiSignature');
+
+    if (!receivedSignature) {
+      console.error('No ApiSignature in webhook payload — rejecting unsigned request');
+      return errorResponse('Missing webhook signature', 401);
+    }
+
+    // Reconstruct the signed payload (all fields except ApiSignature)
+    const paramsWithoutSig = new URLSearchParams();
+    for (const [key, value] of formParams.entries()) {
+      if (key !== 'ApiSignature') {
+        paramsWithoutSig.append(key, value);
+      }
+    }
+    const dataToSign = paramsWithoutSig.toString();
+
+    // Generate expected signature
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(PAYREXX_API_KEY);
+    const messageData = encoder.encode(dataToSign);
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    const bytes = new Uint8Array(sig);
+    let binary = '';
+    bytes.forEach(b => binary += String.fromCharCode(b));
+    const expectedSignature = btoa(binary);
+
+    if (expectedSignature !== receivedSignature) {
+      console.error('Webhook signature mismatch — possible forgery attempt');
+      return errorResponse('Invalid webhook signature', 401);
+    }
+    console.log('Webhook signature verified ✓');
     const formData = new URLSearchParams(rawBody);
     const transactionData = formData.get('transaction');
 
