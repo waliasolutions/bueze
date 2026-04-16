@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
+import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
-import { corsHeaders } from '../_shared/cors.ts';
 import { FRONTEND_URL } from '../_shared/siteConfig.ts';
 
 // Generate a secure random token
@@ -12,40 +12,35 @@ function generateToken(length: number = 64): string {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const corsResponse = handleCorsPreflightRequest(req);
+  if (corsResponse) return corsResponse;
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
+    const supabase = createSupabaseAdmin();
     const { email } = await req.json();
 
     if (!email) {
-      throw new Error('Email is required');
+      return errorResponse('Email is required', 400);
     }
 
     console.log('Password reset requested for email:', email);
 
-    // Find user by email
-    const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-    
-    if (userError) {
-      console.error('Error listing users:', userError);
-      throw userError;
+    // Targeted lookup via profiles table (avoids loading all auth users)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Error looking up profile:', profileError);
+      throw profileError;
     }
-    
-    const user = userData.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-    
-    if (!user) {
+
+    if (!profile) {
       // Don't reveal if user exists - return success anyway
       console.log('User not found, returning success anyway for security');
-      return new Response(
-        JSON.stringify({ success: true, message: 'If an account exists, a reset email was sent.' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return successResponse({ success: true, message: 'If an account exists, a reset email was sent.' });
     }
 
     // Generate secure token
@@ -56,7 +51,7 @@ serve(async (req) => {
     const { error: insertError } = await supabase
       .from('password_reset_tokens')
       .insert({
-        user_id: user.id,
+        user_id: profile.id,
         token: token,
         email: email,
         expires_at: expiresAt.toISOString()
@@ -135,16 +130,10 @@ serve(async (req) => {
 
     console.log('Password reset email sent successfully');
 
-    return new Response(
-      JSON.stringify({ success: true, message: 'Reset email sent' }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return successResponse({ success: true, message: 'Reset email sent' });
 
   } catch (error) {
     console.error('Error in send-password-reset:', error);
-    return new Response(
-      JSON.stringify({ error: (error as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return errorResponse(error as Error, 500);
   }
 });
