@@ -163,8 +163,14 @@ serve(async (req) => {
 
       console.log(`[bulk] Admin ${requestingUser.email} requesting bulk reset for ${userIds.length} users`);
 
-      // --- Idempotency safeguard: re-detect candidates ---
-      const stillStuck = await getStillStuckCandidates(supabase, userIds);
+      // --- Idempotency safeguard: re-detect candidates (skippable via skipReDetection) ---
+      let stillStuck: Set<string>;
+      if (skipReDetection) {
+        console.log(`[bulk] skipReDetection=true → trusting caller's ${userIds.length} userIds without re-filtering`);
+        stillStuck = new Set(userIds);
+      } else {
+        stillStuck = await getStillStuckCandidates(supabase, userIds);
+      }
       const skippedIds = userIds.filter((id) => !stillStuck.has(id));
       const toReset = userIds.filter((id) => stillStuck.has(id));
       console.log(`[bulk] After re-detection: ${toReset.length} to reset, ${skippedIds.length} skipped`);
