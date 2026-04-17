@@ -116,6 +116,7 @@ serve(async (req) => {
   const userEmail: string | undefined = body.userEmail;
   const userName: string | undefined = body.userName;
   const notifyUsers: boolean = body.notifyUsers !== false; // default true for single-auto
+  const skipReDetection: boolean = body.skipReDetection === true; // bulk-custom: trust caller's userIds, no re-filtering
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
