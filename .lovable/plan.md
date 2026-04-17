@@ -1,72 +1,81 @@
 
 
-# Investigate Recent User Creation Activity
+# Bulk Password Reset — Neuregistrationen seit letztem Montag
 
-User wants to verify if there was bot/automated registration activity today before proceeding with the bulk password reset.
+## Scope
 
-## Approach
+Alle User, die seit **Montag, 13.04.2026 00:00 Swiss time** registriert wurden, bekommen das Passwort `A12345678` gesetzt — unabhängig davon, ob sie sich schon eingeloggt haben oder nicht.
 
-Run two read-only queries against `auth.users`:
+Begründung: Du willst die Liste der Neuregistrationen pauschal resetten (z.B. weil es Mass-Imports waren). Das `last_sign_in_at IS NULL`-Kriterium fällt damit weg.
 
-### Query 1 — Today's registrations with exact timestamps (Swiss time)
-
-```sql
-SELECT 
-  id,
-  email,
-  created_at AT TIME ZONE 'Europe/Zurich' AS created_swiss,
-  last_sign_in_at AT TIME ZONE 'Europe/Zurich' AS last_signin_swiss,
-  EXTRACT(EPOCH FROM (last_sign_in_at - created_at))::int AS signin_delay_seconds,
-  raw_user_meta_data->>'full_name' AS full_name,
-  raw_user_meta_data->>'role' AS registration_role
-FROM auth.users
-WHERE created_at >= (now() AT TIME ZONE 'Europe/Zurich')::date
-ORDER BY created_at DESC;
-```
-
-Shows every account created today with exact Swiss-time timestamps.
-
-### Query 2 — Bot detection signals
+## Step 1 — Detection Query
 
 ```sql
-SELECT 
-  date_trunc('minute', created_at AT TIME ZONE 'Europe/Zurich') AS minute_bucket,
-  COUNT(*) AS registrations_in_minute,
-  array_agg(email ORDER BY created_at) AS emails
-FROM auth.users
-WHERE created_at >= now() - interval '7 days'
-GROUP BY minute_bucket
-HAVING COUNT(*) > 1
-ORDER BY minute_bucket DESC;
-```
-
-Bot signal = multiple registrations within the same minute. Last 7 days for context.
-
-### Query 3 — Cross-check against handwerker_profiles + leads
-
-```sql
-SELECT 
-  u.email,
-  u.created_at AT TIME ZONE 'Europe/Zurich' AS created_swiss,
-  CASE 
-    WHEN hp.id IS NOT NULL THEN 'handwerker'
-    WHEN l.id IS NOT NULL THEN 'client (submitted lead)'
-    ELSE 'unknown / orphan'
-  END AS account_type,
-  hp.company_name,
-  hp.verification_status
+SELECT u.id, u.email,
+       u.created_at AT TIME ZONE 'Europe/Zurich' AS created_swiss,
+       u.last_sign_in_at AT TIME ZONE 'Europe/Zurich' AS last_signin_swiss,
+       p.full_name,
+       COALESCE(r.role::text, 'user') AS role,
+       hp.verification_status AS handwerker_status,
+       hp.company_name
 FROM auth.users u
+LEFT JOIN public.profiles p ON p.id = u.id
+LEFT JOIN public.user_roles r ON r.user_id = u.id
 LEFT JOIN public.handwerker_profiles hp ON hp.user_id = u.id
-LEFT JOIN public.leads l ON l.owner_id = u.id
-WHERE u.created_at >= now() - interval '24 hours'
-ORDER BY u.created_at DESC;
+WHERE u.created_at >= '2026-04-13 00:00:00+02'::timestamptz   -- Montag 00:00 Swiss
+  AND u.email_confirmed_at IS NOT NULL
+  AND u.banned_until IS NULL
+  AND u.deleted_at IS NULL
+  AND (r.role IS NULL OR r.role NOT IN ('admin', 'super_admin'))
+  AND u.email != 'info@bueeze.ch'
+ORDER BY u.created_at ASC;
 ```
 
-Distinguishes legitimate registrations (have a handwerker profile or submitted a lead) from suspicious orphan accounts.
+Schliesst Admins und die System-Mailbox aus. Sonst keine Filter.
 
-## Output
+## Step 2 — Liste präsentieren
 
-Three tables in chat with full timestamps + interpretation. No data modified.
+Tabelle im Chat: Email, Firma, Name, Rolle, Status, Erstellt (Swiss), Letzter Login. Du kannst Zeilen streichen, falls jemand nicht resettet werden soll.
 
-After you review the results, we resume the bulk reset plan with the verified candidate list.
+## Step 3 — Anpassung der Re-Detection im Edge Function
+
+Die aktuelle `bulk-custom`-Logik in `reset-user-password/index.ts` filtert Kandidaten erneut anhand des alten `last_sign_in_at IS NULL` + `updated_at`-Kriteriums (siehe `getStillStuckCandidates`). Für diesen Lauf passt das nicht — User die sich bereits eingeloggt haben würden rausfallen.
+
+**Lösung:** Einen neuen Modus-Parameter `skipReDetection: true` einführen. Wenn gesetzt, überspringt der Function die Re-Detection und resettet stur alle übergebenen `userIds`. Verifikation pro User bleibt aktiv (Snapshot → Update → Re-Query → signInWithPassword-Test).
+
+Änderung an einer Stelle, ~10 Zeilen, kein Bruch der bestehenden Logik.
+
+## Step 4 — Execute
+
+Invoke `reset-user-password` mit:
+- `userIds: [...alle aus Step 2 nach deinem OK]`
+- `customPassword: 'A12345678'`
+- `skipReDetection: true`
+
+Pro User: Snapshot in Backup-Tabelle → Update → Verify (updated_at + signInWithPassword) → Result-Eintrag. Continue-on-error.
+
+## Step 5 — Output
+
+- Per-User-Resultatstabelle im Chat (success/failed + Fehler)
+- CSV unter `/mnt/documents/bulk-password-reset-2026-04-17.csv` mit: email, full_name, company_name, user_id, status, error
+- Audit-Row in `admin_notifications` (`type = 'bulk_password_reset'`, mit triggered_by, requested_ids, succeeded_ids, failed)
+- Backup-Rows in `password_reset_backup_2026_04_17` (Rollback-Pfad bleibt offen)
+
+## Files
+
+| # | File | Change |
+|---|------|--------|
+| 1 | `supabase/functions/reset-user-password/index.ts` | Add `skipReDetection` flag handling (~10 Zeilen) |
+| 2 | Read-only: Detection-Query | Kein File-Change |
+| 3 | One-time invocation nach deiner Listen-Freigabe | Kein File-Change |
+
+## Gates
+
+1. ✅ Policy bestätigt
+2. ✅ Passwort: `A12345678`
+3. ✅ Hypothesen-Check: übersprungen per User-Override
+4. **Pending:** Du gibst die Liste aus Step 2 frei
+5. **Pending:** Edge-Function-Anpassung (Step 3) wird vor dem Execute deployed
+
+Ich starte direkt mit Step 1 (Detection-Query) sobald du diesen Plan freigibst.
 
