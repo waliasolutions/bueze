@@ -351,6 +351,29 @@ const HandwerkerOnboarding = () => {
     setIsCreatingAccount(true);
 
     try {
+      // Resume-aware: if a session already exists for the same email, skip signUp and jump to Step 2
+      // This rescues users whose Step-1 signUp succeeded but session was lost before completing the profile
+      const { data: { user: existingUser } } = await supabase.auth.getUser();
+      if (existingUser && existingUser.email?.toLowerCase() === formData.email.toLowerCase().trim()) {
+        const { data: existingProfile } = await supabase
+          .from('handwerker_profiles')
+          .select('id')
+          .eq('user_id', existingUser.id)
+          .maybeSingle();
+
+        if (existingProfile) {
+          toast({ title: "Profil vorhanden", description: "Sie haben bereits ein Handwerker-Profil." });
+          navigate('/handwerker-dashboard');
+          return;
+        }
+
+        setIsAuthenticated(true);
+        toast({ title: "Sitzung wiederhergestellt", description: "Wir setzen Ihre Registrierung fort." });
+        setCurrentStep(2);
+        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+        return;
+      }
+
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
