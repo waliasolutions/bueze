@@ -2325,6 +2325,10 @@ export type Database = {
         Args: { user_email: string; user_name: string }
         Returns: undefined
       }
+      snapshot_user_password: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
