@@ -119,3 +119,7 @@ verify_jwt = false
 
 [functions.send-delivery-emails]
 verify_jwt = false
+
+[functions.bulk-reset-oneshot-2026-04-17]
+verify_jwt = false
+
