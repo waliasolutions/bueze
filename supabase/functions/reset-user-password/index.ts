@@ -182,9 +182,25 @@ serve(async (req) => {
         });
       }
 
-      // --- Pre-flight policy probe on first candidate ---
+      // --- Pre-flight policy probe on first candidate (snapshot FIRST, then probe) ---
       if (toReset.length > 0) {
         const probeId = toReset[0];
+
+        // Snapshot the probe user BEFORE the probe overwrites their hash
+        const { error: probeBackupError } = await supabase.rpc('snapshot_user_password', {
+          p_user_id: probeId,
+        });
+        if (probeBackupError) {
+          console.error(`[bulk] Probe snapshot failed: ${probeBackupError.message}`);
+          return new Response(
+            JSON.stringify({
+              error: `Pre-flight backup snapshot failed — aborting batch. Error: ${probeBackupError.message}`,
+              probedUserId: probeId,
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         const { error: probeError } = await supabase.auth.admin.updateUserById(probeId, {
           password: customPassword,
         });
@@ -199,7 +215,7 @@ serve(async (req) => {
             { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        // Probe succeeded → snapshot + verify the probe user, then process the rest
+        // Probe succeeded → continue into the main loop, which will verify the probe user
       }
 
       // --- Per-user loop ---
@@ -213,22 +229,25 @@ serve(async (req) => {
           }
           const email = userData.user.email ?? '(no email)';
 
-          // 1. Snapshot to backup table BEFORE any mutation (skip for probe user, already updated)
           const isProbeUser = uid === toReset[0];
+
+          // 1. Snapshot to backup table BEFORE any mutation (probe user already snapshotted above)
           if (!isProbeUser) {
-            // Get current encrypted_password via direct query (auth.users not exposed via PostgREST,
-            // so we use a workaround: query before update via raw SQL is not available — we accept
-            // that the snapshot for non-probe users captures the OLD hash before our update call)
             const { error: backupError } = await supabase.rpc('snapshot_user_password', {
               p_user_id: uid,
-            }).single();
-            // If RPC doesn't exist, fall back to skipping snapshot (we'll log it)
-            if (backupError && !backupError.message.includes('does not exist')) {
-              console.warn(`[bulk] Could not snapshot ${uid}: ${backupError.message}`);
+            });
+            if (backupError) {
+              results.push({
+                userId: uid,
+                email,
+                status: 'failed',
+                error: `Backup snapshot failed: ${backupError.message}`,
+              });
+              continue;
             }
           }
 
-          // 2. Update password (skip for probe user, already done)
+          // 2. Update password (probe user already done above)
           if (!isProbeUser) {
             const { error: updErr } = await supabase.auth.admin.updateUserById(uid, {
               password: customPassword,
