@@ -432,6 +432,10 @@ const HandwerkerOnboarding = () => {
 
       // Success! User is now authenticated
       setIsAuthenticated(true);
+      // Persist intent so onboarding can resume if session is lost between steps
+      try {
+        localStorage.setItem('pendingHandwerkerEmail', formData.email.toLowerCase().trim());
+      } catch { /* localStorage may be unavailable */ }
       toast({
         title: "Konto erstellt",
         description: "Wählen Sie jetzt Ihre Dienstleistungen.",
@@ -476,7 +480,26 @@ const HandwerkerOnboarding = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        throw new Error('Nicht angemeldet. Bitte laden Sie die Seite neu.');
+        // Session lost between Step 1 and Step 3 — guide user back to recover
+        setShowLoginForm(true);
+        setLoginEmail(formData.email);
+        toast({
+          title: "Sitzung verloren",
+          description: "Bitte melden Sie sich erneut an, um Ihre Registrierung abzuschliessen.",
+          variant: "destructive",
+        });
+        setCurrentStep(1);
+        return;
+      }
+
+      // Detect session swap (a different user is now logged in)
+      if (formData.email && user.email && user.email.toLowerCase() !== formData.email.toLowerCase().trim()) {
+        toast({
+          title: "Anderer Benutzer angemeldet",
+          description: `Sie sind als ${user.email} angemeldet, nicht als ${formData.email}. Bitte melden Sie sich ab und erneut an.`,
+          variant: "destructive",
+        });
+        return;
       }
 
       // Merge major categories + subcategories, deduplicated
