@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getErrorMessage } from '../_shared/errorUtils.ts';
+import { PASSWORD_MIN_LENGTH } from '../_shared/constants.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -65,9 +66,9 @@ serve(async (req) => {
     }
 
     // Validate password length
-    if (newPassword.length < 8) {
+    if (newPassword.length < PASSWORD_MIN_LENGTH) {
       return new Response(
-        JSON.stringify({ success: false, error: 'Password must be at least 8 characters' }),
+        JSON.stringify({ success: false, error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

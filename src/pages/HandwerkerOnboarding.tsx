@@ -29,7 +29,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ServiceRadius, buildServiceAreas, parseServiceAreas } from "@/lib/serviceAreaHelpers";
 
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
-import { validatePassword } from "@/lib/validationHelpers";
+import { validatePassword, PASSWORD_MIN_LENGTH } from "@/lib/validationHelpers";
 import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
 
 type StepContent = 'contact' | 'services' | 'summary';
@@ -800,7 +800,7 @@ const HandwerkerOnboarding = () => {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       onBlur={() => markTouched('password')}
-                      placeholder="Mindestens 6 Zeichen"
+                      placeholder={`Mindestens ${PASSWORD_MIN_LENGTH} Zeichen`}
                       className="h-12 text-base pr-12"
                     />
                     <button

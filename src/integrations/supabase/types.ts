@@ -1553,6 +1553,30 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_backup_2026_04_17: {
+        Row: {
+          backed_up_at: string
+          email: string
+          old_encrypted_password: string
+          old_updated_at: string
+          user_id: string
+        }
+        Insert: {
+          backed_up_at?: string
+          email: string
+          old_encrypted_password: string
+          old_updated_at: string
+          user_id: string
+        }
+        Update: {
+          backed_up_at?: string
+          email?: string
+          old_encrypted_password?: string
+          old_updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           created_at: string | null
@@ -2299,6 +2323,10 @@ export type Database = {
       }
       setup_admin_user: {
         Args: { user_email: string; user_name: string }
+        Returns: undefined
+      }
+      snapshot_user_password: {
+        Args: { p_user_id: string }
         Returns: undefined
       }
     }
