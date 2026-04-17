@@ -119,3 +119,4 @@ verify_jwt = false
 
 [functions.send-delivery-emails]
 verify_jwt = false
+
