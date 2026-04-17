@@ -351,6 +351,29 @@ const HandwerkerOnboarding = () => {
     setIsCreatingAccount(true);
 
     try {
+      // Resume-aware: if a session already exists for the same email, skip signUp and jump to Step 2
+      // This rescues users whose Step-1 signUp succeeded but session was lost before completing the profile
+      const { data: { user: existingUser } } = await supabase.auth.getUser();
+      if (existingUser && existingUser.email?.toLowerCase() === formData.email.toLowerCase().trim()) {
+        const { data: existingProfile } = await supabase
+          .from('handwerker_profiles')
+          .select('id')
+          .eq('user_id', existingUser.id)
+          .maybeSingle();
+
+        if (existingProfile) {
+          toast({ title: "Profil vorhanden", description: "Sie haben bereits ein Handwerker-Profil." });
+          navigate('/handwerker-dashboard');
+          return;
+        }
+
+        setIsAuthenticated(true);
+        toast({ title: "Sitzung wiederhergestellt", description: "Wir setzen Ihre Registrierung fort." });
+        setCurrentStep(2);
+        setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
+        return;
+      }
+
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
@@ -409,6 +432,10 @@ const HandwerkerOnboarding = () => {
 
       // Success! User is now authenticated
       setIsAuthenticated(true);
+      // Persist intent so onboarding can resume if session is lost between steps
+      try {
+        localStorage.setItem('pendingHandwerkerEmail', formData.email.toLowerCase().trim());
+      } catch { /* localStorage may be unavailable */ }
       toast({
         title: "Konto erstellt",
         description: "Wählen Sie jetzt Ihre Dienstleistungen.",
@@ -453,7 +480,26 @@ const HandwerkerOnboarding = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
-        throw new Error('Nicht angemeldet. Bitte laden Sie die Seite neu.');
+        // Session lost between Step 1 and Step 3 — guide user back to recover
+        setShowLoginForm(true);
+        setLoginEmail(formData.email);
+        toast({
+          title: "Sitzung verloren",
+          description: "Bitte melden Sie sich erneut an, um Ihre Registrierung abzuschliessen.",
+          variant: "destructive",
+        });
+        setCurrentStep(1);
+        return;
+      }
+
+      // Detect session swap (a different user is now logged in)
+      if (formData.email && user.email && user.email.toLowerCase() !== formData.email.toLowerCase().trim()) {
+        toast({
+          title: "Anderer Benutzer angemeldet",
+          description: `Sie sind als ${user.email} angemeldet, nicht als ${formData.email}. Bitte melden Sie sich ab und erneut an.`,
+          variant: "destructive",
+        });
+        return;
       }
 
       // Merge major categories + subcategories, deduplicated
@@ -500,8 +546,9 @@ const HandwerkerOnboarding = () => {
         throw new Error('Failed to create profile');
       }
 
-      // Clear any residual draft data
+      // Clear any residual draft data and onboarding intent marker
       localStorage.removeItem('handwerker-onboarding-draft');
+      try { localStorage.removeItem('pendingHandwerkerEmail'); } catch { /* noop */ }
 
       // Assign handwerker role and save pending plan (non-blocking)
       (async () => {
