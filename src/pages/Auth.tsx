@@ -220,7 +220,7 @@ export default function Auth() {
           <CardHeader>
             <CardTitle>Login</CardTitle>
             <CardDescription>
-              Geben Sie Ihre Anmeldedaten ein, um auf Ihr Konto zuzugreifen.
+              Geben Sie Ihre Anmeldedaten ein, um auf Ihr Konto zuzugreifen. Falls Sie eine Registrierung bereits begonnen haben, melden Sie sich an oder nutzen Sie «Passwort vergessen?».
             </CardDescription>
           </CardHeader>
           
@@ -290,6 +290,9 @@ export default function Auth() {
               </Dialog>
 
               <div className="pt-2 border-t space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Registrierung schon gestartet? Melden Sie sich an, um fortzufahren. Wenn Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?».
+                </p>
                 <p className="text-sm text-muted-foreground">Noch kein Konto?</p>
                 <div className="flex flex-col gap-2">
                   <Button variant="outline" onClick={() => navigate('/submit-lead')} className="w-full">
