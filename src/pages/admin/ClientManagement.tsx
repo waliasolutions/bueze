@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getRoleLabelShort, getRoleBadgeVariant, type AppRole } from '@/config/roles';
+import { getRoleLabelShort, getRoleBadgeVariant, isHandwerkerRole, type AppRole } from '@/config/roles';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
@@ -52,6 +52,7 @@ interface Client {
   active_leads_count: number;
   last_lead_date: string | null;
   roles: AppRole[];
+  has_handwerker_profile: boolean;
 }
 
 interface Lead {
@@ -74,6 +75,14 @@ export default function ClientManagement() {
   const [clientLeads, setClientLeads] = useState<Map<string, Lead[]>>(new Map());
   const [loadingLeads, setLoadingLeads] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+
+  const getAccountType = (client: Client): 'handwerker' | 'business' | 'private' => {
+    if (client.has_handwerker_profile || client.roles.some((role) => isHandwerkerRole(role))) {
+      return 'handwerker';
+    }
+
+    return client.client_type === 'business' ? 'business' : 'private';
+  };
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -180,6 +189,7 @@ export default function ClientManagement() {
             active_leads_count: activeLeads.length,
             last_lead_date: sortedLeads[0]?.created_at || null,
             roles: userRolesMap.get(profile.id) || [],
+            has_handwerker_profile: handwerkerUserIds.has(profile.id),
           };
         });
 
@@ -455,14 +465,18 @@ export default function ClientManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          variant={client.client_type === 'business' ? 'default' : 'secondary'}
-                          className="cursor-pointer"
-                          onClick={() => toggleClientType(client.id, client.client_type || 'private')}
-                          title="Klicken zum Umschalten"
-                        >
-                          {client.client_type === 'business' ? 'Geschäftskunde' : 'Privatperson'}
-                        </Badge>
+                        {getAccountType(client) === 'handwerker' ? (
+                          <Badge variant="outline">Handwerker</Badge>
+                        ) : (
+                          <Badge
+                            variant={getAccountType(client) === 'business' ? 'default' : 'secondary'}
+                            className="cursor-pointer"
+                            onClick={() => toggleClientType(client.id, client.client_type || 'private')}
+                            title="Klicken zum Umschalten"
+                          >
+                            {getAccountType(client) === 'business' ? 'Geschäftskunde' : 'Privatperson'}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="space-y-1">

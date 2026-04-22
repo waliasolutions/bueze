@@ -111,6 +111,13 @@ export function isAdminRole(role: AppRole | string): boolean {
 }
 
 /**
+ * Check if role is a handwerker role
+ */
+export function isHandwerkerRole(role: AppRole | string): boolean {
+  return role === 'handwerker';
+}
+
+/**
  * Check if role has higher priority than another
  */
 export function hasHigherPriority(roleA: AppRole, roleB: AppRole): boolean {
