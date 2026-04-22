@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Users,
   UserCheck,
+  Wrench,
   Briefcase,
   Star,
   FileText,
@@ -49,6 +50,7 @@ const navSections: NavSection[] = [
     title: 'Benutzer',
     items: [
       { label: 'Handwerker', href: '/admin/handwerkers', icon: UserCheck },
+      { label: 'Profil-Lücken', href: '/admin/handwerker-recovery', icon: Wrench },
       { label: 'Kunden', href: '/admin/clients', icon: Users },
     ],
   },

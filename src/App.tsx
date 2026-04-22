@@ -57,6 +57,7 @@ const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const HandwerkerManagement = lazy(() => import("./pages/admin/HandwerkerManagement"));
 const ClientManagement = lazy(() => import("./pages/admin/ClientManagement"));
 const HandwerkerApprovals = lazy(() => import("./pages/admin/HandwerkerApprovals"));
+const MissingHandwerkerProfiles = lazy(() => import("./pages/admin/MissingHandwerkerProfiles"));
 const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 const AdminLeadsManagement = lazy(() => import("./pages/admin/AdminLeadsManagement"));
 const ContentManagement = lazy(() => import("./pages/admin/ContentManagement"));
@@ -227,6 +228,7 @@ const App = () => {
                         <Route index element={<AdminDashboard />} />
                         <Route path="dashboard" element={<AdminDashboard />} />
                         <Route path="handwerkers" element={<HandwerkerManagement />} />
+                        <Route path="handwerker-recovery" element={<MissingHandwerkerProfiles />} />
                         <Route path="clients" element={<ClientManagement />} />
                         <Route path="leads" element={<AdminLeadsManagement />} />
                         <Route path="approvals" element={<HandwerkerApprovals />} />
