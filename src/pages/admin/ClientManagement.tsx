@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getRoleLabelShort, getRoleBadgeVariant, isHandwerkerRole, type AppRole } from '@/config/roles';
+import { getRoleLabelShort, getRoleBadgeVariant, getAccountTypeLabel, hasHandwerkerIdentity, type AppRole } from '@/config/roles';
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
@@ -76,13 +76,16 @@ export default function ClientManagement() {
   const [loadingLeads, setLoadingLeads] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
 
-  const getAccountType = (client: Client): 'handwerker' | 'business' | 'private' => {
-    if (client.has_handwerker_profile || client.roles.some((role) => isHandwerkerRole(role))) {
-      return 'handwerker';
-    }
+  const isHandwerkerAccount = (client: Client) => hasHandwerkerIdentity({
+    roles: client.roles,
+    hasHandwerkerProfile: client.has_handwerker_profile,
+  });
 
-    return client.client_type === 'business' ? 'business' : 'private';
-  };
+  const getAccountTypeLabelForClient = (client: Client) => getAccountTypeLabel({
+    roles: client.roles,
+    hasHandwerkerProfile: client.has_handwerker_profile,
+    clientType: client.client_type,
+  });
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -465,16 +468,16 @@ export default function ClientManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {getAccountType(client) === 'handwerker' ? (
+                        {isHandwerkerAccount(client) ? (
                           <Badge variant="outline">Handwerker</Badge>
                         ) : (
                           <Badge
-                            variant={getAccountType(client) === 'business' ? 'default' : 'secondary'}
+                            variant={client.client_type === 'business' ? 'default' : 'secondary'}
                             className="cursor-pointer"
                             onClick={() => toggleClientType(client.id, client.client_type || 'private')}
                             title="Klicken zum Umschalten"
                           >
-                            {getAccountType(client) === 'business' ? 'Geschäftskunde' : 'Privatperson'}
+                            {getAccountTypeLabelForClient(client)}
                           </Badge>
                         )}
                       </TableCell>

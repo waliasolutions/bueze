@@ -17,6 +17,7 @@ import { clearVersionedData, STORAGE_KEYS } from '@/lib/localStorageVersioning';
 import { useUserRole } from '@/hooks/useUserRole';
 import { roleNavigation } from '@/config/navigation';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { hasHandwerkerIdentity } from '@/config/roles';
 import type { UserProfileBasic } from '@/types/entities';
 
 export const UserDropdown = () => {
@@ -104,6 +105,11 @@ export const UserDropdown = () => {
     return profile?.email?.split('@')[0] || 'Benutzer';
   };
 
+  const isHandwerkerIdentity = hasHandwerkerIdentity({
+    roles: profile?.role ? [profile.role] : [],
+    hasHandwerkerProfile,
+  }) || isHandwerker;
+
   const getRoleLabel = () => {
     // Use activeView for admins to reflect current view mode
     if (isAdmin) {
@@ -113,7 +119,7 @@ export const UserDropdown = () => {
         default: return 'Administrator';
       }
     }
-    if (isHandwerker || hasHandwerkerProfile) return 'Handwerker';
+    if (isHandwerkerIdentity) return 'Handwerker';
     return 'Kunde';
   };
 
@@ -127,7 +133,7 @@ export const UserDropdown = () => {
   }
 
   // Get navigation items based on activeView (for admins) or real role
-  const effectiveHandwerker = isHandwerker || hasHandwerkerProfile;
+  const effectiveHandwerker = isHandwerkerIdentity;
   const navItems = isAdmin
     ? (activeView === 'handwerker' ? roleNavigation.handwerker : roleNavigation.client)
     : (effectiveHandwerker ? roleNavigation.handwerker : roleNavigation.client);
