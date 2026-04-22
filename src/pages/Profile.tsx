@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label';
 import { majorCategories } from '@/config/majorCategories';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { getAccountTypeLabel, hasHandwerkerIdentity } from '@/config/roles';
 
 const profileSchema = z.object({
   full_name: z.string().min(2, 'Name muss mindestens 2 Zeichen haben'),
@@ -71,7 +72,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
-  const { isHandwerker: isHandwerkerRole, isAdmin } = useUserRole();
+  const { allRoles, isHandwerker: isHandwerkerRole, isAdmin } = useUserRole();
   const { activeView } = useViewMode();
 
   // Payment processing state for realtime subscription
@@ -511,9 +512,14 @@ const Profile = () => {
   // - Admin in "client" view: no handwerker tabs (client context)
   // - Admin in "handwerker" view: show if profile data exists
   // - Non-admin: use database logic
+  const hasHandwerkerIdentityForUser = hasHandwerkerIdentity({
+    roles: allRoles,
+    hasHandwerkerProfile: !!handwerkerProfile,
+  }) || isHandwerkerRole;
+
   const isHandwerker = isAdmin
-    ? activeView === 'handwerker' && !!handwerkerProfile
-    : !!handwerkerProfile;
+    ? activeView === 'handwerker' && hasHandwerkerIdentityForUser
+    : hasHandwerkerIdentityForUser;
 
   return (
     <div className="min-h-screen bg-background">
@@ -975,7 +981,11 @@ const Profile = () => {
                       <label className="text-sm font-medium">Rolle</label>
                       <p className="text-sm text-muted-foreground">
                         <Badge variant="secondary">
-                          {profile?.role === 'handwerker' ? 'Handwerker' : 'Auftraggeber'}
+                          {getAccountTypeLabel({
+                            roles: allRoles,
+                            hasHandwerkerProfile: !!handwerkerProfile,
+                            clientType: profile?.client_type ?? null,
+                          })}
                         </Badge>
                       </p>
                     </div>

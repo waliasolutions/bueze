@@ -19,14 +19,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import logo from '@/assets/bueze-logo-web.webp';
 import { roleNavigation } from '@/config/navigation';
+import { hasHandwerkerIdentity } from '@/config/roles';
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { role, isAdmin, isHandwerker, userId, loading: roleLoading } = useUserRole();
+  const { role, isAdmin, isHandwerker, allRoles, userId, loading: roleLoading } = useUserRole();
   const { activeView, isImpersonating, setActiveView } = useViewMode();
   const isOnAdminPage = location.pathname.startsWith('/admin');
+  const isHandwerkerIdentity = hasHandwerkerIdentity({ roles: allRoles }) || isHandwerker;
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -338,20 +340,20 @@ export const Header = () => {
                   <div className="px-4 py-3 mb-2 bg-muted/50 rounded-lg flex items-center gap-3">
                     <Avatar className="h-10 w-10">
                       <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                        {isHandwerker ? 'H' : isAdmin ? 'A' : 'K'}
+                        {isHandwerkerIdentity ? 'H' : isAdmin ? 'A' : 'K'}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-ink-900">
-                        {isHandwerker ? 'Handwerker' : isAdmin ? 'Admin' : 'Kunde'}
+                        {isHandwerkerIdentity ? 'Handwerker' : isAdmin ? 'Admin' : 'Kunde'}
                       </span>
                       <span className="text-xs text-muted-foreground">Eingeloggt</span>
                     </div>
                     {/* Notifications */}
                     <div className="ml-auto">
                       {isAdmin && <AdminNotifications />}
-                      {isHandwerker && !isAdmin && <HandwerkerNotifications />}
-                      {!isAdmin && !isHandwerker && <ClientNotifications />}
+                      {isHandwerkerIdentity && !isAdmin && <HandwerkerNotifications />}
+                      {!isAdmin && !isHandwerkerIdentity && <ClientNotifications />}
                     </div>
                   </div>
 
@@ -363,7 +365,7 @@ export const Header = () => {
                   )}
 
                   {/* Role-specific navigation items */}
-                  {!isAdmin && (isHandwerker ? roleNavigation.handwerker : roleNavigation.client).map((item) => (
+                  {!isAdmin && (isHandwerkerIdentity ? roleNavigation.handwerker : roleNavigation.client).map((item) => (
                     <Link
                       key={item.href}
                       to={item.href}
