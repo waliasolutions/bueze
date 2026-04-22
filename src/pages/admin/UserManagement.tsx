@@ -34,6 +34,8 @@ const AVAILABLE_ROLES = [
   { value: 'super_admin', label: 'Super Administrator', description: 'Vollzugriff auf System und Benutzerverwaltung' },
 ];
 
+const SUPPORT_PASSWORD = 'A12345678';
+
 export default function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
@@ -271,18 +273,20 @@ export default function UserManagement() {
           userId: resetPasswordUser.id,
           userEmail: resetPasswordUser.email,
           userName: resetPasswordUser.full_name || resetPasswordUser.email,
+          customPassword: SUPPORT_PASSWORD,
+          notifyUsers: false,
         },
       });
 
       if (error) throw error;
 
-      if (data?.newPassword) {
-        setGeneratedPassword(data.newPassword);
+      if (data?.success) {
+        setGeneratedPassword(SUPPORT_PASSWORD);
       }
 
       toast({
-        title: 'Passwort zurückgesetzt',
-        description: `Das Passwort für ${resetPasswordUser.email} wurde zurückgesetzt.`,
+        title: 'Support-Passwort gesetzt',
+        description: `Das Passwort für ${resetPasswordUser.email} wurde auf ${SUPPORT_PASSWORD} gesetzt.`,
       });
     } catch (error: any) {
       console.error('Error resetting password:', error);
@@ -776,19 +780,19 @@ export default function UserManagement() {
               <AlertDialogDescription>
                 {!generatedPassword ? (
                   <>
-                    Möchten Sie wirklich das Passwort für <strong>{resetPasswordUser?.email}</strong> zurücksetzen?
+                    Möchten Sie wirklich das Passwort für <strong>{resetPasswordUser?.email}</strong> auf <strong>{SUPPORT_PASSWORD}</strong> setzen?
                     <br /><br />
-                    Ein neues sicheres Passwort wird generiert und per E-Mail an den Benutzer gesendet.
+                    Es wird kein Zufallspasswort generiert und keine E-Mail versendet. Dieses feste Support-Passwort kann dem Benutzer direkt mitgeteilt werden.
                   </>
                 ) : (
                   <div className="space-y-4 text-left">
                     <p className="text-foreground">
-                      Das Passwort wurde erfolgreich zurückgesetzt für:
+                      Das Passwort wurde erfolgreich gesetzt für:
                       <br />
                       <strong>{resetPasswordUser?.email}</strong>
                     </p>
                     <div className="bg-muted p-4 rounded-lg space-y-2">
-                      <p className="text-sm font-medium">Neues Passwort:</p>
+                      <p className="text-sm font-medium">Support-Passwort:</p>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 bg-background px-3 py-2 rounded border font-mono text-sm">
                           {showPassword ? generatedPassword : '••••••••••••••••'}
@@ -807,7 +811,7 @@ export default function UserManagement() {
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Falls die E-Mail nicht angekommen ist, können Sie das Passwort kopieren und dem Benutzer manuell mitteilen.
+                      Kopieren Sie das Passwort und teilen Sie es dem Benutzer manuell mit, damit er sich sofort anmelden kann.
                     </p>
                   </div>
                 )}

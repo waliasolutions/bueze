@@ -182,6 +182,16 @@ const HandwerkerOnboarding = () => {
         setIsAuthenticated(true);
         setStartedAsGuest(false);
       } else {
+        try {
+          const pendingEmail = localStorage.getItem('pendingHandwerkerEmail');
+          if (pendingEmail) {
+            setShowLoginForm(true);
+            setLoginEmail(pendingEmail);
+            setFormData(prev => ({ ...prev, email: pendingEmail }));
+          }
+        } catch {
+          // localStorage may be unavailable
+        }
         setStartedAsGuest(true);
       }
     };
@@ -205,12 +215,6 @@ const HandwerkerOnboarding = () => {
         setCustomCantons(config.customCantons);
       }
     }
-  }, []);
-
-  // Force fresh start — clear any stale cached drafts from previous versions
-  useEffect(() => {
-    localStorage.removeItem('handwerker-onboarding-draft');
-    sessionStorage.removeItem('pending-recovery-data');
   }, []);
 
   const validateStep = (step: number): boolean => {
@@ -324,7 +328,7 @@ const HandwerkerOnboarding = () => {
     } catch (error) {
       toast({
         title: "Anmeldung fehlgeschlagen",
-        description: error instanceof Error ? error.message : "Bitte überprüfen Sie Ihre Zugangsdaten.",
+        description: error instanceof Error ? `${error.message} Falls Sie die Registrierung schon begonnen haben, nutzen Sie «Passwort vergessen?».` : "Bitte überprüfen Sie Ihre Zugangsdaten oder nutzen Sie «Passwort vergessen?».",
         variant: "destructive",
       });
     } finally {
@@ -391,8 +395,8 @@ const HandwerkerOnboarding = () => {
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
           toast({
-            title: "E-Mail bereits registriert",
-            description: "Bitte melden Sie sich an oder verwenden Sie eine andere E-Mail.",
+            title: "Registrierung bereits begonnen",
+            description: "Bitte melden Sie sich an, um fortzufahren. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?».",
             variant: "destructive",
           });
           setShowLoginForm(true);
@@ -627,10 +631,10 @@ const HandwerkerOnboarding = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-amber-600" />
-                    E-Mail bereits registriert
+                    Registrierung bereits begonnen
                   </CardTitle>
                   <CardDescription>
-                    Melden Sie sich an, um fortzufahren.
+                    Dieses Konto existiert bereits. Melden Sie sich an, um Ihre Registrierung fortzusetzen. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?». 
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
