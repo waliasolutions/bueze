@@ -118,6 +118,32 @@ export function isHandwerkerRole(role: AppRole | string): boolean {
 }
 
 /**
+ * SSOT: a user is a handwerker if they have the handwerker role or an existing handwerker profile.
+ */
+export function hasHandwerkerIdentity(options: {
+  roles?: Array<AppRole | string | null | undefined>;
+  hasHandwerkerProfile?: boolean | null;
+}): boolean {
+  const { roles = [], hasHandwerkerProfile = false } = options;
+  return Boolean(hasHandwerkerProfile) || roles.some((role) => isHandwerkerRole(role ?? ''));
+}
+
+/**
+ * SSOT label helper for account type display in admin/profile surfaces.
+ */
+export function getAccountTypeLabel(options: {
+  roles?: Array<AppRole | string | null | undefined>;
+  hasHandwerkerProfile?: boolean | null;
+  clientType?: string | null;
+}): 'Handwerker' | 'Geschäftskunde' | 'Privatperson' {
+  if (hasHandwerkerIdentity(options)) {
+    return 'Handwerker';
+  }
+
+  return options.clientType === 'business' ? 'Geschäftskunde' : 'Privatperson';
+}
+
+/**
  * Check if role has higher priority than another
  */
 export function hasHigherPriority(roleA: AppRole, roleB: AppRole): boolean {
