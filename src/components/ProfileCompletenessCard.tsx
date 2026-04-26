@@ -12,32 +12,13 @@ interface ProfileCompletenessCardProps {
   };
 }
 
-interface RequirementItem {
-  label: string;
-  completed: boolean;
-  required: boolean;
-}
-
 export const ProfileCompletenessCard: React.FC<ProfileCompletenessCardProps> = ({ profile }) => {
   const result = calculateProfileCompleteness(profile);
 
-  // Build display requirements from the shared logic
-  const requirements: RequirementItem[] = [
-    { label: 'Vor- und Nachname', completed: !!(profile.first_name && profile.last_name), required: true },
-    { label: 'E-Mail-Adresse', completed: !!profile.email, required: true },
-    { label: 'Telefonnummer', completed: !!profile.phone_number, required: true },
-    { label: 'Profilbeschreibung', completed: !!(profile.bio && profile.bio.length >= 50), required: true },
-    { label: 'Servicegebiete', completed: (profile.service_areas?.length ?? 0) > 0, required: true },
-    { label: 'Stundensätze', completed: !!(profile.hourly_rate_min && profile.hourly_rate_max), required: false },
-    { label: 'Firmenname', completed: !!profile.company_name, required: false },
-    { label: 'Logo', completed: !!profile.logo_url, required: false },
-    { label: 'Portfolio (min. 1 Bild)', completed: (profile.portfolio_urls?.length ?? 0) > 0, required: false },
-    { label: 'UID-Nummer', completed: !!profile.uid_number, required: false },
-    { label: 'IBAN', completed: !!profile.iban, required: false },
-  ];
-
-  const requiredItems = requirements.filter(r => r.required);
-  const optionalItems = requirements.filter(r => !r.required);
+  // SSOT: requirements come straight from the completeness calculator,
+  // no local duplication.
+  const requiredItems = result.requirements.filter(r => r.required);
+  const optionalItems = result.requirements.filter(r => !r.required);
 
   return (
     <Card>
