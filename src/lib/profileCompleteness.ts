@@ -11,7 +11,18 @@ export interface ProfileCompletenessInput {
   portfolio_urls: string[] | null;
   logo_url: string | null;
   uid_number: string | null;
-  iban: string | null;
+  /**
+   * IBAN is stored on the profile but is intentionally NOT counted toward
+   * profile completeness scoring. Kept here so existing callers can still
+   * pass the field without type errors.
+   */
+  iban?: string | null;
+}
+
+export interface ProfileRequirement {
+  label: string;
+  completed: boolean;
+  required: boolean;
 }
 
 export interface ProfileCompletenessResult {
@@ -22,10 +33,11 @@ export interface ProfileCompletenessResult {
   optionalTotal: number;
   isComplete: boolean;
   missingRequired: string[];
+  requirements: ProfileRequirement[];
 }
 
 export const calculateProfileCompleteness = (profile: ProfileCompletenessInput): ProfileCompletenessResult => {
-  const requirements = [
+  const requirements: ProfileRequirement[] = [
     { label: 'Vor- und Nachname', completed: !!(profile.first_name && profile.last_name), required: true },
     { label: 'E-Mail-Adresse', completed: !!profile.email, required: true },
     { label: 'Telefonnummer', completed: !!profile.phone_number, required: true },
@@ -36,7 +48,6 @@ export const calculateProfileCompleteness = (profile: ProfileCompletenessInput):
     { label: 'Logo', completed: !!profile.logo_url, required: false },
     { label: 'Portfolio', completed: (profile.portfolio_urls?.length ?? 0) > 0, required: false },
     { label: 'UID-Nummer', completed: !!profile.uid_number, required: false },
-    { label: 'IBAN', completed: !!profile.iban, required: false },
   ];
 
   const requiredItems = requirements.filter(r => r.required);
@@ -61,5 +72,6 @@ export const calculateProfileCompleteness = (profile: ProfileCompletenessInput):
     optionalTotal: optionalItems.length,
     isComplete: requiredComplete === requiredItems.length,
     missingRequired,
+    requirements,
   };
 };

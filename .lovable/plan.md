@@ -1,115 +1,58 @@
 
-# Make login possible with password `A12345678`
+# Remove IBAN from completeness scoring (SSOT + DRY)
 
 ## Goal
 
-Allow the affected user to log in with the fixed password `A12345678` without introducing a second auth system, and harden the onboarding flow so this edge case is handled cleanly in future.
+IBAN should no longer affect the profile completeness percentage. A handwerker with all 5 required fields + the remaining 5 optional fields (Stundensätze, Firmenname, Logo, Portfolio, UID) must reach **100%**, not 91%.
 
-## What to build
+## Root cause of the current 91%
 
-### 1) Reuse the existing password-reset Edge Function for fixed-password support
-The backend already supports this:
+`src/lib/profileCompleteness.ts` currently scores 11 fields (5 required + 6 optional, IBAN being the 6th optional). Removing IBAN from the requirement list drops the denominator to 10, so a handwerker filling everything except IBAN scores 10/10 = **100%**.
 
-- `supabase/functions/reset-user-password/index.ts`
-- It accepts `customPassword`
-- In single-custom mode it resets and verifies the password without emailing it automatically
+## Existing DRY violation to fix at the same time
 
-No new auth logic is needed. The implementation should reuse this existing SSOT path.
+The exact same requirements list is currently defined twice:
+- `src/lib/profileCompleteness.ts` (used for percentage + status)
+- `src/components/ProfileCompletenessCard.tsx` (used for the visual checklist)
 
-### 2) Add an admin UI action for “Set password to A12345678”
-Use the existing admin password-reset pattern from `src/pages/admin/UserManagement.tsx` and expose the same capability where support/admin can use it for a specific user.
+This is the reason the SSOT can drift. We will fix both by exposing the requirement list from the SSOT module and having the card consume it.
 
-Recommended implementation:
-- Add a targeted action in `src/pages/admin/UserManagement.tsx`
-- Or add the same action in `src/pages/admin/HandwerkerManagement.tsx` for handwerker support cases
-- Invoke `reset-user-password` with:
-  - `userId`
-  - `userEmail`
-  - `userName`
-  - `customPassword: 'A12345678'`
-  - `notifyUsers: false`
+## Changes (minimal, SSOT-respecting)
 
-UI behavior:
-- Confirm dialog before resetting
-- Success toast saying the password was set to `A12345678`
-- Optional copy button for the password
-- Clear destructive error if verification fails
+### 1) `src/lib/profileCompleteness.ts` — SSOT
+- **Remove** the IBAN entry from the `requirements` array.
+- **Export** the computed requirements (label + completed + required) as part of the result so the card can render directly from it. New shape:
+  ```ts
+  ProfileCompletenessResult {
+    percentage, requiredComplete, requiredTotal,
+    optionalComplete, optionalTotal, isComplete, missingRequired,
+    requirements: Array<{ label: string; completed: boolean; required: boolean }>
+  }
+  ```
+- IBAN stays in `ProfileCompletenessInput` only if still referenced elsewhere; otherwise we keep the field in the type for backward compatibility but simply don't score it. (Decision: keep field in input type, drop from requirements only — minimizes blast radius.)
 
-### 3) Make incomplete handwerker registrations recoverable
-The affected edge case is caused by Step 1 creating the auth user before Steps 2/3 finish.
+### 2) `src/components/ProfileCompletenessCard.tsx` — consume SSOT
+- **Delete** the local `requirements` array.
+- Render `result.requirements` directly, splitting by `required: true | false`.
+- IBAN row disappears automatically.
+- No other UI changes.
 
-In `src/pages/HandwerkerOnboarding.tsx`:
-- Keep the current resume-aware behavior
-- Remove the aggressive draft-clearing on mount:
-  - `localStorage.removeItem('handwerker-onboarding-draft')`
-  - `sessionStorage.removeItem('pending-recovery-data')`
-- When `already registered` occurs, keep showing the inline login recovery card
-- Improve the recovery copy to explicitly say:
-  - account was already started
-  - user can log in and continue
-  - if they do not know the password, they should reset it
+### 3) Verify the two admin consumers still work
+- `src/pages/admin/HandwerkerManagement.tsx` and `src/pages/admin/HandwerkerApprovals.tsx` use only `percentage` / `isComplete` / `missingRequired` — all preserved. No edits needed.
 
-This keeps the current architecture and improves recovery instead of creating parallel flows.
+## Acceptance
 
-### 4) Make reset guidance more prominent
-In:
-- `src/pages/HandwerkerOnboarding.tsx`
-- `src/pages/Auth.tsx`
+- A handwerker with everything filled except IBAN now shows **100%** on the profile card and in admin views.
+- The IBAN line no longer appears under "Optional" in the completeness card.
+- Only one place (`profileCompleteness.ts`) defines the requirement list — the card consumes it.
+- Builds cleanly; no other consumer breaks.
 
-Improve the messaging after login failure / duplicate email:
-- “Registrierung bereits begonnen”
-- “Bitte melden Sie sich an, um fortzufahren”
-- “Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?»”
+## Files touched
 
-This reduces support friction for users who lose the initial session.
-
-## Why this approach
-
-- Reuses the existing `reset-user-password` function as SSOT
-- Avoids hardcoding a universal bypass in normal login logic
-- Keeps security intact: password still lives in Supabase Auth, not in frontend code
-- Fixes both the immediate support need and the future edge case
-
-## Files to change
-
-1. `src/pages/admin/UserManagement.tsx`
-   - Add support for fixed custom-password reset using `A12345678`
-
-2. `src/pages/admin/HandwerkerManagement.tsx`
-   - Optional: add the same support action for handwerker-specific admin workflows
-
-3. `src/pages/HandwerkerOnboarding.tsx`
-   - Stop clearing recovery draft state on mount
-   - Strengthen duplicate-account recovery UI
-   - Keep resume path for existing auth user without `handwerker_profiles`
-
-4. `src/pages/Auth.tsx`
-   - Improve reset guidance after failed login / recovery situations
-
-## Technical details
-
-```text
-Existing backend support already present:
-reset-user-password(userId, userEmail, userName, customPassword)
-
-Needed frontend behavior:
-Admin clicks support action
-→ invoke existing edge function with customPassword: 'A12345678'
-→ function updates password
-→ function verifies sign-in
-→ admin can tell user to log in with A12345678
-```
-
-## Acceptance criteria
-
-- Admin can set a selected user’s password to `A12345678` from the UI
-- The affected user can log in with that password
-- No new auth bypass or duplicate reset flow is introduced
-- Interrupted onboarding no longer traps users in “already registered but cannot proceed”
-- Recovery UX clearly points users to login or password reset
+- `src/lib/profileCompleteness.ts` — drop IBAN from requirements, expose `requirements` in result
+- `src/components/ProfileCompletenessCard.tsx` — render from `result.requirements` instead of local copy
 
 ## Notes
 
-- No database migration is required
-- No changes to `auth.users` schema or RLS are needed
-- This should stay a support/admin action, not a public “master password” behavior
+- IBAN data itself remains stored in `handwerker_profiles.iban` and is still editable in the profile form — only the completeness scoring stops counting it.
+- No DB migration needed.
