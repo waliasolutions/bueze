@@ -3,6 +3,7 @@ import { handleCorsPreflightRequest, successResponse, errorResponse } from '../_
 import { createSupabaseAdmin } from '../_shared/supabaseClient.ts';
 import { sendEmail } from '../_shared/smtp2go.ts';
 import { handwerkerWelcomeTemplate } from '../_shared/emailTemplates.ts';
+import { normalizeUid } from '../_shared/validation.ts';
 
 interface RegistrationRequest {
   // Personal
@@ -147,7 +148,7 @@ serve(async (req) => {
       personal_canton: data.personalCanton?.trim() || null,
       company_name: data.companyName?.trim() || null,
       company_legal_form: data.companyLegalForm?.trim() || null,
-      uid_number: data.uidNumber?.trim() || null,
+      uid_number: normalizeUid(data.uidNumber),
       mwst_number: data.mwstNumber?.trim() || null,
       business_address: data.businessAddress?.trim() || null,
       business_zip: data.businessZip?.trim() || null,
