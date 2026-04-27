@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sanitizePhoneInput } from '@/lib/displayFormatters';
+import { normalizeUid } from '@/lib/validationHelpers';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
@@ -667,7 +668,7 @@ const HandwerkerProfileEdit = () => {
           // Company Information
           company_name: companyName.trim() || null,
           company_legal_form: companyLegalForm.trim() || null,
-          uid_number: uidNumber.trim() || null,
+          uid_number: normalizeUid(uidNumber),
           mwst_number: mwstNumber.trim() || null,
           
           // Business Address

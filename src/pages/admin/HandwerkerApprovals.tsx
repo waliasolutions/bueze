@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sanitizePhoneInput } from '@/lib/displayFormatters';
+import { normalizeUid } from '@/lib/validationHelpers';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
@@ -609,9 +610,13 @@ const HandwerkerApprovals = () => {
     if (!editingHandwerker) return;
 
     try {
+      const payload = {
+        ...editFormData,
+        uid_number: normalizeUid(editFormData.uid_number ?? null),
+      };
       const { error } = await supabase
         .from('handwerker_profiles')
-        .update(editFormData as any)
+        .update(payload as any)
         .eq('id', editingHandwerker.id);
 
       if (error) throw error;
