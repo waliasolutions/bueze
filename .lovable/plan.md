@@ -1,58 +1,67 @@
+# Add UID-Nummer to admin handwerker edit form + consolidate UID normalization
 
-# Remove IBAN from completeness scoring (SSOT + DRY)
+Single PR. Feature + the necessary refactor to keep SSOT honest.
 
-## Goal
+## Current state of UID handling (audited)
 
-IBAN should no longer affect the profile completeness percentage. A handwerker with all 5 required fields + the remaining 5 optional fields (Stundensätze, Firmenname, Logo, Portfolio, UID) must reach **100%**, not 91%.
+| Location | Validation | Normalization | Writes to |
+|---|---|---|---|
+| `HandwerkerProfileEdit.tsx` (self-edit) | none, placeholder only | `uidNumber.trim() \|\| null` | `handwerker_profiles.uid_number` |
+| `create-handwerker-self-registration` (edge fn) | none | `data.uidNumber?.trim() \|\| null` | same |
+| `HandwerkerApprovals.tsx` (admin approval) | none | none — raw value | same (via `.update(editFormData)`) |
+| `HandwerkerEditDialog.tsx` (admin inline edit) | **field missing** | — | same |
 
-## Root cause of the current 91%
+Baseline: no format validation anywhere, only whitespace trim (and approvals doesn't even trim). All four paths target the same column → one normalizer must own all four writes.
 
-`src/lib/profileCompleteness.ts` currently scores 11 fields (5 required + 6 optional, IBAN being the 6th optional). Removing IBAN from the requirement list drops the denominator to 10, so a handwerker filling everything except IBAN scores 10/10 = **100%**.
+## Changes
 
-## Existing DRY violation to fix at the same time
+### 1. New util — `src/lib/validationHelpers.ts`
+```ts
+/**
+ * Normalize Swiss UID input: trim, uppercase the CHE prefix
+ * (tolerating any whitespace between CHE and digits), null when empty.
+ * SSOT for every uid_number write.
+ */
+export function normalizeUid(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/^che[-\s]*/i, 'CHE-');
+}
+```
+Format validation is intentionally NOT added; if added later it lives here only.
 
-The exact same requirements list is currently defined twice:
-- `src/lib/profileCompleteness.ts` (used for percentage + status)
-- `src/components/ProfileCompletenessCard.tsx` (used for the visual checklist)
+### 2. New util — `supabase/functions/_shared/validation.ts`
+Identical implementation, Deno-side. The `_shared/` pattern is already established (see `_shared/errorUtils.ts`, `profileHelpers.ts`, etc.). No TODO fallback.
+Deno import note for the implementer: use the relative path **with `.ts` extension** — `import { normalizeUid } from '../_shared/validation.ts'`. Deno is strict about this, Vite isn't.
 
-This is the reason the SSOT can drift. We will fix both by exposing the requirement list from the SSOT module and having the card consume it.
+### 3. `src/components/admin/HandwerkerEditDialog.tsx` — the actual feature
+- Add `uid_number: string | null` to `HandwerkerEditData`.
+- Render a UID input below "Firma" with the existing `Input` + `Label` + `updateField` pattern. Placeholder `CHE-123.456.789`.
+- In `handleSave`, write `uid_number: normalizeUid(activeForm.uid_number)`.
 
-## Changes (minimal, SSOT-respecting)
+### 4. Migrate all four write sites to `normalizeUid`
+- `src/pages/HandwerkerProfileEdit.tsx` line 670 → `uid_number: normalizeUid(uidNumber),`
+- `src/pages/admin/HandwerkerApprovals.tsx` `saveHandwerkerEdit` (~line 614): build `const payload = { ...editFormData, uid_number: normalizeUid(editFormData.uid_number ?? null) };` then `.update(payload as any)`. The `as any` stays — `editFormData` is `Partial<PendingHandwerker>` whose `categories: string[]` doesn't match the Postgres `handwerker_category[]` enum type, so the cast is structural, not a smell to fix here.
+- `supabase/functions/create-handwerker-self-registration/index.ts` line 150 → import from `../_shared/validation.ts`, use `uid_number: normalizeUid(data.uidNumber),`.
+- `HandwerkerEditDialog.tsx` already covered in step 3.
 
-### 1) `src/lib/profileCompleteness.ts` — SSOT
-- **Remove** the IBAN entry from the `requirements` array.
-- **Export** the computed requirements (label + completed + required) as part of the result so the card can render directly from it. New shape:
-  ```ts
-  ProfileCompletenessResult {
-    percentage, requiredComplete, requiredTotal,
-    optionalComplete, optionalTotal, isComplete, missingRequired,
-    requirements: Array<{ label: string; completed: boolean; required: boolean }>
-  }
-  ```
-- IBAN stays in `ProfileCompletenessInput` only if still referenced elsewhere; otherwise we keep the field in the type for backward compatibility but simply don't score it. (Decision: keep field in input type, drop from requirements only — minimizes blast radius.)
+## What is NOT changed
+- DB schema — `uid_number` already nullable, no constraint.
+- Profile completeness logic — already counts `uid_number`.
+- UI of the other three forms — only the save handlers gain the normalizer call.
+- The `as any` cast in approvals — out of scope, structurally justified.
 
-### 2) `src/components/ProfileCompletenessCard.tsx` — consume SSOT
-- **Delete** the local `requirements` array.
-- Render `result.requirements` directly, splitting by `required: true | false`.
-- IBAN row disappears automatically.
-- No other UI changes.
+## SSOT / DRY check
+- One UI surface for inline admin UID edit (the dialog).
+- One normalizer per runtime (Vite + Deno) — minimum physically possible split.
+- Zero remaining duplicated `?.trim() || null` UID lines after this PR.
+- No follow-up ticket.
 
-### 3) Verify the two admin consumers still work
-- `src/pages/admin/HandwerkerManagement.tsx` and `src/pages/admin/HandwerkerApprovals.tsx` use only `percentage` / `isComplete` / `missingRequired` — all preserved. No edits needed.
+## Validation
+**Prereq:** the edge function `create-handwerker-self-registration` will be auto-deployed by Lovable on save. Step 4 is only meaningful after that deploy completes — wait for the green deploy indicator, or check Edge Function logs, before running it.
 
-## Acceptance
-
-- A handwerker with everything filled except IBAN now shows **100%** on the profile card and in admin views.
-- The IBAN line no longer appears under "Optional" in the completeness card.
-- Only one place (`profileCompleteness.ts`) defines the requirement list — the card consumes it.
-- Builds cleanly; no other consumer breaks.
-
-## Files touched
-
-- `src/lib/profileCompleteness.ts` — drop IBAN from requirements, expose `requirements` in result
-- `src/components/ProfileCompletenessCard.tsx` — render from `result.requirements` instead of local copy
-
-## Notes
-
-- IBAN data itself remains stored in `handwerker_profiles.iban` and is still editable in the profile form — only the completeness scoring stops counting it.
-- No DB migration needed.
+1. `/admin/handwerkers` → Bearbeiten on Mihr Haile → enter `che   123.456.789` (multiple spaces, lowercase) → Save → DB shows `CHE-123.456.789`. Completeness: 90% → 100%.
+2. Self-edit on a handwerker profile → enter same garbled input → same normalized result.
+3. `/admin/handwerker-approvals` → edit a pending registration's UID with garbled input → Save → same normalized result.
+4. Fresh handwerker registration via the public form with garbled UID → DB row stored normalized (edge function path; requires the new edge function deploy to be live).
