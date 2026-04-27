@@ -37,3 +37,15 @@ export function validatePassword(password: string): ValidationResult {
 
   return { valid: true };
 }
+
+/**
+ * Normalize Swiss UID input: trim, uppercase the CHE prefix
+ * (tolerating any whitespace between CHE and digits), null when empty.
+ * SSOT for every uid_number write.
+ */
+export function normalizeUid(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/^che[-\s]*/i, 'CHE-');
+}

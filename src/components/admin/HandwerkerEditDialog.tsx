@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { sanitizePhoneInput } from '@/lib/displayFormatters';
+import { normalizeUid } from '@/lib/validationHelpers';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ interface HandwerkerEditData {
   email: string | null;
   phone_number: string | null;
   company_name: string | null;
+  uid_number: string | null;
   business_address: string | null;
   business_zip: string | null;
   business_city: string | null;
@@ -89,6 +91,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
           email: activeForm.email,
           phone_number: activeForm.phone_number,
           company_name: activeForm.company_name,
+          uid_number: normalizeUid(activeForm.uid_number),
           business_address: activeForm.business_address,
           business_zip: activeForm.business_zip,
           business_city: activeForm.business_city,
@@ -146,6 +149,15 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
           <div className="space-y-1">
             <Label htmlFor="edit-company">Firma</Label>
             <Input id="edit-company" value={activeForm.company_name || ''} onChange={(e) => updateField('company_name', e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="edit-uid">UID-Nummer</Label>
+            <Input
+              id="edit-uid"
+              value={activeForm.uid_number || ''}
+              onChange={(e) => updateField('uid_number', e.target.value)}
+              placeholder="CHE-123.456.789"
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="edit-email">E-Mail</Label>
