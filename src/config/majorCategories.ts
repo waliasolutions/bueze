@@ -29,19 +29,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Bau & Renovation',
     icon: Construction,
     description: 'Hochbau, Umbau, Abbruch und umfassende Renovationsarbeiten',
-    subcategories: [
-      'mauerarbeit',
-      'holzbau',
-      'metallbau',
-      'betonarbeiten',
-      'fundament',
-      'kernbohrungen',
-      'abbruch_durchbruch',
-      'renovierung_sonstige',
-      'maler',
-      'gipser',
-      'geruestbauer'
-    ],
+    subcategories: [],
     color: 'from-amber-500 to-orange-600',
     showOnHome: true,
     faq: [
@@ -65,11 +53,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Bodenbeläge',
     icon: Layers,
     description: 'Parkett, Laminat, Fliesen und alle Bodenbeläge',
-    subcategories: [
-      'parkett_laminat', 'teppich_pvc_linoleum', 
-      'bodenfliese', 'bodenleger', 'plattenleger', 
-      'bodenbelag_sonstige'
-    ],
+    subcategories: [],
     color: 'from-amber-600 to-amber-800',
     showOnHome: true,
     faq: [
@@ -93,16 +77,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Elektroinstallationen',
     icon: Zap,
     description: 'Alle elektrischen Installationen, Reparaturen und Smart Home',
-    subcategories: [
-      'elektro_hausinstallationen',
-      'elektro_unterverteilung',
-      'elektro_stoerung_notfall',
-      'elektro_beleuchtung',
-      'elektro_smart_home',
-      'elektro_netzwerk_multimedia',
-      'elektro_wallbox',
-      'elektro_sicherheitsnachweis'
-    ],
+    subcategories: [],
     color: 'from-yellow-500 to-yellow-600',
     showOnHome: true,
     faq: [
@@ -126,11 +101,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Heizung, Klima & Solar',
     icon: Flame,
     description: 'Heizungen, Klimaanlagen, Solaranlagen und Energielösungen',
-    subcategories: [
-      'waermepumpen', 'fussbodenheizung', 'boiler', 
-      'klimaanlage_lueftung', 'cheminee_kamin_ofen', 
-      'photovoltaik', 'solarheizung', 'heizung_sonstige'
-    ],
+    subcategories: [],
     color: 'from-orange-500 to-red-600',
     showOnHome: true,
     faq: [
@@ -154,10 +125,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Sanitär',
     icon: Droplet,
     description: 'Badezimmer, Sanitärinstallationen und Reparaturen',
-    subcategories: [
-      'badewanne_dusche', 'badezimmer', 'badumbau',
-      'klempnerarbeiten', 'sanitaer', 'sanitaer_sonstige'
-    ],
+    subcategories: [],
     color: 'from-blue-500 to-cyan-600',
     showOnHome: true,
     faq: [
@@ -181,10 +149,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Küche',
     icon: ChefHat,
     description: 'Küchenplanung, -bau und -renovation',
-    subcategories: [
-      'kuechenbau', 'kuechenplanung', 'kuechengeraete',
-      'arbeitsplatten', 'kueche_sonstige'
-    ],
+    subcategories: [],
     color: 'from-green-500 to-emerald-600',
     showOnHome: true,
     faq: [
@@ -208,14 +173,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Innenausbau & Schreiner',
     icon: Hammer,
     description: 'Möbelbau, Schreinerei und Innenausbau',
-    subcategories: [
-      'schreiner',
-      'moebelbau',
-      'treppen',
-      'holzarbeiten_innen',
-      'metallarbeiten_innen',
-      'innenausbau_sonstige'
-    ],
+    subcategories: [],
     color: 'from-purple-500 to-indigo-600',
     showOnHome: false,
     faq: [
@@ -239,11 +197,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Räumung & Entsorgung',
     icon: Trash2,
     description: 'Räumungen, Entsorgung und individuelle Anfragen',
-    subcategories: [
-      'aufloesung_entsorgung',
-      'umzug',
-      'reinigung'
-    ],
+    subcategories: [],
     color: 'from-gray-500 to-slate-600',
     showOnHome: false,
     faq: [
@@ -267,10 +221,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Garten & Aussenbereich',
     icon: TreePine,
     description: 'Gartenbau, Landschaftsgestaltung und Aussenarbeiten',
-    subcategories: [
-      'gartenbau', 'pflasterarbeiten', 'zaun_torbau',
-      'baumpflege', 'aussenarbeiten_sonstige'
-    ],
+    subcategories: [],
     color: 'from-green-600 to-emerald-700',
     showOnHome: false,
     faq: [
@@ -292,10 +243,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Reinigung & Hauswartung',
     icon: Sparkles,
     description: 'Reinigungsdienste und Hauswartung',
-    subcategories: [
-      'reinigung',
-      'reinigung_hauswartung'
-    ],
+    subcategories: [],
     color: 'from-cyan-500 to-blue-600',
     showOnHome: false,
     faq: [
@@ -317,13 +265,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Gebäudehülle',
     icon: Building2,
     description: 'Dach, Fassade, Spenglerei und Gebäudeschutz',
-    subcategories: [
-      'dachdecker',
-      'spengler',
-      'fassadenbauer',
-      'fassadenreinigung',
-      'dachfenster'
-    ],
+    subcategories: [],
     color: 'from-emerald-600 to-green-700',
     showOnHome: false,
     faq: [
@@ -347,12 +289,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Storen & Beschattung',
     icon: PanelTop,
     description: 'Storen, Rollläden, Markisen und Sonnenschutz',
-    subcategories: [
-      'storen_rollaeden',
-      'lamellenstoren',
-      'markisen',
-      'sonnenstoren_reparatur'
-    ],
+    subcategories: [],
     color: 'from-amber-500 to-yellow-600',
     showOnHome: false,
     faq: [
@@ -376,12 +313,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Glas & Fenster',
     icon: GlassWater,
     description: 'Glaser, Glasreparatur und Fensterersatz',
-    subcategories: [
-      'glaser',
-      'glasbruch_reparatur',
-      'fensterersatz',
-      'fenster_tueren'
-    ],
+    subcategories: [],
     color: 'from-sky-500 to-blue-600',
     showOnHome: false,
     faq: [
@@ -405,11 +337,7 @@ export const majorCategories: Record<string, MajorCategory> = {
     label: 'Bautrocknung & Wasserschäden',
     icon: Droplets,
     description: 'Wasserschadensanierung, Bautrocknung und Schimmelbehandlung',
-    subcategories: [
-      'wasserschaden_sanierung',
-      'bautrocknung',
-      'schimmelbehandlung'
-    ],
+    subcategories: [],
     color: 'from-teal-500 to-cyan-700',
     showOnHome: false,
     faq: [
