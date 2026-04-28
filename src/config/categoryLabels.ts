@@ -18,8 +18,10 @@ export const categoryLabels: Record<string, string> = Object.values(majorCategor
 
 /**
  * Get human-readable label for any category key (major or subcategory).
- * Checks major categories first, then subcategories, then returns the raw key as fallback.
+ * Subcategory labels win over major-category labels for ids present in both
+ * (e.g. 'reinigung_hauswartung' is both a major id and a subcategory id —
+ * the subcategory label "Hauswartung" is the more specific, correct rendering).
  */
 export function getCategoryLabel(category: string): string {
-  return categoryLabels[category] || subcategoryLabels[category]?.label || category;
+  return subcategoryLabels[category]?.label || categoryLabels[category] || category;
 }

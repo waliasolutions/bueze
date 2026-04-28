@@ -357,11 +357,37 @@ export const majorCategories: Record<string, MajorCategory> = {
   }
 };
 
-export const getMajorCategoryBySubcategory = (subcategory: string): MajorCategory | null => {
-  for (const majorCat of Object.values(majorCategories)) {
-    if (majorCat.subcategories.includes(subcategory)) {
-      return majorCat;
-    }
+// ============================================================================
+// SSOT derivation: subcategoryLabels is the single source for which subcategory
+// belongs to which major category. We derive majorCategories[*].subcategories
+// from it at module load and sort each major's list alphabetically (de-CH).
+// Any drift becomes a load-time error rather than a silent UI bug.
+// ============================================================================
+import { subcategoryLabels } from './subcategoryLabels';
+
+for (const [subcatId, info] of Object.entries(subcategoryLabels)) {
+  const major = majorCategories[info.majorCategoryId];
+  if (!major) {
+    throw new Error(
+      `subcategoryLabels.${subcatId}.majorCategoryId='${info.majorCategoryId}' ` +
+      `does not match any majorCategories key`
+    );
   }
-  return null;
+  if (major.subcategories.includes(subcatId)) {
+    throw new Error(
+      `Duplicate subcategory '${subcatId}' under major '${info.majorCategoryId}'`
+    );
+  }
+  major.subcategories.push(subcatId);
+}
+
+for (const major of Object.values(majorCategories)) {
+  major.subcategories.sort((a, b) =>
+    subcategoryLabels[a].label.localeCompare(subcategoryLabels[b].label, 'de-CH')
+  );
+}
+
+export const getMajorCategoryBySubcategory = (subcategory: string): MajorCategory | null => {
+  const majorId = subcategoryLabels[subcategory]?.majorCategoryId;
+  return majorId ? majorCategories[majorId] ?? null : null;
 };
