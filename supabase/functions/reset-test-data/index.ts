@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.57.4';
+import { TEST_EMAIL_PATTERNS, isProductionBlocked } from '../_shared/testData.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,16 +26,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Block in production environments
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const isProduction = Deno.env.get('ENVIRONMENT') === 'production' || supabaseUrl.includes('supabase.co');
-    if (isProduction) {
+    // Production kill switch (opt-in via ENVIRONMENT=production env var).
+    // Admin-role check below is the primary gate.
+    if (isProductionBlocked()) {
       return new Response(JSON.stringify({ error: 'Test data functions disabled in production' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -77,11 +78,11 @@ Deno.serve(async (req) => {
       profiles: 0,
     };
 
-    // Identify test users by email patterns
+    // Identify test users by email patterns (SSOT in _shared/testData.ts)
     const { data: testProfiles } = await supabase
       .from('profiles')
       .select('id, email')
-      .or('email.ilike.%@test.ch,email.ilike.%@handwerk.ch,email.ilike.test@%,email.ilike.%example%,email.ilike.%dummy%');
+      .or(TEST_EMAIL_PATTERNS);
 
     const testUserIds = testProfiles?.map(p => p.id) || [];
     console.log(`Found ${testUserIds.length} test users`);

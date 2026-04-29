@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
+import { isProductionBlocked } from "../_shared/testData.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,10 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    // Block in production environments
-    const isProduction = Deno.env.get('ENVIRONMENT') === 'production' ||
-                         Deno.env.get('SUPABASE_URL')?.includes('supabase.co');
-    if (isProduction) {
+    // Production kill switch (opt-in via ENVIRONMENT=production env var).
+    if (isProductionBlocked()) {
       return new Response(JSON.stringify({ error: 'Test data functions disabled in production' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
