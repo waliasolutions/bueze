@@ -1,67 +1,159 @@
-# Add UID-Nummer to admin handwerker edit form + consolidate UID normalization
+# Plan v3: 10-day age guard for `send-lead-notification`
 
-Single PR. Feature + the necessary refactor to keep SSOT honest.
+All review feedback applied. Three files touched, one new shared helper, no SQL.
 
-## Current state of UID handling (audited)
+---
 
-| Location | Validation | Normalization | Writes to |
-|---|---|---|---|
-| `HandwerkerProfileEdit.tsx` (self-edit) | none, placeholder only | `uidNumber.trim() \|\| null` | `handwerker_profiles.uid_number` |
-| `create-handwerker-self-registration` (edge fn) | none | `data.uidNumber?.trim() \|\| null` | same |
-| `HandwerkerApprovals.tsx` (admin approval) | none | none — raw value | same (via `.update(editFormData)`) |
-| `HandwerkerEditDialog.tsx` (admin inline edit) | **field missing** | — | same |
+## 1. NEW: `supabase/functions/_shared/markLeadExpired.ts`
 
-Baseline: no format validation anywhere, only whitespace trim (and approvals doesn't even trim). All four paths target the same column → one normalizer must own all four writes.
+Single source of truth for the expiration transition. Used by both the pre-blast guard and the daily cron.
 
-## Changes
-
-### 1. New util — `src/lib/validationHelpers.ts`
 ```ts
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.57.0';
+
+interface MinimalLead {
+  id: string;
+  title: string;
+  owner_id: string;
+}
+
 /**
- * Normalize Swiss UID input: trim, uppercase the CHE prefix
- * (tolerating any whitespace between CHE and digits), null when empty.
- * SSOT for every uid_number write.
+ * Idempotently transition a lead to 'expired' and notify the owner once.
+ *
+ * - Status update is filtered by status='active' (no-op if already expired).
+ * - Notification insert is gated by a pre-check on (user_id, type, related_id).
+ *   NOTE: the pre-check narrows but does NOT close the race between concurrent
+ *   invocations (cron + admin force-click in the same second). A unique partial
+ *   index on client_notifications(user_id, type, related_id) WHERE type='lead_expired'
+ *   would close it; intentionally out of scope here. Duplicate is admin-visible
+ *   and rare — accepted trade-off.
  */
-export function normalizeUid(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  return trimmed.replace(/^che[-\s]*/i, 'CHE-');
+export async function markLeadExpired(
+  supabase: SupabaseClient,
+  lead: MinimalLead,
+  reason: string,
+): Promise<{ statusChanged: boolean; notified: boolean }> {
+  const { data: updated } = await supabase
+    .from('leads')
+    .update({ status: 'expired', updated_at: new Date().toISOString() })
+    .eq('id', lead.id)
+    .eq('status', 'active')
+    .select('id');
+
+  const statusChanged = (updated?.length ?? 0) > 0;
+
+  const { data: existing } = await supabase
+    .from('client_notifications')
+    .select('id')
+    .eq('user_id', lead.owner_id)
+    .eq('type', 'lead_expired')
+    .eq('related_id', lead.id)
+    .limit(1);
+
+  if (existing && existing.length > 0) {
+    return { statusChanged, notified: false };
+  }
+
+  await supabase.from('client_notifications').insert({
+    user_id: lead.owner_id,
+    type: 'lead_expired',
+    title: 'Auftrag abgelaufen',
+    message: `Die Angebotsfrist für "${lead.title}" ist abgelaufen.`,
+    related_id: lead.id,
+    metadata: { lead_title: lead.title, reason },
+  });
+
+  return { statusChanged, notified: true };
 }
 ```
-Format validation is intentionally NOT added; if added later it lives here only.
 
-### 2. New util — `supabase/functions/_shared/validation.ts`
-Identical implementation, Deno-side. The `_shared/` pattern is already established (see `_shared/errorUtils.ts`, `profileHelpers.ts`, etc.). No TODO fallback.
-Deno import note for the implementer: use the relative path **with `.ts` extension** — `import { normalizeUid } from '../_shared/validation.ts'`. Deno is strict about this, Vite isn't.
+No `LEAD_DEADLINE_DAYS` export. Dead code stays out. (The `10` lives once in the SQL trigger; the TS side trusts the column.)
 
-### 3. `src/components/admin/HandwerkerEditDialog.tsx` — the actual feature
-- Add `uid_number: string | null` to `HandwerkerEditData`.
-- Render a UID input below "Firma" with the existing `Input` + `Label` + `updateField` pattern. Placeholder `CHE-123.456.789`.
-- In `handleSave`, write `uid_number: normalizeUid(activeForm.uid_number)`.
+---
 
-### 4. Migrate all four write sites to `normalizeUid`
-- `src/pages/HandwerkerProfileEdit.tsx` line 670 → `uid_number: normalizeUid(uidNumber),`
-- `src/pages/admin/HandwerkerApprovals.tsx` `saveHandwerkerEdit` (~line 614): build `const payload = { ...editFormData, uid_number: normalizeUid(editFormData.uid_number ?? null) };` then `.update(payload as any)`. The `as any` stays — `editFormData` is `Partial<PendingHandwerker>` whose `categories: string[]` doesn't match the Postgres `handwerker_category[]` enum type, so the cast is structural, not a smell to fix here.
-- `supabase/functions/create-handwerker-self-registration/index.ts` line 150 → import from `../_shared/validation.ts`, use `uid_number: normalizeUid(data.uidNumber),`.
-- `HandwerkerEditDialog.tsx` already covered in step 3.
+## 2. `supabase/functions/send-lead-notification/index.ts`
 
-## What is NOT changed
-- DB schema — `uid_number` already nullable, no constraint.
-- Profile completeness logic — already counts `uid_number`.
-- UI of the other three forms — only the save handlers gain the normalizer call.
-- The `as any` cast in approvals — out of scope, structurally justified.
+**a)** Accept `force` flag at the body parse:
+```ts
+const { leadId, force } = await req.json();
+```
 
-## SSOT / DRY check
-- One UI surface for inline admin UID edit (the dialog).
-- One normalizer per runtime (Vite + Deno) — minimum physically possible split.
-- Zero remaining duplicated `?.trim() || null` UID lines after this PR.
-- No follow-up ticket.
+**b)** Add `proposal_deadline` to the lead SELECT:
+```ts
+.select('id, title, description, category, city, canton, zip, budget_min, budget_max, urgency, owner_id, created_at, proposal_deadline')
+```
 
-## Validation
-**Prereq:** the edge function `create-handwerker-self-registration` will be auto-deployed by Lovable on save. Step 4 is only meaningful after that deploy completes — wait for the green deploy indicator, or check Edge Function logs, before running it.
+**c)** Add the import and the guard block immediately after the lead is fetched, before the admin email:
 
-1. `/admin/handwerkers` → Bearbeiten on Mihr Haile → enter `che   123.456.789` (multiple spaces, lowercase) → Save → DB shows `CHE-123.456.789`. Completeness: 90% → 100%.
-2. Self-edit on a handwerker profile → enter same garbled input → same normalized result.
-3. `/admin/handwerker-approvals` → edit a pending registration's UID with garbled input → Save → same normalized result.
-4. Fresh handwerker registration via the public form with garbled UID → DB row stored normalized (edge function path; requires the new edge function deploy to be live).
+```ts
+import { markLeadExpired } from '../_shared/markLeadExpired.ts';
+
+// Drift detection: NOT bypassable by force. The trigger guarantees this column;
+// null means schema/trigger drift and we want it surfaced loudly.
+if (!lead.proposal_deadline) {
+  throw new Error(`Lead ${leadId} has no proposal_deadline — trigger drift detected`);
+}
+
+// Age guard: bypassable by admin "Re-notify" button via force=true.
+if (!force && new Date(lead.proposal_deadline).getTime() < Date.now()) {
+  console.warn(`[send-lead-notification] Lead ${leadId} deadline passed (${lead.proposal_deadline}). Skipping notifications.`);
+  const result = await markLeadExpired(supabase, lead, 'activated_after_deadline');
+  return successResponse({
+    success: true,
+    skipped: true,
+    reason: 'deadline_passed',
+    ...result,
+  });
+}
+```
+
+The null-check sits **outside** the `!force` block — admin retry on a drift-broken lead surfaces the error instead of silently blasting emails.
+
+---
+
+## 3. `supabase/functions/lead-expiry-check/index.ts`
+
+Replace the inline bulk update + bulk client_notifications insert (currently lines ~52–85) with per-lead `markLeadExpired` calls inside the existing iteration.
+
+```ts
+import { markLeadExpired } from '../_shared/markLeadExpired.ts';
+
+// ... after fetching expiredLeads ...
+
+let expiredCount = 0;
+for (const lead of expiredLeads) {
+  const { statusChanged } = await markLeadExpired(supabase, lead, 'deadline_passed_cron');
+  if (statusChanged) expiredCount++;
+}
+```
+
+The handwerker-side notifications + proposal `withdrawn` updates (separate concern) stay untouched.
+
+---
+
+## 4. `src/pages/admin/AdminLeadsManagement.tsx` (line 212)
+
+Pass `force: true` so admin manual retry bypasses the age guard:
+
+```ts
+const { data, error: invokeError } = await supabase.functions.invoke('send-lead-notification', {
+  body: { leadId, force: true },
+});
+```
+
+---
+
+## Verification
+
+1. **Stale lead activated:** Edge logs show skip warning, status flips to `expired`, owner gets exactly one `lead_expired` notification, no handwerker emails sent.
+2. **Cron + edge race (best-effort):** Manual invoke after cron expired the lead → status update no-ops, pre-check finds existing notification, returns `{statusChanged:false, notified:false}`. No duplicate row in the common case.
+3. **Admin force on stale lead:** Emails go out regardless of age.
+4. **Admin force on drift-broken lead (no proposal_deadline):** Throws clear error. Admin sees the failure instead of phantom blast.
+5. **Cron path:** Same set of leads expired, owners notified once, behavior unchanged.
+
+## Out of scope (follow-up backlog, NOT in this change)
+
+- Unique partial index on `client_notifications(user_id, type, related_id) WHERE type='lead_expired'` to close the concurrent-insert race.
+- Propagating the 10-day constant from SQL trigger to TS (currently SQL-only SSOT).
+- Lead notification audit log.
+- Showing expiration reason in client UI.
