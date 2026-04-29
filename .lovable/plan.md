@@ -1,56 +1,98 @@
-# Fix: "Testdaten löschen" always returns 403
+## Problem
 
-## Root cause (verified)
+Majlinda Salihu's lead "Badezimmer sanieren" (created 2025-12-22) is still `status='active'` even though >10 days have passed. Root cause: `proposal_deadline IS NULL` on this row (legacy lead created before the `trigger_send_lead_notification` started populating that column). 
 
-`supabase/functions/reset-test-data/index.ts:30`:
-```ts
-const isProduction = Deno.env.get('ENVIRONMENT') === 'production' || supabaseUrl.includes('supabase.co');
+The expiry pipeline (`check_lead_expiry` SQL function + `lead-expiry-check` edge function + cron) only matches leads where `proposal_deadline < now()` — `NULL` deadlines are silently skipped forever. Two leads are currently stuck in this state:
+
+```
+12e98cba… "Ofen ersetzen (Test2)"   created 2025-12-12
+e7a11fce… "Badezimmer sanieren"     created 2025-12-22  ← Majlinda
 ```
 
-Every Supabase project URL is `https://<ref>.supabase.co` — so `.includes('supabase.co')` is **always true**. The function returns 403 "Test data functions disabled in production" 100% of the time. That's the "Edge Function returned a non-2xx status code" the user sees.
+## Fix — SSOT, no parallel logic
 
-The same broken check exists in `supabase/functions/populate-test-data/index.ts:16-17`. The test-user email patterns are also duplicated between the two functions.
+One concept: **"a lead is expired when its effective deadline has passed"**, where the effective deadline is `COALESCE(proposal_deadline, created_at + 10 days)`. We make every layer agree on that single rule.
 
-## Fix (SSOT + DRY)
+### 1. Data backfill (one-shot, via `insert tool`)
 
-One new shared helper, two consumers updated. No SQL, no schema change.
+```sql
+UPDATE leads
+SET proposal_deadline = created_at + INTERVAL '10 days',
+    updated_at = now()
+WHERE proposal_deadline IS NULL;
+```
+Closes the drift on the 2 affected rows and prevents future ghosts. After this, the existing cron correctly sees Majlinda's lead as expired and processes it on the next tick.
 
-### 1. NEW `supabase/functions/_shared/testData.ts`
-Owns both pieces of duplicated knowledge:
-- `TEST_EMAIL_PATTERNS` — the `.or()` filter string used to identify test users
-- `isProductionBlocked()` — opt-in kill switch via `ENVIRONMENT=production` env var only. The admin-role check at the call site (already present in both functions) is the real gate.
+### 2. Force-expire the affected leads now (via `insert tool`)
 
-```ts
-export const TEST_EMAIL_PATTERNS = [
-  'email.ilike.%@test.ch',
-  'email.ilike.%@handwerk.ch',
-  'email.ilike.test@%',
-  'email.ilike.%example%',
-  'email.ilike.%dummy%',
-].join(',');
+Run the same idempotent transition the cron would perform, so the user sees the fix immediately:
 
-export function isProductionBlocked(): boolean {
-  return Deno.env.get('ENVIRONMENT') === 'production';
-}
+```sql
+UPDATE leads
+SET status = 'expired', updated_at = now()
+WHERE status = 'active'
+  AND COALESCE(proposal_deadline, created_at + INTERVAL '10 days') < now();
 ```
 
-### 2. `supabase/functions/reset-test-data/index.ts`
-- Import the helper.
-- Replace the broken `supabaseUrl.includes('supabase.co')` guard with `isProductionBlocked()`.
-- Replace the inline email-pattern string at line 84 with `TEST_EMAIL_PATTERNS`.
+Plus the owner notification (matches what `markLeadExpired.ts` does), gated by a pre-check to stay idempotent:
 
-### 3. `supabase/functions/populate-test-data/index.ts`
-- Import `isProductionBlocked`.
-- Replace the broken guard at lines 16-17 with `isProductionBlocked()`.
-- (No email-pattern usage here — only the gate change.)
+```sql
+INSERT INTO client_notifications (user_id, type, title, message, related_id, metadata)
+SELECT l.owner_id, 'lead_expired', 'Auftrag abgelaufen',
+       'Die Angebotsfrist für "' || l.title || '" ist abgelaufen.',
+       l.id, jsonb_build_object('lead_title', l.title, 'reason', 'backfill_force_expire')
+FROM leads l
+WHERE l.id IN ('e7a11fce-0662-4ad2-a257-0a9e3c0d9be4',
+               '12e98cba-581f-4ee0-9952-0a2648cc9296')
+  AND NOT EXISTS (
+    SELECT 1 FROM client_notifications cn
+    WHERE cn.user_id = l.owner_id AND cn.type = 'lead_expired' AND cn.related_id = l.id
+  );
+```
+
+Pending proposals on those leads also get withdrawn + handwerker notified (mirrors the cron's second loop) — same SQL pattern.
+
+### 3. Harden `check_lead_expiry()` SQL function (migration)
+
+Make the SSOT rule explicit so any future NULL deadline still expires:
+
+```sql
+CREATE OR REPLACE FUNCTION public.check_lead_expiry()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  UPDATE leads
+  SET status = 'expired'::lead_status, updated_at = now()
+  WHERE status = 'active'::lead_status
+    AND COALESCE(proposal_deadline, created_at + INTERVAL '10 days') < now();
+END;
+$$;
+```
+
+### 4. Harden `lead-expiry-check` edge function (same SSOT)
+
+Replace the `.lt("proposal_deadline", ...)` filter — which silently skips NULL — with a query that also catches NULL-deadline leads >10 days old. Single `.or()` filter, no new code paths, still routes through the existing `markLeadExpired` shared helper. Also pass `created_at + 10d` as the synthesized deadline into the helper for the per-lead handwerker-notification loop, so its second pass behaves identically.
+
+No changes to `markLeadExpired.ts` (it already handles whatever lead row it's given).
+
+### 5. No frontend changes
+
+The admin "Stop" action in `AdminLeadsManagement.tsx` already sets status manually — out of scope. The cron continues to run on its existing schedule and will now correctly process drifted leads on its own.
+
+## Files
+
+- Migration: harden `public.check_lead_expiry()` (step 3)
+- `supabase/functions/lead-expiry-check/index.ts` — broaden the filter (step 4)
+- One-shot SQL via insert tool — backfill + force-expire + notifications (steps 1–2)
 
 ## Verification
 
-1. Click **Testdaten löschen** in admin dashboard → function returns 200, deletes test users + cascading data, toast shows counts.
-2. Edge logs show `Found N test users` then per-table delete counts.
-3. Setting `ENVIRONMENT=production` in Supabase function secrets re-enables the 403 lockout (intentional kill switch).
-4. Admin-role check (lines 55-63) still rejects non-admin callers → no privilege regression.
+1. After steps 1–2: `SELECT status FROM leads WHERE id='e7a11fce-…'` returns `expired`; Majlinda has one new `client_notifications` row of type `lead_expired`.
+2. `SELECT count(*) FROM leads WHERE status='active' AND COALESCE(proposal_deadline, created_at + interval '10 days') < now()` returns `0`.
+3. Manually invoking `lead-expiry-check` is a no-op (idempotent — `markLeadExpired` filters by `status='active'`).
+4. Future leads with somehow-NULL deadlines auto-expire on the next cron tick instead of lingering forever.
 
 ## Out of scope
-- Auth-user deletion loop (line 212) keeps its current per-user try/catch; not the failure path here.
-- No change to which patterns count as "test data" — same emails as before, now in one place.
+
+- Adding a NOT NULL constraint on `proposal_deadline` (would break the existing INSERT path that relies on the trigger to fill it; the SSOT COALESCE makes it unnecessary).
+- Changing the 10-day window itself.
+- Race between cron and admin force-click — already documented in `markLeadExpired.ts`.

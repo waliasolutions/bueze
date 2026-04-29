@@ -32,13 +32,19 @@ serve(async (req: Request) => {
 
     console.log("Running lead expiry check...");
 
-    // Find all active leads with passed proposal_deadline
-    const { data: expiredLeads, error: fetchError } = await supabase
+    // SSOT: a lead expires when its effective deadline has passed.
+    // Effective deadline = COALESCE(proposal_deadline, created_at + 10 days).
+    // We fetch any active lead and filter in JS so leads with NULL proposal_deadline
+    // (legacy/drifted rows) are also caught — matching public.check_lead_expiry().
+    const tenDaysAgoIso = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const nowIso = new Date().toISOString();
+    const { data: candidateLeads, error: fetchError } = await supabase
       .from("leads")
-      .select("id, title, owner_id, proposal_deadline")
+      .select("id, title, owner_id, proposal_deadline, created_at")
       .eq("status", "active")
-      .not("proposal_deadline", "is", null)
-      .lt("proposal_deadline", new Date().toISOString());
+      .or(`proposal_deadline.lt.${nowIso},and(proposal_deadline.is.null,created_at.lt.${tenDaysAgoIso})`);
+
+    const expiredLeads = candidateLeads as (ExpiredLead & { created_at: string })[] | null;
 
     if (fetchError) {
       console.error("Error fetching expired leads:", fetchError);
