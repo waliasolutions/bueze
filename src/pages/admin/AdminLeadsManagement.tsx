@@ -209,7 +209,7 @@ export default function AdminLeadsManagement() {
     setRenotifyLoading(leadId);
     try {
       const { data, error: invokeError } = await supabase.functions.invoke('send-lead-notification', {
-        body: { leadId },
+        body: { leadId, force: true },
       });
 
       if (invokeError) {

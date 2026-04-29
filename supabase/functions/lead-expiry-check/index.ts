@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from "../_shared/cors.ts";
+import { markLeadExpired } from "../_shared/markLeadExpired.ts";
 
 /**
  * Lead Expiry Check Edge Function
@@ -54,40 +55,23 @@ serve(async (req: Request) => {
 
     console.log(`Found ${expiredLeads.length} expired leads to process`);
 
-    // Update status for all expired leads
-    const { error: updateError } = await supabase
-      .from("leads")
-      .update({ 
-        status: "expired", 
-        updated_at: new Date().toISOString() 
-      })
-      .in("id", expiredLeads.map((l: ExpiredLead) => l.id));
-
-    if (updateError) {
-      console.error("Error updating expired leads:", updateError);
-      throw updateError;
-    }
-
-    // Create notifications for lead owners
-    const notifications = expiredLeads.map((lead: ExpiredLead) => ({
-      user_id: lead.owner_id,
-      type: "lead_expired",
-      title: "Auftrag abgelaufen",
-      message: `Die Angebotsfrist für "${lead.title}" ist abgelaufen.`,
-      related_id: lead.id,
-      metadata: { lead_title: lead.title },
-    }));
-
-    if (notifications.length > 0) {
-      const { error: notifyError } = await supabase
-        .from("client_notifications")
-        .insert(notifications);
-
-      if (notifyError) {
-        console.error("Error creating expiry notifications:", notifyError);
-        // Don't throw - notifications are not critical
+    // SSOT: per-lead idempotent transition + owner notification via shared helper.
+    let statusChangedCount = 0;
+    let notifiedCount = 0;
+    for (const lead of expiredLeads as ExpiredLead[]) {
+      try {
+        const { statusChanged, notified } = await markLeadExpired(
+          supabase,
+          lead,
+          'deadline_passed_cron',
+        );
+        if (statusChanged) statusChangedCount++;
+        if (notified) notifiedCount++;
+      } catch (e) {
+        console.error(`Error expiring lead ${lead.id}:`, e);
       }
     }
+    console.log(`Status flipped: ${statusChangedCount}, owners notified: ${notifiedCount}`);
 
     // Also notify handwerkers who had pending proposals on these leads
     for (const lead of expiredLeads) {

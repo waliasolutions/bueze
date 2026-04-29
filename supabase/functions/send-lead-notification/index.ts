@@ -9,6 +9,7 @@ import { newLeadNotificationTemplate, newLeadAdminNotificationTemplate } from '.
 import { formatSwissDateTime, addDays } from '../_shared/dateFormatter.ts';
 
 import { handwerkerMatchesCategory } from '../_shared/majorCategoryMapping.ts';
+import { markLeadExpired } from '../_shared/markLeadExpired.ts';
 
 // Swiss canton codes
 const SWISS_CANTONS = ['AG', 'AI', 'AR', 'BE', 'BL', 'BS', 'FR', 'GE', 'GL', 'GR', 'JU', 'LU', 'NE', 'NW', 'OW', 'SG', 'SH', 'SO', 'SZ', 'TG', 'TI', 'UR', 'VD', 'VS', 'ZG', 'ZH'];
@@ -59,25 +60,43 @@ serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    const { leadId } = await req.json();
+    const { leadId, force } = await req.json();
     
     if (!leadId) {
       throw new Error('Missing required field: leadId');
     }
 
-    console.log(`[send-lead-notification] Processing lead: ${leadId}`);
+    console.log(`[send-lead-notification] Processing lead: ${leadId}${force ? ' (force=true)' : ''}`);
 
     const supabase = createSupabaseAdmin();
 
     // Fetch lead details
     const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .select('id, title, description, category, city, canton, zip, budget_min, budget_max, urgency, owner_id, created_at')
+      .select('id, title, description, category, city, canton, zip, budget_min, budget_max, urgency, owner_id, created_at, proposal_deadline')
       .eq('id', leadId)
       .single();
 
     if (leadError || !lead) {
       throw new Error(`Lead not found: ${leadError?.message}`);
+    }
+
+    // Drift detection: NOT bypassable by force. The trigger guarantees this column;
+    // null means schema/trigger drift and we want it surfaced loudly.
+    if (!lead.proposal_deadline) {
+      throw new Error(`Lead ${leadId} has no proposal_deadline — trigger drift detected`);
+    }
+
+    // Age guard: bypassable by admin "Re-notify" button via force=true.
+    if (!force && new Date(lead.proposal_deadline).getTime() < Date.now()) {
+      console.warn(`[send-lead-notification] Lead ${leadId} deadline passed (${lead.proposal_deadline}). Skipping notifications.`);
+      const result = await markLeadExpired(supabase, lead, 'activated_after_deadline');
+      return successResponse({
+        success: true,
+        skipped: true,
+        reason: 'deadline_passed',
+        ...result,
+      });
     }
 
     const leadPLZ = parseInt((lead.zip?.toString() || '0').replace(/\D/g, ''));
