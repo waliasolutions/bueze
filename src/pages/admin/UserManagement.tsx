@@ -17,6 +17,7 @@ import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Ey
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { getRoleBadgeVariant } from '@/config/roles';
+import { validatePassword } from '@/lib/validationHelpers';
 
 interface User {
   id: string;
@@ -52,6 +53,9 @@ export default function UserManagement() {
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState(false);
+  const [resetMode, setResetMode] = useState<'support' | 'custom'>('support');
+  const [customPwInput, setCustomPwInput] = useState('');
+  const [customPwConfirm, setCustomPwConfirm] = useState('');
   const [emailToDelete, setEmailToDelete] = useState('');
   const [emailLookupResult, setEmailLookupResult] = useState<{ found: boolean; name?: string; type: 'registered' | 'guest' | 'none' } | null>(null);
   const [emailLookupLoading, setEmailLookupLoading] = useState(false);
@@ -266,6 +270,31 @@ export default function UserManagement() {
   const handleResetPasswordConfirm = async () => {
     if (!resetPasswordUser) return;
 
+    // Determine which password to send (SSOT validator for custom mode)
+    let passwordToSet: string;
+    if (resetMode === 'custom') {
+      if (customPwInput !== customPwConfirm) {
+        toast({
+          title: 'Passwörter stimmen nicht überein',
+          description: 'Bitte geben Sie in beiden Feldern dasselbe Passwort ein.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      const validation = validatePassword(customPwInput);
+      if (!validation.valid) {
+        toast({
+          title: 'Ungültiges Passwort',
+          description: validation.error,
+          variant: 'destructive',
+        });
+        return;
+      }
+      passwordToSet = customPwInput;
+    } else {
+      passwordToSet = SUPPORT_PASSWORD;
+    }
+
     setActionLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('reset-user-password', {
@@ -273,7 +302,7 @@ export default function UserManagement() {
           userId: resetPasswordUser.id,
           userEmail: resetPasswordUser.email,
           userName: resetPasswordUser.full_name || resetPasswordUser.email,
-          customPassword: SUPPORT_PASSWORD,
+          customPassword: passwordToSet,
           notifyUsers: false,
         },
       });
@@ -281,12 +310,12 @@ export default function UserManagement() {
       if (error) throw error;
 
       if (data?.success) {
-        setGeneratedPassword(SUPPORT_PASSWORD);
+        setGeneratedPassword(passwordToSet);
       }
 
       toast({
-        title: 'Support-Passwort gesetzt',
-        description: `Das Passwort für ${resetPasswordUser.email} wurde auf ${SUPPORT_PASSWORD} gesetzt.`,
+        title: resetMode === 'custom' ? 'Eigenes Passwort gesetzt' : 'Support-Passwort gesetzt',
+        description: `Das Passwort für ${resetPasswordUser.email} wurde aktualisiert.`,
       });
     } catch (error: any) {
       console.error('Error resetting password:', error);
@@ -317,6 +346,9 @@ export default function UserManagement() {
     setResetPasswordUser(null);
     setGeneratedPassword('');
     setShowPassword(false);
+    setResetMode('support');
+    setCustomPwInput('');
+    setCustomPwConfirm('');
   };
 
   const openEditDialog = (user: User) => {
