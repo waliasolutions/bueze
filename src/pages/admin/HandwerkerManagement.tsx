@@ -18,6 +18,7 @@ import { formatPhoneDisplay, formatPhoneHref, formatAddress } from '@/lib/displa
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import { HandwerkerEditDialog } from '@/components/admin/HandwerkerEditDialog';
+import { PasswordResetDialog, type PasswordResetTarget } from '@/components/admin/PasswordResetDialog';
 import {
   Search,
   CheckCircle,
@@ -35,6 +36,7 @@ import {
   CheckCheck,
   Trash2,
   Loader2,
+  KeyRound,
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -101,6 +103,7 @@ export default function HandwerkerManagement() {
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [editingHandwerker, setEditingHandwerker] = useState<Handwerker | null>(null);
+  const [resetTarget, setResetTarget] = useState<PasswordResetTarget | null>(null);
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -816,6 +819,23 @@ export default function HandwerkerManagement() {
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
+                            {h.user_id && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  setResetTarget({
+                                    userId: h.user_id!,
+                                    email: h.email || '',
+                                    name: [h.first_name, h.last_name].filter(Boolean).join(' ') || h.email || '',
+                                  })
+                                }
+                                title="Passwort zurücksetzen"
+                                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                              >
+                                <KeyRound className="h-4 w-4" />
+                              </Button>
+                            )}
                             {h.verification_status !== 'pending' && (
                               <Button
                                 variant="ghost"
@@ -946,6 +966,13 @@ export default function HandwerkerManagement() {
         open={!!editingHandwerker}
         onOpenChange={(open) => !open && setEditingHandwerker(null)}
         onSaved={fetchHandwerkers}
+      />
+
+      {/* Password Reset Dialog (SSOT, shared with /admin/users) */}
+      <PasswordResetDialog
+        open={!!resetTarget}
+        onOpenChange={(open) => !open && setResetTarget(null)}
+        target={resetTarget}
       />
     </AdminLayout>
   );

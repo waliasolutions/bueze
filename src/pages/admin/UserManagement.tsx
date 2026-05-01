@@ -17,7 +17,7 @@ import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Ey
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { getRoleBadgeVariant } from '@/config/roles';
-import { validatePassword } from '@/lib/validationHelpers';
+import { PasswordResetDialog, type PasswordResetTarget } from '@/components/admin/PasswordResetDialog';
 
 interface User {
   id: string;
@@ -35,7 +35,7 @@ const AVAILABLE_ROLES = [
   { value: 'super_admin', label: 'Super Administrator', description: 'Vollzugriff auf System und Benutzerverwaltung' },
 ];
 
-const SUPPORT_PASSWORD = 'A12345678';
+// SUPPORT_PASSWORD is exported from PasswordResetDialog (SSOT)
 
 export default function UserManagement() {
   const [loading, setLoading] = useState(true);
@@ -49,13 +49,7 @@ export default function UserManagement() {
   const [newUserRole, setNewUserRole] = useState('user');
   const [editUserRole, setEditUserRole] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
-  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
-  const [generatedPassword, setGeneratedPassword] = useState<string>('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [resetMode, setResetMode] = useState<'support' | 'custom'>('support');
-  const [customPwInput, setCustomPwInput] = useState('');
-  const [customPwConfirm, setCustomPwConfirm] = useState('');
+  const [resetTarget, setResetTarget] = useState<PasswordResetTarget | null>(null);
   const [emailToDelete, setEmailToDelete] = useState('');
   const [emailLookupResult, setEmailLookupResult] = useState<{ found: boolean; name?: string; type: 'registered' | 'guest' | 'none' } | null>(null);
   const [emailLookupLoading, setEmailLookupLoading] = useState(false);
@@ -267,89 +261,7 @@ export default function UserManagement() {
     }
   };
 
-  const handleResetPasswordConfirm = async () => {
-    if (!resetPasswordUser) return;
-
-    // Determine which password to send (SSOT validator for custom mode)
-    let passwordToSet: string;
-    if (resetMode === 'custom') {
-      if (customPwInput !== customPwConfirm) {
-        toast({
-          title: 'Passwörter stimmen nicht überein',
-          description: 'Bitte geben Sie in beiden Feldern dasselbe Passwort ein.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      const validation = validatePassword(customPwInput);
-      if (!validation.valid) {
-        toast({
-          title: 'Ungültiges Passwort',
-          description: validation.error,
-          variant: 'destructive',
-        });
-        return;
-      }
-      passwordToSet = customPwInput;
-    } else {
-      passwordToSet = SUPPORT_PASSWORD;
-    }
-
-    setActionLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('reset-user-password', {
-        body: {
-          userId: resetPasswordUser.id,
-          userEmail: resetPasswordUser.email,
-          userName: resetPasswordUser.full_name || resetPasswordUser.email,
-          customPassword: passwordToSet,
-          notifyUsers: false,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        setGeneratedPassword(passwordToSet);
-      }
-
-      toast({
-        title: resetMode === 'custom' ? 'Eigenes Passwort gesetzt' : 'Support-Passwort gesetzt',
-        description: `Das Passwort für ${resetPasswordUser.email} wurde aktualisiert.`,
-      });
-    } catch (error: any) {
-      console.error('Error resetting password:', error);
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.',
-        variant: 'destructive',
-      });
-      setShowResetPasswordDialog(false);
-      setResetPasswordUser(null);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleCopyPassword = () => {
-    if (generatedPassword) {
-      navigator.clipboard.writeText(generatedPassword);
-      toast({
-        title: 'Kopiert',
-        description: 'Passwort wurde in die Zwischenablage kopiert.',
-      });
-    }
-  };
-
-  const handleCloseResetDialog = () => {
-    setShowResetPasswordDialog(false);
-    setResetPasswordUser(null);
-    setGeneratedPassword('');
-    setShowPassword(false);
-    setResetMode('support');
-    setCustomPwInput('');
-    setCustomPwConfirm('');
-  };
+  // Password reset handled by <PasswordResetDialog /> (SSOT)
 
   const openEditDialog = (user: User) => {
     setSelectedUser(user);
@@ -565,16 +477,19 @@ export default function UserManagement() {
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setResetPasswordUser(user);
-                              setShowResetPasswordDialog(true);
-                            }}
-                            title="Passwort zurücksetzen"
-                          >
-                            <Key className="h-4 w-4 text-orange-600" />
-                          </Button>
+                             variant="ghost"
+                             size="sm"
+                             onClick={() =>
+                               setResetTarget({
+                                 userId: user.id,
+                                 email: user.email,
+                                 name: user.full_name || user.email,
+                               })
+                             }
+                             title="Passwort zurücksetzen"
+                           >
+                             <Key className="h-4 w-4 text-orange-600" />
+                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" title="Benutzer löschen" disabled={actionLoading}>
@@ -801,148 +716,12 @@ export default function UserManagement() {
           </DialogContent>
         </Dialog>
 
-        {/* Reset Password Dialog */}
-        <AlertDialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
-          <AlertDialogContent className="max-w-lg">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
-                Passwort zurücksetzen
-              </AlertDialogTitle>
-              <AlertDialogDescription asChild>
-                <div className="text-left">
-                {!generatedPassword ? (
-                  <div className="space-y-4">
-                    <p>
-                      Passwort für <strong>{resetPasswordUser?.email}</strong> setzen.
-                      Dem Benutzer wird keine E-Mail gesendet — das gewählte Passwort
-                      muss ihm manuell mitgeteilt werden.
-                    </p>
-
-                    {/* Mode selector */}
-                    <div className="flex gap-2 rounded-lg bg-muted p-1">
-                      <button
-                        type="button"
-                        onClick={() => setResetMode('support')}
-                        className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                          resetMode === 'support'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        Support-Passwort
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setResetMode('custom')}
-                        className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                          resetMode === 'custom'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        Eigenes Passwort
-                      </button>
-                    </div>
-
-                    {resetMode === 'support' ? (
-                      <p className="text-sm text-muted-foreground">
-                        Festes Support-Passwort: <code className="rounded bg-muted px-1.5 py-0.5 font-mono">{SUPPORT_PASSWORD}</code>
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="custom-pw">Neues Passwort</Label>
-                          <Input
-                            id="custom-pw"
-                            type={showPassword ? 'text' : 'password'}
-                            value={customPwInput}
-                            onChange={(e) => setCustomPwInput(e.target.value)}
-                            placeholder="Mind. 8 Zeichen, Buchstabe + Zahl"
-                            autoComplete="new-password"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="custom-pw-confirm">Passwort bestätigen</Label>
-                          <div className="flex gap-2">
-                            <Input
-                              id="custom-pw-confirm"
-                              type={showPassword ? 'text' : 'password'}
-                              value={customPwConfirm}
-                              onChange={(e) => setCustomPwConfirm(e.target.value)}
-                              autoComplete="new-password"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setShowPassword(!showPassword)}
-                              title={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
-                            >
-                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <p className="text-foreground">
-                      Das Passwort wurde erfolgreich gesetzt für:
-                      <br />
-                      <strong>{resetPasswordUser?.email}</strong>
-                    </p>
-                    <div className="bg-muted p-4 rounded-lg space-y-2">
-                      <p className="text-sm font-medium">Neues Passwort:</p>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 bg-background px-3 py-2 rounded border font-mono text-sm break-all">
-                          {showPassword ? generatedPassword : '••••••••••••••••'}
-                        </code>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowPassword(!showPassword)}
-                          title={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
-                        >
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                        <Button size="sm" onClick={handleCopyPassword}>
-                          Kopieren
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Kopieren Sie das Passwort und teilen Sie es dem Benutzer manuell mit, damit er sich sofort anmelden kann.
-                    </p>
-                  </div>
-                )}
-                </div>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              {!generatedPassword ? (
-                <>
-                  <AlertDialogCancel onClick={handleCloseResetDialog}>Abbrechen</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleResetPasswordConfirm} disabled={actionLoading}>
-                    {actionLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Wird zurückgesetzt...
-                      </>
-                    ) : (
-                      'Passwort zurücksetzen'
-                    )}
-                </AlertDialogAction>
-              </>
-            ) : (
-              <Button onClick={handleCloseResetDialog} className="w-full">
-                Schliessen
-              </Button>
-            )}
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Reset Password Dialog (SSOT) */}
+        <PasswordResetDialog
+          open={!!resetTarget}
+          onOpenChange={(open) => !open && setResetTarget(null)}
+          target={resetTarget}
+        />
     </AdminLayout>
   );
 }
