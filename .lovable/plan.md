@@ -1,40 +1,54 @@
-## Plan: Let admin set a custom password (SSOT, DRY)
+## Plan: Quick-Action „Passwort zurücksetzen" in Handwerker-Management
 
-### Current state (already in place — reuse, don't rebuild)
+### Ziel
+Admin kann direkt aus `/admin/handwerker` (Aktionsspalte jeder Zeile) das Passwort eines Handwerkers zurücksetzen — gleicher Dialog, gleiche Logik, gleiches Edge-Function wie in `/admin/users`. Kein zweites System.
 
-- **Backend SSOT**: `supabase/functions/reset-user-password` already accepts `customPassword` in `single-custom` mode. It validates length (`PASSWORD_MIN_LENGTH = 8`), updates `auth.users` via `admin.updateUserById`, and **verifies** the change with a real `signInWithPassword` round-trip. No changes needed.
-- **Admin gate**: same edge function already checks `user_roles` for `admin` / `super_admin`.
-- **Validation SSOT**: `validatePassword()` in `src/lib/validationHelpers.ts` already enforces min 8 chars + letter + number. Reuse it.
-- **Existing UI**: `src/pages/admin/UserManagement.tsx` already has a "Passwort zurücksetzen" dialog and `handleResetPasswordConfirm` that calls the edge function. Today it hardcodes `SUPPORT_PASSWORD`.
+### SSOT-Strategie
+Heute lebt der Reset-Dialog inline in `src/pages/admin/UserManagement.tsx` (Modus-Toggle Support-Passwort / eigenes Passwort, Validierung, Anzeige + Copy, Edge-Function-Call). Damit Handwerker-Management denselben Dialog nutzt **ohne Code-Duplizierung**, wird der Dialog in eine wiederverwendbare Komponente extrahiert.
 
-### What changes (one file only)
+### Änderungen
 
-**`src/pages/admin/UserManagement.tsx`** — extend the existing reset dialog so the admin can choose between two modes (single source of UI, single edge-function call):
+**1. Neue Komponente** `src/components/admin/PasswordResetDialog.tsx`
+- Props: `open`, `onOpenChange`, `userId`, `userEmail`, `userName`
+- Enthält 1:1 die heute in `UserManagement.tsx` lebende Logik:
+  - Modus-Toggle „Support-Passwort" / „Eigenes Passwort"
+  - Eingabe + Bestätigungsfeld, Validierung via `validatePassword()` aus `src/lib/validationHelpers.ts`
+  - Aufruf von `supabase.functions.invoke('reset-user-password', { body: { userId, userEmail, userName, customPassword, notifyUsers: false } })`
+  - Erfolg: Passwort + Copy-Button + Eye-Toggle anzeigen
+  - Toasts für Fehler/Erfolg (de-CH)
+- Keine neue Edge-Function, keine neuen Konstanten — `SUPPORT_PASSWORD` bleibt im Modul (oder wird nach `src/config/siteConfig.ts` verschoben, falls dort sinnvoller).
 
-1. Add a small mode toggle inside the existing `AlertDialog`:
-   - **«Support-Passwort verwenden»** (default — current behavior, hands the fixed `SUPPORT_PASSWORD` over)
-   - **«Eigenes Passwort festlegen»** — reveals an `<Input type="password">` + confirmation field
-2. When "custom" is chosen, run `validatePassword()` from `validationHelpers.ts` on submit; show the existing toast on error. No duplicated rules.
-3. On confirm, call the **same** `supabase.functions.invoke('reset-user-password', { body: { userId, userEmail, userName, customPassword, notifyUsers: false } })`. The only thing that differs between the two modes is which string goes into `customPassword`.
-4. After success, reuse the existing "show + copy" panel (`generatedPassword`, `handleCopyPassword`, eye-toggle) so admin can hand the password to the user.
+**2. `src/pages/admin/UserManagement.tsx`**
+- Inline-Dialog entfernen, stattdessen `<PasswordResetDialog ... />` einbinden.
+- Bestehender „Passwort zurücksetzen"-Button im Dropdown öffnet die Komponente.
+- Verhalten bleibt byte-genau identisch.
 
-### What we explicitly do NOT do
+**3. `src/pages/admin/HandwerkerManagement.tsx`**
+- In der Aktionsspalte (neben Pencil/Eye/Approve/Reject, ca. Zeile 809–820) einen neuen Icon-Button `<KeyRound>` mit Tooltip „Passwort zurücksetzen" hinzufügen, sichtbar nur wenn `h.user_id` gesetzt ist.
+- Klick setzt lokalen State `resetTarget = { userId, email, name }` und öffnet `<PasswordResetDialog />`.
+- Mobile: Button wird wie die anderen Icon-Buttons in der gleichen flex-Gruppe gerendert (responsive bereits vorhanden).
 
-- ❌ No new edge function — `reset-user-password` already covers this exact use case.
-- ❌ No new constant, no second password validator, no parallel dialog.
-- ❌ No DB migration — `auth.users` is mutated through the admin API only.
-- ❌ No change to `supabase/config.toml` — function is already registered with `verify_jwt = true`.
+### Was wir explizit NICHT tun
+- Keine neue Edge-Function (`reset-user-password` deckt alles ab).
+- Keine zweite Validierungs- oder Passwort-Generierungslogik.
+- Kein DB-Migration.
+- Keine Änderung am Edge-Function-Verhalten oder an `supabase/config.toml`.
+- Keine UI-Redesigns — gleicher Dialog, gleiche Buttons, gleiche Toast-Texte.
 
-### Security notes (already enforced by the existing function — listed for clarity)
+### Sicherheit (bereits durch Edge-Function abgedeckt)
+- Server-side Admin-Rolle-Check (`user_roles`).
+- Min-Länge serverseitig validiert.
+- `signInWithPassword`-Verifikation nach Update.
+- Passwort wird aus Logs/Errors via `sanitize()` entfernt.
+- `notifyUsers: false` → kein E-Mail-Versand, Admin kommuniziert out-of-band.
 
-- Admin role check on the server.
-- Min length validated server-side too.
-- The chosen password is sanitized out of any log/error response (`sanitize()` helper).
-- Real `signInWithPassword` verification before returning success → no silent failures.
-- No email is sent in custom-password mode (`notifyUsers: false`) — admin communicates it out-of-band, same as today.
+### Akzeptanzkriterien
+- In `/admin/handwerker` erscheint pro Zeile ein Schlüssel-Icon. Klick → Dialog mit Modus-Toggle.
+- Eigenes Passwort (z. B. `Bueze2026!`) festlegen → Handwerker kann sich sofort einloggen.
+- Verhalten in `/admin/users` ist unverändert.
+- Mobile (500 px): Button bleibt in der bestehenden Aktions-Flex-Reihe sichtbar/scrollbar wie heute.
 
-### Acceptance criteria
-
-- Admin opens any user row → "Passwort zurücksetzen" → can pick "Eigenes Passwort", type e.g. `Bueze2026!`, confirm → user can immediately log in with that password.
-- Choosing the default option keeps today's behaviour byte-for-byte.
-- Invalid passwords (too short, no number, etc.) are rejected client-side via `validatePassword()` with the exact same German message used elsewhere.
+### Geänderte Dateien
+- **Neu**: `src/components/admin/PasswordResetDialog.tsx`
+- **Refactor**: `src/pages/admin/UserManagement.tsx` (Inline-Dialog → Komponente)
+- **Edit**: `src/pages/admin/HandwerkerManagement.tsx` (Quick-Action-Button + Dialog-Einbindung)
