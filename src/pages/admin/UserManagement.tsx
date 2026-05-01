@@ -35,7 +35,7 @@ const AVAILABLE_ROLES = [
   { value: 'super_admin', label: 'Super Administrator', description: 'Vollzugriff auf System und Benutzerverwaltung' },
 ];
 
-const SUPPORT_PASSWORD = 'A12345678';
+// SUPPORT_PASSWORD is exported from PasswordResetDialog (SSOT)
 
 export default function UserManagement() {
   const [loading, setLoading] = useState(true);
@@ -49,13 +49,7 @@ export default function UserManagement() {
   const [newUserRole, setNewUserRole] = useState('user');
   const [editUserRole, setEditUserRole] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
-  const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
-  const [generatedPassword, setGeneratedPassword] = useState<string>('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [resetMode, setResetMode] = useState<'support' | 'custom'>('support');
-  const [customPwInput, setCustomPwInput] = useState('');
-  const [customPwConfirm, setCustomPwConfirm] = useState('');
+  const [resetTarget, setResetTarget] = useState<PasswordResetTarget | null>(null);
   const [emailToDelete, setEmailToDelete] = useState('');
   const [emailLookupResult, setEmailLookupResult] = useState<{ found: boolean; name?: string; type: 'registered' | 'guest' | 'none' } | null>(null);
   const [emailLookupLoading, setEmailLookupLoading] = useState(false);
@@ -267,89 +261,7 @@ export default function UserManagement() {
     }
   };
 
-  const handleResetPasswordConfirm = async () => {
-    if (!resetPasswordUser) return;
-
-    // Determine which password to send (SSOT validator for custom mode)
-    let passwordToSet: string;
-    if (resetMode === 'custom') {
-      if (customPwInput !== customPwConfirm) {
-        toast({
-          title: 'Passwörter stimmen nicht überein',
-          description: 'Bitte geben Sie in beiden Feldern dasselbe Passwort ein.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      const validation = validatePassword(customPwInput);
-      if (!validation.valid) {
-        toast({
-          title: 'Ungültiges Passwort',
-          description: validation.error,
-          variant: 'destructive',
-        });
-        return;
-      }
-      passwordToSet = customPwInput;
-    } else {
-      passwordToSet = SUPPORT_PASSWORD;
-    }
-
-    setActionLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('reset-user-password', {
-        body: {
-          userId: resetPasswordUser.id,
-          userEmail: resetPasswordUser.email,
-          userName: resetPasswordUser.full_name || resetPasswordUser.email,
-          customPassword: passwordToSet,
-          notifyUsers: false,
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.success) {
-        setGeneratedPassword(passwordToSet);
-      }
-
-      toast({
-        title: resetMode === 'custom' ? 'Eigenes Passwort gesetzt' : 'Support-Passwort gesetzt',
-        description: `Das Passwort für ${resetPasswordUser.email} wurde aktualisiert.`,
-      });
-    } catch (error: any) {
-      console.error('Error resetting password:', error);
-      toast({
-        title: 'Fehler',
-        description: error.message || 'Beim Zurücksetzen des Passworts ist ein Fehler aufgetreten.',
-        variant: 'destructive',
-      });
-      setShowResetPasswordDialog(false);
-      setResetPasswordUser(null);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleCopyPassword = () => {
-    if (generatedPassword) {
-      navigator.clipboard.writeText(generatedPassword);
-      toast({
-        title: 'Kopiert',
-        description: 'Passwort wurde in die Zwischenablage kopiert.',
-      });
-    }
-  };
-
-  const handleCloseResetDialog = () => {
-    setShowResetPasswordDialog(false);
-    setResetPasswordUser(null);
-    setGeneratedPassword('');
-    setShowPassword(false);
-    setResetMode('support');
-    setCustomPwInput('');
-    setCustomPwConfirm('');
-  };
+  // Password reset handled by <PasswordResetDialog /> (SSOT)
 
   const openEditDialog = (user: User) => {
     setSelectedUser(user);
@@ -565,16 +477,19 @@ export default function UserManagement() {
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setResetPasswordUser(user);
-                              setShowResetPasswordDialog(true);
-                            }}
-                            title="Passwort zurücksetzen"
-                          >
-                            <Key className="h-4 w-4 text-orange-600" />
-                          </Button>
+                             variant="ghost"
+                             size="sm"
+                             onClick={() =>
+                               setResetTarget({
+                                 userId: user.id,
+                                 email: user.email,
+                                 name: user.full_name || user.email,
+                               })
+                             }
+                             title="Passwort zurücksetzen"
+                           >
+                             <Key className="h-4 w-4 text-orange-600" />
+                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" title="Benutzer löschen" disabled={actionLoading}>
