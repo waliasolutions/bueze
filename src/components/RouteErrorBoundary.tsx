@@ -50,6 +50,11 @@ const isNetworkError = (error: Error): boolean => {
   );
 };
 
+const isReactDispatcherError = (error: Error): boolean => {
+  const message = error.message?.toLowerCase() || '';
+  return message.includes('dispatcher.usecontext') || message.includes('dispatcher.useeffect');
+};
+
 class RouteErrorBoundary extends Component<Props, State> {
   private maxRetries = 2;
 
@@ -77,6 +82,18 @@ class RouteErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('RouteErrorBoundary caught an error:', error, errorInfo);
     
+    // React dispatcher errors in the preview are usually caused by stale/mixed
+    // optimized React chunks after a dev-server restart. A single hard reload
+    // forces the browser to load one coherent React runtime again.
+    if (isReactDispatcherError(error)) {
+      const recoveryKey = `react-dispatcher-reload:${window.location.pathname}`;
+      if (sessionStorage.getItem(recoveryKey) !== '1') {
+        sessionStorage.setItem(recoveryKey, '1');
+        window.location.reload();
+        return;
+      }
+    }
+    
     // Auto-retry for chunk load errors (lazy loading failures)
     if (isChunkLoadError(error) && this.state.retryCount < this.maxRetries) {
       setTimeout(() => {
@@ -102,6 +119,11 @@ class RouteErrorBoundary extends Component<Props, State> {
   }
 
   private handleRetry = () => {
+    if (this.state.error && isReactDispatcherError(this.state.error)) {
+      window.location.reload();
+      return;
+    }
+
     // For chunk errors, try a hard reload to get fresh chunks
     if (this.state.errorType === 'chunk') {
       window.location.reload();
