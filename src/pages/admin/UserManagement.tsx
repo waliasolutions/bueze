@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, MailX } from 'lucide-react';
+import { Loader2, UserPlus, Edit, Trash2, Search, Shield, Key, AlertTriangle, Eye, EyeOff, MailX } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { getRoleBadgeVariant } from '@/config/roles';
