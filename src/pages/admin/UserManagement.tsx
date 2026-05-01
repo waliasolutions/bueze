@@ -919,8 +919,6 @@ export default function UserManagement() {
                 )}
                 </div>
               </AlertDialogDescription>
-                )}
-              </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               {!generatedPassword ? (
