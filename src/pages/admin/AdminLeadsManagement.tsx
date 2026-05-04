@@ -57,7 +57,7 @@ export default function AdminLeadsManagement() {
   const [selectedLead, setSelectedLead] = useState<LeadWithOwnerContact | null>(null);
   const [actionLead, setActionLead] = useState<LeadWithOwnerContact | null>(null);
   const [showActionDialog, setShowActionDialog] = useState(false);
-  const [actionType, setActionType] = useState<'pause' | 'delete' | 'reactivate' | 'renotify'>('pause');
+  const [actionType, setActionType] = useState<'pause' | 'delete' | 'reactivate' | 'renotify' | 'resend_nonproposers'>('pause');
   const [orphanLeadIds, setOrphanLeadIds] = useState<Set<string>>(new Set());
   const [renotifyLoading, setRenotifyLoading] = useState<string | null>(null);
   
