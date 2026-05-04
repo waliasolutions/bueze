@@ -107,33 +107,37 @@ serve(async (req) => {
     const ownerProfile = await fetchClientProfile(supabase, lead.owner_id);
     const categoryLabel = getCategoryLabel(lead.category);
 
-    // Send Admin Notification Email
-    console.log('[send-lead-notification] Sending admin notification email...');
-    
-    const adminEmailHtml = newLeadAdminNotificationTemplate({
-      clientName: ownerProfile?.fullName || 'Unbekannt',
-      clientEmail: ownerProfile?.email || 'Unbekannt',
-      category: categoryLabel,
-      city: lead.city || 'Nicht angegeben',
-      canton: leadCanton,
-      description: lead.description,
-      budgetMin: lead.budget_min,
-      budgetMax: lead.budget_max,
-      urgency: lead.urgency || 'planning',
-      leadId: lead.id,
-      submittedAt: formatSwissDateTime(lead.created_at),
-    });
+    // Send Admin Notification Email (skip for resends)
+    if (!skipAdminEmail) {
+      console.log('[send-lead-notification] Sending admin notification email...');
+      
+      const adminEmailHtml = newLeadAdminNotificationTemplate({
+        clientName: ownerProfile?.fullName || 'Unbekannt',
+        clientEmail: ownerProfile?.email || 'Unbekannt',
+        category: categoryLabel,
+        city: lead.city || 'Nicht angegeben',
+        canton: leadCanton,
+        description: lead.description,
+        budgetMin: lead.budget_min,
+        budgetMax: lead.budget_max,
+        urgency: lead.urgency || 'planning',
+        leadId: lead.id,
+        submittedAt: formatSwissDateTime(lead.created_at),
+      });
 
-    const adminResult = await sendEmail({
-      to: SUPPORT_EMAIL,
-      subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city || `PLZ ${leadPLZ}`}`,
-      htmlBody: adminEmailHtml,
-    });
+      const adminResult = await sendEmail({
+        to: SUPPORT_EMAIL,
+        subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city || `PLZ ${leadPLZ}`}`,
+        htmlBody: adminEmailHtml,
+      });
 
-    if (adminResult.success) {
-      console.log('[send-lead-notification] Admin notification email sent successfully');
+      if (adminResult.success) {
+        console.log('[send-lead-notification] Admin notification email sent successfully');
+      } else {
+        console.error('[send-lead-notification] Admin email failed:', adminResult.error);
+      }
     } else {
-      console.error('[send-lead-notification] Admin email failed:', adminResult.error);
+      console.log('[send-lead-notification] Skipping admin notification email (resend)');
     }
 
     // SERVICE AREA MATCHING: Match based on handwerker_profiles.service_areas
