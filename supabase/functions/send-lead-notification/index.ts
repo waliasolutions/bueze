@@ -179,6 +179,20 @@ serve(async (req) => {
 
     console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match both service area AND category`);
 
+    // Exclude handwerkers who already submitted a proposal for this lead (resend mode)
+    if (excludeProposers) {
+      const { data: existingProposals } = await supabase
+        .from('lead_proposals')
+        .select('handwerker_id')
+        .eq('lead_id', leadId);
+      const proposerIds = new Set((existingProposals || []).map(p => p.handwerker_id));
+      const beforeCount = matchingHandwerkers.length;
+      const filtered = matchingHandwerkers.filter(h => !proposerIds.has(h.user_id));
+      matchingHandwerkers.length = 0;
+      matchingHandwerkers.push(...filtered);
+      console.log(`[send-lead-notification] Excluded ${proposerIds.size} proposer(s); ${matchingHandwerkers.length}/${beforeCount} remain`);
+    }
+
     // Log match types for debugging
     const matchTypeCounts = matchingHandwerkers.reduce((acc, hw) => {
       acc[hw.matchType] = (acc[hw.matchType] || 0) + 1;
