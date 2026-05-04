@@ -339,6 +339,12 @@ export default function AdminLeadsManagement() {
           description: 'Dies sendet erneut E-Mail-Benachrichtigungen an alle passenden Handwerker. Nützlich für Orphan-Leads nach Hinzufügen neuer Handwerker.',
           actionLabel: 'Benachrichtigen',
         };
+      case 'resend_nonproposers':
+        return {
+          title: 'An Nicht-Bietende erneut senden',
+          description: 'Sendet die Lead-Benachrichtigung erneut an alle passenden Handwerker, die noch keine Offerte eingereicht haben. Bestehende Bieter werden NICHT erneut kontaktiert.',
+          actionLabel: 'Erneut senden',
+        };
     }
   };
 
