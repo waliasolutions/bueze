@@ -60,13 +60,13 @@ serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    const { leadId, force } = await req.json();
+    const { leadId, force, excludeProposers, skipAdminEmail } = await req.json();
     
     if (!leadId) {
       throw new Error('Missing required field: leadId');
     }
 
-    console.log(`[send-lead-notification] Processing lead: ${leadId}${force ? ' (force=true)' : ''}`);
+    console.log(`[send-lead-notification] Processing lead: ${leadId}${force ? ' (force=true)' : ''}${excludeProposers ? ' (excludeProposers=true)' : ''}${skipAdminEmail ? ' (skipAdminEmail=true)' : ''}`);
 
     const supabase = createSupabaseAdmin();
 

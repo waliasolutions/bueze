@@ -1,54 +1,93 @@
-## Plan: Quick-Action „Passwort zurücksetzen" in Handwerker-Management
+# Resend to Non-Proposers — Admin Button
 
-### Ziel
-Admin kann direkt aus `/admin/handwerker` (Aktionsspalte jeder Zeile) das Passwort eines Handwerkers zurücksetzen — gleicher Dialog, gleiche Logik, gleiches Edge-Function wie in `/admin/users`. Kein zweites System.
+Implements the manual half of the approved 3-day re-send plan. The 3-day cron orchestrator can reuse the same edge-function flag later.
 
-### SSOT-Strategie
-Heute lebt der Reset-Dialog inline in `src/pages/admin/UserManagement.tsx` (Modus-Toggle Support-Passwort / eigenes Passwort, Validierung, Anzeige + Copy, Edge-Function-Call). Damit Handwerker-Management denselben Dialog nutzt **ohne Code-Duplizierung**, wird der Dialog in eine wiederverwendbare Komponente extrahiert.
+## 1. Edge function: `send-lead-notification`
 
-### Änderungen
+Add two optional flags to the request body. All matching/email logic stays SSOT here.
 
-**1. Neue Komponente** `src/components/admin/PasswordResetDialog.tsx`
-- Props: `open`, `onOpenChange`, `userId`, `userEmail`, `userName`
-- Enthält 1:1 die heute in `UserManagement.tsx` lebende Logik:
-  - Modus-Toggle „Support-Passwort" / „Eigenes Passwort"
-  - Eingabe + Bestätigungsfeld, Validierung via `validatePassword()` aus `src/lib/validationHelpers.ts`
-  - Aufruf von `supabase.functions.invoke('reset-user-password', { body: { userId, userEmail, userName, customPassword, notifyUsers: false } })`
-  - Erfolg: Passwort + Copy-Button + Eye-Toggle anzeigen
-  - Toasts für Fehler/Erfolg (de-CH)
-- Keine neue Edge-Function, keine neuen Konstanten — `SUPPORT_PASSWORD` bleibt im Modul (oder wird nach `src/config/siteConfig.ts` verschoben, falls dort sinnvoller).
+- `excludeProposers: boolean` — when true, fetch `lead_proposals.handwerker_id` for the lead and remove those user_ids from `matchingHandwerkers` before token creation and email sending.
+- `skipAdminEmail: boolean` — when true, skip the admin "Neuer Auftrag" email (resends shouldn't re-spam admin).
 
-**2. `src/pages/admin/UserManagement.tsx`**
-- Inline-Dialog entfernen, stattdessen `<PasswordResetDialog ... />` einbinden.
-- Bestehender „Passwort zurücksetzen"-Button im Dropdown öffnet die Komponente.
-- Verhalten bleibt byte-genau identisch.
+```text
+parse body → { leadId, force, excludeProposers, skipAdminEmail }
+... existing lead fetch + deadline guards ...
+if (!skipAdminEmail) { send admin email }
+... existing matching produces matchingHandwerkers ...
+if (excludeProposers) {
+  const { data: existing } = await supabase
+    .from('lead_proposals')
+    .select('handwerker_id')
+    .eq('lead_id', leadId);
+  const proposerIds = new Set((existing||[]).map(p => p.handwerker_id));
+  matchingHandwerkers = matchingHandwerkers.filter(h => !proposerIds.has(h.user_id));
+  console.log(`[send-lead-notification] After excluding ${proposerIds.size} proposers: ${matchingHandwerkers.length} remain`);
+}
+... existing token batch + email loop unchanged ...
+```
 
-**3. `src/pages/admin/HandwerkerManagement.tsx`**
-- In der Aktionsspalte (neben Pencil/Eye/Approve/Reject, ca. Zeile 809–820) einen neuen Icon-Button `<KeyRound>` mit Tooltip „Passwort zurücksetzen" hinzufügen, sichtbar nur wenn `h.user_id` gesetzt ist.
-- Klick setzt lokalen State `resetTarget = { userId, email, name }` und öffnet `<PasswordResetDialog />`.
-- Mobile: Button wird wie die anderen Icon-Buttons in der gleichen flex-Gruppe gerendert (responsive bereits vorhanden).
+Response payload unchanged (`successCount`, `errorCount`, `matchingHandwerkersCount`).
 
-### Was wir explizit NICHT tun
-- Keine neue Edge-Function (`reset-user-password` deckt alles ab).
-- Keine zweite Validierungs- oder Passwort-Generierungslogik.
-- Kein DB-Migration.
-- Keine Änderung am Edge-Function-Verhalten oder an `supabase/config.toml`.
-- Keine UI-Redesigns — gleicher Dialog, gleiche Buttons, gleiche Toast-Texte.
+## 2. Admin UI: `src/pages/admin/AdminLeadsManagement.tsx`
 
-### Sicherheit (bereits durch Edge-Function abgedeckt)
-- Server-side Admin-Rolle-Check (`user_roles`).
-- Min-Länge serverseitig validiert.
-- `signInWithPassword`-Verifikation nach Update.
-- Passwort wird aus Logs/Errors via `sanitize()` entfernt.
-- `notifyUsers: false` → kein E-Mail-Versand, Admin kommuniziert out-of-band.
+A separate `BellRing` icon button next to the existing `Bell` (full re-notify), shown only on `status === 'active'` leads.
 
-### Akzeptanzkriterien
-- In `/admin/handwerker` erscheint pro Zeile ein Schlüssel-Icon. Klick → Dialog mit Modus-Toggle.
-- Eigenes Passwort (z. B. `Bueze2026!`) festlegen → Handwerker kann sich sofort einloggen.
-- Verhalten in `/admin/users` ist unverändert.
-- Mobile (500 px): Button bleibt in der bestehenden Aktions-Flex-Reihe sichtbar/scrollbar wie heute.
+State:
+- Reuse the existing `actionType` union — extend with `'resend_nonproposers'`.
+- Reuse `renotifyLoading` for spinner state (single in-flight per lead is fine).
 
-### Geänderte Dateien
-- **Neu**: `src/components/admin/PasswordResetDialog.tsx`
-- **Refactor**: `src/pages/admin/UserManagement.tsx` (Inline-Dialog → Komponente)
-- **Edit**: `src/pages/admin/HandwerkerManagement.tsx` (Quick-Action-Button + Dialog-Einbindung)
+Handler:
+```ts
+const handleResendNonProposers = async (leadId: string) => {
+  setRenotifyLoading(leadId);
+  try {
+    const { data, error } = await supabase.functions.invoke('send-lead-notification', {
+      body: { leadId, force: true, excludeProposers: true, skipAdminEmail: true },
+    });
+    if (error) throw new Error(error.message);
+    toast.success(`${data?.successCount ?? 0} Handwerker ohne Offerte erneut benachrichtigt.`);
+  } catch (e: any) {
+    toast.error(e.message || 'Fehler beim erneuten Versand.');
+  } finally {
+    setRenotifyLoading(null);
+    setShowActionDialog(false);
+    setActionLead(null);
+  }
+};
+```
+
+Wire `executeLeadAction` to dispatch to it when `actionType === 'resend_nonproposers'`, and add a case to `getActionDialogContent`:
+
+```text
+title: 'An Nicht-Bietende erneut senden'
+description: 'Sendet die Lead-Benachrichtigung erneut an alle passenden Handwerker, die noch keine Offerte eingereicht haben. Bestehende Bieter werden NICHT erneut kontaktiert.'
+actionLabel: 'Erneut senden'
+```
+
+Button (placed right after the existing renotify button, ~line 572):
+```tsx
+{lead.status === 'active' && (
+  <Button
+    variant="ghost"
+    size="sm"
+    onClick={() => handleLeadAction(lead, 'resend_nonproposers')}
+    title="An Nicht-Bietende erneut senden"
+    disabled={renotifyLoading === lead.id}
+  >
+    <BellRing className="h-4 w-4 text-warning" />
+  </Button>
+)}
+```
+
+Add `BellRing` to the lucide-react import on line 35.
+
+## 3. Out of scope (already approved separately)
+
+- The `lead-3day-resend` cron orchestrator — will be built in a follow-up; it will simply call this edge function with `{ excludeProposers: true, skipAdminEmail: true }` for each eligible lead.
+
+## Verification
+
+1. Active lead with 0 proposals → button sends to all matched handwerkers; toast shows count.
+2. Active lead with N proposals → button sends to (matched − N); proposers receive nothing (verify via edge function logs: "After excluding N proposers").
+3. No admin "Neuer Auftrag" email arrives on resend (check SUPPORT_EMAIL inbox / SMTP2GO logs).
+4. Confirmation modal appears before send; Cancel aborts; spinner replaces icon during invoke.
