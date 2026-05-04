@@ -604,6 +604,18 @@ export default function AdminLeadsManagement() {
                                 )}
                               </Button>
                             )}
+                            {/* Resend to non-proposers (3-day push) — manual admin trigger */}
+                            {lead.status === 'active' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleLeadAction(lead, 'resend_nonproposers')}
+                                title="An Nicht-Bietende erneut senden"
+                                disabled={renotifyLoading === lead.id}
+                              >
+                                <BellRing className="h-4 w-4 text-warning" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
