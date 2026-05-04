@@ -269,6 +269,11 @@ export default function AdminLeadsManagement() {
       return;
     }
 
+    if (actionType === 'resend_nonproposers') {
+      await handleResendNonProposers(actionLead.id);
+      return;
+    }
+
     try {
       let newStatus: 'active' | 'paused' | 'deleted';
       let actionDescription: string;
