@@ -198,10 +198,33 @@ export default function AdminLeadsManagement() {
     setExpandedLeads(newExpanded);
   };
 
-  const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate' | 'renotify') => {
+  const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate' | 'renotify' | 'resend_nonproposers') => {
     setActionLead(lead);
     setActionType(action);
     setShowActionDialog(true);
+  };
+
+  // Resend lead notification to matched handwerkers who haven't submitted a proposal yet
+  const handleResendNonProposers = async (leadId: string) => {
+    setRenotifyLoading(leadId);
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('send-lead-notification', {
+        body: { leadId, force: true, excludeProposers: true, skipAdminEmail: true },
+      });
+
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to resend');
+      }
+
+      toast.success(`${data?.successCount ?? 0} Handwerker ohne Offerte erneut benachrichtigt.`);
+    } catch (error: any) {
+      console.error('Error resending to non-proposers:', error);
+      toast.error(error.message || 'Fehler beim erneuten Versand.');
+    } finally {
+      setRenotifyLoading(null);
+      setShowActionDialog(false);
+      setActionLead(null);
+    }
   };
 
   // Re-notify handwerkers for orphan leads (manually trigger notification)
