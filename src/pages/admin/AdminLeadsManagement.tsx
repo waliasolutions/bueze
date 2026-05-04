@@ -32,7 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
-import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2, AlertCircle, Bell, Download, FileText } from "lucide-react";
+import { RefreshCw, ChevronDown, ChevronRight, Eye, Mail, Phone, MapPin, Pause, Play, Trash2, AlertCircle, Bell, BellRing, Download, FileText } from "lucide-react";
 import { majorCategories } from "@/config/majorCategories";
 import { SWISS_CANTONS, getCantonLabel } from "@/config/cantons";
 import { getUrgencyLabel } from "@/config/urgencyLevels";
@@ -57,7 +57,7 @@ export default function AdminLeadsManagement() {
   const [selectedLead, setSelectedLead] = useState<LeadWithOwnerContact | null>(null);
   const [actionLead, setActionLead] = useState<LeadWithOwnerContact | null>(null);
   const [showActionDialog, setShowActionDialog] = useState(false);
-  const [actionType, setActionType] = useState<'pause' | 'delete' | 'reactivate' | 'renotify'>('pause');
+  const [actionType, setActionType] = useState<'pause' | 'delete' | 'reactivate' | 'renotify' | 'resend_nonproposers'>('pause');
   const [orphanLeadIds, setOrphanLeadIds] = useState<Set<string>>(new Set());
   const [renotifyLoading, setRenotifyLoading] = useState<string | null>(null);
   
@@ -198,10 +198,33 @@ export default function AdminLeadsManagement() {
     setExpandedLeads(newExpanded);
   };
 
-  const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate' | 'renotify') => {
+  const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate' | 'renotify' | 'resend_nonproposers') => {
     setActionLead(lead);
     setActionType(action);
     setShowActionDialog(true);
+  };
+
+  // Resend lead notification to matched handwerkers who haven't submitted a proposal yet
+  const handleResendNonProposers = async (leadId: string) => {
+    setRenotifyLoading(leadId);
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('send-lead-notification', {
+        body: { leadId, force: true, excludeProposers: true, skipAdminEmail: true },
+      });
+
+      if (invokeError) {
+        throw new Error(invokeError.message || 'Failed to resend');
+      }
+
+      toast.success(`${data?.successCount ?? 0} Handwerker ohne Offerte erneut benachrichtigt.`);
+    } catch (error: any) {
+      console.error('Error resending to non-proposers:', error);
+      toast.error(error.message || 'Fehler beim erneuten Versand.');
+    } finally {
+      setRenotifyLoading(null);
+      setShowActionDialog(false);
+      setActionLead(null);
+    }
   };
 
   // Re-notify handwerkers for orphan leads (manually trigger notification)
@@ -243,6 +266,11 @@ export default function AdminLeadsManagement() {
     // Handle renotify separately
     if (actionType === 'renotify') {
       await handleRenotifyHandwerkers(actionLead.id);
+      return;
+    }
+
+    if (actionType === 'resend_nonproposers') {
+      await handleResendNonProposers(actionLead.id);
       return;
     }
 
@@ -310,6 +338,12 @@ export default function AdminLeadsManagement() {
           title: 'Handwerker erneut benachrichtigen',
           description: 'Dies sendet erneut E-Mail-Benachrichtigungen an alle passenden Handwerker. Nützlich für Orphan-Leads nach Hinzufügen neuer Handwerker.',
           actionLabel: 'Benachrichtigen',
+        };
+      case 'resend_nonproposers':
+        return {
+          title: 'An Nicht-Bietende erneut senden',
+          description: 'Sendet die Lead-Benachrichtigung erneut an alle passenden Handwerker, die noch keine Offerte eingereicht haben. Bestehende Bieter werden NICHT erneut kontaktiert.',
+          actionLabel: 'Erneut senden',
         };
     }
   };
@@ -568,6 +602,18 @@ export default function AdminLeadsManagement() {
                                 ) : (
                                   <Bell className={`h-4 w-4 ${orphanLeadIds.has(lead.id) ? 'text-destructive' : 'text-primary'}`} />
                                 )}
+                              </Button>
+                            )}
+                            {/* Resend to non-proposers (3-day push) — manual admin trigger */}
+                            {lead.status === 'active' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleLeadAction(lead, 'resend_nonproposers')}
+                                title="An Nicht-Bietende erneut senden"
+                                disabled={renotifyLoading === lead.id}
+                              >
+                                <BellRing className="h-4 w-4 text-warning" />
                               </Button>
                             )}
                           </div>

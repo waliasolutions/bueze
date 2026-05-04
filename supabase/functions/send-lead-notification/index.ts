@@ -60,13 +60,13 @@ serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    const { leadId, force } = await req.json();
+    const { leadId, force, excludeProposers, skipAdminEmail } = await req.json();
     
     if (!leadId) {
       throw new Error('Missing required field: leadId');
     }
 
-    console.log(`[send-lead-notification] Processing lead: ${leadId}${force ? ' (force=true)' : ''}`);
+    console.log(`[send-lead-notification] Processing lead: ${leadId}${force ? ' (force=true)' : ''}${excludeProposers ? ' (excludeProposers=true)' : ''}${skipAdminEmail ? ' (skipAdminEmail=true)' : ''}`);
 
     const supabase = createSupabaseAdmin();
 
@@ -107,33 +107,37 @@ serve(async (req) => {
     const ownerProfile = await fetchClientProfile(supabase, lead.owner_id);
     const categoryLabel = getCategoryLabel(lead.category);
 
-    // Send Admin Notification Email
-    console.log('[send-lead-notification] Sending admin notification email...');
-    
-    const adminEmailHtml = newLeadAdminNotificationTemplate({
-      clientName: ownerProfile?.fullName || 'Unbekannt',
-      clientEmail: ownerProfile?.email || 'Unbekannt',
-      category: categoryLabel,
-      city: lead.city || 'Nicht angegeben',
-      canton: leadCanton,
-      description: lead.description,
-      budgetMin: lead.budget_min,
-      budgetMax: lead.budget_max,
-      urgency: lead.urgency || 'planning',
-      leadId: lead.id,
-      submittedAt: formatSwissDateTime(lead.created_at),
-    });
+    // Send Admin Notification Email (skip for resends)
+    if (!skipAdminEmail) {
+      console.log('[send-lead-notification] Sending admin notification email...');
+      
+      const adminEmailHtml = newLeadAdminNotificationTemplate({
+        clientName: ownerProfile?.fullName || 'Unbekannt',
+        clientEmail: ownerProfile?.email || 'Unbekannt',
+        category: categoryLabel,
+        city: lead.city || 'Nicht angegeben',
+        canton: leadCanton,
+        description: lead.description,
+        budgetMin: lead.budget_min,
+        budgetMax: lead.budget_max,
+        urgency: lead.urgency || 'planning',
+        leadId: lead.id,
+        submittedAt: formatSwissDateTime(lead.created_at),
+      });
 
-    const adminResult = await sendEmail({
-      to: SUPPORT_EMAIL,
-      subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city || `PLZ ${leadPLZ}`}`,
-      htmlBody: adminEmailHtml,
-    });
+      const adminResult = await sendEmail({
+        to: SUPPORT_EMAIL,
+        subject: `Neuer Auftrag: ${categoryLabel} in ${lead.city || `PLZ ${leadPLZ}`}`,
+        htmlBody: adminEmailHtml,
+      });
 
-    if (adminResult.success) {
-      console.log('[send-lead-notification] Admin notification email sent successfully');
+      if (adminResult.success) {
+        console.log('[send-lead-notification] Admin notification email sent successfully');
+      } else {
+        console.error('[send-lead-notification] Admin email failed:', adminResult.error);
+      }
     } else {
-      console.error('[send-lead-notification] Admin email failed:', adminResult.error);
+      console.log('[send-lead-notification] Skipping admin notification email (resend)');
     }
 
     // SERVICE AREA MATCHING: Match based on handwerker_profiles.service_areas
@@ -174,6 +178,20 @@ serve(async (req) => {
     }
 
     console.log(`[send-lead-notification] ${matchingHandwerkers.length} handwerkers match both service area AND category`);
+
+    // Exclude handwerkers who already submitted a proposal for this lead (resend mode)
+    if (excludeProposers) {
+      const { data: existingProposals } = await supabase
+        .from('lead_proposals')
+        .select('handwerker_id')
+        .eq('lead_id', leadId);
+      const proposerIds = new Set((existingProposals || []).map(p => p.handwerker_id));
+      const beforeCount = matchingHandwerkers.length;
+      const filtered = matchingHandwerkers.filter(h => !proposerIds.has(h.user_id));
+      matchingHandwerkers.length = 0;
+      matchingHandwerkers.push(...filtered);
+      console.log(`[send-lead-notification] Excluded ${proposerIds.size} proposer(s); ${matchingHandwerkers.length}/${beforeCount} remain`);
+    }
 
     // Log match types for debugging
     const matchTypeCounts = matchingHandwerkers.reduce((acc, hw) => {
