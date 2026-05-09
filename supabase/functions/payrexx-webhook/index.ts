@@ -85,77 +85,83 @@ Deno.serve(async (req) => {
     // Parse form data from Payrexx webhook
     const rawBody = await req.text();
 
-    // --- Webhook signature verification ---
-    // Payrexx signs webhooks using HMAC-SHA256 with the API secret.
-    // The signature is sent in the 'ApiSignature' field of the form body.
-    const PAYREXX_API_KEY = Deno.env.get('PAYREXX_API_KEY');
-    if (!PAYREXX_API_KEY) {
-      console.error('PAYREXX_API_KEY not set — cannot verify webhook signatures');
-      return errorResponse('Webhook verification not configured', 500);
-    }
-
+    // Parse Payrexx PHP-style bracket form fields into a nested object.
+    // e.g. transaction[id]=42, transaction[invoice][products][0][sku]=X
     const formParams = new URLSearchParams(rawBody);
-    const receivedSignature = formParams.get('ApiSignature');
-
-    if (!receivedSignature) {
-      console.error('No ApiSignature in webhook payload — rejecting unsigned request');
-      return errorResponse('Missing webhook signature', 401);
-    }
-
-    // Reconstruct the signed payload (all fields except ApiSignature)
-    const paramsWithoutSig = new URLSearchParams();
+    const root: Record<string, any> = {};
     for (const [key, value] of formParams.entries()) {
-      if (key !== 'ApiSignature') {
-        paramsWithoutSig.append(key, value);
+      const match = key.match(/^([^\[\]]+)((\[[^\[\]]*\])*)$/);
+      if (!match) continue;
+      const head = match[1];
+      const tailKeys = [...(match[2].matchAll(/\[([^\[\]]*)\]/g))].map(m => m[1]);
+      const path = [head, ...tailKeys];
+      let cursor: any = root;
+      for (let i = 0; i < path.length - 1; i++) {
+        const k = path[i];
+        const nextKey = path[i + 1];
+        const nextIsIndex = /^\d+$/.test(nextKey);
+        if (cursor[k] === undefined) cursor[k] = nextIsIndex ? [] : {};
+        cursor = cursor[k];
+      }
+      const lastKey = path[path.length - 1];
+      if (cursor[lastKey] === undefined || cursor[lastKey] === '') {
+        cursor[lastKey] = value;
       }
     }
-    const dataToSign = paramsWithoutSig.toString();
 
-    // Generate expected signature
-    const encoder = new TextEncoder();
-    const keyData = encoder.encode(PAYREXX_API_KEY);
-    const messageData = encoder.encode(dataToSign);
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    );
-    const sig = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-    const bytes = new Uint8Array(sig);
-    let binary = '';
-    bytes.forEach(b => binary += String.fromCharCode(b));
-    const expectedSignature = btoa(binary);
-
-    if (expectedSignature !== receivedSignature) {
-      console.error('Webhook signature mismatch — possible forgery attempt');
-      return errorResponse('Invalid webhook signature', 401);
-    }
-    console.log('Webhook signature verified ✓');
-    const formData = new URLSearchParams(rawBody);
-    const transactionData = formData.get('transaction');
-
-    if (!transactionData) {
+    const transaction = root.transaction;
+    if (!transaction || typeof transaction !== 'object') {
       console.error('No transaction data in webhook');
       return successResponse({ received: true, error: 'no_transaction_data' });
     }
-
-    const transaction = JSON.parse(transactionData);
 
     console.log('Payrexx webhook received:', {
       id: transaction.id,
       status: transaction.status,
       referenceId: transaction.referenceId,
       amount: transaction.amount,
-      currency: transaction.currency,
+      currency: transaction.invoice?.currency,
     });
 
-    // Extract transaction details
-    const {
-      id: transactionId,
+    const transactionId = transaction.id;
+    const status = transaction.status;
+    const referenceId = transaction.referenceId;
+    const amount = transaction.amount !== undefined ? Number(transaction.amount) : undefined;
+    const currency = transaction.invoice?.currency;
+    const invoice = transaction.invoice;
+
+    // --- Verify webhook authenticity by re-fetching transaction from Payrexx API ---
+    if (!transactionId) {
+      console.error('Webhook has no transaction id — cannot verify');
+      return successResponse({ received: true, error: 'missing_transaction_id' });
+    }
+    const verification = await verifyTransactionViaApi(transactionId, {
       status,
-      referenceId,
       amount,
-      currency,
-      invoice,
-    } = transaction;
+      referenceId,
+    });
+    if (!verification.ok) {
+      console.error(`Webhook verification failed for tx ${transactionId}: ${verification.reason}`);
+      try {
+        const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        await sb.from('admin_notifications').insert({
+          type: 'webhook_error',
+          title: 'Webhook: Verifizierung fehlgeschlagen',
+          message: `Payrexx Webhook konnte nicht verifiziert werden. Transaction: ${transactionId}. Grund: ${verification.reason}`,
+          metadata: {
+            payrexx_transaction_id: String(transactionId),
+            reference_id: String(referenceId || ''),
+            error_message: String(verification.reason || '').slice(0, 500),
+            timestamp: new Date().toISOString(),
+          },
+        });
+      } catch (notifyErr) {
+        console.error('Failed to log verification failure:', notifyErr);
+      }
+      return successResponse({ received: true, error: 'verification_failed' });
+    }
+    console.log(`Webhook verified ✓ via API for transaction ${transactionId}`);
+
 
     // Extract subscription info if present (Payrexx-managed subscriptions)
     const subscriptionId = transaction.subscription?.id || null;
