@@ -2,9 +2,57 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
 import { VALID_PLAN_AMOUNTS, FREE_TIER_PROPOSALS_LIMIT, PLAN_CONFIGS } from '../_shared/planLabels.ts';
 import { addMonths } from '../_shared/dateFormatter.ts';
+import { generateSignature, normalizePayrexxInstance } from '../_shared/payrexxCrypto.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+/**
+ * Verify webhook authenticity by re-fetching the transaction from the Payrexx API.
+ * Payrexx's "Normal (PHP-Post)" webhooks do NOT sign the form body, so the only
+ * reliable way to confirm a webhook came from Payrexx is to query their API
+ * (which requires our HMAC-signed API key) and confirm the transaction matches.
+ */
+async function verifyTransactionViaApi(
+  transactionId: string | number,
+  expected: { status?: string; amount?: number; referenceId?: string }
+): Promise<{ ok: boolean; reason?: string; transaction?: any }> {
+  const apiKey = Deno.env.get('PAYREXX_API_KEY');
+  const instanceRaw = Deno.env.get('PAYREXX_INSTANCE');
+  if (!apiKey || !instanceRaw) {
+    return { ok: false, reason: 'PAYREXX_API_KEY or PAYREXX_INSTANCE not configured' };
+  }
+  const instance = normalizePayrexxInstance(instanceRaw);
+  try {
+    const signature = await generateSignature('', apiKey);
+    const url = `https://api.payrexx.com/v1.0/Transaction/${encodeURIComponent(String(transactionId))}/?instance=${encodeURIComponent(instance)}&ApiSignature=${encodeURIComponent(signature)}`;
+    const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
+    const text = await res.text();
+    let parsed: any = null;
+    try { parsed = JSON.parse(text); } catch { /* ignore */ }
+
+    if (res.status !== 200 || parsed?.status !== 'success' || !Array.isArray(parsed?.data) || parsed.data.length === 0) {
+      return { ok: false, reason: `API lookup failed (HTTP ${res.status}): ${parsed?.message || text.substring(0, 200)}` };
+    }
+
+    const tx = parsed.data[0];
+
+    // Compare critical fields against webhook-claimed values
+    if (expected.status && tx.status !== expected.status) {
+      return { ok: false, reason: `status mismatch: api=${tx.status} webhook=${expected.status}`, transaction: tx };
+    }
+    if (expected.amount !== undefined && Number(tx.amount) !== Number(expected.amount)) {
+      return { ok: false, reason: `amount mismatch: api=${tx.amount} webhook=${expected.amount}`, transaction: tx };
+    }
+    if (expected.referenceId && tx.referenceId !== expected.referenceId) {
+      return { ok: false, reason: `referenceId mismatch: api=${tx.referenceId} webhook=${expected.referenceId}`, transaction: tx };
+    }
+
+    return { ok: true, transaction: tx };
+  } catch (err) {
+    return { ok: false, reason: `verification error: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
 
 /**
  * Parse reference ID to extract user info
