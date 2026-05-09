@@ -1,93 +1,40 @@
-# Resend to Non-Proposers — Admin Button
+## Problem
 
-Implements the manual half of the approved 3-day re-send plan. The 3-day cron orchestrator can reuse the same edge-function flag later.
+Payrexx webhook calls are returning **401 "Missing webhook signature"**. The transaction #36467844 log confirms it: Payrexx's webhook payload contains **no `ApiSignature` field**. Our `payrexx-webhook` function currently rejects any request without that field.
 
-## 1. Edge function: `send-lead-notification`
+This is by design on Payrexx's side — their standard "Normal (PHP-Post)" webhooks do **not** sign the form body. The HMAC `ApiSignature` field is used only on outbound API calls *to* Payrexx, not on incoming webhooks. So our verification logic can never succeed with a real Payrexx webhook.
 
-Add two optional flags to the request body. All matching/email logic stays SSOT here.
+Result: every real payment webhook is rejected → subscriptions never activate, payment_history never written, invoice never generated. The user (amit.walia@gmx.ch, plan `monthly`, CHF 90.00) paid but their account was not upgraded.
 
-- `excludeProposers: boolean` — when true, fetch `lead_proposals.handwerker_id` for the lead and remove those user_ids from `matchingHandwerkers` before token creation and email sending.
-- `skipAdminEmail: boolean` — when true, skip the admin "Neuer Auftrag" email (resends shouldn't re-spam admin).
+## Fix Strategy
 
-```text
-parse body → { leadId, force, excludeProposers, skipAdminEmail }
-... existing lead fetch + deadline guards ...
-if (!skipAdminEmail) { send admin email }
-... existing matching produces matchingHandwerkers ...
-if (excludeProposers) {
-  const { data: existing } = await supabase
-    .from('lead_proposals')
-    .select('handwerker_id')
-    .eq('lead_id', leadId);
-  const proposerIds = new Set((existing||[]).map(p => p.handwerker_id));
-  matchingHandwerkers = matchingHandwerkers.filter(h => !proposerIds.has(h.user_id));
-  console.log(`[send-lead-notification] After excluding ${proposerIds.size} proposers: ${matchingHandwerkers.length} remain`);
-}
-... existing token batch + email loop unchanged ...
-```
+Replace the (impossible) form-body HMAC check with a **server-side verification**: when a webhook arrives, call Payrexx's API to re-fetch the transaction by `transaction[id]` and confirm the status/amount/referenceId match what the webhook claimed. This is the authentication pattern Payrexx itself recommends — anyone can POST a fake body, but only Payrexx will return a matching transaction record when queried with our API secret.
 
-Response payload unchanged (`successCount`, `errorCount`, `matchingHandwerkersCount`).
+### Plan
 
-## 2. Admin UI: `src/pages/admin/AdminLeadsManagement.tsx`
+1. **`supabase/functions/payrexx-webhook/index.ts`**
+   - Remove the `ApiSignature` extraction + HMAC reconstruction + 401 reject block.
+   - After parsing `transactionData`, add a verification step:
+     - Call `GET https://api.payrexx.com/v1.0/Transaction/{id}/?instance={instance}&ApiSignature={hmac}` using the shared `generateSignature()` from `_shared/payrexxCrypto.ts`.
+     - Read `PAYREXX_INSTANCE` env (already used by `create-payrexx-gateway`); fall back via `normalizePayrexxInstance`.
+     - Compare returned `status`, `amount`, `referenceId` against the webhook body. If any mismatch → log to `admin_notifications` (`type: 'webhook_error'`) and return 200 with `error: 'verification_failed'` (200 to stop Payrexx retries on tamper attempts; admin still sees it).
+     - If the API call itself fails (network/auth) → log and return 200 with `error: 'verification_unreachable'` so Payrexx retries.
+   - Keep all existing downstream logic (idempotent payment insert, subscription upsert, invoice trigger, notifications).
 
-A separate `BellRing` icon button next to the existing `Bell` (full re-notify), shown only on `status === 'active'` leads.
+2. **No DB / config / frontend changes.** `verify_jwt = false` stays, secrets stay, URL stays.
 
-State:
-- Reuse the existing `actionType` union — extend with `'resend_nonproposers'`.
-- Reuse `renotifyLoading` for spinner state (single in-flight per lead is fine).
+3. **Backfill the missed transaction** after the fix is deployed:
+   - Manually replay transaction #36467844 by either (a) asking Payrexx to re-send the webhook from their dashboard, or (b) running a one-off SQL via migration that inserts the `payment_history` row + upserts `handwerker_subscriptions` for user `4d5b0b6e-7df0-4f08-b986-48f9655364c3` with plan `monthly`. I'll do (a) first; (b) only if Payrexx replay isn't available.
 
-Handler:
-```ts
-const handleResendNonProposers = async (leadId: string) => {
-  setRenotifyLoading(leadId);
-  try {
-    const { data, error } = await supabase.functions.invoke('send-lead-notification', {
-      body: { leadId, force: true, excludeProposers: true, skipAdminEmail: true },
-    });
-    if (error) throw new Error(error.message);
-    toast.success(`${data?.successCount ?? 0} Handwerker ohne Offerte erneut benachrichtigt.`);
-  } catch (e: any) {
-    toast.error(e.message || 'Fehler beim erneuten Versand.');
-  } finally {
-    setRenotifyLoading(null);
-    setShowActionDialog(false);
-    setActionLead(null);
-  }
-};
-```
+### Verification Steps
 
-Wire `executeLeadAction` to dispatch to it when `actionType === 'resend_nonproposers'`, and add a case to `getActionDialogContent`:
+After deploy:
+1. Trigger a new TEST payment in Payrexx → watch `payrexx-webhook` logs for `Webhook verified ✓`.
+2. Confirm `payment_history` row created and `handwerker_subscriptions.plan_type` updated.
+3. Replay #36467844 from Payrexx dashboard → confirm amit.walia's subscription activates.
 
-```text
-title: 'An Nicht-Bietende erneut senden'
-description: 'Sendet die Lead-Benachrichtigung erneut an alle passenden Handwerker, die noch keine Offerte eingereicht haben. Bestehende Bieter werden NICHT erneut kontaktiert.'
-actionLabel: 'Erneut senden'
-```
+### Technical Notes
 
-Button (placed right after the existing renotify button, ~line 572):
-```tsx
-{lead.status === 'active' && (
-  <Button
-    variant="ghost"
-    size="sm"
-    onClick={() => handleLeadAction(lead, 'resend_nonproposers')}
-    title="An Nicht-Bietende erneut senden"
-    disabled={renotifyLoading === lead.id}
-  >
-    <BellRing className="h-4 w-4 text-warning" />
-  </Button>
-)}
-```
-
-Add `BellRing` to the lucide-react import on line 35.
-
-## 3. Out of scope (already approved separately)
-
-- The `lead-3day-resend` cron orchestrator — will be built in a follow-up; it will simply call this edge function with `{ excludeProposers: true, skipAdminEmail: true }` for each eligible lead.
-
-## Verification
-
-1. Active lead with 0 proposals → button sends to all matched handwerkers; toast shows count.
-2. Active lead with N proposals → button sends to (matched − N); proposers receive nothing (verify via edge function logs: "After excluding N proposers").
-3. No admin "Neuer Auftrag" email arrives on resend (check SUPPORT_EMAIL inbox / SMTP2GO logs).
-4. Confirmation modal appears before send; Cancel aborts; spinner replaces icon during invoke.
+- Payrexx's outbound webhook authenticity is verified by **re-querying their API**, not by signature on the body. Their docs explicitly call this out as the recommended pattern for the legacy form-post webhook format.
+- We already have `PAYREXX_API_KEY` and `PAYREXX_INSTANCE` secrets and a working `generateSignature()` helper from the gateway-creation function — pure reuse, no new deps.
+- Returning 200 (not 4xx) on a verification mismatch prevents Payrexx from retrying a forged request indefinitely while still surfacing it via `admin_notifications`.
