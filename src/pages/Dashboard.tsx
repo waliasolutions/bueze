@@ -24,6 +24,7 @@ import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
 import { StarRating } from '@/components/ui/star-rating';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
+import { LeadStatusBadge } from '@/components/ui/status-badge';
 
 // Type for reviews given by client
 interface ClientReview {
@@ -513,15 +514,13 @@ const Dashboard = () => {
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-                                <Badge variant={
-                                  lead.status === 'active' ? 'default' : 
-                                  lead.status === 'paused' ? 'secondary' :
-                                  lead.status === 'completed' ? 'outline' : 'secondary'
-                                }>
-                                  {lead.status === 'active' ? 'Aktiv' :
-                                   lead.status === 'paused' ? 'Pausiert' :
-                                   lead.status === 'completed' ? 'Erledigt' : 'Entwurf'}
-                                </Badge>
+                                <LeadStatusBadge
+                                  status={lead.status}
+                                  acceptedProposalId={lead.accepted_proposal_id ?? null}
+                                  deliveredAt={lead.delivered_at ?? null}
+                                  showIcon={false}
+                                />
+
                                 <Badge className={getUrgencyColor(lead.urgency)}>
                                   {getUrgencyLabel(lead.urgency)}
                                 </Badge>

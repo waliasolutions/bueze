@@ -34,6 +34,26 @@ import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
 
 type StepContent = 'contact' | 'services' | 'summary';
 
+// === SSOT copy & URL constants (used in multiple places) ===
+const HANDWERKER_REDIRECT_URL = `${typeof window !== 'undefined' ? window.location.origin : ''}/handwerker-dashboard`;
+
+const ACCOUNT_EXISTS_TITLE = "Konto bereits vorhanden";
+const ACCOUNT_EXISTS_DESCRIPTION =
+  "Mit dieser E-Mail existiert bereits ein Konto. Melden Sie sich an, um Ihr Handwerker-Profil zu erstellen. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?».";
+
+const EMAIL_CONFIRMATION_TITLE = "E-Mail-Bestätigung erforderlich";
+const EMAIL_CONFIRMATION_RESEND_DESCRIPTION =
+  "Wir haben Ihnen eine neue Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihr Postfach (auch den Spam-Ordner).";
+
+const isEmailNotConfirmedError = (err: unknown): boolean => {
+  if (!err) return false;
+  const anyErr = err as { message?: string; code?: string };
+  const msg = (anyErr.message || '').toLowerCase();
+  if (anyErr.code === 'email_not_confirmed') return true;
+  return msg.includes('email not confirmed');
+};
+
+
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -182,16 +202,6 @@ const HandwerkerOnboarding = () => {
         setIsAuthenticated(true);
         setStartedAsGuest(false);
       } else {
-        try {
-          const pendingEmail = localStorage.getItem('pendingHandwerkerEmail');
-          if (pendingEmail) {
-            setShowLoginForm(true);
-            setLoginEmail(pendingEmail);
-            setFormData(prev => ({ ...prev, email: pendingEmail }));
-          }
-        } catch {
-          // localStorage may be unavailable
-        }
         setStartedAsGuest(true);
       }
     };
@@ -326,6 +336,39 @@ const HandwerkerOnboarding = () => {
         }, 100);
       }
     } catch (error) {
+      if (isEmailNotConfirmedError(error)) {
+        try {
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email: loginEmail.toLowerCase().trim(),
+            options: { emailRedirectTo: HANDWERKER_REDIRECT_URL },
+          });
+          const status = (resendError as { status?: number } | null)?.status;
+          if (resendError && status === 429) {
+            toast({
+              title: EMAIL_CONFIRMATION_TITLE,
+              description: "Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.",
+            });
+          } else if (resendError) {
+            toast({
+              title: EMAIL_CONFIRMATION_TITLE,
+              description: "Wir konnten die Bestätigungs-E-Mail nicht erneut senden. Bitte versuchen Sie es später erneut.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: EMAIL_CONFIRMATION_TITLE,
+              description: EMAIL_CONFIRMATION_RESEND_DESCRIPTION,
+            });
+          }
+        } catch {
+          toast({
+            title: EMAIL_CONFIRMATION_TITLE,
+            description: "Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link in der Registrierungs-E-Mail.",
+          });
+        }
+        return;
+      }
       toast({
         title: "Anmeldung fehlgeschlagen",
         description: error instanceof Error ? `${error.message} Falls Sie die Registrierung schon begonnen haben, nutzen Sie «Passwort vergessen?».` : "Bitte überprüfen Sie Ihre Zugangsdaten oder nutzen Sie «Passwort vergessen?».",
@@ -388,15 +431,15 @@ const HandwerkerOnboarding = () => {
             full_name: `${formData.firstName} ${formData.lastName}`,
             phone: formData.phoneNumber,
           },
-          emailRedirectTo: `${window.location.origin}/handwerker-dashboard`,
+          emailRedirectTo: HANDWERKER_REDIRECT_URL,
         },
       });
 
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
           toast({
-            title: "Registrierung bereits begonnen",
-            description: "Bitte melden Sie sich an, um fortzufahren. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?».",
+            title: ACCOUNT_EXISTS_TITLE,
+            description: ACCOUNT_EXISTS_DESCRIPTION,
             variant: "destructive",
           });
           setShowLoginForm(true);
@@ -409,7 +452,7 @@ const HandwerkerOnboarding = () => {
       // Check if email confirmation is required
       if (signUpData.user && !signUpData.session) {
         toast({
-          title: "E-Mail-Bestätigung erforderlich",
+          title: EMAIL_CONFIRMATION_TITLE,
           description: "Bitte bestätigen Sie Ihre E-Mail-Adresse. Sie können sich danach hier anmelden.",
           variant: "default",
         });
@@ -425,7 +468,7 @@ const HandwerkerOnboarding = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast({
-          title: "E-Mail-Bestätigung erforderlich",
+          title: EMAIL_CONFIRMATION_TITLE,
           description: "Bitte bestätigen Sie Ihre E-Mail-Adresse und melden Sie sich dann an.",
           variant: "default",
         });
@@ -436,10 +479,6 @@ const HandwerkerOnboarding = () => {
 
       // Success! User is now authenticated
       setIsAuthenticated(true);
-      // Persist intent so onboarding can resume if session is lost between steps
-      try {
-        localStorage.setItem('pendingHandwerkerEmail', formData.email.toLowerCase().trim());
-      } catch { /* localStorage may be unavailable */ }
       toast({
         title: "Konto erstellt",
         description: "Wählen Sie jetzt Ihre Dienstleistungen.",
@@ -550,9 +589,8 @@ const HandwerkerOnboarding = () => {
         throw new Error('Failed to create profile');
       }
 
-      // Clear any residual draft data and onboarding intent marker
+      // Clear any residual draft data
       localStorage.removeItem('handwerker-onboarding-draft');
-      try { localStorage.removeItem('pendingHandwerkerEmail'); } catch { /* noop */ }
 
       // Assign handwerker role and save pending plan (non-blocking)
       (async () => {
@@ -631,10 +669,10 @@ const HandwerkerOnboarding = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-amber-600" />
-                    Registrierung bereits begonnen
+                    {ACCOUNT_EXISTS_TITLE}
                   </CardTitle>
                   <CardDescription>
-                    Dieses Konto existiert bereits. Melden Sie sich an, um Ihre Registrierung fortzusetzen. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?». 
+                    {ACCOUNT_EXISTS_DESCRIPTION}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">

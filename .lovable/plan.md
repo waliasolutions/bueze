@@ -1,40 +1,100 @@
-## Problem
+# Fix premature "Erledigt" status & blocked handwerker registration
 
-Payrexx webhook calls are returning **401 "Missing webhook signature"**. The transaction #36467844 log confirms it: Payrexx's webhook payload contains **no `ApiSignature` field**. Our `payrexx-webhook` function currently rejects any request without that field.
+Two unrelated portal bugs, both rooted in duplicated/stale state. Fix is display-only for Bug 1 and removes a stale-localStorage path for Bug 2. No DB migration, no behavior change to underlying lead lifecycle or auth flow.
 
-This is by design on Payrexx's side — their standard "Normal (PHP-Post)" webhooks do **not** sign the form body. The HMAC `ApiSignature` field is used only on outbound API calls *to* Payrexx, not on incoming webhooks. So our verification logic can never succeed with a real Payrexx webhook.
+---
 
-Result: every real payment webhook is rejected → subscriptions never activate, payment_history never written, invoice never generated. The user (amit.walia@gmx.ch, plan `monthly`, CHF 90.00) paid but their account was not upgraded.
+## Bug 1 — "Erledigt" shown the moment an offer is accepted
 
-## Fix Strategy
+**Root cause:** `leads.status='completed'` is set on offer-acceptance (correct — it closes the lead to new offers), but four divergent renderers all label `completed` as "Erledigt". The real "work delivered" signal is the separate `leads.delivered_at` column, which nothing in the badge layer reads.
 
-Replace the (impossible) form-body HMAC check with a **server-side verification**: when a webhook arrives, call Payrexx's API to re-fetch the transaction by `transaction[id]` and confirm the status/amount/referenceId match what the webhook claimed. This is the authentication pattern Payrexx itself recommends — anyone can POST a fake body, but only Payrexx will return a matching transaction record when queried with our API secret.
+**Approach:** collapse the four divergent sources into one config + one helper + one component, and derive the label from `(status, accepted_proposal_id, delivered_at)`.
 
-### Plan
+### Files & changes
 
-1. **`supabase/functions/payrexx-webhook/index.ts`**
-   - Remove the `ApiSignature` extraction + HMAC reconstruction + 401 reject block.
-   - After parsing `transactionData`, add a verification step:
-     - Call `GET https://api.payrexx.com/v1.0/Transaction/{id}/?instance={instance}&ApiSignature={hmac}` using the shared `generateSignature()` from `_shared/payrexxCrypto.ts`.
-     - Read `PAYREXX_INSTANCE` env (already used by `create-payrexx-gateway`); fall back via `normalizePayrexxInstance`.
-     - Compare returned `status`, `amount`, `referenceId` against the webhook body. If any mismatch → log to `admin_notifications` (`type: 'webhook_error'`) and return 200 with `error: 'verification_failed'` (200 to stop Payrexx retries on tamper attempts; admin still sees it).
-     - If the API call itself fails (network/auth) → log and return 200 with `error: 'verification_unreachable'` so Payrexx retries.
-   - Keep all existing downstream logic (idempotent payment insert, subscription upsert, invoice trigger, notifications).
+**1. `src/config/leadStatuses.ts` — single source of truth**
+- Add `variant: 'default' | 'secondary' | 'destructive' | 'outline'` to `LeadStatusConfig`; set it for every entry in `LEAD_STATUSES`.
+- Add `export const LEAD_STATUS_IN_PROGRESS = { label: 'In Bearbeitung', variant: 'default', color: 'bg-indigo-100 text-indigo-800' }`.
+- Add `getLeadDisplayStatus(input: { status: string; accepted_proposal_id?: string | null; delivered_at?: string | null })`:
+  - `completed` + `delivered_at` truthy → `LEAD_STATUSES.completed` ("Erledigt").
+  - `completed` + `accepted_proposal_id` truthy + no `delivered_at` → `LEAD_STATUS_IN_PROGRESS` ("In Bearbeitung").
+  - `completed` + no `accepted_proposal_id` (manual completion) → `LEAD_STATUSES.completed`.
+  - otherwise → `LEAD_STATUSES[status]`, or a neutral `{ label: status, variant: 'outline', color: 'bg-gray-100 text-gray-800' }` for unknowns (never "Entwurf").
+- Use truthy checks so `null`/`undefined` both work.
 
-2. **No DB / config / frontend changes.** `verify_jwt = false` stays, secrets stay, URL stays.
+**2. `src/types/entities.ts` — add `delivered_at`**
+- `interface Lead`: add `delivered_at?: string | null;` (after line 45).
+- `interface LeadListItem`: add `delivered_at?: string | null;` (after line 401).
+- Both `Dashboard` and `LeadDetails` use `select('*')`, so the column is already fetched at runtime.
+- During implementation: grep `.rpc(` and `.from('leads'` reads that feed a badge; if any view/RPC omits `delivered_at`/`accepted_proposal_id`, add them.
 
-3. **Backfill the missed transaction** after the fix is deployed:
-   - Manually replay transaction #36467844 by either (a) asking Payrexx to re-send the webhook from their dashboard, or (b) running a one-off SQL via migration that inserts the `payment_history` row + upserts `handwerker_subscriptions` for user `4d5b0b6e-7df0-4f08-b986-48f9655364c3` with plan `monthly`. I'll do (a) first; (b) only if Payrexx replay isn't available.
+**3. `src/components/ui/status-badge.tsx` — single renderer**
+- Delete the private `leadStatusConfig` map.
+- Rewrite `LeadStatusBadge` props: `{ status: string; acceptedProposalId?: string | null; deliveredAt?: string | null; showIcon?: boolean }`; derive display via `getLeadDisplayStatus()`. Keep icon lookup keyed off the rendered status, or drop icons.
+- Leave `VerificationStatusBadge`, `SubscriptionStatusBadge`, `UrgencyBadge`, `GenericStatusBadge` untouched.
 
-### Verification Steps
+**4. Route all renderers through `<LeadStatusBadge>`**
+- `src/pages/Dashboard.tsx` (~516-524): replace hand-rolled ternary `Badge` with `<LeadStatusBadge status={lead.status} acceptedProposalId={lead.accepted_proposal_id} deliveredAt={lead.delivered_at} />`. Leave `canDelete` (~508) and Archivieren-button (~561) logic checks alone.
+- `src/pages/LeadDetails.tsx`: replace both badge spots (~262-267 header, ~511-514 side). Remove now-unused local `getStatusVariant()` (~196-203) and unused `getLeadStatus`/`leadStatus` references.
+- `src/pages/admin/AdminLeadsManagement.tsx` (~526-527): replace inline `LEAD_STATUSES[...]?.color/.label` Badge with `<LeadStatusBadge status={lead.status} acceptedProposalId={lead.accepted_proposal_id ?? null} deliveredAt={lead.delivered_at ?? null} />`.
 
-After deploy:
-1. Trigger a new TEST payment in Payrexx → watch `payrexx-webhook` logs for `Webhook verified ✓`.
-2. Confirm `payment_history` row created and `handwerker_subscriptions.plan_type` updated.
-3. Replay #36467844 from Payrexx dashboard → confirm amit.walia's subscription activates.
+**Out of scope (intentionally unchanged):** `acceptProposal()` success message, `getStatusSuccessMessage('completed')`, all `canPurchaseLead`/`handleMarkDelivered`/`RatingPrompt` logic gates.
 
-### Technical Notes
+---
 
-- Payrexx's outbound webhook authenticity is verified by **re-querying their API**, not by signature on the body. Their docs explicitly call this out as the recommended pattern for the legacy form-post webhook format.
-- We already have `PAYREXX_API_KEY` and `PAYREXX_INSTANCE` secrets and a working `generateSignature()` helper from the gateway-creation function — pure reuse, no new deps.
-- Returning 200 (not 4xx) on a verification mismatch prevents Payrexx from retrying a forged request indefinitely while still surfacing it via `admin_notifications`.
+## Bug 2 — Registration blocked / "Registrierung bereits begonnen"
+
+All edits in `src/pages/HandwerkerOnboarding.tsx`.
+
+### Fix A — Remove stale-localStorage path (root cause)
+`pendingHandwerkerEmail` is written on signUp (~441), removed only on full completion (~555), and read by `checkAuth` (~186-191) to auto-open a login card pre-filled with that email. Any abandoned registration leaves it forever → next visitor on the same browser sees a stranger's email and appears blocked. The legitimate same-user resume is already covered by the live Supabase session check in `handleCreateAccountAndProceed` (~358-379), so this localStorage key is fully redundant.
+- Delete the read+auto-show block (~186-191), the write (~441), and the remove (~555).
+- In `checkAuth`'s no-session branch keep only `setStartedAsGuest(true)`.
+
+### Fix B — DRY, correct "account already exists" copy
+Currently duplicated as two divergent literals (toast ~397-401 and inline card ~634-638). Since `signUp`'s "already registered" can't tell a half-finished handwerker from a plain customer, copy must work for both.
+- Define module-level constants once:
+  - Title: `"Konto bereits vorhanden"`
+  - Description: `"Mit dieser E-Mail existiert bereits ein Konto. Melden Sie sich an, um Ihr Handwerker-Profil zu erstellen. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?»."`
+- Reference from both spots. No logic change — `handleLogin` already detects existing `handwerker_profiles` and either routes to dashboard or proceeds to step 2.
+
+### Fix C — Unconfirmed-email dead-end
+A user who signed up but never confirmed can neither re-`signUp` ("already registered") nor `signInWithPassword` ("Email not confirmed"). `handleLogin`'s catch (~328-333) shows only a generic error.
+- Add an `isEmailNotConfirmed(err)` check (message includes "Email not confirmed" OR `AuthError.code === 'email_not_confirmed'`).
+- On match, call `supabase.auth.resend({ type: 'signup', email: loginEmail.toLowerCase().trim(), options: { emailRedirectTo: HANDWERKER_REDIRECT_URL } })` in its own try/catch.
+- Success toast: title `"E-Mail-Bestätigung erforderlich"`, description `"Wir haben Ihnen eine neue Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihr Postfach (auch den Spam-Ordner)."`
+- 429 rate-limit: distinct calm toast `"Bitte warten Sie einen Moment, bevor Sie es erneut versuchen."`
+- Other errors fall through to the existing generic toast.
+- Normalize email identically to the original signUp (`.toLowerCase().trim()`).
+
+### DRY cleanup
+- Extract `const HANDWERKER_REDIRECT_URL = \`${window.location.origin}/handwerker-dashboard\`;` (used by signUp ~391 and the new resend).
+- Reuse the "E-Mail-Bestätigung erforderlich" copy constant wherever it already appears (2× in `handleCreateAccountAndProceed`).
+
+### Already correct — no change
+Live-session resume in `handleCreateAccountAndProceed` (~358-379) and `handleLogin`'s profile-check + step-2 proceed.
+
+---
+
+## Verification
+
+**Static:** `tsc --noEmit`, lint, build (build runs automatically).
+
+**Bug 1 (manual via preview):**
+1. New lead → "Aktiv".
+2. Accept offer → "In Bearbeitung" in Dashboard **and** LeadDetails (not "Erledigt").
+3. Handwerker marks delivered → "Erledigt".
+4. Manually complete a lead with no accepted proposal → "Erledigt".
+5. `expired`/`closed` leads → "Abgelaufen"/"Geschlossen" (not "Entwurf"), incl. admin leads list.
+
+**Bug 2:**
+- Inject bogus `pendingHandwerkerEmail` in DevTools, reload `/handwerker-onboarding` logged out → clean step-1, no stranger email, not blocked.
+- Sign up step 1, clear session, revisit with same email → login card; login resumes at step 2.
+- Register plain customer, then open handwerker onboarding with that email → "Konto bereits vorhanden"; login proceeds to step 2.
+- Account exists but email unconfirmed → "E-Mail-Bestätigung erforderlich" toast + new confirmation email sent (429 → calm wait toast).
+
+## Anti-recurrence
+- One config (`LEAD_STATUSES` + in-progress constant), one helper (`getLeadDisplayStatus`), one component (`LeadStatusBadge`). Divergent `leadStatusConfig` deleted — no second source can drift.
+- Unknown statuses handled explicitly — no silent "Entwurf" fallback.
+- Stale-localStorage failure mode removed, not patched.
+- Repeated copy + redirect URL collapsed to single constants.

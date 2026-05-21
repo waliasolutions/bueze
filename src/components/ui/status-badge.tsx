@@ -27,29 +27,40 @@ interface StatusConfig {
 }
 
 // =============================================================================
-// Lead Status Badge
+// Lead Status Badge — derives label/variant from getLeadDisplayStatus (SSOT)
 // =============================================================================
-const leadStatusConfig: Record<string, StatusConfig> = {
-  draft: { label: 'Entwurf', variant: 'outline', icon: FileText },
-  active: { label: 'Aktiv', variant: 'default', icon: Eye, className: 'bg-green-600' },
-  closed: { label: 'Abgeschlossen', variant: 'secondary', icon: CheckCircle },
-  cancelled: { label: 'Abgebrochen', variant: 'destructive', icon: XCircle },
-  paused: { label: 'Pausiert', variant: 'outline', icon: Pause },
-  completed: { label: 'Erledigt', variant: 'default', icon: CheckCircle, className: 'bg-green-600' },
-  deleted: { label: 'Gelöscht', variant: 'destructive', icon: XCircle },
+import { getLeadDisplayStatus } from '@/config/leadStatuses';
+
+const leadStatusIcons: Record<string, LucideIcon> = {
+  'Entwurf': FileText,
+  'Aktiv': Eye,
+  'Pausiert': Pause,
+  'In Bearbeitung': Clock,
+  'Erledigt': CheckCircle,
+  'Geschlossen': CheckCircle,
+  'Abgelaufen': AlertCircle,
+  'Abgebrochen': XCircle,
+  'Gelöscht': XCircle,
 };
 
-export const LeadStatusBadge: React.FC<{ status: string; showIcon?: boolean }> = ({
-  status,
-  showIcon = true,
-}) => {
-  const config = leadStatusConfig[status] || { label: status, variant: 'outline' as const };
-  const Icon = config.icon;
+export const LeadStatusBadge: React.FC<{
+  status: string;
+  acceptedProposalId?: string | null;
+  deliveredAt?: string | null;
+  showIcon?: boolean;
+  className?: string;
+}> = ({ status, acceptedProposalId = null, deliveredAt = null, showIcon = true, className = '' }) => {
+  const display = getLeadDisplayStatus({
+    status,
+    accepted_proposal_id: acceptedProposalId,
+    delivered_at: deliveredAt,
+  });
+  const Icon = leadStatusIcons[display.label];
 
   return (
-    <Badge variant={config.variant} className={`flex items-center gap-1 ${config.className || ''}`}>
+    <Badge variant={display.variant} className={`flex items-center gap-1 ${display.color} ${className}`}>
       {showIcon && Icon && <Icon className="h-3 w-3" />}
-      {config.label}
+      {display.label}
     </Badge>
   );
 };

@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Clock, Coins, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Users, ArrowLeft, AlertCircle } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { pauseLead, completeLead, deleteLead, reactivateLead, getLeadAnalytics } from '@/lib/leadHelpers';
-import { getLeadStatus } from '@/config/leadStatuses';
+import { LeadStatusBadge } from '@/components/ui/status-badge';
 import type { LeadAnalytics } from '@/lib/leadHelpers';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
@@ -190,17 +190,8 @@ const LeadDetails = () => {
   const isProposalAccepted = hasProposal && proposalStatus === 'accepted';
   const shouldShowContactInfo = user && owner && (isProposalAccepted || isOwnLead);
   const shouldShowProposalSection = !isOwnLead;
-  const leadStatus = lead ? getLeadStatus(lead.status as any) : null;
 
-  // Helper to get status badge variant
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'paused': return 'secondary';
-      case 'completed': return 'outline';
-      default: return 'secondary';
-    }
-  };
+
 
   if (loading) {
     return (
@@ -259,12 +250,12 @@ const LeadDetails = () => {
 
           {/* Status Badge and Title */}
           <div className="mb-6">
-            <Badge 
-              variant={getStatusVariant(lead.status)} 
+            <LeadStatusBadge
+              status={lead.status}
+              acceptedProposalId={lead.accepted_proposal_id ?? null}
+              deliveredAt={lead.delivered_at ?? null}
               className="mb-3 text-base px-4 py-2"
-            >
-              {leadStatus?.label}
-            </Badge>
+            />
             <h1 className="text-4xl font-bold mb-2">{lead.title}</h1>
             <div className="flex items-center text-muted-foreground text-sm space-x-4">
               <div className="flex items-center">
@@ -508,11 +499,12 @@ const LeadDetails = () => {
                           </div>
                         </div>
                     <div className="flex flex-col gap-1 items-end">
-                      {leadStatus && (
-                        <Badge className={leadStatus.color}>
-                          {leadStatus.label}
-                        </Badge>
-                      )}
+                      <LeadStatusBadge
+                        status={lead.status}
+                        acceptedProposalId={lead.accepted_proposal_id ?? null}
+                        deliveredAt={lead.delivered_at ?? null}
+                        showIcon={false}
+                      />
                       <Badge className={getUrgencyColor(lead.urgency)}>
                         {getUrgencyLabel(lead.urgency)}
                       </Badge>
