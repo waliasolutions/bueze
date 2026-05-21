@@ -24,6 +24,7 @@ import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor } from '@/config/urgencyLevels';
 import { StarRating } from '@/components/ui/star-rating';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
+import { LeadStatusBadge } from '@/components/ui/status-badge';
 
 // Type for reviews given by client
 interface ClientReview {
