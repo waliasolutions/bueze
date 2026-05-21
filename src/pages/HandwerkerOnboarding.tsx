@@ -336,6 +336,39 @@ const HandwerkerOnboarding = () => {
         }, 100);
       }
     } catch (error) {
+      if (isEmailNotConfirmedError(error)) {
+        try {
+          const { error: resendError } = await supabase.auth.resend({
+            type: 'signup',
+            email: loginEmail.toLowerCase().trim(),
+            options: { emailRedirectTo: HANDWERKER_REDIRECT_URL },
+          });
+          const status = (resendError as { status?: number } | null)?.status;
+          if (resendError && status === 429) {
+            toast({
+              title: EMAIL_CONFIRMATION_TITLE,
+              description: "Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.",
+            });
+          } else if (resendError) {
+            toast({
+              title: EMAIL_CONFIRMATION_TITLE,
+              description: "Wir konnten die Bestätigungs-E-Mail nicht erneut senden. Bitte versuchen Sie es später erneut.",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: EMAIL_CONFIRMATION_TITLE,
+              description: EMAIL_CONFIRMATION_RESEND_DESCRIPTION,
+            });
+          }
+        } catch {
+          toast({
+            title: EMAIL_CONFIRMATION_TITLE,
+            description: "Bitte bestätigen Sie Ihre E-Mail-Adresse über den Link in der Registrierungs-E-Mail.",
+          });
+        }
+        return;
+      }
       toast({
         title: "Anmeldung fehlgeschlagen",
         description: error instanceof Error ? `${error.message} Falls Sie die Registrierung schon begonnen haben, nutzen Sie «Passwort vergessen?».` : "Bitte überprüfen Sie Ihre Zugangsdaten oder nutzen Sie «Passwort vergessen?».",
