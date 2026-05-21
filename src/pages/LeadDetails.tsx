@@ -499,11 +499,12 @@ const LeadDetails = () => {
                           </div>
                         </div>
                     <div className="flex flex-col gap-1 items-end">
-                      {leadStatus && (
-                        <Badge className={leadStatus.color}>
-                          {leadStatus.label}
-                        </Badge>
-                      )}
+                      <LeadStatusBadge
+                        status={lead.status}
+                        acceptedProposalId={lead.accepted_proposal_id ?? null}
+                        deliveredAt={lead.delivered_at ?? null}
+                        showIcon={false}
+                      />
                       <Badge className={getUrgencyColor(lead.urgency)}>
                         {getUrgencyLabel(lead.urgency)}
                       </Badge>
