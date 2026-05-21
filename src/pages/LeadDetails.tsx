@@ -190,17 +190,8 @@ const LeadDetails = () => {
   const isProposalAccepted = hasProposal && proposalStatus === 'accepted';
   const shouldShowContactInfo = user && owner && (isProposalAccepted || isOwnLead);
   const shouldShowProposalSection = !isOwnLead;
-  const leadStatus = lead ? getLeadStatus(lead.status as any) : null;
 
-  // Helper to get status badge variant
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'active': return 'default';
-      case 'paused': return 'secondary';
-      case 'completed': return 'outline';
-      default: return 'secondary';
-    }
-  };
+
 
   if (loading) {
     return (
