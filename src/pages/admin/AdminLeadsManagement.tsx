@@ -524,9 +524,12 @@ export default function AdminLeadsManagement() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
-                            <Badge className={LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.color || 'bg-gray-500'}>
-                              {LEAD_STATUSES[lead.status as keyof typeof LEAD_STATUSES]?.label || lead.status}
-                            </Badge>
+                            <LeadStatusBadge
+                              status={lead.status}
+                              acceptedProposalId={(lead as any).accepted_proposal_id ?? null}
+                              deliveredAt={(lead as any).delivered_at ?? null}
+                              showIcon={false}
+                            />
                             {orphanLeadIds.has(lead.id) && (
                               <Badge variant="destructive" className="text-xs">
                                 <AlertCircle className="h-3 w-3 mr-1" />
