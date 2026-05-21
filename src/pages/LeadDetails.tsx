@@ -250,12 +250,12 @@ const LeadDetails = () => {
 
           {/* Status Badge and Title */}
           <div className="mb-6">
-            <Badge 
-              variant={getStatusVariant(lead.status)} 
+            <LeadStatusBadge
+              status={lead.status}
+              acceptedProposalId={lead.accepted_proposal_id ?? null}
+              deliveredAt={lead.delivered_at ?? null}
               className="mb-3 text-base px-4 py-2"
-            >
-              {leadStatus?.label}
-            </Badge>
+            />
             <h1 className="text-4xl font-bold mb-2">{lead.title}</h1>
             <div className="flex items-center text-muted-foreground text-sm space-x-4">
               <div className="flex items-center">
