@@ -589,9 +589,8 @@ const HandwerkerOnboarding = () => {
         throw new Error('Failed to create profile');
       }
 
-      // Clear any residual draft data and onboarding intent marker
+      // Clear any residual draft data
       localStorage.removeItem('handwerker-onboarding-draft');
-      try { localStorage.removeItem('pendingHandwerkerEmail'); } catch { /* noop */ }
 
       // Assign handwerker role and save pending plan (non-blocking)
       (async () => {
