@@ -34,6 +34,26 @@ import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
 
 type StepContent = 'contact' | 'services' | 'summary';
 
+// === SSOT copy & URL constants (used in multiple places) ===
+const HANDWERKER_REDIRECT_URL = `${typeof window !== 'undefined' ? window.location.origin : ''}/handwerker-dashboard`;
+
+const ACCOUNT_EXISTS_TITLE = "Konto bereits vorhanden";
+const ACCOUNT_EXISTS_DESCRIPTION =
+  "Mit dieser E-Mail existiert bereits ein Konto. Melden Sie sich an, um Ihr Handwerker-Profil zu erstellen. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?».";
+
+const EMAIL_CONFIRMATION_TITLE = "E-Mail-Bestätigung erforderlich";
+const EMAIL_CONFIRMATION_RESEND_DESCRIPTION =
+  "Wir haben Ihnen eine neue Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihr Postfach (auch den Spam-Ordner).";
+
+const isEmailNotConfirmedError = (err: unknown): boolean => {
+  if (!err) return false;
+  const anyErr = err as { message?: string; code?: string };
+  const msg = (anyErr.message || '').toLowerCase();
+  if (anyErr.code === 'email_not_confirmed') return true;
+  return msg.includes('email not confirmed');
+};
+
+
 const HandwerkerOnboarding = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
