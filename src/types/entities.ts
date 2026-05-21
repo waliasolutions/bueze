@@ -402,6 +402,7 @@ export interface LeadListItem {
   accepted_proposal_id?: string | null;
   media_urls?: string[] | null;
   proposal_deadline?: string | null;
+  delivered_at?: string | null;
 }
 
 // Lead with owner contact info (for admin views)
