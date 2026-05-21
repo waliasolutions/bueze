@@ -202,16 +202,6 @@ const HandwerkerOnboarding = () => {
         setIsAuthenticated(true);
         setStartedAsGuest(false);
       } else {
-        try {
-          const pendingEmail = localStorage.getItem('pendingHandwerkerEmail');
-          if (pendingEmail) {
-            setShowLoginForm(true);
-            setLoginEmail(pendingEmail);
-            setFormData(prev => ({ ...prev, email: pendingEmail }));
-          }
-        } catch {
-          // localStorage may be unavailable
-        }
         setStartedAsGuest(true);
       }
     };
