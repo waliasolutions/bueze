@@ -43,6 +43,7 @@ export interface Lead {
   expires_at?: string | null;
   proposal_deadline?: string | null;
   accepted_proposal_id?: string | null;
+  delivered_at?: string | null;
   request_id?: string | null;
   created_at: string;
   updated_at: string;
