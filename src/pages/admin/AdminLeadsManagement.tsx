@@ -38,6 +38,7 @@ import { SWISS_CANTONS, getCantonLabel } from "@/config/cantons";
 import { getUrgencyLabel } from "@/config/urgencyLevels";
 import { getCategoryLabel } from "@/config/categoryLabels";
 import { LEAD_STATUSES } from "@/config/leadStatuses";
+import { LeadStatusBadge } from "@/components/ui/status-badge";
 import { ProposalStatusBadge } from "@/components/ProposalStatusBadge";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
