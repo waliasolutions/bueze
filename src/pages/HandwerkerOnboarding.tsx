@@ -669,10 +669,10 @@ const HandwerkerOnboarding = () => {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center gap-2">
                     <AlertCircle className="h-5 w-5 text-amber-600" />
-                    Registrierung bereits begonnen
+                    {ACCOUNT_EXISTS_TITLE}
                   </CardTitle>
                   <CardDescription>
-                    Dieses Konto existiert bereits. Melden Sie sich an, um Ihre Registrierung fortzusetzen. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?». 
+                    {ACCOUNT_EXISTS_DESCRIPTION}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
