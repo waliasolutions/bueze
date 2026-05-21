@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Clock, Coins, Phone, Mail, Edit2, Pause, CheckCircle, Trash2, Play, Users, ArrowLeft, AlertCircle } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { pauseLead, completeLead, deleteLead, reactivateLead, getLeadAnalytics } from '@/lib/leadHelpers';
-import { getLeadStatus } from '@/config/leadStatuses';
+import { LeadStatusBadge } from '@/components/ui/status-badge';
 import type { LeadAnalytics } from '@/lib/leadHelpers';
 import type { LeadListItem, UserProfileBasic } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
