@@ -398,15 +398,15 @@ const HandwerkerOnboarding = () => {
             full_name: `${formData.firstName} ${formData.lastName}`,
             phone: formData.phoneNumber,
           },
-          emailRedirectTo: `${window.location.origin}/handwerker-dashboard`,
+          emailRedirectTo: HANDWERKER_REDIRECT_URL,
         },
       });
 
       if (signUpError) {
         if (signUpError.message.includes('already registered')) {
           toast({
-            title: "Registrierung bereits begonnen",
-            description: "Bitte melden Sie sich an, um fortzufahren. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?».",
+            title: ACCOUNT_EXISTS_TITLE,
+            description: ACCOUNT_EXISTS_DESCRIPTION,
             variant: "destructive",
           });
           setShowLoginForm(true);
@@ -419,7 +419,7 @@ const HandwerkerOnboarding = () => {
       // Check if email confirmation is required
       if (signUpData.user && !signUpData.session) {
         toast({
-          title: "E-Mail-Bestätigung erforderlich",
+          title: EMAIL_CONFIRMATION_TITLE,
           description: "Bitte bestätigen Sie Ihre E-Mail-Adresse. Sie können sich danach hier anmelden.",
           variant: "default",
         });
@@ -435,7 +435,7 @@ const HandwerkerOnboarding = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast({
-          title: "E-Mail-Bestätigung erforderlich",
+          title: EMAIL_CONFIRMATION_TITLE,
           description: "Bitte bestätigen Sie Ihre E-Mail-Adresse und melden Sie sich dann an.",
           variant: "default",
         });
@@ -446,10 +446,6 @@ const HandwerkerOnboarding = () => {
 
       // Success! User is now authenticated
       setIsAuthenticated(true);
-      // Persist intent so onboarding can resume if session is lost between steps
-      try {
-        localStorage.setItem('pendingHandwerkerEmail', formData.email.toLowerCase().trim());
-      } catch { /* localStorage may be unavailable */ }
       toast({
         title: "Konto erstellt",
         description: "Wählen Sie jetzt Ihre Dienstleistungen.",
