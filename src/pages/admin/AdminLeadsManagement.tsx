@@ -685,6 +685,11 @@ export default function AdminLeadsManagement() {
                                           <div className="text-sm text-muted-foreground">
                                             {proposal.handwerker_email}
                                           </div>
+                                          {proposal.handwerker_phone && (
+                                            <div className="text-sm text-muted-foreground">
+                                              {proposal.handwerker_phone}
+                                            </div>
+                                          )}
                                           {proposal.handwerker_city && (
                                             <div className="text-sm text-muted-foreground">
                                               {proposal.handwerker_city}
