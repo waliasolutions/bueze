@@ -670,7 +670,7 @@ export default function AdminLeadsManagement() {
                                 )}
                               </div>
                               {/* Proposals */}
-                              <h4 className="font-semibold mb-3">Eingereichte Offerten ({proposals[lead.id]?.length || 0})</h4>
+                              <h4 className="font-semibold mb-3">Erhaltene Offerten ({proposals[lead.id]?.length || 0})</h4>
                               {proposals[lead.id] && proposals[lead.id].length > 0 ? (
                                 <div className="space-y-3">
                                   {proposals[lead.id].map((proposal) => (
