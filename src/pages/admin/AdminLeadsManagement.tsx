@@ -670,7 +670,7 @@ export default function AdminLeadsManagement() {
                                 )}
                               </div>
                               {/* Proposals */}
-                              <h4 className="font-semibold mb-3">Eingereichte Offerten ({proposals[lead.id]?.length || 0})</h4>
+                              <h4 className="font-semibold mb-3">Erhaltene Offerten ({proposals[lead.id]?.length || 0})</h4>
                               {proposals[lead.id] && proposals[lead.id].length > 0 ? (
                                 <div className="space-y-3">
                                   {proposals[lead.id].map((proposal) => (
@@ -685,6 +685,11 @@ export default function AdminLeadsManagement() {
                                           <div className="text-sm text-muted-foreground">
                                             {proposal.handwerker_email}
                                           </div>
+                                          {proposal.handwerker_phone && (
+                                            <div className="text-sm text-muted-foreground">
+                                              {proposal.handwerker_phone}
+                                            </div>
+                                          )}
                                           {proposal.handwerker_city && (
                                             <div className="text-sm text-muted-foreground">
                                               {proposal.handwerker_city}
@@ -724,7 +729,7 @@ export default function AdminLeadsManagement() {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="text-muted-foreground text-sm">Noch keine Offerten eingereicht</div>
+                                <div className="text-muted-foreground text-sm">Noch keine Offerten erhalten</div>
                               )}
                             </div>
                           </TableCell>
