@@ -167,31 +167,8 @@ const Dashboard = () => {
         });
       }
 
-      // Fetch live proposal counts to override stale proposals_count column
-      const activeLeads = leadsData || [];
-      if (activeLeads.length > 0) {
-        const leadIds = activeLeads.map(l => l.id);
-        const { data: proposalRows } = await supabase
-          .from('lead_proposals')
-          .select('lead_id')
-          .in('lead_id', leadIds)
-          .in('status', ['pending', 'accepted']);
-        
-        // Count proposals per lead
-        const countMap: Record<string, number> = {};
-        proposalRows?.forEach(row => {
-          countMap[row.lead_id] = (countMap[row.lead_id] || 0) + 1;
-        });
-        
-        // Override stale proposals_count with live count
-        const leadsWithLiveCounts = activeLeads.map(lead => ({
-          ...lead,
-          proposals_count: countMap[lead.id] || 0,
-        }));
-        setMyLeads(leadsWithLiveCounts);
-      } else {
-        setMyLeads([]);
-      }
+      // proposals_count is kept in sync by DB trigger sync_lead_proposals_count (SSOT).
+      setMyLeads(leadsData || []);
       setArchivedLeads(archivedData || []);
       
       // Fetch handwerker profiles for reviews if we have reviews
