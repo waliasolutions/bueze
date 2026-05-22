@@ -729,7 +729,7 @@ export default function AdminLeadsManagement() {
                                   ))}
                                 </div>
                               ) : (
-                                <div className="text-muted-foreground text-sm">Noch keine Offerten eingereicht</div>
+                                <div className="text-muted-foreground text-sm">Noch keine Offerten erhalten</div>
                               )}
                             </div>
                           </TableCell>
