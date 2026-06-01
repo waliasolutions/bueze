@@ -205,8 +205,7 @@ const Impressum = () => {
                     Anwendung unter Ausschluss der Bestimmungen des UN-Kaufrechts.
                   </p>
                   <p className="mt-2">
-                    <strong>Gerichtsstand:</strong> Bei Streitigkeiten aus der Nutzung dieser Website gilt als Gerichtsstand 
-                    {b.company_city}, {b.company_country}.
+                    <strong>Gerichtsstand:</strong> Bei Streitigkeiten aus der Nutzung dieser Website gilt als Gerichtsstand {b.company_city}, {b.company_country}.
                   </p>
                 </div>
               </section>
