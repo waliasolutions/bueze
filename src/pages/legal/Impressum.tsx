@@ -205,7 +205,25 @@ const Impressum = () => {
                     Anwendung unter Ausschluss der Bestimmungen des UN-Kaufrechts.
                   </p>
                   <p className="mt-2">
-                    <strong>Gerichtsstand:</strong> Bei Streitigkeiten aus der Nutzung dieser Website ist ausschliesslich {b.company_city}, {b.company_country} zuständig.
+                    <strong>Gerichtsstand:</strong> Bei Streitigkeiten aus der Nutzung dieser Website ist ausschliesslich das Gericht in {b.company_city}, {b.company_country} zuständig.
+                  </p>
+                </div>
+              </section>
+
+              <section className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Entwicklung und Konzept</h2>
+                <div className="text-ink-700">
+                  <p>
+                    Diese Webplattform wurde entwickelt und konzeptualisiert von{' '}
+                    <a
+                      href="https://walia-solutions.ch"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-500 hover:text-brand-600"
+                    >
+                      Walia Solutions
+                    </a>
+                    {' '}in Uster, Schweiz.
                   </p>
                 </div>
               </section>
