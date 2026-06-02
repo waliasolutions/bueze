@@ -1,100 +1,62 @@
-# Fix premature "Erledigt" status & blocked handwerker registration
+# Fix login flicker — root-cause QA
 
-Two unrelated portal bugs, both rooted in duplicated/stale state. Fix is display-only for Bug 1 and removes a stale-localStorage path for Bug 2. No DB migration, no behavior change to underlying lead lifecycle or auth flow.
+## What's actually happening
 
----
+Console logs right after login (09:22:47–52) show a burst of ~10 parallel `NetworkError`s on `GET /user_roles`, each followed by:
 
-## Bug 1 — "Erledigt" shown the moment an offer is accepted
+```
+[useUserRole] No roles found for user: 0556… — defaulting to user role
+```
 
-**Root cause:** `leads.status='completed'` is set on offer-acceptance (correct — it closes the lead to new offers), but four divergent renderers all label `completed` as "Erledigt". The real "work delivered" signal is the separate `leads.delivered_at` column, which nothing in the badge layer reads.
+Then the cache fills and the UI re-renders with the real `admin` role. That gap is the flicker the user sees on the way to `/admin/dashboard`.
 
-**Approach:** collapse the four divergent sources into one config + one helper + one component, and derive the label from `(status, accepted_proposal_id, delivered_at)`.
+Three layered causes:
 
-### Files & changes
+### 1. Thundering herd on `user_roles` (primary)
+`useUserRole()` is instantiated independently by **Header, UserDropdown, Dashboard, ViewModeContext, AdminViewSwitcher, HandwerkerDashboard, ConversationsList, Profile, TestDashboard, useAuthGuard, …** Each instance:
+- runs its own `getSession()` on mount
+- runs its own `supabase.from('user_roles').select()`
+- has its own `onAuthStateChange` subscription that **also** refetches on every event
 
-**1. `src/config/leadStatuses.ts` — single source of truth**
-- Add `variant: 'default' | 'secondary' | 'destructive' | 'outline'` to `LeadStatusConfig`; set it for every entry in `LEAD_STATUSES`.
-- Add `export const LEAD_STATUS_IN_PROGRESS = { label: 'In Bearbeitung', variant: 'default', color: 'bg-indigo-100 text-indigo-800' }`.
-- Add `getLeadDisplayStatus(input: { status: string; accepted_proposal_id?: string | null; delivered_at?: string | null })`:
-  - `completed` + `delivered_at` truthy → `LEAD_STATUSES.completed` ("Erledigt").
-  - `completed` + `accepted_proposal_id` truthy + no `delivered_at` → `LEAD_STATUS_IN_PROGRESS` ("In Bearbeitung").
-  - `completed` + no `accepted_proposal_id` (manual completion) → `LEAD_STATUSES.completed`.
-  - otherwise → `LEAD_STATUSES[status]`, or a neutral `{ label: status, variant: 'outline', color: 'bg-gray-100 text-gray-800' }` for unknowns (never "Entwurf").
-- Use truthy checks so `null`/`undefined` both work.
+Plus `AdminAuthContext` queries `user_roles` separately. On a single login, Supabase receives ~10+ concurrent identical requests over a freshly opened connection — several get throttled to `NetworkError`.
 
-**2. `src/types/entities.ts` — add `delivered_at`**
-- `interface Lead`: add `delivered_at?: string | null;` (after line 45).
-- `interface LeadListItem`: add `delivered_at?: string | null;` (after line 401).
-- Both `Dashboard` and `LeadDetails` use `select('*')`, so the column is already fetched at runtime.
-- During implementation: grep `.rpc(` and `.from('leads'` reads that feed a badge; if any view/RPC omits `delivered_at`/`accepted_proposal_id`, add them.
+No SSOT, violating the project rule.
 
-**3. `src/components/ui/status-badge.tsx` — single renderer**
-- Delete the private `leadStatusConfig` map.
-- Rewrite `LeadStatusBadge` props: `{ status: string; acceptedProposalId?: string | null; deliveredAt?: string | null; showIcon?: boolean }`; derive display via `getLeadDisplayStatus()`. Keep icon lookup keyed off the rendered status, or drop icons.
-- Leave `VerificationStatusBadge`, `SubscriptionStatusBadge`, `UrgencyBadge`, `GenericStatusBadge` untouched.
+### 2. Silent fallback to `'user'` on transient error
+`useUserRole` does:
+```ts
+const fetchedRoles = rolesData?.map(...) || ['user'];
+setAllRoles(fetchedRoles.length > 0 ? fetchedRoles : ['user']);
+```
+When the fetch fails (`rolesData === null` because of NetworkError), an **admin** is briefly rendered as a plain user. Header/UserDropdown switch to client nav, `/admin/dashboard` guard considers redirecting, then the next fetch succeeds and role flips back to `admin` → visible flicker.
 
-**4. Route all renderers through `<LeadStatusBadge>`**
-- `src/pages/Dashboard.tsx` (~516-524): replace hand-rolled ternary `Badge` with `<LeadStatusBadge status={lead.status} acceptedProposalId={lead.accepted_proposal_id} deliveredAt={lead.delivered_at} />`. Leave `canDelete` (~508) and Archivieren-button (~561) logic checks alone.
-- `src/pages/LeadDetails.tsx`: replace both badge spots (~262-267 header, ~511-514 side). Remove now-unused local `getStatusVariant()` (~196-203) and unused `getLeadStatus`/`leadStatus` references.
-- `src/pages/admin/AdminLeadsManagement.tsx` (~526-527): replace inline `LEAD_STATUSES[...]?.color/.label` Badge with `<LeadStatusBadge status={lead.status} acceptedProposalId={lead.accepted_proposal_id ?? null} deliveredAt={lead.delivered_at ?? null} />`.
+### 3. Refetch on non-identity auth events
+`onAuthStateChange` in `useUserRole` reacts to **every** event (`INITIAL_SESSION`, `SIGNED_IN`, `TOKEN_REFRESHED`, `USER_UPDATED`). Each one clears the cache (`roleCache.delete`) and refires the fetch. A normal login emits 2–3 events back-to-back, multiplying the herd.
 
-**Out of scope (intentionally unchanged):** `acceptProposal()` success message, `getStatusSuccessMessage('completed')`, all `canPurchaseLead`/`handleMarkDelivered`/`RatingPrompt` logic gates.
+Secondary noise visible in the same window: `site_settings` and `billing_settings` also error with `NetworkError` / `AbortError` — same thundering-herd pattern, but they aren't the flicker driver.
 
----
+## Fix (frontend only, surgical)
 
-## Bug 2 — Registration blocked / "Registrierung bereits begonnen"
+### A. `src/hooks/useUserRole.ts` — make it a true SSOT
+1. **In-flight dedup**: add a module-level `Map<userId, Promise<AppRole[]>>`. If a fetch for the same user is already running, all subsequent hook instances await the same promise instead of issuing their own request.
+2. **Don't clobber on error**: if `error` is set or `rolesData` is `null`, keep the previously known `allRoles` (and cached value if present). Only fall back to `['user']` when the query genuinely returns an empty array.
+3. **Filter auth events**: only react to `SIGNED_IN` (with a *changed* user id) and `SIGNED_OUT`. Ignore `TOKEN_REFRESHED`, `USER_UPDATED`, `INITIAL_SESSION` (the initial `getSession()` already covers it). Stop calling `roleCache.delete()` on every event — only clear on `SIGNED_OUT` or actual user-id change.
+4. Keep the `setTimeout(0)` deferral (project memory rule).
 
-All edits in `src/pages/HandwerkerOnboarding.tsx`.
+### B. `src/contexts/AdminAuthContext.tsx` — reuse the same source
+Replace the standalone `from('user_roles')` query with `useUserRole()` so admin auth shares the deduped cache instead of issuing a parallel request.
 
-### Fix A — Remove stale-localStorage path (root cause)
-`pendingHandwerkerEmail` is written on signUp (~441), removed only on full completion (~555), and read by `checkAuth` (~186-191) to auto-open a login card pre-filled with that email. Any abandoned registration leaves it forever → next visitor on the same browser sees a stranger's email and appears blocked. The legitimate same-user resume is already covered by the live Supabase session check in `handleCreateAccountAndProceed` (~358-379), so this localStorage key is fully redundant.
-- Delete the read+auto-show block (~186-191), the write (~441), and the remove (~555).
-- In `checkAuth`'s no-session branch keep only `setStartedAsGuest(true)`.
+### C. Verification
+- Reload after login, watch console: expect **zero** `NetworkError` on `user_roles` and **zero** `[useUserRole] No roles found` warnings for the admin user.
+- Header/UserDropdown should show "Administrator" immediately, no client→admin flip.
+- `/admin/dashboard` should render without a brief redirect bounce.
+- Run build/typecheck (auto by harness).
 
-### Fix B — DRY, correct "account already exists" copy
-Currently duplicated as two divergent literals (toast ~397-401 and inline card ~634-638). Since `signUp`'s "already registered" can't tell a half-finished handwerker from a plain customer, copy must work for both.
-- Define module-level constants once:
-  - Title: `"Konto bereits vorhanden"`
-  - Description: `"Mit dieser E-Mail existiert bereits ein Konto. Melden Sie sich an, um Ihr Handwerker-Profil zu erstellen. Falls Sie Ihr Passwort nicht kennen, nutzen Sie «Passwort vergessen?»."`
-- Reference from both spots. No logic change — `handleLogin` already detects existing `handwerker_profiles` and either routes to dashboard or proceeds to step 2.
+## Out of scope (mention only)
+The `site_settings` / `billing_settings` `NetworkError`s show the same pattern but don't cause the role-driven flicker. Happy to fix in a follow-up if you want — flag it separately so this change stays focused.
 
-### Fix C — Unconfirmed-email dead-end
-A user who signed up but never confirmed can neither re-`signUp` ("already registered") nor `signInWithPassword` ("Email not confirmed"). `handleLogin`'s catch (~328-333) shows only a generic error.
-- Add an `isEmailNotConfirmed(err)` check (message includes "Email not confirmed" OR `AuthError.code === 'email_not_confirmed'`).
-- On match, call `supabase.auth.resend({ type: 'signup', email: loginEmail.toLowerCase().trim(), options: { emailRedirectTo: HANDWERKER_REDIRECT_URL } })` in its own try/catch.
-- Success toast: title `"E-Mail-Bestätigung erforderlich"`, description `"Wir haben Ihnen eine neue Bestätigungs-E-Mail gesendet. Bitte prüfen Sie Ihr Postfach (auch den Spam-Ordner)."`
-- 429 rate-limit: distinct calm toast `"Bitte warten Sie einen Moment, bevor Sie es erneut versuchen."`
-- Other errors fall through to the existing generic toast.
-- Normalize email identically to the original signUp (`.toLowerCase().trim()`).
+## Files touched
+- `src/hooks/useUserRole.ts` (dedup + resilient error path + event filter)
+- `src/contexts/AdminAuthContext.tsx` (consume `useUserRole` instead of own query)
 
-### DRY cleanup
-- Extract `const HANDWERKER_REDIRECT_URL = \`${window.location.origin}/handwerker-dashboard\`;` (used by signUp ~391 and the new resend).
-- Reuse the "E-Mail-Bestätigung erforderlich" copy constant wherever it already appears (2× in `handleCreateAccountAndProceed`).
-
-### Already correct — no change
-Live-session resume in `handleCreateAccountAndProceed` (~358-379) and `handleLogin`'s profile-check + step-2 proceed.
-
----
-
-## Verification
-
-**Static:** `tsc --noEmit`, lint, build (build runs automatically).
-
-**Bug 1 (manual via preview):**
-1. New lead → "Aktiv".
-2. Accept offer → "In Bearbeitung" in Dashboard **and** LeadDetails (not "Erledigt").
-3. Handwerker marks delivered → "Erledigt".
-4. Manually complete a lead with no accepted proposal → "Erledigt".
-5. `expired`/`closed` leads → "Abgelaufen"/"Geschlossen" (not "Entwurf"), incl. admin leads list.
-
-**Bug 2:**
-- Inject bogus `pendingHandwerkerEmail` in DevTools, reload `/handwerker-onboarding` logged out → clean step-1, no stranger email, not blocked.
-- Sign up step 1, clear session, revisit with same email → login card; login resumes at step 2.
-- Register plain customer, then open handwerker onboarding with that email → "Konto bereits vorhanden"; login proceeds to step 2.
-- Account exists but email unconfirmed → "E-Mail-Bestätigung erforderlich" toast + new confirmation email sent (429 → calm wait toast).
-
-## Anti-recurrence
-- One config (`LEAD_STATUSES` + in-progress constant), one helper (`getLeadDisplayStatus`), one component (`LeadStatusBadge`). Divergent `leadStatusConfig` deleted — no second source can drift.
-- Unknown statuses handled explicitly — no silent "Entwurf" fallback.
-- Stale-localStorage failure mode removed, not patched.
-- Repeated copy + redirect URL collapsed to single constants.
+No DB, no RLS, no UI redesign.
