@@ -85,15 +85,30 @@ async function listMissingUsers(supabase: ReturnType<typeof createSupabaseAdmin>
     return [] as RecoveryUser[];
   }
 
-  const [{ data: profiles, error: profilesError }, { data: roles, error: rolesError }, { data: handwerkerProfiles, error: handwerkerProfilesError }] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, phone').in('id', userIds),
-    supabase.from('user_roles').select('user_id, role').in('user_id', userIds),
-    supabase.from('handwerker_profiles').select('user_id').in('user_id', userIds),
-  ]);
+  // Chunk the .in() lookups: with hundreds of UUIDs the URL exceeds the
+  // upstream limit and PostgREST returns "error sending request". 100 ids per
+  // batch keeps the URL well under 8KB.
+  const CHUNK = 100;
+  const chunks: string[][] = [];
+  for (let i = 0; i < userIds.length; i += CHUNK) chunks.push(userIds.slice(i, i + CHUNK));
 
-  if (profilesError) throw profilesError;
-  if (rolesError) throw rolesError;
-  if (handwerkerProfilesError) throw handwerkerProfilesError;
+  const profiles: Array<{ id: string; full_name: string | null; phone: string | null }> = [];
+  const roles: Array<{ user_id: string; role: string }> = [];
+  const handwerkerProfiles: Array<{ user_id: string }> = [];
+
+  for (const ids of chunks) {
+    const [p, r, h] = await Promise.all([
+      supabase.from('profiles').select('id, full_name, phone').in('id', ids),
+      supabase.from('user_roles').select('user_id, role').in('user_id', ids),
+      supabase.from('handwerker_profiles').select('user_id').in('user_id', ids),
+    ]);
+    if (p.error) throw p.error;
+    if (r.error) throw r.error;
+    if (h.error) throw h.error;
+    if (p.data) profiles.push(...p.data);
+    if (r.data) roles.push(...r.data as any);
+    if (h.data) handwerkerProfiles.push(...h.data as any);
+  }
 
   const profileMap = new Map((profiles || []).map((profile) => [profile.id, profile]));
   const rolesMap = new Map<string, string[]>();
