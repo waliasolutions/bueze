@@ -168,7 +168,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.4 SMTP2GO (E-Mail-Versand)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.3 SMTP2GO (E-Mail-Versand)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li><strong>Zweck:</strong> Versand von Transaktions- und Benachrichtigungs-E-Mails</li>
                       <li><strong>Standort:</strong> Neuseeland</li>
@@ -177,7 +177,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.5 Google Analytics 4 (Webanalyse)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.4 Google Analytics 4 (Webanalyse)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li><strong>Zweck:</strong> Anonymisierte Analyse des Nutzerverhaltens</li>
                       <li><strong>Standort:</strong> USA (mit EU-Standardvertragsklauseln)</li>
@@ -188,7 +188,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.6 Google Tag Manager (Tag-Verwaltung)</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.5 Google Tag Manager (Tag-Verwaltung)</h3>
                     <ul className="list-disc pl-6 space-y-1">
                       <li><strong>Zweck:</strong> Verwaltung und Auslieferung von Website-Tags für Analyse und Marketing</li>
                       <li><strong>Standort:</strong> USA (mit EU-Standardvertragsklauseln)</li>
@@ -198,7 +198,7 @@ const Datenschutz = () => {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">5.7 Andere Nutzer der Plattform</h3>
+                    <h3 className="text-lg font-semibold mb-2">5.6 Andere Nutzer der Plattform</h3>
                     <p className="mb-2">
                       Bei Annahme einer Offerte werden vollständige Kontaktdaten (Name, Telefonnummer, E-Mail-Adresse, 
                       Projektadresse) zwischen Auftraggeber und Handwerker ausgetauscht. Dies ist für die Vertragsabwicklung 

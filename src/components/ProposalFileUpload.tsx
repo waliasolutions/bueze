@@ -36,7 +36,7 @@ export const ProposalFileUpload: React.FC<ProposalFileUploadProps> = ({
       return 'Nur PDF, JPG oder PNG erlaubt';
     }
     if (f.size > MAX_FILE_SIZE) {
-      return `Datei zu groß (max. ${MAX_FILE_SIZE / 1024 / 1024}MB)`;
+      return `Datei zu groß (maximal ${MAX_FILE_SIZE / 1024 / 1024}MB)`;
     }
     return null;
   }, []);
@@ -138,7 +138,7 @@ export const ProposalFileUpload: React.FC<ProposalFileUploadProps> = ({
             Offerte hochladen
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            PDF, JPG oder PNG (max. 5MB)
+            PDF, JPG oder PNG (maximal 5MB)
           </p>
           <p className="text-xs text-muted-foreground">
             Klicken oder Datei hierher ziehen
