@@ -1400,7 +1400,7 @@ const HandwerkerProfileEdit = () => {
                       <CardHeader>
                         <CardTitle>Firmen-Logo</CardTitle>
                         <CardDescription>
-                          Laden Sie Ihr Firmenlogo hoch (max. 5MB)
+                          Laden Sie Ihr Firmenlogo hoch (maximal 5MB)
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -1468,7 +1468,7 @@ const HandwerkerProfileEdit = () => {
                       <CardHeader>
                         <CardTitle>Portfolio-Bilder</CardTitle>
                         <CardDescription>
-                          Zeigen Sie Ihre besten Arbeiten (max. 5MB pro Bild)
+                          Zeigen Sie Ihre besten Arbeiten (maximal 5MB pro Bild)
                         </CardDescription>
                       </CardHeader>
                       <CardContent>

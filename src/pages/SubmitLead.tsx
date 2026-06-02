@@ -921,7 +921,7 @@ const SubmitLead = () => {
                       <div>
                         <FormLabel>Bilder (optional)</FormLabel>
                         <FormDescription className="mb-2">
-                          Laden Sie bis zu 2 Bilder hoch (max. 3MB pro Bild)
+                          Laden Sie bis zu 2 Bilder hoch (maximal 3MB pro Bild)
                         </FormDescription>
                         <div className="flex items-center gap-2">
                           <Button

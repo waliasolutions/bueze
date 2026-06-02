@@ -195,7 +195,7 @@ export function DocumentUploadDialog({
                     Klicken Sie hier oder ziehen Sie eine Datei hierher
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    PDF, JPG oder PNG (max. 10MB)
+                    PDF, JPG oder PNG (maximal 10MB)
                   </p>
                 </>
               )}
