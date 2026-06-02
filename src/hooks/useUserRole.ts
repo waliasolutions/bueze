@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { ROLE_CONFIG, isAdminRole, getPrimaryRole, type AppRole } from '@/config/roles';
+import { isAdminRole, getPrimaryRole, type AppRole } from '@/config/roles';
 
-// Use AppRole from roles.ts as SSOT
 type UserRole = AppRole | null;
 
 interface UseUserRoleResult {
@@ -19,9 +18,49 @@ interface UseUserRoleResult {
   userId: string | null;
 }
 
-// Cache for role data to prevent repeated queries
+// ---- Module-level SSOT cache + in-flight dedup ------------------------------
+// All hook instances share the same cache and the same in-flight promise per
+// userId, so a single login does not trigger N parallel /user_roles requests.
 const roleCache = new Map<string, { roles: AppRole[]; timestamp: number }>();
+const inFlight = new Map<string, Promise<AppRole[]>>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function loadRoles(userId: string): Promise<AppRole[]> {
+  const cached = roleCache.get(userId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.roles;
+  }
+
+  const existing = inFlight.get(userId);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
+
+    if (error) {
+      // Transient (network/throttle) — do NOT poison the cache and do NOT
+      // overwrite previously known roles. Re-throw so callers keep last state.
+      console.error('Error fetching user roles:', error);
+      throw error;
+    }
+
+    const fetched: AppRole[] = (data ?? []).map((r) => r.role as AppRole);
+    if (fetched.length === 0) {
+      console.warn('[useUserRole] No roles found for user:', userId, '- defaulting to user role');
+    }
+    const roles = fetched.length > 0 ? fetched : (['user'] as AppRole[]);
+    roleCache.set(userId, { roles, timestamp: Date.now() });
+    return roles;
+  })().finally(() => {
+    inFlight.delete(userId);
+  });
+
+  inFlight.set(userId, promise);
+  return promise;
+}
 
 export function useUserRole(): UseUserRoleResult {
   const [allRoles, setAllRoles] = useState<AppRole[]>([]);
@@ -30,91 +69,64 @@ export function useUserRole(): UseUserRoleResult {
 
   useEffect(() => {
     let isMounted = true;
+    let currentUserId: string | null = null;
 
-    const fetchRoles = async (userId: string) => {
+    const applyRoles = async (uid: string) => {
       try {
-        // Check cache first
-        const cached = roleCache.get(userId);
-        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-          if (isMounted) {
-            setAllRoles(cached.roles);
-            setLoading(false);
-          }
-          return;
-        }
-
-        // Fetch all roles from database (handles multiple roles)
-        const { data: rolesData, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId);
-
-        if (error) {
-          console.error('Error fetching user roles:', error);
-        }
-
-        // Extract roles array
-        const fetchedRoles: AppRole[] = rolesData?.map(r => r.role as AppRole) || ['user'];
-        
-        // Log warning if no roles found - defensive coding
-        if (!rolesData || rolesData.length === 0) {
-          console.warn('[useUserRole] No roles found for user:', userId, '- defaulting to user role');
-        }
-        
-        // Update cache
-        roleCache.set(userId, { roles: fetchedRoles, timestamp: Date.now() });
-
+        const roles = await loadRoles(uid);
         if (isMounted) {
-          setAllRoles(fetchedRoles.length > 0 ? fetchedRoles : ['user']);
+          setAllRoles(roles);
           setLoading(false);
         }
-      } catch (error) {
-        console.error('Error in useUserRole:', error);
-        if (isMounted) {
-          setLoading(false);
-        }
+      } catch {
+        // Transient error: keep whatever roles we already had. If we had none,
+        // stay in loading=false but don't flip to ['user'] — a subsequent
+        // event (or next mount) will retry via loadRoles.
+        if (isMounted) setLoading(false);
       }
     };
 
-    // Initialize: Check for existing session first
-    const initializeAuth = async () => {
+    const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (session?.user) {
-        if (isMounted) {
-          setUserId(session.user.id);
-        }
-        await fetchRoles(session.user.id);
-      } else {
+        currentUserId = session.user.id;
+        if (isMounted) setUserId(session.user.id);
+        await applyRoles(session.user.id);
+      } else if (isMounted) {
+        setAllRoles([]);
+        setUserId(null);
+        setLoading(false);
+      }
+    };
+
+    init();
+
+    // Only react to identity-changing events. TOKEN_REFRESHED / USER_UPDATED /
+    // INITIAL_SESSION do not change the user id and would otherwise cause a
+    // refetch storm right after login.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        currentUserId = null;
+        roleCache.clear();
+        inFlight.clear();
         if (isMounted) {
           setAllRoles([]);
           setUserId(null);
           setLoading(false);
         }
+        return;
       }
-    };
 
-    initializeAuth();
+      if (event !== 'SIGNED_IN') return;
+      const newUid = session?.user?.id ?? null;
+      if (!newUid || newUid === currentUserId) return; // same user, ignore
 
-    // Listen for auth changes - NO async callback to prevent deadlock
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') {
-        // Synchronous state updates only
-        setAllRoles([]);
-        setUserId(null);
-        roleCache.clear();
-        setLoading(false);
-      } else if (session?.user && isMounted) {
-        // Synchronous state update
-        setUserId(session.user.id);
-        // Defer async role fetching with setTimeout to avoid deadlock
-        setTimeout(() => {
-          if (isMounted) {
-            roleCache.delete(session.user.id);
-            fetchRoles(session.user.id);
-          }
-        }, 0);
-      }
+      currentUserId = newUid;
+      if (isMounted) setUserId(newUid);
+      // Defer the supabase query out of the auth callback (deadlock-safe).
+      setTimeout(() => {
+        if (isMounted) applyRoles(newUid);
+      }, 0);
     });
 
     return () => {
@@ -123,11 +135,8 @@ export function useUserRole(): UseUserRoleResult {
     };
   }, []);
 
-  // Get the highest priority role using SSOT getPrimaryRole
   const primaryRole = getPrimaryRole(allRoles) || (allRoles.length > 0 ? allRoles[0] : null);
-  
-  // Check for specific role types using SSOT isAdminRole
-  const hasAdminRole = allRoles.some(r => isAdminRole(r));
+  const hasAdminRole = allRoles.some((r) => isAdminRole(r));
   const hasSuperAdminRole = allRoles.includes('super_admin');
   const hasHandwerkerRole = allRoles.includes('handwerker');
 
@@ -146,7 +155,7 @@ export function useUserRole(): UseUserRoleResult {
   };
 }
 
-// Utility to clear the role cache (useful for logout)
 export function clearRoleCache() {
   roleCache.clear();
+  inFlight.clear();
 }
