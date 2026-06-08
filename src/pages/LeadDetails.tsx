@@ -542,23 +542,23 @@ const LeadDetails = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center gap-4 mb-4">
-                      <Avatar className="h-12 w-12">
+                      <Avatar className="h-12 w-12 shrink-0">
                         <AvatarImage src={owner.avatar_url} />
                         <AvatarFallback>
                           {owner.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
-                        <h4 className="font-semibold">{owner.full_name || 'Unbekannt'}</h4>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Mail className="h-3 w-3" />
-                            <span>{owner.email}</span>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold break-words">{owner.full_name || 'Unbekannt'}</h4>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1 min-w-0 max-w-full">
+                            <Mail className="h-3 w-3 shrink-0" />
+                            <span className="break-all">{owner.email}</span>
                           </div>
                           {owner.phone && (
-                            <div className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              <span>{owner.phone}</span>
+                            <div className="flex items-center gap-1 min-w-0 max-w-full">
+                              <Phone className="h-3 w-3 shrink-0" />
+                              <span className="break-all">{owner.phone}</span>
                             </div>
                           )}
                         </div>
