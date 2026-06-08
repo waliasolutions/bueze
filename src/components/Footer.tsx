@@ -54,19 +54,19 @@ export const Footer = ({ content }: FooterProps) => {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Mail className="h-4 w-4 flex-shrink-0" />
-                <a href={`mailto:${email}`} className="hover:text-brand-400 transition-colors">
+                <a href={`mailto:${email}`} className="hover:text-brand-400 transition-colors min-w-0 break-all">
                   {email}
                 </a>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <Phone className="h-4 w-4 flex-shrink-0" />
-                <a href={formatPhoneHref(phone)} className="hover:text-brand-400 transition-colors">
+                <a href={formatPhoneHref(phone)} className="hover:text-brand-400 transition-colors min-w-0 break-all">
                   {formatPhoneDisplay(phone)}
                 </a>
               </div>
               <div className="flex items-center gap-3 text-sm text-ink-300">
                 <MapPin className="h-4 w-4 flex-shrink-0" />
-                <span>{address}</span>
+                <span className="min-w-0 break-words">{address}</span>
               </div>
             </div>
           </div>
