@@ -435,18 +435,18 @@ const LeadDetails = () => {
                 <CardTitle>Ihre Kontaktdaten</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="font-semibold">{owner.full_name}</p>
+                <p className="font-semibold break-words">{owner.full_name}</p>
                 <div className="space-y-2">
-                  <div className="flex items-center text-sm">
+                  <div className="flex items-center text-sm min-w-0">
                     <Mail className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
-                    <a href={`mailto:${owner.email}`} className="hover:underline">
+                    <a href={`mailto:${owner.email}`} className="hover:underline min-w-0 break-all">
                       {owner.email}
                     </a>
                   </div>
                   {owner.phone && (
-                    <div className="flex items-center text-sm">
+                    <div className="flex items-center text-sm min-w-0">
                       <Phone className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
-                      <a href={formatPhoneHref(owner.phone)} className="hover:underline">
+                      <a href={formatPhoneHref(owner.phone)} className="hover:underline min-w-0 break-all">
                         {formatPhoneDisplay(owner.phone)}
                       </a>
                     </div>
