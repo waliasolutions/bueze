@@ -731,15 +731,15 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
+                    <div className="min-w-0">
                       <label className="text-sm font-medium">Name</label>
-                      <p className="text-sm text-muted-foreground">{profile?.full_name || 'Nicht angegeben'}</p>
+                      <p className="text-sm text-muted-foreground break-words">{profile?.full_name || 'Nicht angegeben'}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="text-sm font-medium">E-Mail</label>
-                      <p className="text-sm text-muted-foreground">{profile?.email}</p>
+                      <p className="text-sm text-muted-foreground break-all">{profile?.email}</p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <label className="text-sm font-medium">Rolle</label>
                       <p className="text-sm text-muted-foreground">Auftraggeber</p>
                     </div>
