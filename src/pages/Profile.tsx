@@ -973,9 +973,9 @@ const Profile = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
+                    <div className="min-w-0">
                       <label className="text-sm font-medium">E-Mail</label>
-                      <p className="text-sm text-muted-foreground">{user?.email}</p>
+                      <p className="text-sm text-muted-foreground break-all">{user?.email}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium">Rolle</label>
