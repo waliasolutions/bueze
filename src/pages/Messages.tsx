@@ -346,23 +346,23 @@ const Messages = () => {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="ghost" onClick={() => {
+            <Button variant="ghost" className="shrink-0" onClick={() => {
               // Determine navigation based on user's role in conversation
               const isHandwerkerInConversation = user?.id === conversation?.handwerker_id;
               navigate(isHandwerkerInConversation ? '/handwerker-dashboard' : '/dashboard');
             }}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-3">
-              <Avatar>
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <Avatar className="shrink-0">
                 <AvatarImage src={otherUser?.avatar_url} />
                 <AvatarFallback>
                   <User className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <h1 className="text-xl font-semibold">{otherUser?.full_name || 'Benutzer'}</h1>
-                <p className="text-sm text-muted-foreground">{conversation.lead.title}</p>
+              <div className="min-w-0 flex-1">
+                <h1 className="text-xl font-semibold truncate">{otherUser?.full_name || 'Benutzer'}</h1>
+                <p className="text-sm text-muted-foreground truncate">{conversation.lead.title}</p>
               </div>
             </div>
           </div>
