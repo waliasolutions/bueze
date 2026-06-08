@@ -372,11 +372,15 @@ const HandwerkerDashboard = () => {
       
       let ownerProfilesMap = new Map();
       if (ownerIds.length > 0) {
-        const { data: ownerProfiles } = await supabase
+        const { data: ownerProfiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, email, phone')
           .in('id', ownerIds);
-        
+
+        if (profilesError) {
+          console.error('[RLS Profile Fetch Error]:', profilesError.message);
+        }
+
         ownerProfilesMap = new Map(ownerProfiles?.map(p => [p.id, p]) || []);
       }
       
