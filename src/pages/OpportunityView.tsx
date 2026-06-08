@@ -277,9 +277,9 @@ const OpportunityView = () => {
             <div className="flex items-start justify-between">
               <div>
                 <CardTitle className="text-2xl mb-2">{lead.title}</CardTitle>
-                <CardDescription className="flex items-center gap-4 text-base">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
+                <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-2 text-base">
+                  <span className="flex items-center gap-1 min-w-0 break-words">
+                    <MapPin className="h-4 w-4 flex-shrink-0" />
                     {lead.city}, {getCantonLabel(lead.canton)}
                   </span>
                   <Badge>{getCategoryLabel(lead.category)}</Badge>
@@ -291,25 +291,25 @@ const OpportunityView = () => {
           <CardContent className="space-y-6">
             <div>
               <h3 className="font-semibold mb-2">Projektbeschreibung</h3>
-              <p className="text-muted-foreground whitespace-pre-wrap">{lead.description}</p>
+              <p className="text-muted-foreground whitespace-pre-wrap break-words">{lead.description}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
-                <Coins className="h-5 w-5 text-muted-foreground" />
-                <div>
+              <div className="flex items-center gap-2 min-w-0">
+                <Coins className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div className="min-w-0">
                   <div className="text-sm text-muted-foreground">Budget</div>
-                  <div className="font-medium">
+                  <div className="font-medium break-words">
                     CHF {lead.budget_min?.toLocaleString()} - {lead.budget_max?.toLocaleString()}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <div>
+              <div className="flex items-center gap-2 min-w-0">
+                <Clock className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div className="min-w-0">
                   <div className="text-sm text-muted-foreground">Dringlichkeit</div>
-                  <div className="font-medium">{getUrgencyLabel(lead.urgency)}</div>
+                  <div className="font-medium break-words">{getUrgencyLabel(lead.urgency)}</div>
                 </div>
               </div>
             </div>
