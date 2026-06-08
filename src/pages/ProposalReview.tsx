@@ -165,16 +165,16 @@ const ProposalReview = () => {
 
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-16 w-16 shrink-0">
                 <AvatarImage src={proposal.profiles?.avatar_url} />
                 <AvatarFallback>{handwerkerName[0]}</AvatarFallback>
               </Avatar>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">{handwerkerName}</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg break-words">{handwerkerName}</h3>
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-4 w-4" />
-                    {proposal.profiles?.city || 'Schweiz'}
+                  <span className="flex items-center gap-1 min-w-0">
+                    <MapPin className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{proposal.profiles?.city || 'Schweiz'}</span>
                   </span>
                 </div>
               </div>
@@ -183,18 +183,18 @@ const ProposalReview = () => {
             <div>
               <h3 className="font-semibold mb-3">Offerten-Details</h3>
               <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 border rounded-lg">
+                <div className="p-4 border rounded-lg min-w-0">
                   <div className="text-sm text-muted-foreground">Preis</div>
-                  <div className="text-xl font-semibold">
+                  <div className="text-xl font-semibold break-words">
                     CHF {proposal.price_min.toLocaleString()} - {proposal.price_max.toLocaleString()}
                   </div>
                 </div>
                 {proposal.estimated_duration_days && (
-                  <div className="p-4 border rounded-lg">
+                  <div className="p-4 border rounded-lg min-w-0">
                     <div className="text-sm text-muted-foreground">Geschätzte Dauer</div>
                     <div className="text-xl font-semibold flex items-center gap-2">
-                      <Clock className="h-5 w-5 text-muted-foreground" />
-                      {proposal.estimated_duration_days} Tage
+                      <Clock className="h-5 w-5 text-muted-foreground shrink-0" />
+                      <span className="break-words">{proposal.estimated_duration_days} Tage</span>
                     </div>
                   </div>
                 )}
@@ -203,7 +203,7 @@ const ProposalReview = () => {
 
             <div>
               <h3 className="font-semibold mb-2">Nachricht vom Handwerker</h3>
-              <div className="p-4 bg-muted rounded-lg whitespace-pre-wrap">
+              <div className="p-4 bg-muted rounded-lg whitespace-pre-wrap break-words">
                 {proposal.message}
               </div>
             </div>
