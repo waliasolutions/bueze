@@ -26,9 +26,19 @@ export function useOverflowDetector(enabled: boolean = true) {
           // Skip elements that intentionally scroll internally
           const style = window.getComputedStyle(el);
           if (style.overflowX === 'auto' || style.overflowX === 'scroll') return;
+          // Skip Radix portals and other intentionally hidden/offscreen UI
+          if (el.closest('[data-state="closed"]')) return;
+          if (el.closest('[aria-hidden="true"]')) return;
+          if (el.closest('[hidden]')) return;
+          // Skip elements not in the layout flow (display:none ancestors)
+          if (el.offsetParent === null && style.position !== 'fixed') return;
 
           const rect = el.getBoundingClientRect();
           if (rect.width === 0 || rect.height === 0) return;
+          // Only flag elements that actually straddle the viewport's right edge.
+          // Elements entirely to the right (rect.left >= docWidth) are off-screen
+          // portals/popovers and do not produce horizontal scroll.
+          if (rect.left >= docWidth) return;
           if (rect.right > docWidth + 1) {
             offenders.push({ el, right: rect.right, overflow: rect.right - docWidth });
             el.style.outline = '2px dashed magenta';
