@@ -2255,6 +2255,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_proposal_atomic: { Args: { p_proposal_id: string }; Returns: Json }
       budget_ranges_overlap: {
         Args: {
           lead_max: number
@@ -2271,6 +2272,16 @@ export type Database = {
       check_lead_expiry: { Args: never; Returns: undefined }
       delete_expired_contact_requests: { Args: never; Returns: undefined }
       delete_expired_magic_tokens: { Args: never; Returns: undefined }
+      get_accepted_client_contacts: {
+        Args: { p_lead_ids: string[] }
+        Returns: {
+          client_id: string
+          email: string
+          full_name: string
+          lead_id: string
+          phone: string
+        }[]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -2285,6 +2296,10 @@ export type Database = {
           role: string
           user_id: string
         }[]
+      }
+      handwerker_can_view_client_profile: {
+        Args: { p_profile_id: string }
+        Returns: boolean
       }
       handwerker_has_proposal_on_lead: {
         Args: { lead_uuid: string }
