@@ -16,89 +16,38 @@ export interface ProposalActionResult {
  */
 export async function acceptProposal(proposalId: string): Promise<ProposalActionResult> {
   try {
-    // Get the proposal and verify it's still pending
-    const { data: proposal, error: proposalError } = await supabase
-      .from('lead_proposals')
-      .select('lead_id, status')
-      .eq('id', proposalId)
-      .single();
+    // Single atomic RPC: locks lead+proposal, validates ownership/state,
+    // updates lead + proposal + rejects siblings in one transaction.
+    // Acceptance emails + conversation creation are dispatched by the DB trigger
+    // `on_proposal_accepted` (pg_net -> send-acceptance-emails). Do NOT also
+    // invoke the edge function from the client — that produced duplicate
+    // conversations and duplicate emails on every acceptance.
+    const { data, error } = await supabase.rpc('accept_proposal_atomic', {
+      p_proposal_id: proposalId,
+    });
 
-    if (proposalError) throw proposalError;
-
-    if (proposal.status !== 'pending') {
+    if (error) {
+      console.error('Error accepting proposal:', error);
       return {
         success: false,
-        message: 'Diese Offerte wurde bereits bearbeitet.'
+        message: 'Offerte konnte nicht angenommen werden',
+        error: error.message,
       };
     }
 
-    // Verify the lead is still active (prevents double-acceptance race condition)
-    const { data: lead, error: leadCheckError } = await supabase
-      .from('leads')
-      .select('status, accepted_proposal_id')
-      .eq('id', proposal.lead_id)
-      .single();
-
-    if (leadCheckError) throw leadCheckError;
-
-    if (lead.status === 'completed' || lead.accepted_proposal_id) {
-      return {
-        success: false,
-        message: 'Für diesen Auftrag wurde bereits eine Offerte angenommen.'
-      };
-    }
-
-    // Update lead status FIRST (acts as a lock — only one can succeed due to accepted_proposal_id)
-    const { error: leadError } = await supabase
-      .from('leads')
-      .update({
-        status: 'completed',
-        accepted_proposal_id: proposalId
-      })
-      .eq('id', proposal.lead_id)
-      .eq('status', 'active'); // Optimistic lock: only update if still active
-
-    if (leadError) throw leadError;
-
-    // Update proposal status to accepted
-    const { error: updateError } = await supabase
-      .from('lead_proposals')
-      .update({
-        status: 'accepted',
-        responded_at: new Date().toISOString()
-      })
-      .eq('id', proposalId);
-
-    if (updateError) throw updateError;
-
-    // Reject all other pending proposals for this lead
-    await supabase
-      .from('lead_proposals')
-      .update({ status: 'rejected', responded_at: new Date().toISOString() })
-      .eq('lead_id', proposal.lead_id)
-      .neq('id', proposalId)
-      .eq('status', 'pending');
-
-    // Trigger acceptance emails and conversation creation
-    try {
-      await supabase.functions.invoke('send-acceptance-emails', {
-        body: { proposalId }
-      });
-    } catch (emailError) {
-      console.error('Failed to send acceptance emails:', emailError);
-      // Don't fail the whole operation if emails fail
-    }
-
+    const result = (data ?? {}) as { success?: boolean; message?: string };
     return {
-      success: true,
-      message: 'Offerte angenommen! Beide Parteien wurden benachrichtigt.'
+      success: !!result.success,
+      message: result.message ?? (result.success
+        ? 'Offerte angenommen! Beide Parteien wurden benachrichtigt.'
+        : 'Offerte konnte nicht angenommen werden'),
     };
   } catch (error) {
     console.error('Error accepting proposal:', error);
     return {
       success: false,
       message: 'Offerte konnte nicht angenommen werden',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
