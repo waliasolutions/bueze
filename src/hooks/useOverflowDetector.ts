@@ -41,7 +41,8 @@ export function useOverflowDetector(enabled: boolean = true) {
           if (rect.left >= docWidth) return;
           if (rect.right > docWidth + 1) {
             offenders.push({ el, right: rect.right, overflow: rect.right - docWidth });
-            el.style.outline = '2px dashed magenta';
+            // Silent: tag for DevTools inspection (querySelector('[data-overflow]'))
+            // but do NOT paint outlines — keeps admin/data views clean.
             el.setAttribute('data-overflow', String(Math.round(rect.right - docWidth)));
           }
         });
