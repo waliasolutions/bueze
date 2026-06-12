@@ -366,35 +366,41 @@ const HandwerkerDashboard = () => {
         }
       }));
       
-      // Batch fetch client contacts for accepted proposals (fix N+1 query)
+      // Batch fetch client contacts for accepted proposals via SECURITY DEFINER RPC
+      // (SSOT: bypasses profiles RLS drift, immune to recursion).
       const acceptedProposals = proposalsWithFallback.filter(p => p.status === 'accepted' && p.leads?.owner_id);
-      const ownerIds = [...new Set(acceptedProposals.map(p => p.leads.owner_id))];
-      
-      let ownerProfilesMap = new Map();
-      if (ownerIds.length > 0) {
-        const { data: ownerProfiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, phone')
-          .in('id', ownerIds);
+      const leadIds = [...new Set(acceptedProposals.map(p => p.lead_id))];
 
-        if (profilesError) {
-          console.error('[RLS Profile Fetch Error]:', profilesError.message);
+      let contactsByLeadId = new Map<string, { full_name: string | null; email: string | null; phone: string | null }>();
+      if (leadIds.length > 0) {
+        const { data: contacts, error: contactsError } = await supabase
+          .rpc('get_accepted_client_contacts', { p_lead_ids: leadIds });
+
+        if (contactsError) {
+          console.error('[get_accepted_client_contacts] error:', contactsError);
+          toast({
+            title: 'Kundenkontakt konnte nicht geladen werden',
+            description: contactsError.message,
+            variant: 'destructive',
+          });
+        } else {
+          contactsByLeadId = new Map(
+            (contacts || []).map((c: any) => [c.lead_id as string, { full_name: c.full_name, email: c.email, phone: c.phone }])
+          );
         }
-
-        ownerProfilesMap = new Map(ownerProfiles?.map(p => [p.id, p]) || []);
       }
-      
+
       // Map contacts to proposals
       const proposalsWithContacts = proposalsWithFallback.map(proposal => {
         if (proposal.status === 'accepted' && proposal.leads?.owner_id) {
           return {
             ...proposal,
-            client_contact: ownerProfilesMap.get(proposal.leads.owner_id) || null
+            client_contact: contactsByLeadId.get(proposal.lead_id) || null,
           };
         }
         return proposal;
       });
-      
+
       setProposals(proposalsWithContacts);
     } catch (error) {
       console.error('Error fetching proposals:', error);
