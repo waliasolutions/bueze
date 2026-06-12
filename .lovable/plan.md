@@ -1,72 +1,61 @@
+# Fix: Craftsmen can't see client details after acceptance — RCA + permanent fix
 
-# Batch 1 — Mobile Overflow Audit: Index Route
+Your analysis is accurate and matches the codebase. Adopting it as the plan with two small adjustments noted at the end.
 
-Scope is strictly the public homepage (`/`) shell and its sections. No visual changes, no design tokens touched. Every fix targets a root cause (box model, flex/grid constraints, viewport math); no blanket `overflow-x-hidden` on parents.
+## Root causes (confirmed)
 
-## 1. Install the dev-only overflow detector (SSOT)
+1. **RC1 — Non-atomic client-side acceptance** in `src/lib/proposalHelpers.ts::acceptProposal` performs 3 sequential writes from the browser. A mid-flight failure leaves `leads.accepted_proposal_id` set while the proposal stays `pending` → both RLS and the dashboard UI (which gate on `status='accepted'`) correctly hide the contact. **This keeps minting new broken records.**
+2. **RC2 — Fragile RLS hotfix** on `profiles` inlines a cross-table subquery (`lead_proposals` JOIN `leads`) — same pattern that previously caused `42P17` recursion, fixed elsewhere via `handwerker_has_proposal_on_lead` SECURITY DEFINER. One stray future policy can silently break all profile reads for craftsmen.
+3. **RC3 — Silent failure & single fragile read path.** `HandwerkerDashboard.tsx:369-396` swallows RLS errors (`console.error` only), and the SELECT on `profiles` is the only access path.
+4. **RC4 (side)** — Double dispatch of `send-acceptance-emails`: DB trigger `on_proposal_accepted` (pg_net) **and** frontend `functions.invoke(...)` both fire; the edge function is not idempotent → duplicate conversations + duplicate emails on every acceptance.
 
-New file:
+## Fix design
 
-- `src/hooks/useOverflowDetector.ts` — exactly the hook from my previous message. Guarded by `import.meta.env.DEV` so Vite tree-shakes it from production bundles. Uses `requestAnimationFrame` + `MutationObserver` + `resize` listener. Outlines offenders in magenta and logs them grouped in the console with pixel overflow amounts.
+### A. Migration — `supabase/migrations/<ts>_atomic_accept_and_contact_access.sql`
 
-Mount once at the app root:
+1. `public.accept_proposal_atomic(p_proposal_id uuid) returns jsonb` — `SECURITY DEFINER`, `SET search_path = public`. Verifies `auth.uid() = leads.owner_id`, `SELECT ... FOR UPDATE` on lead + proposal, validates `lead.status='active'` and `proposal.status='pending'`, performs all 3 updates in one transaction, returns `{success, message}` matching today's German strings. `GRANT EXECUTE ... TO authenticated`; `REVOKE ... FROM anon`.
+2. `public.get_accepted_client_contacts(p_lead_ids uuid[])` — `SECURITY DEFINER STABLE`, returns `(lead_id, client_id, full_name, email, phone)` for leads where the caller has an accepted proposal. Becomes SSOT for contact access; immune to `profiles` RLS drift. Uses existing `idx_lead_proposals_handwerker_status`.
+3. **Harden the hotfix (defense in depth):** `DROP POLICY IF EXISTS "Handwerkers can view accepted client profile" ON public.profiles;` then add SECURITY DEFINER fn `public.handwerker_can_view_client_profile(p_profile_id uuid)` and recreate policy as `USING (public.handwerker_can_view_client_profile(id))` — same recursion-proof pattern as `handwerker_has_proposal_on_lead`.
+4. All statements idempotent (`CREATE OR REPLACE`, `DROP ... IF EXISTS`, `CREATE POLICY` after drop).
 
-- `src/App.tsx` — add `useOverflowDetector();` call inside the top-level component body. No JSX change, no provider wrapping.
+### B. Repair script — `supabase/repair/2026-06-12-repair-accepted-offers.sql` (manual, not auto-applied)
 
-This stays inert in production (no listeners attached, no DOM scans).
+Single transaction:
+1. `ALTER TABLE lead_proposals DISABLE TRIGGER on_proposal_accepted;` (avoid retro email spam).
+2. Promote stuck proposals: any proposal referenced by `leads.accepted_proposal_id` with `status<>'accepted'` → `accepted` (set `responded_at` if null).
+3. Reverse drift: leads with an accepted proposal but `status<>'completed'` or null `accepted_proposal_id` → fix. Leads with 2+ accepted proposals are **reported via NOTICE and skipped** (no guessing).
+4. Reject other still-pending proposals on repaired leads.
+5. Backfill missing `conversations` (`WHERE NOT EXISTS` and only when both profile rows exist) and missing `handwerker_notifications` (`type='proposal_accepted'`) — no emails.
+6. Re-enable trigger. Emits `RAISE NOTICE` counts. Safe to re-run.
 
-## 2. Audit targets for this batch
+Top of file: SELECT-only diagnostic queries to count broken rows before/after (must be 0 after).
 
-Read-only inspection, then minimal surgical edits, on:
+### C. Frontend (minimal, preserves existing patterns)
 
-```text
-src/pages/Index.tsx
-src/components/Header.tsx
-src/components/Hero.tsx
-src/components/HowItWorks.tsx
-src/components/FAQ.tsx
-src/components/Footer.tsx
-src/components/MobileStickyFooter.tsx
-src/index.css            (read-only verification; no token edits)
-tailwind.config.ts       (read-only verification)
-```
+1. `src/lib/proposalHelpers.ts` — `acceptProposal()` becomes a single `supabase.rpc('accept_proposal_atomic', { p_proposal_id: proposalId })`. **Remove** the frontend `supabase.functions.invoke('send-acceptance-emails', ...)` call — the DB trigger is the sole dispatcher (fixes RC4). Return shape unchanged; `acceptProposalsBatch`, `ReceivedProposals`, `ProposalReview`, `ProposalsManagement` untouched.
+2. `src/pages/HandwerkerDashboard.tsx:369-396` — replace the direct `profiles` SELECT with `supabase.rpc('get_accepted_client_contacts', { p_lead_ids })`. Extract pure mapper `mapProposalsToContacts` into `src/lib/proposalQueries.ts` (DRY + testable). On RPC error, surface a toast (match pattern at line 349) instead of swallowing.
+3. `src/integrations/supabase/types.ts` — **do not hand-edit** (project rule: file is auto-regenerated after migration approval). After the migration runs, the types regenerate to include both RPCs. Frontend edits land in the same response right after migration approval, when types are fresh.
 
-## 3. What I will look for (root-cause checklist)
+### D. Tests (vitest)
 
-For each file in scope I will grep + visually verify each of these and only patch confirmed offenders:
+- `src/lib/proposalHelpers.test.ts` — mocked supabase: success path, RPC error propagation, already-accepted German message, batch behavior, **assert no `functions.invoke` call**.
+- `src/lib/proposalQueries.test.ts` — pure `mapProposalsToContacts` unit tests (accepted-only filtering, missing contact tolerance).
 
-1. `w-screen` / `min-w-screen` / `100vw` usage → replace with `w-full` unless the element is a true viewport-pinned overlay anchored to `left-0 right-0`.
-2. Decorative `absolute` / `fixed` elements (blurs, gradients, blobs) lacking a `relative overflow-hidden` bounding ancestor scoped to that decoration only (never the page shell).
-3. Flex/grid children carrying long strings (emails, URLs, German compound words) without `min-w-0` on the flex child and `break-words` / `truncate` on the text node.
-4. Hardcoded pixel widths (`w-[Npx]`, `min-w-[Npx]`) that exceed 320px on mobile-rendered elements → swap to `w-full max-w-[Npx]`.
-5. Negative margins (`-mx-*`, `-ml-*`, `-mr-*`) not balanced by a padded parent — common in `Header` containers and section wrappers.
-6. Grid templates with fixed `minmax(Npx, ...)` larger than 320px on mobile.
-7. `MobileStickyFooter` fixed positioning: confirm `left-0 right-0` (not `w-screen`) and that inner padding respects `env(safe-area-inset-*)` without pushing children past viewport.
-8. Header nav: confirm logo + nav row uses `min-w-0` on the shrinking child and `truncate` on brand text if applicable.
-9. Long German strings in Hero headline and FAQ questions: ensure word-break behavior does not require horizontal scroll at 320px.
+## Verification
 
-## 4. Fix policy
+1. `npx vitest run` — new + existing tests green.
+2. Build / typecheck passes (auto by harness).
+3. Manual: run repair script's SELECT preamble in Supabase SQL editor → record broken count → apply migration → run repair script → preamble returns 0 → spot-check a craftsman dashboard.
 
-- Smallest possible diff per offender.
-- Prefer Tailwind utilities already in the project; no new tokens, no new variants.
-- `overflow-x-hidden` only allowed on the specific decorative container that owns the bleeding element (e.g., the Hero section's own `relative` wrapper), never on `html`, `body`, `#root`, `main`, or layout shells. Each such use will carry an inline comment justifying why the box model cannot be fixed.
-- No changes to spacing scale, font sizes, colors, or breakpoints.
+## Adjustments to your draft
 
-## 5. Verification
+- **Do not hand-edit `src/integrations/supabase/types.ts`** — Lovable rule: that file is regenerated from the live DB after migration approval. The RPC signatures will appear automatically; we just call the typed `supabase.rpc(...)` after.
+- **Branch/commit/push are not performed by the agent** — Lovable manages git internally. All changes land on the working branch automatically; if you want them on `claude/craftsmen-client-details-qa-lrwx14`, merge from the Lovable working branch on your side.
 
-After edits I will:
+Everything else in your spec is adopted verbatim.
 
-1. Open the preview at 320, 360, 375, 390, 412, 430, 768, 820, 1024, 1280, 1440 (portrait) and 667×375, 844×390 (landscape) using `browser--view_preview`.
-2. Confirm `document.documentElement.scrollWidth === document.documentElement.clientWidth` via console.
-3. Confirm the overflow detector logs zero offenders on the Index route at every breakpoint above.
-4. Visually diff against the current design at 375px and 1280px to confirm zero visual regression.
+## Order of execution (build mode)
 
-## 6. Out of scope for this batch
-
-- All authenticated routes, admin shell, lead/proposal flows, onboarding, auth pages, legal pages, category landing pages. Those will be addressed in subsequent batches in this order: Dashboard → BrowseLeads/OpportunityView → SubmitLead → Admin shell → Auth/Onboarding → Legal/Category landings.
-
-## Deliverable for this batch
-
-- 1 new file: `src/hooks/useOverflowDetector.ts`
-- 1 edit: `src/App.tsx` (single hook call)
-- 0–N surgical edits across the seven Index-route component files, listed explicitly in the implementation summary with before/after Tailwind class diffs.
+1. Call `supabase--migration` with the full SQL for section A → wait for your approval.
+2. After approval and types regeneration: write the repair script (B), edit `proposalHelpers.ts` + `HandwerkerDashboard.tsx` + new `proposalQueries.ts` (C), add tests (D), run `vitest`.
+3. Report results + remind you to run the repair script manually in the Supabase SQL editor.
