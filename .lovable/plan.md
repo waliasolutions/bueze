@@ -1,26 +1,32 @@
-## Goal
-Simulate Lavdrim Mahmuti withdrawing his lead "Haus sanieren" — as if he clicked "Zurückziehen" in the client UI.
+## Target
+Multi Home's lead "Reinigung Hauswartung" (`4a606e4a-cd1f-4850-aa9f-01b00d53d033`), owner `455d2f7e-9626-40f4-aa1b-4ced13608418` (i.fo@multohome.ch).
 
-## Target row
-- Lead: `c05c7b50-6089-4755-a99b-63596b76fb8f` ("Haus sanieren")
-- Owner: Lavdrim Mahmuti (`7e0a8526-e758-41d6-933d-726da75b053a`, `info@daerendinger-malergipser.ch`)
-- Current state: `status = active`, `proposals_count = 0`, `accepted_proposal_id = null` → safe to cancel, no handwerker notifications/refunds needed.
+Current state: `status=active`, 3 pending proposals from handwerker — no acceptance yet, no refunds involved.
 
-## Change
-Run a single data update via the Supabase insert/update tool:
+## Change (single migration/update, SSOT via `leadStatuses.ts`)
 
 ```sql
+-- 1. Soft-delete the lead exactly like a client withdrawal + deletion
 UPDATE public.leads
-SET status = 'cancelled',
-    updated_at = now()
-WHERE id = 'c05c7b50-6089-4755-a99b-63596b76fb8f'
-  AND owner_id = '7e0a8526-e758-41d6-933d-726da75b053a';
+SET status = 'deleted', updated_at = now()
+WHERE id = '4a606e4a-cd1f-4850-aa9f-01b00d53d033'
+  AND owner_id = '455d2f7e-9626-40f4-aa1b-4ced13608418';
+
+-- 2. Close the 3 pending proposals so no reminder cron picks them up.
+--    Direct status update — no trigger sends rejection emails (rejection
+--    emails only fire when the app explicitly invokes send-proposal-rejection-email).
+UPDATE public.lead_proposals
+SET status = 'rejected', responded_at = now(), updated_at = now()
+WHERE lead_id = '4a606e4a-cd1f-4850-aa9f-01b00d53d033'
+  AND status = 'pending';
 ```
 
-Status `cancelled` is the SSOT value defined in `src/config/leadStatuses.ts` for "Lead wurde vom Auftraggeber abgebrochen" — exactly the state a client-initiated withdrawal produces. No code changes needed.
+## Why no emails will fire
+- No DB trigger sends email on proposal rejection or on lead status change to `deleted`.
+- `proposal-deadline-reminder` and `lead-expiry-check` cron jobs filter by `status = 'active'` → skip deleted leads.
+- `send-acceptance-emails` only triggers on `pending → accepted` — not touched here.
+- Lead becomes invisible in search (`canView=false` for `deleted` in SSOT).
 
 ## Out of scope
-- No notification emails (none would fire client-side either when there are 0 proposals).
-- No deletion — the lead stays visible to the owner with the "Abgebrochen" badge, identical to a real client withdrawal.
-
-Confirm and I'll execute the update in build mode.
+- No hard delete (soft-delete matches the SSOT "Gelöscht" state and preserves audit trail, same as the client's own "Löschen" button).
+- No manual notification to the 3 handwerker (per request: no emails).
