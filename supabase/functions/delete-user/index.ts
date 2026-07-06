@@ -303,29 +303,32 @@ serve(async (req) => {
     deletionStats.lead_views = views?.length || 0;
 
     // 5a. Get this user's proposal IDs first
-    const { data: userProposals } = await supabase
+    const { data: userProposals, error: proposalFetchError } = await supabase
       .from('lead_proposals')
       .select('id')
       .eq('handwerker_id', userId);
+    if (proposalFetchError) throw new Error(`Failed to fetch proposals: ${proposalFetchError.message}`);
     const userProposalIds = userProposals?.map(p => p.id) || [];
 
     // 5b. Clear accepted_proposal_id on leads referencing this user's proposals (FK constraint)
     if (userProposalIds.length > 0) {
-      const { data: clearedLeads } = await supabase
+      const { data: clearedLeads, error: clearLeadsError } = await supabase
         .from('leads')
         .update({ accepted_proposal_id: null })
         .in('accepted_proposal_id', userProposalIds)
         .select('id');
+      if (clearLeadsError) throw new Error(`Failed to clear accepted_proposal_id: ${clearLeadsError.message}`);
       deletionStats.leads_accepted_proposal_cleared = clearedLeads?.length || 0;
       console.log(`[DELETE-USER] Cleared accepted_proposal_id on ${clearedLeads?.length || 0} leads`);
     }
 
     // 5c. Now delete lead proposals (FK is cleared)
-    const { data: props } = await supabase
+    const { data: props, error: propsError } = await supabase
       .from('lead_proposals')
       .delete()
       .eq('handwerker_id', userId)
       .select('id');
+    if (propsError) throw new Error(`Failed to delete lead proposals: ${propsError.message}`);
     deletionStats.lead_proposals = props?.length || 0;
 
     // 6. Lead purchases

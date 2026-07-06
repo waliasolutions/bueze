@@ -568,6 +568,7 @@ const HandwerkerApprovals = () => {
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       // Show appropriate message based on deletion result
       if (data?.verified) {
