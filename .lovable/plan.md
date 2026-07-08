@@ -1,32 +1,27 @@
-## Target
-Multi Home's lead "Reinigung Hauswartung" (`4a606e4a-cd1f-4850-aa9f-01b00d53d033`), owner `455d2f7e-9626-40f4-aa1b-4ced13608418` (i.fo@multohome.ch).
+## Problem
 
-Current state: `status=active`, 3 pending proposals from handwerker — no acceptance yet, no refunds involved.
+The Impressum page shows "Geschäftsführung: MHS Haustechnik GmbH" — a hardcoded reference to a company that no longer exists. It should reflect Büeze.ch GmbH.
 
-## Change (single migration/update, SSOT via `leadStatuses.ts`)
+## Deep QA result
 
-```sql
--- 1. Soft-delete the lead exactly like a client withdrawal + deletion
-UPDATE public.leads
-SET status = 'deleted', updated_at = now()
-WHERE id = '4a606e4a-cd1f-4850-aa9f-01b00d53d033'
-  AND owner_id = '455d2f7e-9626-40f4-aa1b-4ced13608418';
+Full repo grep for `MHS` and `Haustechnik` (case-insensitive) returns exactly one hit:
 
--- 2. Close the 3 pending proposals so no reminder cron picks them up.
---    Direct status update — no trigger sends rejection emails (rejection
---    emails only fire when the app explicitly invokes send-proposal-rejection-email).
-UPDATE public.lead_proposals
-SET status = 'rejected', responded_at = now(), updated_at = now()
-WHERE lead_id = '4a606e4a-cd1f-4850-aa9f-01b00d53d033'
-  AND status = 'pending';
+- `src/pages/legal/Impressum.tsx:91`
+
+No other mentions exist anywhere in the codebase (frontend, edge functions, migrations, HTML export, docs, config).
+
+## Change
+
+In `src/pages/legal/Impressum.tsx` line 91, replace the hardcoded string with the SSOT value from `billing_settings` (already available as `b.company_legal_name` on this page, used one line below for the same entity):
+
+```text
+- <p><strong>Geschäftsführung:</strong> MHS Haustechnik GmbH</p>
++ <p><strong>Geschäftsführung:</strong> {b.company_legal_name}</p>
 ```
 
-## Why no emails will fire
-- No DB trigger sends email on proposal rejection or on lead status change to `deleted`.
-- `proposal-deadline-reminder` and `lead-expiry-check` cron jobs filter by `status = 'active'` → skip deleted leads.
-- `send-acceptance-emails` only triggers on `pending → accepted` — not touched here.
-- Lead becomes invisible in search (`canView=false` for `deleted` in SSOT).
+This resolves to "Büeze.ch GmbH" (per billing settings SSOT) and prevents future drift if the legal name is ever updated in admin billing settings.
 
-## Out of scope
-- No hard delete (soft-delete matches the SSOT "Gelöscht" state and preserves audit trail, same as the client's own "Löschen" button).
-- No manual notification to the 3 handwerker (per request: no emails).
+## Notes
+
+- No DB, edge function, or email template changes needed.
+- No other files reference MHS Haustechnik.
