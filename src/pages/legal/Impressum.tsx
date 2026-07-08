@@ -88,7 +88,7 @@ const Impressum = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Vertretungsberechtigte Personen</h2>
                 <div className="text-ink-700">
-                  <p><strong>Geschäftsführung:</strong> MHS Haustechnik GmbH</p>
+                  <p><strong>Geschäftsführung:</strong> {b.company_legal_name}</p>
                 </div>
               </section>
 
