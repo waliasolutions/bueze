@@ -1,27 +1,27 @@
-## Problem
+## Globale Suche nach „MHS Haustechnik" — Ergebnis
 
-The Impressum page shows "Geschäftsführung: MHS Haustechnik GmbH" — a hardcoded reference to a company that no longer exists. It should reflect Büeze.ch GmbH.
+Durchsucht wurden: gesamter Repo-Baum (inkl. versteckter Dateien), Supabase-Migrations/Edge-Functions und die Live-Datenbank (`billing_settings`, alle Text-Spalten in `public`).
 
-## Deep QA result
+### Fundstellen
 
-Full repo grep for `MHS` and `Haustechnik` (case-insensitive) returns exactly one hit:
+| # | Ort | Zeile | Inhalt | Handlung |
+|---|-----|-------|--------|----------|
+| 1 | `src/pages/legal/Impressum.tsx` | 91 | `<p><strong>Geschäftsführung:</strong> MHS Haustechnik GmbH</p>` | ✅ **Bereits ersetzt** durch `{b.company_legal_name}` (SSOT aus `billing_settings`) |
+| 2 | `.lovable/plan.md` | 3, 18, 27 | Erwähnungen im Planungsdokument der letzten Änderung | ⏭️ Keine Aktion — reines Verlaufs-/Planungsdokument, keine Auslieferung an Endnutzer |
 
-- `src/pages/legal/Impressum.tsx:91`
+### Nicht gefunden in
 
-No other mentions exist anywhere in the codebase (frontend, edge functions, migrations, HTML export, docs, config).
+- Edge Functions (`supabase/functions/**`) — 0 Treffer
+- Migrationen (`supabase/migrations/**`) — 0 Treffer
+- Email-Templates, HTML-Export, `public/`, `index.html`, `llms.txt` — 0 Treffer
+- Datenbank: `billing_settings.company_name` / `company_legal_name` — kein Treffer für „MHS" oder „Haustechnik"
 
-## Change
+### Fazit
 
-In `src/pages/legal/Impressum.tsx` line 91, replace the hardcoded string with the SSOT value from `billing_settings` (already available as `b.company_legal_name` on this page, used one line below for the same entity):
+Es existiert **keine offene Fundstelle** von „MHS Haustechnik" mehr, die noch ersetzt werden muss. Die einzige echte Referenz (Impressum) wurde bereits in der vorherigen Runde auf die SSOT-Quelle `billing_settings.company_legal_name` umgestellt und zieht damit automatisch „Büeze.ch GmbH".
 
-```text
-- <p><strong>Geschäftsführung:</strong> MHS Haustechnik GmbH</p>
-+ <p><strong>Geschäftsführung:</strong> {b.company_legal_name}</p>
-```
+### Nächste Schritte
 
-This resolves to "Büeze.ch GmbH" (per billing settings SSOT) and prevents future drift if the legal name is ever updated in admin billing settings.
-
-## Notes
-
-- No DB, edge function, or email template changes needed.
-- No other files reference MHS Haustechnik.
+Kein Plan zur Umsetzung nötig. Falls gewünscht, kann ich zusätzlich:
+- die Erwähnungen in `.lovable/plan.md` bereinigen (rein kosmetisch), oder
+- die Suche auf weitere Varianten ausweiten (z. B. „M.H.S.", „mhs-haustechnik.ch", frühere UID/Handelsregister-Nummern) — bitte Varianten nennen.
