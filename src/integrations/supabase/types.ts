@@ -2256,6 +2256,16 @@ export type Database = {
     }
     Functions: {
       accept_proposal_atomic: { Args: { p_proposal_id: string }; Returns: Json }
+      admin_activate_subscription: {
+        Args: {
+          p_amount?: number
+          p_period_start?: string
+          p_plan_type: string
+          p_transaction_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       budget_ranges_overlap: {
         Args: {
           lead_max: number

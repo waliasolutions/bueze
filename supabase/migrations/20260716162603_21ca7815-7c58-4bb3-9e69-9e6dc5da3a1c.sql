@@ -1,0 +1,115 @@
+
+-- SSOT helper for manual subscription activation. Bypasses the
+-- prevent_subscription_self_escalation trigger safely (SECURITY DEFINER +
+-- session_replication_role) and VERIFIES the row was actually updated so a
+-- silent no-op like the Gabor incident can never happen again.
+CREATE OR REPLACE FUNCTION public.admin_activate_subscription(
+  p_user_id uuid,
+  p_plan_type text,
+  p_transaction_id text,
+  p_amount integer DEFAULT NULL,
+  p_period_start timestamptz DEFAULT NULL
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_caller uuid := auth.uid();
+  v_start timestamptz := COALESCE(p_period_start, now());
+  v_months int;
+  v_limit int;
+  v_end timestamptz;
+  v_updated int;
+BEGIN
+  -- AuthN/AuthZ: only real admins may call this.
+  IF v_caller IS NULL
+     OR NOT (has_role(v_caller, 'admin'::app_role)
+             OR has_role(v_caller, 'super_admin'::app_role)) THEN
+    RAISE EXCEPTION 'not authorized';
+  END IF;
+
+  -- Plan config (kept in sync with _shared/planLabels.ts)
+  IF p_plan_type = 'monthly' THEN
+    v_months := 1; v_limit := -1;
+  ELSIF p_plan_type = '6_month' THEN
+    v_months := 6; v_limit := -1;
+  ELSIF p_plan_type = 'yearly' THEN
+    v_months := 12; v_limit := -1;
+  ELSE
+    RAISE EXCEPTION 'unknown plan_type: %', p_plan_type;
+  END IF;
+
+  v_end := v_start + (v_months || ' months')::interval;
+
+  -- Bypass prevent_subscription_self_escalation for this transaction only.
+  PERFORM set_config('session_replication_role', 'replica', true);
+
+  INSERT INTO public.handwerker_subscriptions (
+    user_id, plan_type, status, proposals_limit, proposals_used_this_period,
+    current_period_start, current_period_end, pending_plan,
+    payment_reminder_1_sent, payment_reminder_2_sent, renewal_reminder_sent,
+    updated_at
+  ) VALUES (
+    p_user_id, p_plan_type, 'active', v_limit, 0,
+    v_start, v_end, NULL, false, false, false, now()
+  )
+  ON CONFLICT (user_id) DO UPDATE SET
+    plan_type = EXCLUDED.plan_type,
+    status = 'active',
+    proposals_limit = EXCLUDED.proposals_limit,
+    proposals_used_this_period = 0,
+    current_period_start = EXCLUDED.current_period_start,
+    current_period_end = EXCLUDED.current_period_end,
+    pending_plan = NULL,
+    payment_reminder_1_sent = false,
+    payment_reminder_2_sent = false,
+    renewal_reminder_sent = false,
+    updated_at = now();
+
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+  PERFORM set_config('session_replication_role', 'origin', true);
+
+  -- Verify persistence — the whole reason this helper exists.
+  IF NOT EXISTS (
+    SELECT 1 FROM public.handwerker_subscriptions
+    WHERE user_id = p_user_id
+      AND plan_type = p_plan_type
+      AND status = 'active'
+      AND current_period_end = v_end
+  ) THEN
+    RAISE EXCEPTION 'subscription activation did not persist for user %', p_user_id;
+  END IF;
+
+  -- Audit trail
+  INSERT INTO public.admin_audit_log (admin_id, action, target_id, details)
+  VALUES (
+    v_caller,
+    'manual_subscription_activation',
+    p_user_id,
+    jsonb_build_object(
+      'plan_type', p_plan_type,
+      'transaction_id', p_transaction_id,
+      'amount', p_amount,
+      'period_start', v_start,
+      'period_end', v_end
+    )
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'user_id', p_user_id,
+    'plan_type', p_plan_type,
+    'period_start', v_start,
+    'period_end', v_end,
+    'rows_affected', v_updated
+  );
+END;
+$$;
+
+-- Only admins call this; anon/authenticated must not have execute.
+REVOKE ALL ON FUNCTION public.admin_activate_subscription(uuid, text, text, integer, timestamptz) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_activate_subscription(uuid, text, text, integer, timestamptz) FROM anon;
+GRANT EXECUTE ON FUNCTION public.admin_activate_subscription(uuid, text, text, integer, timestamptz) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_activate_subscription(uuid, text, text, integer, timestamptz) TO service_role;
