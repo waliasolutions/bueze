@@ -1,383 +1,112 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders, handleCorsPreflightRequest, successResponse, errorResponse } from '../_shared/cors.ts';
-import { VALID_PLAN_AMOUNTS, FREE_TIER_PROPOSALS_LIMIT, PLAN_CONFIGS } from '../_shared/planLabels.ts';
-import { addMonths } from '../_shared/dateFormatter.ts';
-import { generateSignature, normalizePayrexxInstance } from '../_shared/payrexxCrypto.ts';
+import { handleCorsPreflightRequest, successResponse } from '../_shared/cors.ts';
+import { FREE_TIER_PROPOSALS_LIMIT } from '../_shared/planLabels.ts';
+import {
+  activateFromConfirmedTransaction,
+  fetchPayrexxTransaction,
+  parseReferenceId,
+} from '../_shared/payrexxActivation.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-/**
- * Verify webhook authenticity by re-fetching the transaction from the Payrexx API.
- * Payrexx's "Normal (PHP-Post)" webhooks do NOT sign the form body, so the only
- * reliable way to confirm a webhook came from Payrexx is to query their API
- * (which requires our HMAC-signed API key) and confirm the transaction matches.
- */
-async function verifyTransactionViaApi(
-  transactionId: string | number,
-  expected: { status?: string; amount?: number; referenceId?: string }
-): Promise<{ ok: boolean; reason?: string; transaction?: any }> {
-  const apiKey = Deno.env.get('PAYREXX_API_KEY');
-  const instanceRaw = Deno.env.get('PAYREXX_INSTANCE');
-  if (!apiKey || !instanceRaw) {
-    return { ok: false, reason: 'PAYREXX_API_KEY or PAYREXX_INSTANCE not configured' };
-  }
-  const instance = normalizePayrexxInstance(instanceRaw);
-  try {
-    const signature = await generateSignature('', apiKey);
-    const url = `https://api.payrexx.com/v1.0/Transaction/${encodeURIComponent(String(transactionId))}/?instance=${encodeURIComponent(instance)}&ApiSignature=${encodeURIComponent(signature)}`;
-    const res = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' } });
-    const text = await res.text();
-    let parsed: any = null;
-    try { parsed = JSON.parse(text); } catch { /* ignore */ }
-
-    if (res.status !== 200 || parsed?.status !== 'success' || !Array.isArray(parsed?.data) || parsed.data.length === 0) {
-      return { ok: false, reason: `API lookup failed (HTTP ${res.status}): ${parsed?.message || text.substring(0, 200)}` };
-    }
-
-    const tx = parsed.data[0];
-
-    // Compare critical fields against webhook-claimed values
-    if (expected.status && tx.status !== expected.status) {
-      return { ok: false, reason: `status mismatch: api=${tx.status} webhook=${expected.status}`, transaction: tx };
-    }
-    if (expected.amount !== undefined && Number(tx.amount) !== Number(expected.amount)) {
-      return { ok: false, reason: `amount mismatch: api=${tx.amount} webhook=${expected.amount}`, transaction: tx };
-    }
-    if (expected.referenceId && tx.referenceId !== expected.referenceId) {
-      return { ok: false, reason: `referenceId mismatch: api=${tx.referenceId} webhook=${expected.referenceId}`, transaction: tx };
-    }
-
-    return { ok: true, transaction: tx };
-  } catch (err) {
-    return { ok: false, reason: `verification error: ${err instanceof Error ? err.message : String(err)}` };
-  }
-}
-
-/**
- * Parse reference ID to extract user info
- * Format: {userId}|{planType}|{timestamp}
- * Uses pipe delimiter to avoid conflicts with UUID hyphens.
- */
-function parseReferenceId(referenceId: string): { userId: string; planType: string; timestamp: string } | null {
-  // Support both | (new) and - (legacy) delimiters
-  if (referenceId.includes('|')) {
-    const parts = referenceId.split('|');
-    if (parts.length !== 3) return null;
-    return { userId: parts[0], planType: parts[1], timestamp: parts[2] };
-  }
-
-  // Legacy fallback: hyphen delimiter (pop from right)
-  const parts = referenceId.split('-');
-  if (parts.length < 3) return null;
-  const timestamp = parts.pop()!;
-  const planType = parts.pop()!;
-  const userId = parts.join('-');
-  return { userId, planType, timestamp };
-}
-
 Deno.serve(async (req) => {
-  // Handle CORS preflight
   const corsResponse = handleCorsPreflightRequest(req);
   if (corsResponse) return corsResponse;
 
-  try {
-    // Parse form data from Payrexx webhook
-    const rawBody = await req.text();
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Parse Payrexx PHP-style bracket form fields into a nested object.
-    // e.g. transaction[id]=42, transaction[invoice][products][0][sku]=X
+  try {
+    // Parse Payrexx "Normal (PHP-Post)" form body into a nested object.
+    const rawBody = await req.text();
     const formParams = new URLSearchParams(rawBody);
     const root: Record<string, any> = {};
     for (const [key, value] of formParams.entries()) {
       const match = key.match(/^([^\[\]]+)((\[[^\[\]]*\])*)$/);
       if (!match) continue;
       const head = match[1];
-      const tailKeys = [...(match[2].matchAll(/\[([^\[\]]*)\]/g))].map(m => m[1]);
+      const tailKeys = [...match[2].matchAll(/\[([^\[\]]*)\]/g)].map((m) => m[1]);
       const path = [head, ...tailKeys];
       let cursor: any = root;
       for (let i = 0; i < path.length - 1; i++) {
         const k = path[i];
-        const nextKey = path[i + 1];
-        const nextIsIndex = /^\d+$/.test(nextKey);
+        const nextIsIndex = /^\d+$/.test(path[i + 1]);
         if (cursor[k] === undefined) cursor[k] = nextIsIndex ? [] : {};
         cursor = cursor[k];
       }
       const lastKey = path[path.length - 1];
-      if (cursor[lastKey] === undefined || cursor[lastKey] === '') {
-        cursor[lastKey] = value;
-      }
+      if (cursor[lastKey] === undefined || cursor[lastKey] === '') cursor[lastKey] = value;
     }
 
     const transaction = root.transaction;
     if (!transaction || typeof transaction !== 'object') {
-      console.error('No transaction data in webhook');
+      console.error('[payrexx-webhook] no transaction in body');
       return successResponse({ received: true, error: 'no_transaction_data' });
     }
-
-    console.log('Payrexx webhook received:', {
-      id: transaction.id,
-      status: transaction.status,
-      referenceId: transaction.referenceId,
-      amount: transaction.amount,
-      currency: transaction.invoice?.currency,
-    });
 
     const transactionId = transaction.id;
     const status = transaction.status;
     const referenceId = transaction.referenceId;
     const amount = transaction.amount !== undefined ? Number(transaction.amount) : undefined;
     const currency = transaction.invoice?.currency;
-    const invoice = transaction.invoice;
+    const subscriptionId = transaction.subscription?.id || null;
 
-    // --- Verify webhook authenticity by re-fetching transaction from Payrexx API ---
+    console.log('[payrexx-webhook] received', { transactionId, status, referenceId, amount });
+
     if (!transactionId) {
-      console.error('Webhook has no transaction id — cannot verify');
       return successResponse({ received: true, error: 'missing_transaction_id' });
     }
-    const verification = await verifyTransactionViaApi(transactionId, {
-      status,
-      amount,
-      referenceId,
-    });
-    if (!verification.ok) {
-      console.error(`Webhook verification failed for tx ${transactionId}: ${verification.reason}`);
-      try {
-        const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-        await sb.from('admin_notifications').insert({
-          type: 'webhook_error',
-          title: 'Webhook: Verifizierung fehlgeschlagen',
-          message: `Payrexx Webhook konnte nicht verifiziert werden. Transaction: ${transactionId}. Grund: ${verification.reason}`,
-          metadata: {
-            payrexx_transaction_id: String(transactionId),
-            reference_id: String(referenceId || ''),
-            error_message: String(verification.reason || '').slice(0, 500),
-            timestamp: new Date().toISOString(),
-          },
-        });
-      } catch (notifyErr) {
-        console.error('Failed to log verification failure:', notifyErr);
-      }
-      return successResponse({ received: true, error: 'verification_failed' });
-    }
-    console.log(`Webhook verified ✓ via API for transaction ${transactionId}`);
 
-
-    // Extract subscription info if present (Payrexx-managed subscriptions)
-    const subscriptionId = transaction.subscription?.id || null;
-    if (subscriptionId) {
-      console.log(`Payrexx webhook: subscription ID ${subscriptionId} present`);
-    }
-
-    // Create Supabase admin client (needed for admin_notifications logging)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-    // Parse and validate reference ID
-    const parsedRef = parseReferenceId(referenceId || '');
-    if (!parsedRef) {
-      console.error('Invalid reference ID format:', referenceId);
+    // Verify against Payrexx API (form bodies aren't signed).
+    const verification = await fetchPayrexxTransaction(transactionId, { status, amount, referenceId });
+    if (!verification.ok || !verification.transaction) {
+      console.error(`[payrexx-webhook] verification failed tx=${transactionId}: ${verification.reason}`);
       await supabase.from('admin_notifications').insert({
         type: 'webhook_error',
-        title: 'Webhook: Ungültige Referenz-ID',
-        message: `Payrexx Webhook mit ungültiger Referenz-ID empfangen. Transaction: ${transactionId}`,
+        title: 'Webhook: Verifizierung fehlgeschlagen',
+        message: `Payrexx Webhook konnte nicht verifiziert werden. Transaction: ${transactionId}. Grund: ${verification.reason}`,
         metadata: {
           payrexx_transaction_id: String(transactionId),
           reference_id: String(referenceId || ''),
-          error_message: 'Invalid reference ID format',
+          error_message: String(verification.reason || '').slice(0, 500),
           timestamp: new Date().toISOString(),
         },
       });
-      return successResponse({ received: true, error: 'invalid_reference_id' });
+      return successResponse({ received: true, error: 'verification_failed' });
     }
+    const tx = verification.transaction;
 
-    const { userId, planType } = parsedRef;
-
-    // Validate plan type is known
-    if (!PLAN_CONFIGS[planType]) {
-      console.error('Unknown plan type in reference ID:', planType);
-      await supabase.from('admin_notifications').insert({
-        type: 'webhook_error',
-        title: 'Webhook: Unbekannter Plan-Typ',
-        message: `Payrexx Webhook mit unbekanntem Plan-Typ "${planType}". Transaction: ${transactionId}, User: ${userId}`,
-        metadata: {
-          payrexx_transaction_id: String(transactionId),
-          reference_id: String(referenceId),
-          error_message: `Unknown plan type: ${planType}`,
-          timestamp: new Date().toISOString(),
-        },
-      });
-      return successResponse({ received: true, error: 'unknown_plan_type' });
-    }
-
-    // Handle different transaction statuses
-    if (status === 'confirmed') {
-      // Validate amount against allowlist
-      const validAmounts = VALID_PLAN_AMOUNTS[planType] || [];
-      if (validAmounts.length > 0 && amount !== undefined) {
-        if (!validAmounts.includes(Number(amount))) {
-          console.error(`Amount ${amount} not in valid set ${JSON.stringify(validAmounts)} for plan ${planType}`);
-          await supabase.from('admin_notifications').insert({
-            type: 'webhook_error',
-            title: 'Webhook: Ungültiger Betrag',
-            message: `Payrexx Betrag ${amount} stimmt nicht mit Plan "${planType}" überein. Transaction: ${transactionId}, User: ${userId}`,
-            metadata: {
-              payrexx_transaction_id: String(transactionId),
-              reference_id: String(referenceId),
-              error_message: `Amount ${amount} not in valid set ${JSON.stringify(validAmounts)}`,
-              timestamp: new Date().toISOString(),
-            },
-          });
-          return successResponse({ received: true, error: 'invalid_amount' });
-        }
-      }
-
-      // Validate currency
-      if (currency && currency.toUpperCase() !== 'CHF') {
-        console.error(`Currency mismatch: expected CHF, got ${currency}`);
+    if (tx.status === 'confirmed') {
+      const result = await activateFromConfirmedTransaction(supabase, tx, { source: 'webhook' });
+      if (!result.ok) {
+        console.error(`[payrexx-webhook] activation failed: ${result.errorCode} ${result.reason}`);
         await supabase.from('admin_notifications').insert({
           type: 'webhook_error',
-          title: 'Webhook: Ungültige Währung',
-          message: `Payrexx Webhook mit Währung "${currency}" statt CHF. Transaction: ${transactionId}, User: ${userId}`,
+          title: 'Webhook: Aktivierung fehlgeschlagen',
+          message: `Aktivierung fehlgeschlagen (${result.errorCode}). Transaction: ${transactionId}`,
           metadata: {
             payrexx_transaction_id: String(transactionId),
-            reference_id: String(referenceId),
-            error_message: `Currency mismatch: expected CHF, got ${currency}`,
+            reference_id: String(referenceId || ''),
+            error_code: result.errorCode,
+            error_message: result.reason,
             timestamp: new Date().toISOString(),
           },
         });
-        return successResponse({ received: true, error: 'invalid_currency' });
+        return successResponse({ received: true, error: result.errorCode });
       }
+      return successResponse({ received: true, activated: result.activated, alreadyProcessed: result.alreadyProcessed });
+    }
 
-      const now = new Date();
-      const planConfig = PLAN_CONFIGS[planType];
-      const periodEnd = addMonths(now, planConfig.periodMonths);
+    if (tx.status === 'waiting') {
+      console.log(`[payrexx-webhook] tx ${transactionId} waiting`);
+      return successResponse({ received: true, waiting: true });
+    }
 
-      // IDEMPOTENCY: Insert payment record FIRST — if conflict fires, bail
-      const { data: insertedPayment } = await supabase
-        .from('payment_history')
-        .upsert({
-          user_id: userId,
-          amount: amount,
-          currency: (currency || 'CHF').toUpperCase(),
-          plan_type: planType,
-          status: 'paid',
-          payment_provider: 'payrexx',
-          payrexx_transaction_id: transactionId.toString(),
-          payment_date: now.toISOString(),
-          description: subscriptionId
-            ? `Büeze ${planType} Abonnement (automatische Verlängerung)`
-            : `Büeze ${planType} Abonnement`,
-          invoice_pdf_url: invoice?.paymentLink || null,
-        }, { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true })
-        .select('id');
+    if (tx.status === 'declined' || tx.status === 'failed' || tx.status === 'cancelled') {
+      const parsed = parseReferenceId(referenceId || '');
+      if (!parsed) return successResponse({ received: true, error: 'invalid_reference_id' });
+      const { userId, planType } = parsed;
 
-      if (!insertedPayment || insertedPayment.length === 0) {
-        console.log(`Transaction ${transactionId} already processed (conflict), skipping`);
-        return successResponse({ received: true, already_processed: true });
-      }
-
-      // Check if this is a recurring renewal (subscription already active for this user)
-      const { data: existingSub } = await supabase
-        .from('handwerker_subscriptions')
-        .select('status, plan_type, auto_renew, payrexx_subscription_id')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      const isRenewal = existingSub?.auto_renew === true
-        && existingSub?.payrexx_subscription_id
-        && subscriptionId;
-
-      // Payment confirmed — activate or renew subscription
-      const subscriptionData: Record<string, any> = {
-        user_id: userId,
-        plan_type: planType,
-        status: 'active',
-        proposals_limit: planConfig.proposalsLimit,
-        proposals_used_this_period: isRenewal ? 0 : 0,
-        current_period_start: now.toISOString(),
-        current_period_end: periodEnd.toISOString(),
-        pending_plan: null,
-        renewal_reminder_sent: false,
-        payment_reminder_1_sent: false,
-        payment_reminder_2_sent: false,
-        updated_at: now.toISOString(),
-      };
-
-      // Store Payrexx subscription info when present
-      if (subscriptionId) {
-        subscriptionData.payrexx_subscription_id = subscriptionId.toString();
-        subscriptionData.auto_renew = true;
-      }
-
-      const { error: subError } = await supabase
-        .from('handwerker_subscriptions')
-        .upsert(subscriptionData, {
-          onConflict: 'user_id',
-        });
-
-      if (subError) {
-        console.error('Error updating subscription:', subError);
-        await supabase.from('admin_notifications').insert({
-          type: 'webhook_error',
-          title: 'Webhook: Abo-Aktualisierung fehlgeschlagen',
-          message: `Subscription-Update für User ${userId} fehlgeschlagen. Transaction: ${transactionId}, Plan: ${planType}. Zahlung wurde erfasst, aber Abo nicht aktiviert.`,
-          metadata: {
-            payrexx_transaction_id: String(transactionId),
-            reference_id: String(referenceId),
-            user_id: userId,
-            plan_type: planType,
-            error_message: String(subError?.message || JSON.stringify(subError)).slice(0, 500),
-            timestamp: new Date().toISOString(),
-          },
-        });
-        return successResponse({ received: true, error: 'subscription_update_failed' });
-      }
-
-      // Create in-app notification for user
-      const notificationType = isRenewal ? 'subscription_renewed' : 'subscription_activated';
-      const notificationTitle = isRenewal ? 'Abonnement verlängert' : 'Abonnement aktiviert';
-      const notificationMessage = isRenewal
-        ? `Ihr ${planType === 'monthly' ? 'monatliches' : planType === '6_month' ? '6-Monats' : 'Jahres'}-Abonnement wurde automatisch verlängert.`
-        : `Ihr ${planType === 'monthly' ? 'monatliches' : planType === '6_month' ? '6-Monats' : 'Jahres'}-Abonnement wurde erfolgreich aktiviert.`;
-
-      await supabase
-        .from('handwerker_notifications')
-        .insert({
-          user_id: userId,
-          type: notificationType,
-          title: notificationTitle,
-          message: notificationMessage,
-          metadata: { planType, transactionId, subscriptionId, isRenewal },
-        });
-
-      // Send subscription confirmation email
-      try {
-        await supabase.functions.invoke('send-subscription-confirmation', {
-          body: { userId, planType },
-        });
-      } catch (emailError) {
-        console.error('Failed to send subscription confirmation email:', emailError);
-      }
-
-      // Generate invoice PDF (non-blocking — payment succeeds even if this fails)
-      // The DB trigger on the invoices table will automatically send the invoice email
-      // once the PDF is uploaded and pdf_storage_path is set.
-      try {
-        await supabase.functions.invoke('generate-invoice-pdf', {
-          body: { paymentId: insertedPayment[0].id, userId, planType, amount },
-        });
-      } catch (invoiceError) {
-        console.error('Failed to generate invoice:', invoiceError);
-      }
-
-      console.log(`Subscription ${isRenewal ? 'renewed' : 'activated'} for user ${userId}, plan ${planType}${subscriptionId ? ` (subscription ${subscriptionId})` : ''}`);
-
-    } else if (status === 'waiting') {
-      // Payment still processing — acknowledge but don't activate
-      console.log(`Payment ${transactionId} for user ${userId} is waiting/processing, no action taken`);
-
-    } else if (status === 'declined' || status === 'failed' || status === 'cancelled') {
-      // Payment failed — check if this was an auto-renewal failure
       const { data: existingSub } = await supabase
         .from('handwerker_subscriptions')
         .select('plan_type, auto_renew, payrexx_subscription_id')
@@ -389,92 +118,65 @@ Deno.serve(async (req) => {
       const isAutoRenewFailure = existingSub?.auto_renew === true && subscriptionId;
 
       if (isAutoRenewFailure) {
-        // Auto-renewal payment failed — disable auto-renew so manual flow takes over
-        console.log(`Auto-renewal failed for user ${userId}, disabling auto-renew`);
         await supabase
           .from('handwerker_subscriptions')
-          .update({
-            auto_renew: false,
-            payrexx_subscription_id: null,
-            updated_at: new Date().toISOString(),
-          })
+          .update({ auto_renew: false, payrexx_subscription_id: null, updated_at: new Date().toISOString() })
           .eq('user_id', userId);
       } else if (!alreadyPaid) {
-        const { error: subError } = await supabase
-          .from('handwerker_subscriptions')
-          .upsert({
+        await supabase.from('handwerker_subscriptions').upsert(
+          {
             user_id: userId,
             plan_type: 'free',
             status: 'active',
             proposals_limit: FREE_TIER_PROPOSALS_LIMIT,
             updated_at: new Date().toISOString(),
-          }, {
-            onConflict: 'user_id',
-          });
-
-        if (subError) {
-          console.error('Error reverting subscription:', subError);
-        }
-      } else {
-        console.log(`User ${userId} already has paid plan ${existingSub.plan_type}, not reverting on failed payment`);
+          },
+          { onConflict: 'user_id' }
+        );
       }
 
-      // Record failed payment (use upsert to handle duplicate failed webhooks)
-      await supabase
-        .from('payment_history')
-        .upsert({
+      await supabase.from('payment_history').upsert(
+        {
           user_id: userId,
-          amount: amount,
+          amount,
           currency: (currency || 'CHF').toUpperCase(),
           plan_type: planType,
           status: 'failed',
           payment_provider: 'payrexx',
-          payrexx_transaction_id: transactionId.toString(),
+          payrexx_transaction_id: String(transactionId),
           payment_date: new Date().toISOString(),
           description: isAutoRenewFailure
             ? `Automatische Verlängerung fehlgeschlagen: ${planType} Abonnement`
             : `Fehlgeschlagene Zahlung: ${planType} Abonnement`,
-        }, { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true });
+        },
+        { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true }
+      );
 
-      // Notify user
-      const failedMessage = isAutoRenewFailure
-        ? 'Die automatische Verlängerung Ihres Abonnements ist fehlgeschlagen. Bitte erneuern Sie Ihr Abonnement manuell.'
-        : 'Ihre Zahlung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.';
+      await supabase.from('handwerker_notifications').insert({
+        user_id: userId,
+        type: 'payment_failed',
+        title: 'Zahlung fehlgeschlagen',
+        message: isAutoRenewFailure
+          ? 'Die automatische Verlängerung Ihres Abonnements ist fehlgeschlagen. Bitte erneuern Sie Ihr Abonnement manuell.'
+          : 'Ihre Zahlung konnte nicht verarbeitet werden. Bitte versuchen Sie es erneut.',
+        metadata: { planType, transactionId, status: tx.status, subscriptionId, isAutoRenewFailure },
+      });
 
-      await supabase
-        .from('handwerker_notifications')
-        .insert({
-          user_id: userId,
-          type: 'payment_failed',
-          title: 'Zahlung fehlgeschlagen',
-          message: failedMessage,
-          metadata: { planType, transactionId, status, subscriptionId, isAutoRenewFailure },
-        });
+      await supabase.from('admin_notifications').insert({
+        type: 'payment_failed',
+        title: 'Zahlung fehlgeschlagen',
+        message: `Payrexx Zahlung für Benutzer ${userId} fehlgeschlagen. Status: ${tx.status}${isAutoRenewFailure ? ' (Auto-Renewal)' : ''}`,
+        metadata: { userId, planType, transactionId, status: tx.status, subscriptionId },
+      });
 
-      // Admin notification
-      await supabase
-        .from('admin_notifications')
-        .insert({
-          type: 'payment_failed',
-          title: 'Zahlung fehlgeschlagen',
-          message: `Payrexx Zahlung für Benutzer ${userId} fehlgeschlagen. Status: ${status}${isAutoRenewFailure ? ' (Auto-Renewal)' : ''}`,
-          metadata: { userId, planType, transactionId, status, subscriptionId },
-        });
-
-      console.log(`Payment failed for user ${userId}${isAutoRenewFailure ? ' (auto-renewal disabled)' : ', reverted to free tier'}`);
-
-    } else {
-      // Unknown status — log and acknowledge
-      console.warn(`Unknown payment status: ${status} for transaction ${transactionId}, user ${userId}`);
+      return successResponse({ received: true, failed: true });
     }
 
+    console.warn(`[payrexx-webhook] unknown status ${tx.status} tx=${transactionId}`);
     return successResponse({ received: true });
-
   } catch (error) {
-    console.error('Webhook processing error:', error);
-    // Return 200 to prevent Payrexx retries, but log the error for admin visibility
+    console.error('[payrexx-webhook] unexpected error', error);
     try {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       await supabase.from('admin_notifications').insert({
         type: 'webhook_error',
         title: 'Webhook: Unerwarteter Fehler',
@@ -484,9 +186,7 @@ Deno.serve(async (req) => {
           timestamp: new Date().toISOString(),
         },
       });
-    } catch (notifyError) {
-      console.error('Failed to create admin notification for webhook error:', notifyError);
-    }
+    } catch (_e) { /* ignore */ }
     return successResponse({ received: true, error: 'internal_error' });
   }
 });
