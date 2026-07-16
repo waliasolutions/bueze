@@ -113,13 +113,26 @@ Deno.serve(async (req) => {
     const planName = PLAN_GATEWAY_NAMES[planType];
     const referenceId = `${userId}|${planType}|${Date.now()}`;
 
+    // Propagate the referenceId through the success URL so /payment-success
+    // can call verify-payrexx-payment even if the webhook is delayed or fails.
+    const appendRef = (url: string) => {
+      try {
+        const u = new URL(url);
+        u.searchParams.set('reference_id', referenceId);
+        return u.toString();
+      } catch {
+        const sep = url.includes('?') ? '&' : '?';
+        return `${url}${sep}reference_id=${encodeURIComponent(referenceId)}`;
+      }
+    };
+
     // --- Step 3: Create Payrexx Gateway ---
     const primaryParams: Record<string, string> = {
       amount: amount.toString(),
       currency: 'CHF',
       purpose: planName,
       referenceId: referenceId,
-      successRedirectUrl: successUrl,
+      successRedirectUrl: appendRef(successUrl),
       failedRedirectUrl: failedUrl || cancelUrl,
       cancelRedirectUrl: cancelUrl,
       skipResultPage: '1',
