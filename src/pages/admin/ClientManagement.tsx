@@ -93,12 +93,14 @@ export default function ClientManagement() {
 
       const debounceRef = { timer: null as ReturnType<typeof setTimeout> | null };
 
-      // Pragmatic: event '*' covers INSERT/UPDATE/DELETE. If noisy, filter columns later.
+      // Pragmatic: event '*' covers INSERT/UPDATE/DELETE. Each refetch runs
+      // four large queries, so debounce generously — the page needs to be
+      // roughly current, not realtime.
       const channel = supabase
         .channel('admin-client-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
           if (debounceRef.timer) clearTimeout(debounceRef.timer);
-          debounceRef.timer = setTimeout(() => fetchClients(), 500);
+          debounceRef.timer = setTimeout(() => fetchClients(), 5000);
         })
         .subscribe();
 

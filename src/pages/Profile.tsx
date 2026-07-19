@@ -108,7 +108,9 @@ const Profile = () => {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          // '*' so a freshly INSERTed subscription row also fires (a first
+          // activation may create the row instead of updating one).
+          event: '*',
           schema: 'public',
           table: 'handwerker_subscriptions',
           filter: `user_id=eq.${user?.id}`,
@@ -291,6 +293,7 @@ const Profile = () => {
               currentPeriodStart: subscriptionData.current_period_start,
               currentPeriodEnd: subscriptionData.current_period_end,
               usedProposals: subscriptionData.proposals_used_this_period || 0,
+              proposalsLimit: subscriptionData.proposals_limit ?? plan.proposalsLimit,
               pendingPlan: subscriptionData.pending_plan || null,
               autoRenew: subscriptionData.auto_renew || false,
               userId: user.id,

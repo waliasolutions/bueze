@@ -14,6 +14,21 @@ import type { LeadListItem } from '@/types/entities';
 // =============================================================================
 
 /**
+ * SSOT column projection for lead list queries (matches LeadListItem).
+ * Avoids shipping heavy unused columns (search_text, lat/lng, ...) with
+ * select('*') on the hottest queries in the app.
+ */
+export const LEAD_LIST_COLUMNS =
+  'id, title, description, category, budget_min, budget_max, budget_type, urgency, canton, zip, city, created_at, purchased_count, max_purchases, quality_score, status, proposals_count, address, owner_id, accepted_proposal_id, media_urls, proposal_deadline, delivered_at';
+
+/**
+ * SSOT cap for lead list queries: newest N active leads. Set comfortably
+ * above current volume; category/canton filter pushdown to the server is the
+ * follow-up once volume approaches this bound.
+ */
+export const LEAD_LIST_FETCH_LIMIT = 500;
+
+/**
  * Check if a lead matches a handwerker's categories.
  * Supports major-to-subcategory mapping in both directions.
  */

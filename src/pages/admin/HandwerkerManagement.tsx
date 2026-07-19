@@ -495,24 +495,41 @@ export default function HandwerkerManagement() {
   const updateHandwerkerPlan = async (userId: string, newPlanType: SubscriptionPlanType) => {
     const newLimit = getProposalLimit(newPlanType);
     const planName = SUBSCRIPTION_PLANS[newPlanType].displayName;
-    const now = new Date().toISOString();
-    const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { error } = await supabase
-      .from('handwerker_subscriptions')
-      .update({
-        plan_type: newPlanType,
-        proposals_limit: newLimit,
-        proposals_used_this_period: 0,
-        current_period_start: now,
-        current_period_end: periodEnd,
-        pending_plan: null,
-      })
-      .eq('user_id', userId);
+    if (newPlanType === 'free') {
+      // Downgrade to the free tier: 30-day rolling window, no audit-worthy grant.
+      const now = new Date().toISOString();
+      const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { error } = await supabase
+        .from('handwerker_subscriptions')
+        .update({
+          plan_type: newPlanType,
+          proposals_limit: newLimit,
+          proposals_used_this_period: 0,
+          current_period_start: now,
+          current_period_end: periodEnd,
+          pending_plan: null,
+        })
+        .eq('user_id', userId);
 
-    if (error) {
-      toast({ title: 'Fehler', description: `Plan konnte nicht geändert werden: ${error.message}`, variant: 'destructive' });
-      return;
+      if (error) {
+        toast({ title: 'Fehler', description: `Plan konnte nicht geändert werden: ${error.message}`, variant: 'destructive' });
+        return;
+      }
+    } else {
+      // Paid plans go through the audited RPC: correct period length per plan
+      // (1/6/12 months, not a flat 30 days), admin_audit_log entry, and
+      // verified persistence.
+      const { error } = await supabase.rpc('admin_activate_subscription', {
+        p_user_id: userId,
+        p_plan_type: newPlanType,
+        p_transaction_id: `admin-ui-${Date.now()}`,
+      });
+
+      if (error) {
+        toast({ title: 'Fehler', description: `Plan konnte nicht geändert werden: ${error.message}`, variant: 'destructive' });
+        return;
+      }
     }
 
     // Update local state
