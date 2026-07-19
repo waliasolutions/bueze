@@ -1,8 +1,9 @@
 // SSOT: Single activation pipeline for confirmed Payrexx transactions.
 // Used by:
-//   - payrexx-webhook       (realtime, primary path)
+//   - payrexx-webhook        (realtime, primary path)
 //   - verify-payrexx-payment (client-triggered fallback on /payment-success)
-//   - reconcile-payrexx-payments (scheduled safety net)
+//   - admin_activate_subscription RPC (manual admin recovery — mirrors this pipeline in SQL)
+
 //
 // This function is fully idempotent — it can be safely called multiple times
 // for the same transactionId. The payment_history table's unique constraint
