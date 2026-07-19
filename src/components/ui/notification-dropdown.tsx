@@ -111,6 +111,12 @@ export function NotificationDropdown<T extends BaseNotification>({
           event: 'INSERT',
           schema: 'public',
           table: tableName,
+          // Server-side scope: without this, every notification INSERT is
+          // broadcast to every connected client and discarded in JS below.
+          // admin_notifications stays unfiltered by design (global feed).
+          ...(userId && tableName !== 'admin_notifications'
+            ? { filter: `user_id=eq.${userId}` }
+            : {}),
         },
         async (payload) => {
           if (!isMounted) return;

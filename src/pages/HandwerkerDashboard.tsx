@@ -34,7 +34,7 @@ import { majorCategories } from "@/config/majorCategories";
 import { getCategoryLabel } from "@/config/categoryLabels";
 import { getCantonLabel, SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
-import { checkCategoryMatch, checkServiceAreaMatch } from "@/lib/leadHelpers";
+import { checkCategoryMatch, checkServiceAreaMatch, LEAD_LIST_COLUMNS, LEAD_LIST_FETCH_LIMIT } from "@/lib/leadHelpers";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic, ReviewForHandwerker } from "@/types/entities";
@@ -283,7 +283,7 @@ const HandwerkerDashboard = () => {
     try {
       // Fetch active leads and existing proposals in parallel
       const [leadsResult, proposalsResult] = await Promise.all([
-        supabase.from('leads').select('*').eq('status', 'active').order('created_at', { ascending: false }),
+        supabase.from('leads').select(LEAD_LIST_COLUMNS).eq('status', 'active').order('created_at', { ascending: false }).limit(LEAD_LIST_FETCH_LIMIT),
         supabase.from('lead_proposals').select('lead_id').eq('handwerker_id', userId)
       ]);
 
