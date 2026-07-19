@@ -2282,6 +2282,7 @@ export type Database = {
       check_lead_expiry: { Args: never; Returns: undefined }
       delete_expired_contact_requests: { Args: never; Returns: undefined }
       delete_expired_magic_tokens: { Args: never; Returns: undefined }
+      generate_invoice_number: { Args: never; Returns: string }
       get_accepted_client_contacts: {
         Args: { p_lead_ids: string[] }
         Returns: {
