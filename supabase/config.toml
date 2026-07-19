@@ -111,6 +111,9 @@ verify_jwt = false
 [functions.check-subscription-expiry]
 verify_jwt = false
 
+[functions.reconcile-payrexx-payments]
+verify_jwt = false
+
 [functions.generate-invoice-pdf]
 verify_jwt = false
 
