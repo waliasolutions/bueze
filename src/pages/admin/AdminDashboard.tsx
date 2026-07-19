@@ -63,48 +63,33 @@ const AdminDashboard = () => {
     try {
       setIsRefreshing(true);
 
-      // Fetch handwerker stats
-      const { data: handwerkerData } = await supabase
-        .from('handwerker_profiles')
-        .select('id, verification_status');
+      // Server-side counts (head: true ships no rows) — only the paid
+      // amounts are fetched as rows, for the revenue sum.
+      const [pendingRes, approvedRes, totalLeadsRes, activeLeadsRes, clientsRes, paymentsRes] = await Promise.all([
+        supabase.from('handwerker_profiles').select('id', { count: 'exact', head: true }).eq('verification_status', 'pending'),
+        supabase.from('handwerker_profiles').select('id', { count: 'exact', head: true }).eq('verification_status', 'approved'),
+        supabase.from('leads').select('id', { count: 'exact', head: true }),
+        supabase.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).in('role', ['client', 'user']),
+        supabase.from('payment_history').select('amount').eq('status', 'paid'),
+      ]);
 
-      const pending = handwerkerData?.filter(h => h.verification_status === 'pending') || [];
-      const approved = handwerkerData?.filter(h => h.verification_status === 'approved') || [];
-
-      // Fetch lead stats
-      const { data: leadsData } = await supabase
-        .from('leads')
-        .select('id, status');
-
-      const activeLeads = leadsData?.filter(l => l.status === 'active') || [];
-
-      // Fetch client count
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('role', ['client', 'user']);
-
-      // Fetch revenue
-      const { data: paymentsData } = await supabase
-        .from('payment_history')
-        .select('amount')
-        .eq('status', 'paid');
-
-      const totalRevenue = paymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+      const pendingCount = pendingRes.count || 0;
+      const totalRevenue = paymentsRes.data?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
 
       setStats({
-        pendingCount: pending.length,
-        approvedCount: approved.length,
-        totalLeads: leadsData?.length || 0,
-        activeLeads: activeLeads.length,
-        totalClients: rolesData?.length || 0,
+        pendingCount,
+        approvedCount: approvedRes.count || 0,
+        totalLeads: totalLeadsRes.count || 0,
+        activeLeads: activeLeadsRes.count || 0,
+        totalClients: clientsRes.count || 0,
         totalRevenue: totalRevenue / 100, // Convert from cents
       });
 
       // Set attention items
       const attention: { type: string; count: number; link: string }[] = [];
-      if (pending.length > 0) {
-        attention.push({ type: 'Handwerker warten auf Freischaltung', count: pending.length, link: '/admin/handwerkers' });
+      if (pendingCount > 0) {
+        attention.push({ type: 'Handwerker warten auf Freischaltung', count: pendingCount, link: '/admin/handwerkers' });
       }
       setAttentionItems(attention);
 
