@@ -80,7 +80,8 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    const body = req.method === 'POST' ? await req.json().catch(() => ({} as any)) : ({} as any);
+    const body: Record<string, unknown> =
+      req.method === 'POST' ? await req.json().catch(() => ({})) : {};
     const live = body.live === true || url.searchParams.get('live') === 'true';
     const lookbackDays = Number(body.days ?? url.searchParams.get('days')) || DEFAULT_LOOKBACK_DAYS;
     const cutoff = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
@@ -112,8 +113,22 @@ Deno.serve(async (req) => {
     const supabase = createSupabaseAdmin();
     const candidateIds = candidates.map((tx) => String(tx.id));
 
+    interface PaymentRow {
+      payrexx_transaction_id: string;
+      user_id: string;
+      plan_type: string;
+      payment_date: string;
+      status: string;
+    }
+    interface SubRow {
+      user_id: string;
+      plan_type: string;
+      status: string;
+      current_period_end: string | null;
+    }
+
     // 2. Split into unprocessed vs processed-but-possibly-stuck.
-    const processedRows = candidateIds.length
+    const processedRows: PaymentRow[] = candidateIds.length
       ? (
           await supabase
             .from('payment_history')
@@ -121,10 +136,10 @@ Deno.serve(async (req) => {
             .in('payrexx_transaction_id', candidateIds)
         ).data || []
       : [];
-    const processedById = new Map<string, any>(processedRows.map((r: any) => [String(r.payrexx_transaction_id), r]));
+    const processedById = new Map(processedRows.map((r) => [String(r.payrexx_transaction_id), r]));
 
-    const userIds = [...new Set(processedRows.map((r: any) => r.user_id))];
-    const subRows = userIds.length
+    const userIds = [...new Set(processedRows.map((r) => r.user_id))];
+    const subRows: SubRow[] = userIds.length
       ? (
           await supabase
             .from('handwerker_subscriptions')
@@ -132,7 +147,7 @@ Deno.serve(async (req) => {
             .in('user_id', userIds)
         ).data || []
       : [];
-    const subByUser = new Map<string, any>(subRows.map((s: any) => [s.user_id, s]));
+    const subByUser = new Map(subRows.map((s) => [s.user_id, s]));
 
     const toProcess: { tx: ListedTransaction; reason: 'unprocessed' | 'stuck' }[] = [];
     let alreadyProcessed = 0;
