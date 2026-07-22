@@ -2293,6 +2293,17 @@ export type Database = {
           phone: string
         }[]
       }
+      get_bucket_storage_stats: {
+        Args: { p_bucket: string }
+        Returns: {
+          other_bytes: number
+          other_files: number
+          total_bytes: number
+          total_files: number
+          webp_bytes: number
+          webp_files: number
+        }[]
+      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]
