@@ -14,14 +14,14 @@ type Bucket = "lead-media" | "handwerker-portfolio";
 const BUCKETS: Bucket[] = ["lead-media", "handwerker-portfolio"];
 // Progressive attempts: try higher quality first, then step down and/or shrink,
 // so we only skip images that truly cannot be improved.
+// Cap = 1600 px (retina-crisp bis 800 px Anzeige). Progressiv Qualität senken,
+// nur committen wenn Ergebnis kleiner als aktueller Storage-Stand.
 const COMPRESSION_ATTEMPTS: Array<{ quality: number; maxWidth: number }> = [
-  { quality: 0.85, maxWidth: 1920 },
-  { quality: 0.8, maxWidth: 1920 },
-  { quality: 0.75, maxWidth: 1800 },
-  { quality: 0.7, maxWidth: 1600 },
-  { quality: 0.65, maxWidth: 1400 },
-  { quality: 0.6, maxWidth: 1280 },
-  { quality: 0.55, maxWidth: 1200 },
+  { quality: 0.82, maxWidth: 1600 },
+  { quality: 0.80, maxWidth: 1500 },
+  { quality: 0.78, maxWidth: 1400 },
+  { quality: 0.75, maxWidth: 1200 },
+  { quality: 0.70, maxWidth: 1000 },
 ];
 
 async function bestCompressedWebP(file: File, originalSize: number): Promise<File> {
