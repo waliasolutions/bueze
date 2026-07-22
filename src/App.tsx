@@ -249,6 +249,7 @@ const App = () => {
                         <Route path="billing" element={<AdminBillingSettings />} />
                         <Route path="deletion-audit" element={<DeletionAudit />} />
                         <Route path="orphaned-records" element={<OrphanedRecordsCleanup />} />
+                        <Route path="image-backfill" element={<ImageBackfill />} />
                       </Routes>
                     </Suspense>
                   </AdminAuthProvider>
