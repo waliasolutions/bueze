@@ -102,7 +102,7 @@ export default function ImageBackfill() {
 
 
   const run = async (bucket: Bucket, mode: Mode, limit: number) => {
-    const key = `${bucket}:${mode}`;
+    const key = `${bucket}:${mode}:${limit}`;
     setLoading(key);
     const aggregate = {
       bucket,
@@ -247,14 +247,14 @@ export default function ImageBackfill() {
                   disabled={loading !== null}
                   onClick={() => run(bucket, "dry-run", 10)}
                 >
-                  {loading === `${bucket}:dry-run` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading === `${bucket}:dry-run:10` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Dry-Run (10)
                 </Button>
                 <Button
                   disabled={loading !== null}
                   onClick={() => run(bucket, "apply", 25)}
                 >
-                  {loading === `${bucket}:apply` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading === `${bucket}:apply:25` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Apply (25)
                 </Button>
                 <Button
@@ -262,7 +262,7 @@ export default function ImageBackfill() {
                   disabled={loading !== null}
                   onClick={() => run(bucket, "apply", 50)}
                 >
-                  {loading === `${bucket}:apply` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading === `${bucket}:apply:50` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Apply (50)
                 </Button>
                 <Button
@@ -270,7 +270,7 @@ export default function ImageBackfill() {
                   disabled={loading !== null}
                   onClick={() => run(bucket, "apply", 200)}
                 >
-                  {loading === `${bucket}:apply` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading === `${bucket}:apply:200` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Apply (200)
                 </Button>
               </div>
@@ -284,6 +284,11 @@ export default function ImageBackfill() {
                       <div>Geprüft: <strong>{res.examined ?? 0}</strong></div>
                       <div>Komprimiert: <strong>{res.compressed ?? 0}</strong></div>
                       <div>Übersprungen: <strong>{res.skipped ?? 0}</strong></div>
+                      {(res.skipped ?? 0) > 0 && (res.compressed ?? 0) === 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          Übersprungen bedeutet: WebP wäre nicht kleiner als das Original — kein Fehler.
+                        </div>
+                      )}
                       <div>Fehler: <strong>{res.errors ?? 0}</strong></div>
                       <div>Vorher: <strong>{formatBytes(res.total_before_bytes ?? 0)}</strong></div>
                       <div>Nachher: <strong>{formatBytes(res.total_after_bytes ?? 0)}</strong></div>
