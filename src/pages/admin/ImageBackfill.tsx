@@ -247,14 +247,14 @@ export default function ImageBackfill() {
                   disabled={loading !== null}
                   onClick={() => run(bucket, "dry-run", 10)}
                 >
-                  {loading === `${bucket}:dry-run` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading === `${bucket}:dry-run:10` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Dry-Run (10)
                 </Button>
                 <Button
                   disabled={loading !== null}
                   onClick={() => run(bucket, "apply", 25)}
                 >
-                  {loading === `${bucket}:apply` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading === `${bucket}:apply:25` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Apply (25)
                 </Button>
                 <Button
@@ -262,7 +262,7 @@ export default function ImageBackfill() {
                   disabled={loading !== null}
                   onClick={() => run(bucket, "apply", 50)}
                 >
-                  {loading === `${bucket}:apply` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading === `${bucket}:apply:50` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Apply (50)
                 </Button>
                 <Button
@@ -270,7 +270,7 @@ export default function ImageBackfill() {
                   disabled={loading !== null}
                   onClick={() => run(bucket, "apply", 200)}
                 >
-                  {loading === `${bucket}:apply` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {loading === `${bucket}:apply:200` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Apply (200)
                 </Button>
               </div>
