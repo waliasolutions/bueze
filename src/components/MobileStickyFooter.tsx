@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export const MobileStickyFooter = () => {
   const [isVisible, setIsVisible] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { isHandwerker, isAdmin, loading: roleLoading } = useUserRole();
 
   useEffect(() => {
     // Only show on homepage
@@ -26,8 +28,9 @@ export const MobileStickyFooter = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [location.pathname]);
 
-  // Don't render anything if not on homepage
+  // Don't render for homepage-off, handwerker or admin accounts (they can't post leads)
   if (location.pathname !== '/') return null;
+  if (!roleLoading && (isHandwerker || isAdmin)) return null;
 
   return (
     <div
