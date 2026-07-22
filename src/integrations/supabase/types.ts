@@ -2323,6 +2323,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_image_backfill_candidates: {
+        Args: { p_bucket: string; p_limit?: number }
+        Returns: {
+          created_at: string
+          mimetype: string
+          name: string
+          size: number
+        }[]
+      }
       run_retention_cleanup: { Args: never; Returns: Json }
       setup_admin_user: {
         Args: { user_email: string; user_name: string }

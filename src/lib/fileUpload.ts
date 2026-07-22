@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logWithCorrelation, captureException } from './errorTracking';
+import { compressToWebP } from './imageCompressor';
 
 const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 const MAX_FILE_COUNT = 2;
@@ -35,29 +36,33 @@ export async function uploadLeadMedia(
   userId: string
 ): Promise<UploadResult> {
   try {
-    // Validate file size
-    if (file.size > MAX_FILE_SIZE) {
-      throw new Error(`Datei zu groß. Maximum: 3MB (aktuell: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-    }
-
-    // Validate file type
+    // Validate incoming file type BEFORE compression (compressor may change type to webp).
     if (!ALLOWED_TYPES.includes(file.type)) {
       throw new Error(`Dateityp ${file.type} nicht erlaubt. Nur Bilder erlaubt`);
     }
 
+    // Compress to WebP (GIFs pass through unchanged).
+    const processed = await compressToWebP(file, 0.8, 1920);
+
+    // Validate size on the processed file.
+    if (processed.size > MAX_FILE_SIZE) {
+      throw new Error(`Datei zu groß. Maximum: 3MB (aktuell: ${(processed.size / 1024 / 1024).toFixed(2)}MB)`);
+    }
+
     // Generate unique filename
     const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const sanitizedName = processed.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filePath = `${userId}/${timestamp}_${sanitizedName}`;
 
-    logWithCorrelation('Uploading file', { path: filePath, size: file.size });
+    logWithCorrelation('Uploading file', { path: filePath, originalSize: file.size, processedSize: processed.size, type: processed.type });
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('lead-media')
-      .upload(filePath, file, {
+      .upload(filePath, processed, {
         cacheControl: '3600',
-        upsert: false
+        upsert: false,
+        contentType: processed.type,
       });
 
     if (error) throw error;
@@ -137,29 +142,33 @@ export async function uploadProposalAttachment(
   userId: string
 ): Promise<UploadResult> {
   try {
-    // Validate file size
-    if (file.size > PROPOSAL_MAX_FILE_SIZE) {
-      throw new Error(`Datei zu groß. Maximum: 5MB (aktuell: ${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-    }
-
-    // Validate file type
+    // Validate file type on the original (PDFs must be recognised as PDF).
     if (!PROPOSAL_ALLOWED_TYPES.includes(file.type)) {
       throw new Error('Nur PDF, JPG oder PNG erlaubt');
     }
 
+    // Compress images to WebP; PDFs pass through unchanged.
+    const processed = await compressToWebP(file, 0.8, 1920);
+
+    // Validate size on the processed file.
+    if (processed.size > PROPOSAL_MAX_FILE_SIZE) {
+      throw new Error(`Datei zu groß. Maximum: 5MB (aktuell: ${(processed.size / 1024 / 1024).toFixed(2)}MB)`);
+    }
+
     // Generate unique filename
     const timestamp = Date.now();
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const sanitizedName = processed.name.replace(/[^a-zA-Z0-9.-]/g, '_');
     const filePath = `proposals/${userId}/${timestamp}_${sanitizedName}`;
 
-    logWithCorrelation('Uploading proposal attachment', { path: filePath, size: file.size, type: file.type });
+    logWithCorrelation('Uploading proposal attachment', { path: filePath, originalSize: file.size, processedSize: processed.size, type: processed.type });
 
     // Upload to Supabase Storage (reuse lead-media bucket)
     const { data, error } = await supabase.storage
       .from('lead-media')
-      .upload(filePath, file, {
+      .upload(filePath, processed, {
         cacheControl: '3600',
-        upsert: false
+        upsert: false,
+        contentType: processed.type,
       });
 
     if (error) throw error;
