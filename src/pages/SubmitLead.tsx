@@ -228,6 +228,7 @@ const SubmitLead = () => {
       const { data: { user } } = await supabase.auth.getUser();
       isAuthenticatedRef.current = !!user;
       setIsAuthenticated(!!user);
+      setHandwerkerEmail(user?.email ?? null);
       // Capture initial state ONCE - this determines step flow for the entire session
       setStartedAsGuest(!user);
     };
