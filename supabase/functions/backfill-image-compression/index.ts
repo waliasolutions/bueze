@@ -1,76 +1,54 @@
-// Admin-only one-off backfill: recompresses existing JPG/PNG images in
-// lead-media and handwerker-portfolio to WebP in-place (same storage key).
-// - DB refs untouched (extension is irrelevant; browsers use content-type).
-// - Idempotent: already-WebP objects are ignored by the candidate query.
-// - Fail-safe: per-object try/catch; originals stay intact on any failure.
-// - Batched: process ~10 largest candidates per call to stay within limits.
+// Admin-only image backfill coordinator.
+// Heavy image decoding/encoding runs in the admin browser via the shared
+// client compressor. This function only lists candidates and commits already
+// compressed WebP bytes, avoiding Edge Runtime WASM memory pressure.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-import decodeJpeg, { init as initJpegDecode } from 'https://esm.sh/@jsquash/jpeg@1.5.0/decode';
-import decodePng, { init as initPngDecode } from 'https://esm.sh/@jsquash/png@3.0.1/decode';
-import encodeWebp, { init as initWebpEncode } from 'https://esm.sh/@jsquash/webp@1.4.0/encode';
-import resize, { initResize } from 'https://esm.sh/@jsquash/resize@2.1.0';
+const ALLOWED_EMAIL = 'info@walia-solutions.ch';
+const ALLOWED_BUCKETS = ['lead-media', 'handwerker-portfolio'];
 
-type ImageData = { data: Uint8ClampedArray; width: number; height: number };
-
-const MAX_WIDTH = 1920;
-const DEFAULT_QUALITY = 0.85;
-
-async function decodeImage(bytes: ArrayBuffer, mime: string): Promise<ImageData> {
-  const buf = new Uint8Array(bytes);
-  if (mime === 'image/jpeg' || mime === 'image/jpg') {
-    // @ts-ignore
-    return await decodeJpeg(buf);
-  }
-  if (mime === 'image/png') {
-    // @ts-ignore
-    return await decodePng(buf);
-  }
-  throw new Error(`unsupported mime: ${mime}`);
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data, null, 2), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 }
 
-async function processOne(
-  bucket: string,
-  obj: { name: string; size: number; mimetype: string },
+function decodeBase64(base64: string): Uint8Array {
+  const normalized = base64.includes(',') ? base64.split(',').pop() ?? '' : base64;
+  const binary = atob(normalized);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+async function findObjectMetadata(
   admin: ReturnType<typeof createClient>,
-  quality: number,
-  dryRun: boolean,
-) {
-  const originalSize = Number(obj.size ?? 0);
+  bucket: string,
+  objectName: string,
+): Promise<{ size: number; mimetype: string } | null> {
+  const parts = objectName.split('/').filter(Boolean);
+  const fileName = parts.pop();
+  if (!fileName) return null;
+  const folder = parts.join('/');
 
-  const { data: blob, error: dlErr } = await admin.storage.from(bucket).download(obj.name);
-  if (dlErr || !blob) throw new Error(`download failed: ${dlErr?.message ?? 'no data'}`);
-  const bytes = await blob.arrayBuffer();
-
-  let decoded = await decodeImage(bytes, obj.mimetype);
-
-  if (decoded.width > MAX_WIDTH) {
-    const newHeight = Math.round((decoded.height * MAX_WIDTH) / decoded.width);
-    // @ts-ignore
-    decoded = await resize(decoded, { width: MAX_WIDTH, height: newHeight });
-  }
-
-  const webpBytes = await encodeWebp(decoded, { quality: Math.round(quality * 100) });
-  const newSize = webpBytes.byteLength;
-
-  if (newSize >= originalSize) {
-    return { path: obj.name, originalSize, newSize, action: 'skipped_larger' as const };
-  }
-
-  if (dryRun) {
-    return { path: obj.name, originalSize, newSize, action: 'would_replace' as const };
-  }
-
-  const { error: upErr } = await admin.storage.from(bucket).upload(obj.name, webpBytes, {
-    upsert: true,
-    contentType: 'image/webp',
-    cacheControl: '3600',
+  const { data, error } = await admin.storage.from(bucket).list(folder, {
+    limit: 100,
+    search: fileName,
   });
-  if (upErr) throw new Error(`upload failed: ${upErr.message}`);
+  if (error) throw new Error(`storage metadata lookup failed: ${error.message}`);
 
-  return { path: obj.name, originalSize, newSize, action: 'replaced' as const };
+  const match = (data ?? []).find((item) => item.name === fileName);
+  if (!match) return null;
+  const metadata = match.metadata as Record<string, unknown> | null;
+  return {
+    size: Number(metadata?.size ?? 0),
+    mimetype: String(metadata?.mimetype ?? ''),
+  };
 }
 
 Deno.serve(async (req) => {
@@ -80,9 +58,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization') ?? '';
     const jwt = authHeader.replace('Bearer ', '');
     if (!jwt) {
-      return new Response(JSON.stringify({ error: 'not authenticated' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'not authenticated' }, 401);
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -94,9 +70,7 @@ Deno.serve(async (req) => {
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ error: 'invalid session' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'invalid session' }, 401);
     }
 
     const admin = createClient(supabaseUrl, serviceKey);
@@ -107,88 +81,89 @@ Deno.serve(async (req) => {
       _user_id: userData.user.id, _role: 'super_admin',
     });
     if (!isAdmin && !isSuper) {
-      return new Response(JSON.stringify({ error: 'admin only' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'admin only' }, 403);
     }
     // Restrict this maintenance tool to a single operator.
-    const ALLOWED_EMAIL = 'info@walia-solutions.ch';
     if ((userData.user.email ?? '').toLowerCase() !== ALLOWED_EMAIL) {
-      return new Response(JSON.stringify({ error: 'restricted to operator' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'restricted to operator' }, 403);
     }
 
     const body = await req.json().catch(() => ({}));
+    const action = String(body.action ?? 'list');
     const bucket = String(body.bucket ?? '');
-    const mode = String(body.mode ?? 'dry-run');
-    // Hard cap: WASM decode+encode of a single large image already approaches
-    // the 256 MB edge-runtime budget. Processing more than one per invocation
-    // triggers "Memory limit exceeded". Batch by calling this function repeatedly.
-    const limit = Math.min(Math.max(Number(body.limit ?? 1), 1), 1);
-    const quality = Math.min(Math.max(Number(body.quality ?? DEFAULT_QUALITY), 0.5), 0.95);
 
-    if (!['lead-media', 'handwerker-portfolio'].includes(bucket)) {
-      return new Response(JSON.stringify({ error: 'invalid bucket' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    if (!['dry-run', 'apply'].includes(mode)) {
-      return new Response(JSON.stringify({ error: 'invalid mode' }), {
-        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const dryRun = mode === 'dry-run';
-
-    const { data: candidates, error: qErr } = await admin.rpc('list_image_backfill_candidates', {
-      p_bucket: bucket, p_limit: limit,
-    });
-    if (qErr) {
-      return new Response(JSON.stringify({ error: `candidate query failed: ${qErr.message}` }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!ALLOWED_BUCKETS.includes(bucket)) {
+      return json({ error: 'invalid bucket' }, 400);
     }
 
-    const targets = (candidates ?? []) as Array<{ name: string; size: number; mimetype: string }>;
-
-    await Promise.all([
-      initJpegDecode().catch(() => {}),
-      initPngDecode().catch(() => {}),
-      initWebpEncode().catch(() => {}),
-      initResize().catch(() => {}),
-    ]);
-
-    const results: any[] = [];
-    let totalBefore = 0;
-    let totalAfter = 0;
-
-    for (const obj of targets) {
-      try {
-        const r = await processOne(bucket, obj, admin, quality, dryRun);
-        results.push(r);
-        totalBefore += r.originalSize;
-        totalAfter += r.newSize;
-      } catch (err) {
-        results.push({
-          path: obj.name,
-          action: 'failed',
-          error: err instanceof Error ? err.message : String(err),
-        });
+    if (action === 'list') {
+      const limit = Math.min(Math.max(Number(body.limit ?? 10), 1), 50);
+      const { data: candidates, error: qErr } = await admin.rpc('list_image_backfill_candidates', {
+        p_bucket: bucket, p_limit: limit,
+      });
+      if (qErr) {
+        return json({ error: `candidate query failed: ${qErr.message}` }, 500);
       }
+
+      const targets = (candidates ?? []) as Array<{ name: string; size: number; mimetype: string; created_at?: string }>;
+      return json({ bucket, action, examined: targets.length, candidates: targets });
     }
 
-    return new Response(JSON.stringify({
-      bucket, mode, quality, examined: targets.length,
-      total_before_bytes: totalBefore,
-      total_after_bytes: totalAfter,
-      estimated_savings_bytes: totalBefore - totalAfter,
-      results,
-    }, null, 2), {
-      status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (action !== 'commit') {
+      return json({ error: 'invalid action' }, 400);
+    }
+
+    const name = String(body.name ?? '');
+    const originalSize = Number(body.originalSize ?? 0);
+    const compressedSize = Number(body.compressedSize ?? 0);
+    const contentType = String(body.contentType ?? '');
+    const contentBase64 = String(body.contentBase64 ?? '');
+
+    if (!name || name.includes('..') || name.startsWith('/')) {
+      return json({ success: false, action: 'failed', error: 'invalid object path' });
+    }
+    if (contentType !== 'image/webp') {
+      return json({ success: false, action: 'failed', path: name, error: 'invalid content type' });
+    }
+    if (!Number.isFinite(originalSize) || !Number.isFinite(compressedSize) || originalSize <= 0 || compressedSize <= 0) {
+      return json({ success: false, action: 'failed', path: name, error: 'invalid size metadata' });
+    }
+    if (compressedSize >= originalSize) {
+      return json({ success: false, action: 'skipped_larger', path: name, originalSize, newSize: compressedSize });
+    }
+    if (!contentBase64) {
+      return json({ success: false, action: 'failed', path: name, error: 'missing compressed payload' });
+    }
+
+    const metadata = await findObjectMetadata(admin, bucket, name);
+    if (!metadata) {
+      return json({ success: false, action: 'failed', path: name, error: 'object no longer exists' });
+    }
+    if (!['image/jpeg', 'image/jpg', 'image/png'].includes(metadata.mimetype)) {
+      return json({ success: false, action: 'skipped_not_candidate', path: name, originalSize: metadata.size, newSize: metadata.size });
+    }
+    if (metadata.size !== originalSize) {
+      return json({ success: false, action: 'failed', path: name, error: 'object changed since dry-run/list', originalSize: metadata.size, newSize: compressedSize });
+    }
+
+    const webpBytes = decodeBase64(contentBase64);
+    if (webpBytes.byteLength !== compressedSize) {
+      return json({ success: false, action: 'failed', path: name, error: 'payload size mismatch', originalSize, newSize: webpBytes.byteLength });
+    }
+
+    const { error: upErr } = await admin.storage.from(bucket).upload(name, webpBytes, {
+      upsert: true,
+      contentType: 'image/webp',
+      cacheControl: '3600',
     });
+    if (upErr) {
+      return json({ success: false, action: 'failed', path: name, error: `upload failed: ${upErr.message}`, originalSize, newSize: compressedSize });
+    }
+
+    return json({ success: true, action: 'replaced', path: name, originalSize, newSize: compressedSize });
   } catch (err) {
-    return new Response(JSON.stringify({
+    return json({
       error: err instanceof Error ? err.message : String(err),
-    }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }, 500);
   }
 });

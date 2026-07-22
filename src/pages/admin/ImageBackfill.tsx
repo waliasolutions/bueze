@@ -6,11 +6,29 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { Navigate } from "react-router-dom";
+import { compressToWebP } from "@/lib/imageCompressor";
 
 type Mode = "dry-run" | "apply";
 type Bucket = "lead-media" | "handwerker-portfolio";
 
 const BUCKETS: Bucket[] = ["lead-media", "handwerker-portfolio"];
+const QUALITY = 0.85;
+const MAX_WIDTH = 1920;
+
+type Candidate = {
+  name: string;
+  size: number;
+  mimetype: string;
+  created_at?: string;
+};
+
+type BackfillResult = {
+  path: string;
+  originalSize?: number;
+  newSize?: number;
+  action: "would_replace" | "replaced" | "skipped_larger" | "skipped_not_candidate" | "failed";
+  error?: string;
+};
 
 function formatBytes(bytes: number): string {
   if (!bytes) return "0 B";
@@ -22,6 +40,34 @@ function formatBytes(bytes: number): string {
     i++;
   }
   return `${n.toFixed(2)} ${units[i]}`;
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? "").split(",").pop() ?? "");
+    reader.onerror = () => reject(reader.error ?? new Error("Datei konnte nicht gelesen werden"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function getInvokeErrorMessage(error: unknown): Promise<string> {
+  const maybeError = error as { message?: string; context?: { json?: () => Promise<unknown>; text?: () => Promise<string> } };
+  try {
+    const body = await maybeError.context?.json?.();
+    if (body && typeof body === "object" && "error" in body) {
+      return String((body as { error?: unknown }).error);
+    }
+  } catch {
+    // fall through to text/message
+  }
+  try {
+    const bodyText = await maybeError.context?.text?.();
+    if (bodyText) return bodyText;
+  } catch {
+    // fall through to message
+  }
+  return maybeError.message || "Edge Function returned a non-2xx status code";
 }
 
 export default function ImageBackfill() {
@@ -38,35 +84,119 @@ export default function ImageBackfill() {
   const run = async (bucket: Bucket, mode: Mode, limit: number) => {
     const key = `${bucket}:${mode}`;
     setLoading(key);
-    // Edge function processes 1 image per invocation (256 MB WASM budget).
-    // Loop client-side to reach the requested batch size.
     const aggregate = {
       bucket,
       mode,
       examined: 0,
       compressed: 0,
+      skipped: 0,
+      errors: 0,
       total_before_bytes: 0,
       total_after_bytes: 0,
-      results: [] as any[],
+      estimated_savings_bytes: 0,
+      results: [] as BackfillResult[],
     };
     try {
-      for (let i = 0; i < limit; i++) {
-        const { data, error } = await supabase.functions.invoke("backfill-image-compression", {
-          body: { bucket, mode, limit: 1 },
-        });
-        if (error) throw error;
-        aggregate.examined += data?.examined ?? 0;
-        aggregate.compressed += data?.compressed ?? 0;
-        aggregate.total_before_bytes += data?.total_before_bytes ?? 0;
-        aggregate.total_after_bytes += data?.total_after_bytes ?? 0;
-        if (Array.isArray(data?.results)) aggregate.results.push(...data.results);
-        setResults((r) => ({ ...r, [bucket]: { ...aggregate } }));
-        if ((data?.examined ?? 0) === 0) break; // no more candidates
+      const { data: listData, error: listError } = await supabase.functions.invoke("backfill-image-compression", {
+        body: { action: "list", bucket, limit },
+      });
+      if (listError) throw new Error(await getInvokeErrorMessage(listError));
+
+      const candidates = (listData?.candidates ?? []) as Candidate[];
+      aggregate.examined = candidates.length;
+      setResults((r) => ({ ...r, [bucket]: { ...aggregate } }));
+
+      for (const candidate of candidates) {
+        const originalSize = Number(candidate.size ?? 0);
+        try {
+          const { data: blob, error: downloadError } = await supabase.storage
+            .from(bucket)
+            .download(candidate.name);
+
+          if (downloadError || !blob) {
+            throw new Error(downloadError?.message || "Download fehlgeschlagen");
+          }
+
+          const originalFile = new File([blob], candidate.name.split("/").pop() || "image", {
+            type: candidate.mimetype,
+            lastModified: Date.now(),
+          });
+          const compressed = await compressToWebP(originalFile, QUALITY, MAX_WIDTH);
+
+          if (compressed.type !== "image/webp" || compressed.size >= originalSize) {
+            aggregate.skipped += 1;
+            aggregate.results.push({
+              path: candidate.name,
+              originalSize,
+              newSize: compressed.size,
+              action: "skipped_larger",
+            });
+            setResults((r) => ({ ...r, [bucket]: { ...aggregate } }));
+            continue;
+          }
+
+          if (mode === "dry-run") {
+            aggregate.compressed += 1;
+            aggregate.total_before_bytes += originalSize;
+            aggregate.total_after_bytes += compressed.size;
+            aggregate.estimated_savings_bytes = aggregate.total_before_bytes - aggregate.total_after_bytes;
+            aggregate.results.push({
+              path: candidate.name,
+              originalSize,
+              newSize: compressed.size,
+              action: "would_replace",
+            });
+            setResults((r) => ({ ...r, [bucket]: { ...aggregate } }));
+            continue;
+          }
+
+          const contentBase64 = await fileToBase64(compressed);
+          const { data: commitData, error: commitError } = await supabase.functions.invoke("backfill-image-compression", {
+            body: {
+              action: "commit",
+              bucket,
+              name: candidate.name,
+              originalSize,
+              compressedSize: compressed.size,
+              contentType: compressed.type,
+              contentBase64,
+            },
+          });
+
+          if (commitError) {
+            throw new Error(await getInvokeErrorMessage(commitError));
+          }
+
+          const result = commitData as BackfillResult & { success?: boolean };
+          aggregate.results.push(result);
+          if (result.action === "replaced") {
+            aggregate.compressed += 1;
+            aggregate.total_before_bytes += originalSize;
+            aggregate.total_after_bytes += compressed.size;
+            aggregate.estimated_savings_bytes = aggregate.total_before_bytes - aggregate.total_after_bytes;
+          } else if (result.action === "failed") {
+            aggregate.errors += 1;
+          } else {
+            aggregate.skipped += 1;
+          }
+          setResults((r) => ({ ...r, [bucket]: { ...aggregate } }));
+        } catch (error) {
+          aggregate.errors += 1;
+          aggregate.results.push({
+            path: candidate.name,
+            originalSize,
+            action: "failed",
+            error: error instanceof Error ? error.message : String(error),
+          });
+          setResults((r) => ({ ...r, [bucket]: { ...aggregate } }));
+        }
       }
-      toast.success(`${bucket} · ${mode}: ${aggregate.examined} geprüft, ${aggregate.compressed} komprimiert`);
+
+      toast.success(`${bucket} · ${mode}: ${aggregate.examined} geprüft, ${aggregate.compressed} ${mode === "dry-run" ? "komprimierbar" : "komprimiert"}`);
     } catch (e: any) {
-      toast.error(e?.message || "Fehler beim Backfill");
-      setResults((r) => ({ ...r, [bucket]: { ...aggregate, error: e?.message || String(e) } }));
+      const message = e?.message || "Fehler beim Backfill";
+      toast.error(message);
+      setResults((r) => ({ ...r, [bucket]: { ...aggregate, error: message } }));
     } finally {
       setLoading(null);
     }
