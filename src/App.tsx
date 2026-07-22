@@ -72,6 +72,7 @@ const AdminInvoices = lazy(() => import("./pages/admin/AdminInvoices"));
 const AdminBillingSettings = lazy(() => import("./pages/admin/AdminBillingSettings"));
 const DeletionAudit = lazy(() => import("./pages/admin/DeletionAudit"));
 const OrphanedRecordsCleanup = lazy(() => import("./pages/admin/OrphanedRecordsCleanup"));
+const ImageBackfill = lazy(() => import("./pages/admin/ImageBackfill"));
 
 // Legal pages - low priority
 const AGB = lazy(() => import("./pages/legal/AGB"));
