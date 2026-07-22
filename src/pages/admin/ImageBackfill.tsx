@@ -25,8 +25,15 @@ function formatBytes(bytes: number): string {
 }
 
 export default function ImageBackfill() {
+  const { user, isChecking } = useAdminAuth();
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, any>>({});
+
+  if (isChecking) return null;
+  if ((user?.email ?? "").toLowerCase() !== "info@walia-solutions.ch") {
+    return <Navigate to="/admin" replace />;
+  }
+
 
   const run = async (bucket: Bucket, mode: Mode, limit: number) => {
     const key = `${bucket}:${mode}`;
