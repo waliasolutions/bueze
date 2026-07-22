@@ -269,10 +269,12 @@ export default function ImageBackfill() {
       <div>
         <h1 className="text-2xl font-bold">Bild-Backfill (WebP-Kompression)</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Rekomprimiert bestehende JPEG/PNG-Bilder in Storage zu WebP (progressiv Q=0.55–0.85, max 1920 px).
-          Datenbank-Referenzen bleiben unverändert (Overwrite in-place).
+          Rekomprimiert Storage-Bilder zu WebP mit Cap 1600 px / Q=0.82 (progressiv bis 1000 px / Q=0.70).
+          Retina-crisp bis 800 px Anzeige. Datenbank-Referenzen bleiben unverändert (Overwrite in-place).
+          Bereits konvertierte WebPs werden erneut geprüft, wenn sie größer als 400 KB sind.
         </p>
       </div>
+
 
       {BUCKETS.map((bucket) => {
         const res = results[bucket];
