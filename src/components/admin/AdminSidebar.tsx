@@ -118,7 +118,9 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
     title: 'Wartung',
     items: [
       { label: 'Verwaiste Daten', href: '/admin/orphaned-records', icon: Briefcase },
-      { label: 'Bild-Backfill', href: '/admin/image-backfill', icon: Briefcase },
+      ...(isOperator
+        ? [{ label: 'Bild-Backfill', href: '/admin/image-backfill', icon: Briefcase }]
+        : []),
     ],
   };
 
