@@ -159,8 +159,8 @@ export const Header = () => {
                 {!roleLoading && isHandwerker && !isAdmin && <HandwerkerNotifications />}
                 {!roleLoading && !isAdmin && !isHandwerker && <ClientNotifications />}
                 
-                {/* Hide "Auftrag erstellen" for admins */}
-                {!roleLoading && !isAdmin && (
+                {/* Hide "Auftrag erstellen" for admins and handwerkers */}
+                {!roleLoading && !isAdmin && !isHandwerkerIdentity && (
                   <Button variant="outline" onClick={() => navigate('/submit-lead')} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Auftrag erstellen

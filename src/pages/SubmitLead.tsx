@@ -31,6 +31,8 @@ import { runAllSpamChecks, recordAttempt } from '@/lib/spamProtection';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { useMultiStepForm } from '@/hooks/useMultiStepForm';
 import { MultiStepProgress } from '@/components/ui/multi-step-progress';
+import { useUserRole } from '@/hooks/useUserRole';
+import { AlertCircle } from 'lucide-react';
 
 
 // Base schema type — used for TypeScript inference only (no contact validation here)
@@ -162,6 +164,11 @@ const SubmitLead = () => {
   const [searchParams] = useSearchParams();
   const preselectedCategory = searchParams.get('category');
 
+  // Role guard: handwerker accounts cannot post client leads (SSOT: user_roles).
+  // DB trigger prevent_handwerker_lead_creation is the hard block; this is the UX layer.
+  const { isHandwerker, isAdmin, loading: roleLoading, userId } = useUserRole();
+  const [handwerkerEmail, setHandwerkerEmail] = useState<string | null>(null);
+
   // Step configuration - use startedAsGuest for consistent flow
   const stepConfig = startedAsGuest
     ? { 1: 'contact' as StepContent, 2: 'project' as StepContent, 3: 'location' as StepContent }
@@ -221,6 +228,7 @@ const SubmitLead = () => {
       const { data: { user } } = await supabase.auth.getUser();
       isAuthenticatedRef.current = !!user;
       setIsAuthenticated(!!user);
+      setHandwerkerEmail(user?.email ?? null);
       // Capture initial state ONCE - this determines step flow for the entire session
       setStartedAsGuest(!user);
     };
@@ -353,6 +361,29 @@ const SubmitLead = () => {
       });
 
       if (error) throw error;
+
+      // Role check BEFORE advancing — handwerker accounts cannot post leads.
+      // Query directly (useUserRole cache may not have refreshed yet).
+      const uid = data.user?.id;
+      if (uid) {
+        const { data: roleRows } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', uid);
+        const roles = (roleRows ?? []).map((r) => r.role as string);
+        if (roles.includes('handwerker') && !roles.includes('admin') && !roles.includes('super_admin')) {
+          setIsAuthenticated(true);
+          setHandwerkerEmail(data.user?.email ?? loginEmail);
+          setShowLoginForm(false);
+          // Guard card takes over via useUserRole re-render. Nothing else to do —
+          // no in-memory draft is persisted, form state is discarded on unmount.
+          toast({
+            title: 'Handwerker-Konto erkannt',
+            description: 'Aufträge als Auftraggeber sind mit diesem Konto nicht möglich.',
+          });
+          return;
+        }
+      }
 
       setIsAuthenticated(true);
       setShowLoginForm(false);
@@ -626,6 +657,74 @@ const SubmitLead = () => {
       </div>
     );
   }
+
+  // Handwerker guard: registered craftsmen cannot post client leads.
+  // DB trigger is the SSOT; this is the friendly UX layer.
+  if (!roleLoading && userId && isHandwerker && !isAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DynamicHelmet
+          title="Auftrag erstellen | Büeze.ch"
+          description="Handwerker-Konten können keine Aufträge als Auftraggeber erstellen."
+          robotsMeta="noindex,nofollow"
+        />
+        <Header />
+        <main className="container mx-auto px-4 py-8 pt-24">
+          <div className="max-w-2xl mx-auto">
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <div className="rounded-full bg-brand-50 p-2 shrink-0">
+                    <AlertCircle className="h-5 w-5 text-brand-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <CardTitle>Sie sind als Handwerker angemeldet 👋</CardTitle>
+                    <CardDescription className="mt-2 break-words">
+                      {handwerkerEmail
+                        ? <>Dieses Konto (<span className="font-medium">{handwerkerEmail}</span>) ist als Handwerker registriert. Aufträge als Auftraggeber sind mit diesem Konto nicht möglich.</>
+                        : <>Dieses Konto ist als Handwerker registriert. Aufträge als Auftraggeber sind mit diesem Konto nicht möglich.</>}
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground">
+                  💡 Möchten Sie privat einen Auftrag ausschreiben? Melden Sie sich ab und registrieren Sie sich mit einer anderen (z. B. privaten) E-Mail-Adresse als Auftraggeber.
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={() => navigate('/search')}
+                    className="w-full sm:w-auto"
+                  >
+                    Verfügbare Aufträge ansehen
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => navigate('/handwerker-dashboard')}
+                    className="w-full sm:w-auto"
+                  >
+                    Zum Handwerker-Dashboard
+                  </Button>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    navigate('/');
+                  }}
+                  className="text-sm text-muted-foreground hover:text-destructive underline underline-offset-4"
+                >
+                  Abmelden
+                </button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-background">
