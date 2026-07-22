@@ -12,8 +12,25 @@ type Mode = "dry-run" | "apply";
 type Bucket = "lead-media" | "handwerker-portfolio";
 
 const BUCKETS: Bucket[] = ["lead-media", "handwerker-portfolio"];
-const QUALITY = 0.85;
-const MAX_WIDTH = 1920;
+// Progressive attempts: try higher quality first, then step down and/or shrink,
+// so we only skip images that truly cannot be improved.
+const COMPRESSION_ATTEMPTS: Array<{ quality: number; maxWidth: number }> = [
+  { quality: 0.85, maxWidth: 1920 },
+  { quality: 0.78, maxWidth: 1920 },
+  { quality: 0.72, maxWidth: 1600 },
+  { quality: 0.65, maxWidth: 1400 },
+];
+
+async function bestCompressedWebP(file: File, originalSize: number): Promise<File> {
+  let best: File = file;
+  for (const { quality, maxWidth } of COMPRESSION_ATTEMPTS) {
+    const attempt = await compressToWebP(file, quality, maxWidth);
+    if (attempt.type === "image/webp" && attempt.size < originalSize && attempt.size < best.size) {
+      best = attempt;
+    }
+  }
+  return best;
+}
 
 type Candidate = {
   name: string;
