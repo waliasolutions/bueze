@@ -324,11 +324,6 @@ const HandwerkerOnboarding = () => {
           phoneNumber: profile?.phone || prev.phoneNumber,
         }));
 
-        toast({
-          title: "Angemeldet",
-          description: "Fahren Sie mit der Registrierung fort.",
-        });
-        
         // Proceed to next step and scroll to top
         setCurrentStep(2);
         setTimeout(() => {

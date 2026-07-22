@@ -387,10 +387,6 @@ const SubmitLead = () => {
 
       setIsAuthenticated(true);
       setShowLoginForm(false);
-      toast({
-        title: "Anmeldung erfolgreich",
-        description: "Sie können jetzt Ihren Auftrag erstellen.",
-      });
       // Move to next step (Project details) after login
       setStep(2);
     } catch (error) {
