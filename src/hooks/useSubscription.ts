@@ -88,13 +88,10 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
       if (subscriptionData) {
         const planType = subscriptionData.plan_type as SubscriptionPlanType;
         const plan = SUBSCRIPTION_PLANS[planType];
-        // DB column is authoritative (admins can grant custom limits);
-        // plan config is only the fallback for legacy rows without a value.
-        const proposalsLimit = subscriptionData.proposals_limit ?? plan.proposalsLimit;
-        const isUnlimited = proposalsLimit === -1;
+        const isUnlimited = plan.proposalsLimit === -1;
         const usedProposals = subscriptionData.proposals_used_this_period || 0;
-        const remainingProposals = isUnlimited ? Infinity : Math.max(0, proposalsLimit - usedProposals);
-        const usagePercentage = isUnlimited ? 0 : Math.min(100, (usedProposals / proposalsLimit) * 100);
+        const remainingProposals = isUnlimited ? Infinity : Math.max(0, plan.proposalsLimit - usedProposals);
+        const usagePercentage = isUnlimited ? 0 : Math.min(100, (usedProposals / plan.proposalsLimit) * 100);
         const resetDate = new Date(subscriptionData.current_period_end);
         const daysUntilReset = Math.ceil((resetDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
@@ -104,7 +101,7 @@ export const useSubscription = ({ userId, enableAutoCreate = true, onError }: Us
           status: subscriptionData.status,
           usedProposals,
           remainingProposals: isUnlimited ? Infinity : remainingProposals,
-          proposalsLimit,
+          proposalsLimit: plan.proposalsLimit,
           isUnlimited,
           currentPeriodStart: subscriptionData.current_period_start,
           currentPeriodEnd: subscriptionData.current_period_end,

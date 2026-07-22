@@ -54,115 +54,6 @@ export function parseReferenceId(
   return { userId, planType, timestamp };
 }
 
-interface FinalizeParams {
-  userId: string;
-  planType: string;
-  referenceId: string;
-  transactionId: string | number;
-  subscriptionId: string | number | null;
-  amount?: number;
-  /** Period start for the subscription — payment time, not processing time. */
-  anchor: Date;
-  paymentRowId: string;
-  source: string;
-  /** true when this call is repairing a previously stuck activation. */
-  isRepair: boolean;
-}
-
-// Subscription upsert + user-facing side effects, shared by the normal
-// activation path and the stuck-state repair path so they can never diverge.
-async function upsertSubscriptionAndNotify(
-  supabase: any,
-  p: FinalizeParams
-): Promise<ActivationResult> {
-  const planConfig = PLAN_CONFIGS[p.planType];
-  const periodEnd = addMonths(p.anchor, planConfig.periodMonths);
-
-  // Detect auto-renewal to preserve auto_renew flag semantics
-  const { data: existingSub } = await supabase
-    .from('handwerker_subscriptions')
-    .select('auto_renew, payrexx_subscription_id')
-    .eq('user_id', p.userId)
-    .maybeSingle();
-
-  const isRenewal = !!(existingSub?.auto_renew && existingSub?.payrexx_subscription_id && p.subscriptionId);
-
-  const subscriptionData: Record<string, any> = {
-    user_id: p.userId,
-    plan_type: p.planType,
-    status: 'active',
-    proposals_limit: planConfig.proposalsLimit,
-    proposals_used_this_period: 0,
-    current_period_start: p.anchor.toISOString(),
-    current_period_end: periodEnd.toISOString(),
-    pending_plan: null,
-    renewal_reminder_sent: false,
-    payment_reminder_1_sent: false,
-    payment_reminder_2_sent: false,
-    updated_at: new Date().toISOString(),
-  };
-
-  if (p.subscriptionId) {
-    subscriptionData.payrexx_subscription_id = String(p.subscriptionId);
-    subscriptionData.auto_renew = true;
-  }
-
-  const { error: subError } = await supabase
-    .from('handwerker_subscriptions')
-    .upsert(subscriptionData, { onConflict: 'user_id' });
-
-  if (subError) {
-    // Payment row is already in — flag for admin so recovery is trivial.
-    // A later run of any caller will land in the repair path and retry.
-    await supabase.from('admin_notifications').insert({
-      type: 'webhook_error',
-      title: 'Abo-Aktivierung fehlgeschlagen',
-      message: `Subscription-Update für User ${p.userId} fehlgeschlagen (source=${p.source}). Zahlung erfasst, Abo NICHT aktiv. Transaction ${p.transactionId}.`,
-      metadata: {
-        payrexx_transaction_id: String(p.transactionId),
-        reference_id: String(p.referenceId),
-        user_id: p.userId,
-        plan_type: p.planType,
-        source: p.source,
-        is_repair: p.isRepair,
-        error_message: String(subError.message || JSON.stringify(subError)).slice(0, 500),
-        timestamp: new Date().toISOString(),
-      },
-    });
-    return { ok: false, activated: false, alreadyProcessed: p.isRepair, errorCode: 'subscription_update_failed', reason: subError.message };
-  }
-
-  // Best-effort side effects (never block activation)
-  const planLabel = p.planType === 'monthly' ? 'monatliches' : p.planType === '6_month' ? '6-Monats' : 'Jahres';
-  await supabase.from('handwerker_notifications').insert({
-    user_id: p.userId,
-    type: isRenewal ? 'subscription_renewed' : 'subscription_activated',
-    title: isRenewal ? 'Abonnement verlängert' : 'Abonnement aktiviert',
-    message: isRenewal
-      ? `Ihr ${planLabel}-Abonnement wurde automatisch verlängert.`
-      : `Ihr ${planLabel}-Abonnement wurde erfolgreich aktiviert.`,
-    metadata: { planType: p.planType, transactionId: String(p.transactionId), subscriptionId: p.subscriptionId, isRenewal, source: p.source },
-  });
-
-  try {
-    await supabase.functions.invoke('send-subscription-confirmation', { body: { userId: p.userId, planType: p.planType } });
-  } catch (e) {
-    console.error(`[payrexxActivation:${p.source}] send-subscription-confirmation failed`, e);
-  }
-  try {
-    await supabase.functions.invoke('generate-invoice-pdf', {
-      body: { paymentId: p.paymentRowId, userId: p.userId, planType: p.planType, amount: p.amount },
-    });
-  } catch (e) {
-    console.error(`[payrexxActivation:${p.source}] generate-invoice-pdf failed`, e);
-  }
-
-  console.log(
-    `[payrexxActivation:${p.source}] ${p.isRepair ? 'repaired stuck activation for' : isRenewal ? 'renewed' : 'activated'} user=${p.userId} plan=${p.planType} tx=${p.transactionId}`
-  );
-  return { ok: true, activated: true, alreadyProcessed: p.isRepair, isRenewal };
-}
-
 /**
  * Idempotently activate/renew a subscription from a confirmed Payrexx transaction.
  * Callers MUST verify the transaction against the Payrexx API before invoking this.
@@ -205,8 +96,10 @@ export async function activateFromConfirmedTransaction(
 
   const now = new Date();
   const planConfig = PLAN_CONFIGS[planType];
+  const periodEnd = addMonths(now, planConfig.periodMonths);
 
   // IDEMPOTENCY GUARD: unique payrexx_transaction_id acts as the lock.
+  // If the row already exists, no other work is performed.
   const { data: insertedPayment, error: insertError } = await supabase
     .from('payment_history')
     .upsert(
@@ -233,84 +126,93 @@ export async function activateFromConfirmedTransaction(
   }
 
   if (!insertedPayment || insertedPayment.length === 0) {
-    // Lock already held. The subscription upsert can fail AFTER the payment
-    // row was written; without this re-check that state would be permanently
-    // stuck behind the lock ("paid but not active"). Verify the subscription
-    // actually reflects the payment and repair it if not.
-    const { data: paymentRow } = await supabase
-      .from('payment_history')
-      .select('id, payment_date, status')
-      .eq('payrexx_transaction_id', String(transactionId))
-      .maybeSingle();
-
-    if (!paymentRow || paymentRow.status !== 'paid') {
-      console.log(`[payrexxActivation:${opts.source}] tx ${transactionId} already processed (non-paid record)`);
-      return { ok: true, activated: false, alreadyProcessed: true };
-    }
-
-    // Only the user's most recent paid transaction governs the subscription.
-    // An older transaction must never "repair" over a newer plan.
-    const { data: latestPayment } = await supabase
-      .from('payment_history')
-      .select('payrexx_transaction_id')
-      .eq('user_id', userId)
-      .eq('status', 'paid')
-      .order('payment_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (latestPayment?.payrexx_transaction_id !== String(transactionId)) {
-      console.log(`[payrexxActivation:${opts.source}] tx ${transactionId} already processed (superseded by newer payment)`);
-      return { ok: true, activated: false, alreadyProcessed: true };
-    }
-
-    const anchor = new Date(paymentRow.payment_date);
-    const expectedEnd = addMonths(anchor, planConfig.periodMonths);
-    const { data: sub } = await supabase
-      .from('handwerker_subscriptions')
-      .select('plan_type, status, current_period_end')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    const reflectsPayment =
-      sub &&
-      sub.status === 'active' &&
-      sub.plan_type === planType &&
-      sub.current_period_end &&
-      // 60s tolerance for clock drift between payment_date and the original upsert
-      new Date(sub.current_period_end).getTime() >= expectedEnd.getTime() - 60_000;
-
-    if (reflectsPayment) {
-      console.log(`[payrexxActivation:${opts.source}] tx ${transactionId} already processed`);
-      return { ok: true, activated: false, alreadyProcessed: true };
-    }
-
-    return upsertSubscriptionAndNotify(supabase, {
-      userId,
-      planType,
-      referenceId,
-      transactionId,
-      subscriptionId,
-      amount,
-      anchor,
-      paymentRowId: paymentRow.id,
-      source: opts.source,
-      isRepair: true,
-    });
+    console.log(`[payrexxActivation:${opts.source}] tx ${transactionId} already processed`);
+    return { ok: true, activated: false, alreadyProcessed: true };
   }
 
-  return upsertSubscriptionAndNotify(supabase, {
-    userId,
-    planType,
-    referenceId,
-    transactionId,
-    subscriptionId,
-    amount,
-    anchor: now,
-    paymentRowId: insertedPayment[0].id,
-    source: opts.source,
-    isRepair: false,
+  const paymentRowId = insertedPayment[0].id;
+
+  // Detect auto-renewal to preserve auto_renew flag semantics
+  const { data: existingSub } = await supabase
+    .from('handwerker_subscriptions')
+    .select('auto_renew, payrexx_subscription_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const isRenewal = !!(existingSub?.auto_renew && existingSub?.payrexx_subscription_id && subscriptionId);
+
+  const subscriptionData: Record<string, any> = {
+    user_id: userId,
+    plan_type: planType,
+    status: 'active',
+    proposals_limit: planConfig.proposalsLimit,
+    proposals_used_this_period: 0,
+    current_period_start: now.toISOString(),
+    current_period_end: periodEnd.toISOString(),
+    pending_plan: null,
+    renewal_reminder_sent: false,
+    payment_reminder_1_sent: false,
+    payment_reminder_2_sent: false,
+    updated_at: now.toISOString(),
+  };
+
+  if (subscriptionId) {
+    subscriptionData.payrexx_subscription_id = String(subscriptionId);
+    subscriptionData.auto_renew = true;
+  }
+
+  const { error: subError } = await supabase
+    .from('handwerker_subscriptions')
+    .upsert(subscriptionData, { onConflict: 'user_id' });
+
+  if (subError) {
+    // Payment row is already in — flag for admin so recovery is trivial.
+    await supabase.from('admin_notifications').insert({
+      type: 'webhook_error',
+      title: 'Abo-Aktivierung fehlgeschlagen',
+      message: `Subscription-Update für User ${userId} fehlgeschlagen (source=${opts.source}). Zahlung erfasst, Abo NICHT aktiv. Transaction ${transactionId}.`,
+      metadata: {
+        payrexx_transaction_id: String(transactionId),
+        reference_id: String(referenceId),
+        user_id: userId,
+        plan_type: planType,
+        source: opts.source,
+        error_message: String(subError.message || JSON.stringify(subError)).slice(0, 500),
+        timestamp: new Date().toISOString(),
+      },
+    });
+    return { ok: false, activated: false, alreadyProcessed: false, errorCode: 'subscription_update_failed', reason: subError.message };
+  }
+
+  // Best-effort side effects (never block activation)
+  const planLabel = planType === 'monthly' ? 'monatliches' : planType === '6_month' ? '6-Monats' : 'Jahres';
+  await supabase.from('handwerker_notifications').insert({
+    user_id: userId,
+    type: isRenewal ? 'subscription_renewed' : 'subscription_activated',
+    title: isRenewal ? 'Abonnement verlängert' : 'Abonnement aktiviert',
+    message: isRenewal
+      ? `Ihr ${planLabel}-Abonnement wurde automatisch verlängert.`
+      : `Ihr ${planLabel}-Abonnement wurde erfolgreich aktiviert.`,
+    metadata: { planType, transactionId: String(transactionId), subscriptionId, isRenewal, source: opts.source },
   });
+
+  try {
+    await supabase.functions.invoke('send-subscription-confirmation', { body: { userId, planType } });
+  } catch (e) {
+    console.error(`[payrexxActivation:${opts.source}] send-subscription-confirmation failed`, e);
+  }
+  try {
+    await supabase.functions.invoke('generate-invoice-pdf', {
+      body: { paymentId: paymentRowId, userId, planType, amount },
+    });
+  } catch (e) {
+    console.error(`[payrexxActivation:${opts.source}] generate-invoice-pdf failed`, e);
+  }
+
+  console.log(
+    `[payrexxActivation:${opts.source}] ${isRenewal ? 'renewed' : 'activated'} user=${userId} plan=${planType} tx=${transactionId}`
+  );
+  return { ok: true, activated: true, alreadyProcessed: false, isRenewal };
 }
 
 /**

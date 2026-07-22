@@ -19,7 +19,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import type { LeadListItem, HandwerkerProfileBasic } from '@/types/entities';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { getUrgencyLabel, getUrgencyColor, URGENCY_LEVELS } from '@/config/urgencyLevels';
-import { checkCategoryMatch, checkServiceAreaMatch, LEAD_LIST_COLUMNS, LEAD_LIST_FETCH_LIMIT } from '@/lib/leadHelpers';
+import { checkCategoryMatch, checkServiceAreaMatch } from '@/lib/leadHelpers';
 
 
 const BrowseLeads = () => {
@@ -76,7 +76,7 @@ const BrowseLeads = () => {
 
       // Fetch leads and existing proposals in parallel
       const [leadsResult, proposalsResult] = await Promise.all([
-        supabase.from('leads').select(LEAD_LIST_COLUMNS).eq('status', 'active').order('created_at', { ascending: false }).limit(LEAD_LIST_FETCH_LIMIT),
+        supabase.from('leads').select('*').eq('status', 'active').order('created_at', { ascending: false }),
         supabase.from('lead_proposals').select('lead_id').eq('handwerker_id', user.id),
       ]);
 

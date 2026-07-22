@@ -2293,16 +2293,6 @@ export type Database = {
           phone: string
         }[]
       }
-      get_conversation_overview: {
-        Args: { p_conversation_ids: string[] }
-        Returns: {
-          conversation_id: string
-          latest_content: string
-          latest_created_at: string
-          latest_sender_id: string
-          unread_count: number
-        }[]
-      }
       get_user_role: {
         Args: { user_uuid: string }
         Returns: Database["public"]["Enums"]["app_role"]

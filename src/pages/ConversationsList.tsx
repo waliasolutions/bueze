@@ -127,23 +127,41 @@ const ConversationsList = () => {
 
       const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
 
-      // Latest message + unread count per conversation in ONE server-side
-      // query (DISTINCT ON) — avoids downloading entire message histories.
-      const { data: overviewData, error: overviewError } = await supabase
-        .rpc('get_conversation_overview', { p_conversation_ids: conversationIds });
+      // Batch fetch latest messages for all conversations
+      // Using a single query with window functions would be ideal, but we can optimize with Promise.all
+      const [messagesResult, unreadResult] = await Promise.all([
+        // Get all messages for these conversations, ordered by created_at desc
+        supabase
+          .from('messages')
+          .select('conversation_id, content, created_at, sender_id')
+          .in('conversation_id', conversationIds)
+          .order('created_at', { ascending: false }),
+        
+        // Get unread counts in one query
+        supabase
+          .from('messages')
+          .select('conversation_id', { count: 'exact' })
+          .in('conversation_id', conversationIds)
+          .eq('recipient_id', user.id)
+          .is('read_at', null)
+      ]);
 
-      if (overviewError) throw overviewError;
-
+      // Group messages by conversation and get latest
       const latestMessagesMap = new Map<string, { content: string; created_at: string; sender_id: string }>();
-      const unreadCountMap = new Map<string, number>();
-      (overviewData || []).forEach(row => {
-        latestMessagesMap.set(row.conversation_id, {
-          content: row.latest_content,
-          created_at: row.latest_created_at,
-          sender_id: row.latest_sender_id,
-        });
-        unreadCountMap.set(row.conversation_id, row.unread_count || 0);
+      (messagesResult.data || []).forEach(msg => {
+        if (!latestMessagesMap.has(msg.conversation_id)) {
+          latestMessagesMap.set(msg.conversation_id, msg);
+        }
       });
+
+      // Count unread per conversation
+      const unreadCountMap = new Map<string, number>();
+      if (unreadResult.data) {
+        unreadResult.data.forEach(msg => {
+          const count = unreadCountMap.get(msg.conversation_id) || 0;
+          unreadCountMap.set(msg.conversation_id, count + 1);
+        });
+      }
 
       // Build final conversations list
       const conversationsWithMessages = conversationsData.map(conversation => ({

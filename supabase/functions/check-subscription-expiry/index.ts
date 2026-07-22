@@ -1,7 +1,7 @@
 // Edge function: check-subscription-expiry
 // Runs daily via cron to:
 // 1. Downgrade cancelled subscriptions (pending_plan = 'free') past expiry
-// 2. Send renewal emails for non-cancelled subs in grace period (GRACE_PERIOD_DAYS past expiry)
+// 2. Send renewal emails for non-cancelled subs in grace period (7 days past expiry)
 // 3. Downgrade non-cancelled subs after grace period expires
 // 4. Send 7-day warning emails before expiry
 

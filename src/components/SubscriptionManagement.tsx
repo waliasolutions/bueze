@@ -21,8 +21,6 @@ interface CurrentSubscription {
   currentPeriodStart: string;
   currentPeriodEnd: string;
   usedProposals: number;
-  /** Effective limit from the DB row (admins can grant custom limits); falls back to plan config. */
-  proposalsLimit?: number;
   pendingPlan?: SubscriptionPlanType | null;
   userId?: string;
   isApproved?: boolean;
@@ -48,18 +46,14 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
   onPendingPlanCancelled,
   loading = false
 }) => {
-  const effectiveLimit = currentSubscription
-    ? currentSubscription.proposalsLimit ?? currentSubscription.plan.proposalsLimit
-    : 0;
-
   const getUsagePercentage = () => {
-    if (!currentSubscription || effectiveLimit === -1) return 0;
-    return (currentSubscription.usedProposals / effectiveLimit) * 100;
+    if (!currentSubscription || currentSubscription.plan.proposalsLimit === -1) return 0;
+    return (currentSubscription.usedProposals / currentSubscription.plan.proposalsLimit) * 100;
   };
 
   const getRemainingProposals = () => {
-    if (!currentSubscription || effectiveLimit === -1) return Infinity;
-    return Math.max(0, effectiveLimit - currentSubscription.usedProposals);
+    if (!currentSubscription || currentSubscription.plan.proposalsLimit === -1) return Infinity;
+    return Math.max(0, currentSubscription.plan.proposalsLimit - currentSubscription.usedProposals);
   };
 
   // Get paid plans only (exclude free)
@@ -129,7 +123,7 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
     );
   }
 
-  const isUnlimited = effectiveLimit === -1;
+  const isUnlimited = currentSubscription.plan.proposalsLimit === -1;
   const remainingProposals = getRemainingProposals();
   const isCancellationPending = currentSubscription.pendingPlan === 'free' && currentSubscription.plan.id !== 'free';
   // Downgrade pending: pendingPlan is a paid plan different from current
@@ -186,7 +180,7 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
                     <span>Unbegrenzt</span>
                   </>
                 ) : (
-                  effectiveLimit
+                  currentSubscription.plan.proposalsLimit
                 )}
               </p>
               <p className="text-sm text-muted-foreground">pro Monat</p>
@@ -197,7 +191,7 @@ export const SubscriptionManagement: React.FC<SubscriptionManagementProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Offerten-Verbrauch diesen Monat</span>
-                <span>{currentSubscription.usedProposals} von {effectiveLimit}</span>
+                <span>{currentSubscription.usedProposals} von {currentSubscription.plan.proposalsLimit}</span>
               </div>
               <Progress value={getUsagePercentage()} className="h-2" />
               <p className="text-sm text-muted-foreground">
