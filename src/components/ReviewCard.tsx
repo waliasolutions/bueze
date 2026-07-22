@@ -91,10 +91,6 @@
  
        await invalidateReviewQueries(queryClient, review.reviewed_id);
  
-       toast({
-         title: "Antwort gespeichert",
-         description: "Die Antwort wurde erfolgreich veröffentlicht.",
-       });
  
        setIsResponding(false);
        onReviewUpdated();
@@ -121,10 +117,6 @@
  
        await invalidateReviewQueries(queryClient, review.reviewed_id);
  
-       toast({
-         title: "Erfolg",
-         description: `Bewertung ist jetzt ${!review.is_public ? 'öffentlich' : 'versteckt'}.`,
-       });
  
        onReviewUpdated();
      } catch (error) {
@@ -148,10 +140,6 @@
  
        await invalidateReviewQueries(queryClient, review.reviewed_id);
  
-       toast({
-         title: "Erfolg",
-         description: "Bewertung wurde gelöscht.",
-       });
  
        onReviewUpdated();
      } catch (error) {

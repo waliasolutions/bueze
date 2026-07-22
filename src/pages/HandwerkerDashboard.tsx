@@ -672,11 +672,6 @@ const HandwerkerDashboard = () => {
         .eq('id', editingProposal.id);
       
       if (error) throw error;
-      
-      toast({
-        title: "Angebot aktualisiert",
-        description: "Ihre Änderungen wurden gespeichert."
-      });
       await fetchProposals(user!.id);
       setEditingProposal(null);
     } catch (error) {

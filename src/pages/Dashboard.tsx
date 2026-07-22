@@ -224,10 +224,6 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Auftrag gelöscht',
-        description: 'Der Auftrag wurde erfolgreich gelöscht.',
-      });
       
       setMyLeads(prev => prev.filter(l => l.id !== leadId));
     } catch (error) {
@@ -250,10 +246,6 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Auftrag archiviert',
-        description: 'Der Auftrag wurde ins Archiv verschoben.',
-      });
       
       const archivedLead = myLeads.find(l => l.id === leadId);
       if (archivedLead) {
@@ -280,10 +272,6 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Auftrag wiederhergestellt',
-        description: 'Der Auftrag ist wieder aktiv.',
-      });
       
       const restoredLead = archivedLeads.find(l => l.id === leadId);
       if (restoredLead) {

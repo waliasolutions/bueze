@@ -83,10 +83,6 @@ export default function SEOTools() {
       return;
     }
 
-    toast({
-      title: 'Gespeichert',
-      description: 'Robots.txt wurde erfolgreich aktualisiert',
-    });
   };
 
   const handleGenerateSitemap = async () => {

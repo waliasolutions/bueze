@@ -102,7 +102,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
 
       if (error) throw error;
 
-      toast({ title: 'Handwerker aktualisiert' });
+      
       onSaved();
       onOpenChange(false);
       setForm(null);
