@@ -126,6 +126,11 @@ verify_jwt = false
 [functions.storage-orphan-sweep]
 verify_jwt = false
 
+[functions.backfill-image-compression]
+verify_jwt = true
+
+
+
 
 
 
