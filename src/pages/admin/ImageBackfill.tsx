@@ -280,10 +280,29 @@ export default function ImageBackfill() {
         const res = results[bucket];
         return (
           <Card key={bucket}>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
               <CardTitle className="text-lg">{bucket}</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => refreshStats(bucket)}
+                disabled={statsLoading === bucket}
+              >
+                {statsLoading === bucket
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <RefreshCw className="h-4 w-4" />}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
+              {stats[bucket] && (
+                <div className="rounded border bg-primary/5 p-3 text-sm grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div>Dateien gesamt: <strong>{stats[bucket]!.total_files}</strong></div>
+                  <div>Speicher gesamt: <strong>{formatBytes(stats[bucket]!.total_bytes)}</strong></div>
+                  <div className="text-muted-foreground">WebP: {stats[bucket]!.webp_files} · {formatBytes(stats[bucket]!.webp_bytes)}</div>
+                  <div className="text-muted-foreground">Original: {stats[bucket]!.other_files} · {formatBytes(stats[bucket]!.other_bytes)}</div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
