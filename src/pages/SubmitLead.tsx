@@ -164,6 +164,11 @@ const SubmitLead = () => {
   const [searchParams] = useSearchParams();
   const preselectedCategory = searchParams.get('category');
 
+  // Role guard: handwerker accounts cannot post client leads (SSOT: user_roles).
+  // DB trigger prevent_handwerker_lead_creation is the hard block; this is the UX layer.
+  const { isHandwerker, isAdmin, loading: roleLoading, userId } = useUserRole();
+  const [handwerkerEmail, setHandwerkerEmail] = useState<string | null>(null);
+
   // Step configuration - use startedAsGuest for consistent flow
   const stepConfig = startedAsGuest
     ? { 1: 'contact' as StepContent, 2: 'project' as StepContent, 3: 'location' as StepContent }
