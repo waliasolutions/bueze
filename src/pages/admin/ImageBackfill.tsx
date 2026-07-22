@@ -16,9 +16,12 @@ const BUCKETS: Bucket[] = ["lead-media", "handwerker-portfolio"];
 // so we only skip images that truly cannot be improved.
 const COMPRESSION_ATTEMPTS: Array<{ quality: number; maxWidth: number }> = [
   { quality: 0.85, maxWidth: 1920 },
-  { quality: 0.78, maxWidth: 1920 },
-  { quality: 0.72, maxWidth: 1600 },
+  { quality: 0.8, maxWidth: 1920 },
+  { quality: 0.75, maxWidth: 1800 },
+  { quality: 0.7, maxWidth: 1600 },
   { quality: 0.65, maxWidth: 1400 },
+  { quality: 0.6, maxWidth: 1280 },
+  { quality: 0.55, maxWidth: 1200 },
 ];
 
 async function bestCompressedWebP(file: File, originalSize: number): Promise<File> {
