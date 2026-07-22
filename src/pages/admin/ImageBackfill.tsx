@@ -259,6 +259,7 @@ export default function ImageBackfill() {
       setResults((r) => ({ ...r, [bucket]: { ...aggregate, error: message } }));
     } finally {
       setLoading(null);
+      void refreshStats(bucket);
     }
   };
 
