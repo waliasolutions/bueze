@@ -362,6 +362,29 @@ const SubmitLead = () => {
 
       if (error) throw error;
 
+      // Role check BEFORE advancing — handwerker accounts cannot post leads.
+      // Query directly (useUserRole cache may not have refreshed yet).
+      const uid = data.user?.id;
+      if (uid) {
+        const { data: roleRows } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', uid);
+        const roles = (roleRows ?? []).map((r) => r.role as string);
+        if (roles.includes('handwerker') && !roles.includes('admin') && !roles.includes('super_admin')) {
+          setIsAuthenticated(true);
+          setHandwerkerEmail(data.user?.email ?? loginEmail);
+          setShowLoginForm(false);
+          // Guard card takes over via useUserRole re-render. Nothing else to do —
+          // no in-memory draft is persisted, form state is discarded on unmount.
+          toast({
+            title: 'Handwerker-Konto erkannt',
+            description: 'Aufträge als Auftraggeber sind mit diesem Konto nicht möglich.',
+          });
+          return;
+        }
+      }
+
       setIsAuthenticated(true);
       setShowLoginForm(false);
       toast({
