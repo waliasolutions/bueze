@@ -2323,6 +2323,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      run_retention_cleanup: { Args: never; Returns: Json }
       setup_admin_user: {
         Args: { user_email: string; user_name: string }
         Returns: undefined

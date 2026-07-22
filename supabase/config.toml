@@ -123,4 +123,9 @@ verify_jwt = false
 [functions.verify-payrexx-payment]
 verify_jwt = false
 
+[functions.storage-orphan-sweep]
+verify_jwt = false
+
+
+
 

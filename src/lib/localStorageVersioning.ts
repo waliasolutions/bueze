@@ -145,12 +145,11 @@ export function hasValidData(key: string, ttlHours: number = 168): boolean {
 export const STORAGE_KEYS = {
   HANDWERKER_ONBOARDING_DRAFT: 'handwerker-onboarding-draft',
   COOKIE_CONSENT: 'bueeze_cookie_consent',
-  SUBMIT_LEAD_DRAFT: 'submit-lead-draft',
 } as const;
 
 // Version constants for each storage key
 export const STORAGE_VERSIONS = {
   HANDWERKER_ONBOARDING_DRAFT: 3,
   COOKIE_CONSENT: 1,
-  SUBMIT_LEAD_DRAFT: 1,
 } as const;
+
