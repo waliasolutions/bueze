@@ -10,8 +10,8 @@ import { logWithCorrelation } from './errorTracking';
  */
 export async function compressToWebP(
   file: File,
-  quality = 0.8,
-  maxWidth = 1920,
+  quality = 0.82,
+  maxWidth = 1600,
 ): Promise<File> {
   // Only process still images; leave GIFs (animation) and everything else alone.
   if (!file.type.startsWith('image/') || file.type === 'image/gif') {

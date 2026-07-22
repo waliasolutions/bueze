@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { Navigate } from "react-router-dom";
@@ -12,16 +12,25 @@ type Mode = "dry-run" | "apply";
 type Bucket = "lead-media" | "handwerker-portfolio";
 
 const BUCKETS: Bucket[] = ["lead-media", "handwerker-portfolio"];
+
+type BucketStats = {
+  total_files: number;
+  total_bytes: number;
+  webp_files: number;
+  webp_bytes: number;
+  other_files: number;
+  other_bytes: number;
+};
 // Progressive attempts: try higher quality first, then step down and/or shrink,
 // so we only skip images that truly cannot be improved.
+// Cap = 1600 px (retina-crisp bis 800 px Anzeige). Progressiv Qualität senken,
+// nur committen wenn Ergebnis kleiner als aktueller Storage-Stand.
 const COMPRESSION_ATTEMPTS: Array<{ quality: number; maxWidth: number }> = [
-  { quality: 0.85, maxWidth: 1920 },
-  { quality: 0.8, maxWidth: 1920 },
-  { quality: 0.75, maxWidth: 1800 },
-  { quality: 0.7, maxWidth: 1600 },
-  { quality: 0.65, maxWidth: 1400 },
-  { quality: 0.6, maxWidth: 1280 },
-  { quality: 0.55, maxWidth: 1200 },
+  { quality: 0.82, maxWidth: 1600 },
+  { quality: 0.80, maxWidth: 1500 },
+  { quality: 0.78, maxWidth: 1400 },
+  { quality: 0.75, maxWidth: 1200 },
+  { quality: 0.70, maxWidth: 1000 },
 ];
 
 async function bestCompressedWebP(file: File, originalSize: number): Promise<File> {
@@ -94,11 +103,42 @@ export default function ImageBackfill() {
   const { user, isChecking } = useAdminAuth();
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, any>>({});
+  const [stats, setStats] = useState<Record<string, BucketStats | null>>({});
+  const [statsLoading, setStatsLoading] = useState<string | null>(null);
+
+  const refreshStats = useCallback(async (bucket: Bucket) => {
+    setStatsLoading(bucket);
+    try {
+      const { data, error } = await supabase.rpc("get_bucket_storage_stats", { p_bucket: bucket });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      setStats((s) => ({ ...s, [bucket]: row ? {
+        total_files: Number(row.total_files ?? 0),
+        total_bytes: Number(row.total_bytes ?? 0),
+        webp_files: Number(row.webp_files ?? 0),
+        webp_bytes: Number(row.webp_bytes ?? 0),
+        other_files: Number(row.other_files ?? 0),
+        other_bytes: Number(row.other_bytes ?? 0),
+      } : null }));
+    } catch (e: any) {
+      // silent — panel just won't show numbers
+    } finally {
+      setStatsLoading(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isChecking) return;
+    if ((user?.email ?? "").toLowerCase() !== "info@walia-solutions.ch") return;
+    BUCKETS.forEach((b) => { void refreshStats(b); });
+  }, [isChecking, user?.email, refreshStats]);
 
   if (isChecking) return null;
   if ((user?.email ?? "").toLowerCase() !== "info@walia-solutions.ch") {
     return <Navigate to="/admin" replace />;
   }
+
+
 
 
   const run = async (bucket: Bucket, mode: Mode, limit: number) => {
@@ -219,6 +259,7 @@ export default function ImageBackfill() {
       setResults((r) => ({ ...r, [bucket]: { ...aggregate, error: message } }));
     } finally {
       setLoading(null);
+      void refreshStats(bucket);
     }
   };
 
@@ -228,19 +269,40 @@ export default function ImageBackfill() {
       <div>
         <h1 className="text-2xl font-bold">Bild-Backfill (WebP-Kompression)</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Rekomprimiert bestehende JPEG/PNG-Bilder in Storage zu WebP (progressiv Q=0.55–0.85, max 1920 px).
-          Datenbank-Referenzen bleiben unverändert (Overwrite in-place).
+          Rekomprimiert Storage-Bilder zu WebP mit Cap 1600 px / Q=0.82 (progressiv bis 1000 px / Q=0.70).
+          Retina-crisp bis 800 px Anzeige. Datenbank-Referenzen bleiben unverändert (Overwrite in-place).
+          Bereits konvertierte WebPs werden erneut geprüft, wenn sie größer als 400 KB sind.
         </p>
       </div>
+
 
       {BUCKETS.map((bucket) => {
         const res = results[bucket];
         return (
           <Card key={bucket}>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
               <CardTitle className="text-lg">{bucket}</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => refreshStats(bucket)}
+                disabled={statsLoading === bucket}
+              >
+                {statsLoading === bucket
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <RefreshCw className="h-4 w-4" />}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
+              {stats[bucket] && (
+                <div className="rounded border bg-primary/5 p-3 text-sm grid grid-cols-2 gap-x-4 gap-y-1">
+                  <div>Dateien gesamt: <strong>{stats[bucket]!.total_files}</strong></div>
+                  <div>Speicher gesamt: <strong>{formatBytes(stats[bucket]!.total_bytes)}</strong></div>
+                  <div className="text-muted-foreground">WebP: {stats[bucket]!.webp_files} · {formatBytes(stats[bucket]!.webp_bytes)}</div>
+                  <div className="text-muted-foreground">Original: {stats[bucket]!.other_files} · {formatBytes(stats[bucket]!.other_bytes)}</div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
