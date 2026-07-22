@@ -228,7 +228,7 @@ export default function ImageBackfill() {
       <div>
         <h1 className="text-2xl font-bold">Bild-Backfill (WebP-Kompression)</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Rekomprimiert bestehende JPEG/PNG-Bilder in Storage zu WebP (Q=0.85, max 1920 px).
+          Rekomprimiert bestehende JPEG/PNG-Bilder in Storage zu WebP (progressiv Q=0.55–0.85, max 1920 px).
           Datenbank-Referenzen bleiben unverändert (Overwrite in-place).
         </p>
       </div>
@@ -264,6 +264,14 @@ export default function ImageBackfill() {
                 >
                   {loading === `${bucket}:apply` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Apply (50)
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={loading !== null}
+                  onClick={() => run(bucket, "apply", 200)}
+                >
+                  {loading === `${bucket}:apply` && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Apply (200)
                 </Button>
               </div>
 

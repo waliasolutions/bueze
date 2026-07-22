@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'list') {
-      const limit = Math.min(Math.max(Number(body.limit ?? 10), 1), 50);
+      const limit = Math.min(Math.max(Number(body.limit ?? 10), 1), 200);
       const { data: candidates, error: qErr } = await admin.rpc('list_image_backfill_candidates', {
         p_bucket: bucket, p_limit: limit,
       });
