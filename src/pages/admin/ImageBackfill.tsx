@@ -103,11 +103,42 @@ export default function ImageBackfill() {
   const { user, isChecking } = useAdminAuth();
   const [loading, setLoading] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, any>>({});
+  const [stats, setStats] = useState<Record<string, BucketStats | null>>({});
+  const [statsLoading, setStatsLoading] = useState<string | null>(null);
+
+  const refreshStats = useCallback(async (bucket: Bucket) => {
+    setStatsLoading(bucket);
+    try {
+      const { data, error } = await supabase.rpc("get_bucket_storage_stats", { p_bucket: bucket });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      setStats((s) => ({ ...s, [bucket]: row ? {
+        total_files: Number(row.total_files ?? 0),
+        total_bytes: Number(row.total_bytes ?? 0),
+        webp_files: Number(row.webp_files ?? 0),
+        webp_bytes: Number(row.webp_bytes ?? 0),
+        other_files: Number(row.other_files ?? 0),
+        other_bytes: Number(row.other_bytes ?? 0),
+      } : null }));
+    } catch (e: any) {
+      // silent — panel just won't show numbers
+    } finally {
+      setStatsLoading(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isChecking) return;
+    if ((user?.email ?? "").toLowerCase() !== "info@walia-solutions.ch") return;
+    BUCKETS.forEach((b) => { void refreshStats(b); });
+  }, [isChecking, user?.email, refreshStats]);
 
   if (isChecking) return null;
   if ((user?.email ?? "").toLowerCase() !== "info@walia-solutions.ch") {
     return <Navigate to="/admin" replace />;
   }
+
+
 
 
   const run = async (bucket: Bucket, mode: Mode, limit: number) => {
