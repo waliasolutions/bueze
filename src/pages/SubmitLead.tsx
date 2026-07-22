@@ -31,6 +31,8 @@ import { runAllSpamChecks, recordAttempt } from '@/lib/spamProtection';
 import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
 import { useMultiStepForm } from '@/hooks/useMultiStepForm';
 import { MultiStepProgress } from '@/components/ui/multi-step-progress';
+import { useUserRole } from '@/hooks/useUserRole';
+import { AlertCircle } from 'lucide-react';
 
 
 // Base schema type — used for TypeScript inference only (no contact validation here)
