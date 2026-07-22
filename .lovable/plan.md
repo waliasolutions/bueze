@@ -1,43 +1,61 @@
+# Deep QA Audit Plan
 
-## Ziel
-Toast-Rauschen reduzieren. Die App feuert aktuell **~280 Toast-Aufrufe** über ~40 Dateien — viele davon bestätigen Aktionen, deren Ergebnis bereits sichtbar im UI ist (Redirect, geänderte Liste, Dialog schliesst). Solche Toasts stören besonders in der Responsive-Ansicht.
+Goal: verify the whole app loads and works correctly, and surface any saving / performance issues — without changing behavior until findings are triaged.
 
-## Kriterien (SSOT für die Entscheidung)
+## Scope
 
-**Behalten** — Toast ist die einzige/beste Rückmeldung:
-- Alle **Fehler** (`variant: "destructive"` / `toast.error`) → immer behalten.
-- **Erfolg ohne sichtbare UI-Änderung**: E-Mail versendet, Link kopiert, Passwort-Reset ausgelöst, Impersonation gestartet/beendet, Admin-Backfill-Batch fertig, Cron ausgelöst.
-- **Kritische Statuswechsel mit Konsequenzen**: Angebot angenommen/abgelehnt, Zahlung erfolgreich, Lead veröffentlicht, Konto gelöscht.
-- **Warnungen/Quoten**: Max. Angebote erreicht, Quota verbraucht, Session wiederhergestellt.
+Read-only audit across four layers. No code changes in this pass; fixes are proposed in a follow-up plan after findings are reviewed.
 
-**Entfernen** — redundant, weil UI selbst das Ergebnis zeigt:
-- „Gespeichert" / „Aktualisiert" / „Erstellt" bei Formularen, die den Datensatz direkt neu rendern oder einen Dialog schliessen (z. B. `HandwerkerEditDialog`, `HandwerkerProfileEdit` Feldspeicherungen, `GTMConfiguration`, `EditLead`).
-- „Willkommen"/„Erfolgreich angemeldet" bei Login (Redirect ist Beweis genug) — bereits partiell entfernt, restliche Auth-Success-Toasts prüfen.
-- „Ausgeloggt" (Redirect zur Startseite genügt).
-- „Daten geladen" / „Suche abgeschlossen" (Ergebnisliste erscheint).
-- Doppel-Toasts (Erfolg + darauffolgender Navigations-Toast).
-- Debug-/Dev-Toasts in `TestDashboard.tsx` (nur Admin, aber prüfen ob nötig).
+## 1. Runtime health (browser)
 
-## Vorgehen
+- Drive Playwright against `localhost:8080` for the key journeys:
+  - Public: `/`, `/kategorien`, `/kategorien/:major`, `/handwerker-verzeichnis`, `/pricing`, `/impressum`, `/datenschutz`, `/legal/agb`.
+  - Client: `/auth` → `/submit-lead` (3-step) → `/dashboard` → `/lead/:id` → `/conversations`.
+  - Handwerker: `/auth` → `/handwerker-dashboard` → `/search` → `/opportunity/:id` → `/proposals` → `/handwerker-invoices`.
+  - Admin: `/admin`, `/admin/handwerkers`, `/admin/leads`, `/admin/invoices`, `/admin/billing`, `/admin/image-backfill`.
+- Capture per route: console errors/warnings, failed network requests, LCP screenshot, and any horizontal overflow warnings from `useOverflowDetector`.
 
-1. **Automatisches Klassifizierungs-Sweep** pro Datei: jeden `toast(...)`-Call einzeln kategorisieren als KEEP/REMOVE/CONVERT anhand der Kriterien oben.
-2. **Betroffene Dateien** (Kandidaten mit vielen Success-Toasts):
-   - `src/pages/HandwerkerProfileEdit.tsx` (~25 Toasts — viele Feldspeicherungen)
-   - `src/pages/HandwerkerOnboarding.tsx` (~15)
-   - `src/pages/HandwerkerDashboard.tsx` (~15)
-   - `src/pages/Dashboard.tsx` (~6)
-   - `src/pages/admin/UserManagement.tsx` (~12)
-   - `src/pages/admin/ReviewsManagement.tsx`, `AdminInvoices.tsx`, `SEOTools.tsx`, `GTMConfiguration.tsx`
-   - `src/components/ReceivedProposals.tsx`, `ReviewCard.tsx`, `PendingPlanCard.tsx`, `PaymentMethodCard.tsx`, `DocumentUploadDialog.tsx`, `admin/HandwerkerEditDialog.tsx`, `admin/PasswordResetDialog.tsx`
-   - `src/pages/Auth.tsx`, `Checkout.tsx`, `EditLead.tsx`, `BrowseLeads.tsx`, `HandwerkerInvoices.tsx`, `UserDropdown.tsx`
-3. **Nur Präsentationsebene** — keine Logikänderung, keine State- oder Netzwerkanpassung. Nur Toast-Aufrufe entfernen (und ggf. ungenutzte `toast`-Imports).
-4. **Fehler-Toasts unangetastet lassen** — auch die stillen `console.error` bleiben wie sie sind.
-5. **Verifikation**: `tsgo` Typecheck; visuelle Stichprobe via Playwright auf Login-, Profil-Save- und Angebots-Accept-Flow (kein Toast mehr sichtbar, aber UI reagiert korrekt).
+## 2. Save-path integrity
 
-## Erwartetes Ergebnis
-Grobe Schätzung: **~40–60 % der Toasts entfernt** (~110–160 Aufrufe), Fehler-Toasts zu 100 % erhalten. Deutliche Reduktion visueller Ablenkung, keine Verhaltensänderung, kein Datenverlust, kein Sicherheits-Impact.
+Verify each write actually persists and gives correct feedback (post-toast cleanup regression check):
+- Profile edit (handwerker + client), document upload/remove, portfolio image upload.
+- Lead submit, edit, delete, restore.
+- Proposal submit / accept (RPC `accept_proposal_atomic`) / reject.
+- Message send (optimistic update + realtime).
+- Admin: handwerker edit, invoice status, review visibility, GTM/SEO save.
+- Auth: signup, login, password reset (custom token flow), logout cache clear.
 
-## Nicht im Scope
-- Kein Umbau des Toast-Systems (sonner vs. legacy) — bestehender Mix bleibt bis zu einem separaten SSOT-Konsolidierungs-Task.
-- Keine Copy-Änderungen an behaltenen Toasts.
-- Keine Änderungen an Edge-Function-Responses.
+## 3. Frontend performance
+
+- Bundle: inspect `dist` after a production build for chunk sizes, oversized vendor chunks, and any route not lazy-loaded that should be.
+- Runtime: check for unnecessary re-renders in Dashboard / HandwerkerDashboard / Messages (subscription cleanup, query key stability).
+- Realtime: confirm all `supabase.channel(...)` calls are inside `useEffect` with `removeChannel` cleanup (billing rule).
+- Images: verify LCP images use `fetchpriority=high`, non-LCP use `loading=lazy`, and the compressor is wired on all upload paths (`SubmitLead`, `HandwerkerProfileEdit`, `HandwerkerOnboarding`, message attachments).
+- React Query: audit `staleTime`/`gcTime` per hook and look for missing `enabled` guards causing wasted fetches.
+
+## 4. Backend / DB health
+
+- `supabase--slow_queries` top 20 → EXPLAIN the worst offenders, note missing indexes.
+- `supabase--linter` for unused indexes, missing FKs, RLS gaps.
+- Check for:
+  - Tables missing GRANTs (permission errors in logs).
+  - Cron jobs status (`run_retention_cleanup`, `check-subscription-expiry`, `lead-expiry-check`, `document-expiry-reminder`, `proposal-deadline-reminder`, `storage-orphan-sweep`) — last run + failures.
+  - Edge function error rate via `ai_gateway_logs` and function logs for the last 7 days.
+  - Orphan data: leads without client, proposals without lead, subscriptions without handwerker, `notifications` older than retention.
+  - Storage buckets: total size trend, orphan objects report from `storage-orphan-sweep`.
+
+## 5. Deliverable
+
+A single findings report grouped as:
+- **Blockers** (broken flow, data loss, security)
+- **Saving issues** (writes that silently fail or mislead the user)
+- **Performance** (slow queries, oversized bundles, missing indexes, render/realtime leaks)
+- **Cleanup** (dead code, stale rows, unused indexes)
+
+Each finding includes: evidence (file:line, query, screenshot, or log id), impact, and a proposed fix. After you review, I open a follow-up plan for the fixes you approve.
+
+## Technical notes
+
+- Audit is fully read-only: Playwright, `supabase--read_query`, `supabase--slow_queries`, `supabase--linter`, `supabase--edge_function_logs`, `ai_gateway_logs--list_ai_gateway_requests`, file reads only.
+- No migrations, no code edits, no toast changes in this pass.
+- Uses the injected browser Supabase session for authenticated routes; skips flows that need a real Payrexx callback (verified separately via logs).

@@ -1,0 +1,1 @@
+ALTER VIEW public.billing_settings_public SET (security_invoker = false);
