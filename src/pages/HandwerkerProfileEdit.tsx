@@ -345,10 +345,6 @@ const HandwerkerProfileEdit = () => {
       const uploadedUrls = await Promise.all(uploadPromises);
       setPortfolioUrls([...portfolioUrls, ...uploadedUrls]);
       
-      toast({
-        title: 'Upload erfolgreich',
-        description: `${uploadedUrls.length} Bild(er) hochgeladen.`,
-      });
     } catch (error: any) {
       console.error('Error uploading images:', error);
       toast({
@@ -379,10 +375,6 @@ const HandwerkerProfileEdit = () => {
 
       setPortfolioUrls(portfolioUrls.filter(u => u !== url));
       
-      toast({
-        title: 'Bild entfernt',
-        description: 'Das Bild wurde aus Ihrem Portfolio entfernt.',
-      });
     } catch (error: any) {
       console.error('Error removing image:', error);
       toast({
@@ -459,10 +451,6 @@ const HandwerkerProfileEdit = () => {
       const uploadedUrls = await Promise.all(uploadPromises);
       setVerificationDocuments([...verificationDocuments, ...uploadedUrls]);
       
-      toast({
-        title: 'Upload erfolgreich',
-        description: `${uploadedUrls.length} Dokument(e) hochgeladen.`,
-      });
     } catch (error: any) {
       console.error('Error uploading documents:', error);
       toast({
@@ -493,10 +481,6 @@ const HandwerkerProfileEdit = () => {
 
       setVerificationDocuments(verificationDocuments.filter(u => u !== url));
       
-      toast({
-        title: 'Dokument entfernt',
-        description: 'Das Dokument wurde entfernt.',
-      });
     } catch (error: any) {
       console.error('Error removing document:', error);
       toast({
@@ -554,10 +538,6 @@ const HandwerkerProfileEdit = () => {
 
       setLogoUrl(publicUrl);
       
-      toast({
-        title: 'Logo hochgeladen',
-        description: 'Ihr Firmen-Logo wurde erfolgreich hochgeladen.',
-      });
     } catch (error: any) {
       console.error('Error uploading logo:', error);
       toast({
@@ -588,10 +568,6 @@ const HandwerkerProfileEdit = () => {
 
       setLogoUrl('');
       
-      toast({
-        title: 'Logo entfernt',
-        description: 'Ihr Firmen-Logo wurde entfernt.',
-      });
     } catch (error: any) {
       console.error('Error removing logo:', error);
       toast({
@@ -717,12 +693,6 @@ const HandwerkerProfileEdit = () => {
 
       setLastSaved(new Date());
 
-      if (!silent && profile.verification_status !== 'rejected') {
-        toast({
-          title: 'Profil gespeichert',
-          description: 'Ihre Änderungen wurden erfolgreich gespeichert.',
-        });
-      }
     } catch (error: any) {
       console.error('Error saving profile:', error);
       if (!silent) {

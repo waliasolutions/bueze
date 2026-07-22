@@ -123,10 +123,6 @@ export function DocumentUploadDialog({
 
       if (insertError) throw insertError;
 
-      toast({
-        title: 'Dokument hochgeladen',
-        description: 'Ihr Dokument wurde erfolgreich gespeichert.',
-      });
 
       // Reset form
       setSelectedFile(null);

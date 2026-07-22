@@ -193,10 +193,6 @@ export default function UserManagement() {
 
       if (error) throw error;
 
-      toast({
-        title: 'Erfolg',
-        description: 'Benutzerrolle wurde erfolgreich aktualisiert.',
-      });
 
       setIsEditDialogOpen(false);
       setSelectedUser(null);

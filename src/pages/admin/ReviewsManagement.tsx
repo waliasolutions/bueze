@@ -151,10 +151,6 @@ const ReviewsManagement = () => {
       // Invalidate review queries to refresh cache
       await invalidateReviewQueries(queryClient, review?.reviewed_id);
 
-      toast({
-        title: 'Erfolg',
-        description: `Bewertung ist jetzt ${!currentVisibility ? 'öffentlich' : 'versteckt'}.`,
-      });
     } catch (error) {
       console.error('Error toggling visibility:', error);
       toast({
@@ -181,10 +177,6 @@ const ReviewsManagement = () => {
       // Invalidate review queries to refresh cache
       await invalidateReviewQueries(queryClient, review?.reviewed_id);
 
-      toast({
-        title: 'Erfolg',
-        description: 'Bewertung wurde gelöscht.',
-      });
     } catch (error) {
       console.error('Error deleting review:', error);
       toast({

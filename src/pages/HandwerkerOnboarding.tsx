@@ -474,10 +474,6 @@ const HandwerkerOnboarding = () => {
 
       // Success! User is now authenticated
       setIsAuthenticated(true);
-      toast({
-        title: "Konto erstellt",
-        description: "Wählen Sie jetzt Ihre Dienstleistungen.",
-      });
       
       // Proceed to Step 2 (Services) and scroll to top
       setCurrentStep(2);

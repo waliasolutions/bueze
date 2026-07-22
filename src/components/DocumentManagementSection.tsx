@@ -23,12 +23,7 @@ export function DocumentManagementSection({ profileId, userId }: DocumentManagem
 
   const handleDelete = async (id: string) => {
     const success = await deleteDocument(id);
-    if (success) {
-      toast({
-        title: 'Dokument gelöscht',
-        description: 'Das Dokument wurde erfolgreich entfernt.',
-      });
-    } else {
+    if (!success) {
       toast({
         title: 'Fehler',
         description: 'Dokument konnte nicht gelöscht werden.',

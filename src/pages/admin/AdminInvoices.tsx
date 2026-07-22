@@ -191,10 +191,6 @@ const AdminInvoices = () => {
 
       if (error) throw error;
 
-      toast({
-        title: 'Status aktualisiert',
-        description: `Rechnung ${statusAction.invoiceNumber} wurde als "${getInvoiceStatusConfig(statusAction.newStatus).label}" markiert.`,
-      });
 
       await fetchInvoices();
     } catch (error) {

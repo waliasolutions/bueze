@@ -140,10 +140,6 @@ const EditLead = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Auftrag aktualisiert",
-        description: "Ihre Änderungen wurden erfolgreich gespeichert.",
-      });
 
       navigate(`/lead/${id}`);
     } catch (error) {

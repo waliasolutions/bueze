@@ -83,10 +83,6 @@ export const UserDropdown = () => {
         variant: 'destructive',
       });
     } else {
-      toast({
-        title: 'Erfolgreich abgemeldet',
-        description: 'Sie wurden erfolgreich abgemeldet.',
-      });
       navigate('/');
     }
   };
