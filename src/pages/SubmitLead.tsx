@@ -297,10 +297,6 @@ const SubmitLead = () => {
       if (successes.length > 0) {
         setUploadedUrls(prev => [...prev, ...successes.map(r => r.url)]);
         setUploadedPaths(prev => [...prev, ...successes.map(r => r.path)]);
-        toast({
-          title: "Bilder hochgeladen",
-          description: `${successes.length} Bild(er) erfolgreich hochgeladen.`,
-        });
         
         logWithCorrelation('Files uploaded successfully', { 
           count: successes.length, 
@@ -339,10 +335,6 @@ const SubmitLead = () => {
     if (success) {
       setUploadedUrls(prev => prev.filter((_, i) => i !== index));
       setUploadedPaths(prev => prev.filter((_, i) => i !== index));
-      toast({
-        title: "Datei entfernt",
-        description: "Die Datei wurde erfolgreich entfernt.",
-      });
     } else {
       toast({
         title: "Fehler",
@@ -481,10 +473,6 @@ const SubmitLead = () => {
       // Success! User is now authenticated — flip ref so superRefine skips contact validation
       isAuthenticatedRef.current = true;
       setIsAuthenticated(true);
-      toast({
-        title: "Konto erstellt",
-        description: "Beschreiben Sie jetzt Ihr Projekt.",
-      });
       
       logWithCorrelation('Account created successfully at Step 1', { userId: signUpData.user?.id });
       
@@ -575,10 +563,6 @@ const SubmitLead = () => {
       clearRequestId('create-lead');
       logWithCorrelation('Lead created successfully', { requestId });
 
-      toast({
-        title: "Auftrag erstellt",
-        description: "Ihr Auftrag wurde erfolgreich erstellt.",
-      });
 
       navigate('/auftrag-erfolgreich', { 
         state: { leadTitle: data.title } 
@@ -597,10 +581,6 @@ const SubmitLead = () => {
       } else if (errorMessage.includes('duplicate key') || (error as any)?.code === '23505') {
         userFriendlyMessage = 'Auftrag wurde bereits erstellt.';
         clearRequestId('create-lead');
-        toast({
-          title: "Auftrag erstellt",
-          description: "Ihr Auftrag wurde erfolgreich erstellt.",
-        });
         navigate('/dashboard');
         return;
       } else if (errorMessage.includes('network')) {
