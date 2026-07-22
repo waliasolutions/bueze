@@ -127,7 +127,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.backfill-image-compression]
-verify_jwt = true
+verify_jwt = false
 
 
 
