@@ -284,6 +284,11 @@ export default function ImageBackfill() {
                       <div>Geprüft: <strong>{res.examined ?? 0}</strong></div>
                       <div>Komprimiert: <strong>{res.compressed ?? 0}</strong></div>
                       <div>Übersprungen: <strong>{res.skipped ?? 0}</strong></div>
+                      {(res.skipped ?? 0) > 0 && (res.compressed ?? 0) === 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          Übersprungen bedeutet: WebP wäre nicht kleiner als das Original — kein Fehler.
+                        </div>
+                      )}
                       <div>Fehler: <strong>{res.errors ?? 0}</strong></div>
                       <div>Vorher: <strong>{formatBytes(res.total_before_bytes ?? 0)}</strong></div>
                       <div>Nachher: <strong>{formatBytes(res.total_after_bytes ?? 0)}</strong></div>
