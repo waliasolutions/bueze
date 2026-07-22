@@ -122,7 +122,10 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const bucket = String(body.bucket ?? '');
     const mode = String(body.mode ?? 'dry-run');
-    const limit = Math.min(Math.max(Number(body.limit ?? 10), 1), 30);
+    // Hard cap: WASM decode+encode of a single large image already approaches
+    // the 256 MB edge-runtime budget. Processing more than one per invocation
+    // triggers "Memory limit exceeded". Batch by calling this function repeatedly.
+    const limit = Math.min(Math.max(Number(body.limit ?? 1), 1), 1);
     const quality = Math.min(Math.max(Number(body.quality ?? DEFAULT_QUALITY), 0.5), 0.95);
 
     if (!['lead-media', 'handwerker-portfolio'].includes(bucket)) {
