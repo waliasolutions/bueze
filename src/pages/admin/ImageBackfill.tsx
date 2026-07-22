@@ -38,20 +38,40 @@ export default function ImageBackfill() {
   const run = async (bucket: Bucket, mode: Mode, limit: number) => {
     const key = `${bucket}:${mode}`;
     setLoading(key);
+    // Edge function processes 1 image per invocation (256 MB WASM budget).
+    // Loop client-side to reach the requested batch size.
+    const aggregate = {
+      bucket,
+      mode,
+      examined: 0,
+      compressed: 0,
+      total_before_bytes: 0,
+      total_after_bytes: 0,
+      results: [] as any[],
+    };
     try {
-      const { data, error } = await supabase.functions.invoke("backfill-image-compression", {
-        body: { bucket, mode, limit },
-      });
-      if (error) throw error;
-      setResults((r) => ({ ...r, [bucket]: data }));
-      toast.success(`${bucket} · ${mode}: ${data?.examined ?? 0} geprüft, ${data?.compressed ?? 0} komprimiert`);
+      for (let i = 0; i < limit; i++) {
+        const { data, error } = await supabase.functions.invoke("backfill-image-compression", {
+          body: { bucket, mode, limit: 1 },
+        });
+        if (error) throw error;
+        aggregate.examined += data?.examined ?? 0;
+        aggregate.compressed += data?.compressed ?? 0;
+        aggregate.total_before_bytes += data?.total_before_bytes ?? 0;
+        aggregate.total_after_bytes += data?.total_after_bytes ?? 0;
+        if (Array.isArray(data?.results)) aggregate.results.push(...data.results);
+        setResults((r) => ({ ...r, [bucket]: { ...aggregate } }));
+        if ((data?.examined ?? 0) === 0) break; // no more candidates
+      }
+      toast.success(`${bucket} · ${mode}: ${aggregate.examined} geprüft, ${aggregate.compressed} komprimiert`);
     } catch (e: any) {
       toast.error(e?.message || "Fehler beim Backfill");
-      setResults((r) => ({ ...r, [bucket]: { error: e?.message || String(e) } }));
+      setResults((r) => ({ ...r, [bucket]: { ...aggregate, error: e?.message || String(e) } }));
     } finally {
       setLoading(null);
     }
   };
+
 
   return (
     <div className="container mx-auto py-8 space-y-6 max-w-4xl">
