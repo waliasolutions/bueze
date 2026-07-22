@@ -138,7 +138,7 @@ export default function ImageBackfill() {
             type: candidate.mimetype,
             lastModified: Date.now(),
           });
-          const compressed = await compressToWebP(originalFile, QUALITY, MAX_WIDTH);
+          const compressed = await bestCompressedWebP(originalFile, originalSize);
 
           if (compressed.type !== "image/webp" || compressed.size >= originalSize) {
             aggregate.skipped += 1;
