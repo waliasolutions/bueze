@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useAdminAuth } from "@/contexts/AdminAuthContext";
 import { Navigate } from "react-router-dom";
@@ -12,6 +12,15 @@ type Mode = "dry-run" | "apply";
 type Bucket = "lead-media" | "handwerker-portfolio";
 
 const BUCKETS: Bucket[] = ["lead-media", "handwerker-portfolio"];
+
+type BucketStats = {
+  total_files: number;
+  total_bytes: number;
+  webp_files: number;
+  webp_bytes: number;
+  other_files: number;
+  other_bytes: number;
+};
 // Progressive attempts: try higher quality first, then step down and/or shrink,
 // so we only skip images that truly cannot be improved.
 // Cap = 1600 px (retina-crisp bis 800 px Anzeige). Progressiv Qualität senken,
