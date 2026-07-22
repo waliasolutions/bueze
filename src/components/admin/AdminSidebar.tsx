@@ -83,7 +83,8 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { role } = useAdminAuth();
+  const { role, user } = useAdminAuth();
+  const isOperator = (user?.email ?? '').toLowerCase() === 'info@walia-solutions.ch';
 
   const isActive = (href?: string) => {
     if (!href) return false;
@@ -117,7 +118,9 @@ export function AdminSidebar({ onNavigate }: AdminSidebarProps = {}) {
     title: 'Wartung',
     items: [
       { label: 'Verwaiste Daten', href: '/admin/orphaned-records', icon: Briefcase },
-      { label: 'Bild-Backfill', href: '/admin/image-backfill', icon: Briefcase },
+      ...(isOperator
+        ? [{ label: 'Bild-Backfill', href: '/admin/image-backfill', icon: Briefcase }]
+        : []),
     ],
   };
 

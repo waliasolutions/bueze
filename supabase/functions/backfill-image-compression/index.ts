@@ -111,6 +111,13 @@ Deno.serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    // Restrict this maintenance tool to a single operator.
+    const ALLOWED_EMAIL = 'info@walia-solutions.ch';
+    if ((userData.user.email ?? '').toLowerCase() !== ALLOWED_EMAIL) {
+      return new Response(JSON.stringify({ error: 'restricted to operator' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const body = await req.json().catch(() => ({}));
     const bucket = String(body.bucket ?? '');
