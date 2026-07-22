@@ -1,120 +1,63 @@
+## Ziel
+1. **Neue Uploads:** Client-seitige WebP-Komprimierung (Q=0.8, max 1920 px) im Upload-SSOT.
+2. **Bestehende Bilder:** Einmaliger, admin-gesteuerter Backfill (Q=0.85, max 1920 px) über eine Edge Function — hohe Qualität, kein sichtbarer Detailverlust.
 
-# Deep QA + Cleanup Plan (v3 — 24h age gate added)
+## Erwartete Ersparnis (verifiziert, live gemessen)
 
-## 1) Health snapshot (verified)
+Aktueller Stand in Storage (nur konvertierbare Bilder — WebP/GIF ausgeschlossen):
 
-- Data integrity clean: 0 orphans, 0 expired-active leads, 0 profiles without roles.
-- Purge candidates: `password_reset_tokens` expired **81** · `admin_notifications` >90 d **258** · `handwerker_notifications` >90 d **5** · `client_notifications` >90 d **8**.
-- Storage: `handwerker-portfolio` **1.1 GB / 875 objects** (main sweep target); `lead-media` secondary.
-- Cron: 8 jobs active; missing retention + storage sweep.
-- Slow queries confirm 4 missing indexes (see §4).
-- Linter: **70 WARN / 0 ERROR** (60 SECURITY DEFINER + 3 public-bucket-listing + auth toggles).
+| Bucket | Objekte | Größe heute | Erwartet nach Backfill (Q=0.85) | Ersparnis |
+|---|---:|---:|---:|---:|
+| `handwerker-portfolio` | 865 | **1113 MB** | ~170–220 MB | **~890–940 MB (80–85 %)** |
+| `lead-media` | 36 | **24 MB** | ~4–5 MB | **~19–20 MB (80–83 %)** |
+| **Total** | **901** | **~1137 MB** | **~175–225 MB** | **~910–960 MB (≈ 80–85 %)** |
 
-## 2) Workflow smoke-test matrix
+Bei Q=0.85 liegen typische Smartphone-Fotos visuell praktisch verlustfrei — sichtbar wird der Unterschied erst bei direktem Pixel-Vergleich in 400 %-Zoom.
 
-Playwright: 11 flows (guest→lead, login intercept, handwerker guard, proposals, acceptance RPC, contact reveal, messaging + realtime, Payrexx happy + webhook-drop, custom password reset, admin ops, public routes at 375/1280 px). Screenshots to `/mnt/documents/deep-qa/`.
+## Teil A — Neue Uploads (SSOT im Frontend)
 
-## 3) Cleanup
+**1. Neu: `src/lib/imageCompressor.ts`**
+- Export `compressToWebP(file, quality=0.8, maxWidth=1920): Promise<File>`
+- Nutzt `<img>` + `<canvas>` + `canvas.toBlob('image/webp', q)`; kein npm-Dep.
+- Skippt `image/gif`, Nicht-Bilder → Original zurück.
+- Alle Fehlerpfade → Original zurück (fail-safe), Log via `logWithCorrelation`.
+- `URL.revokeObjectURL` in `onload`/`onerror`.
 
-**A. One-off purge (`insert` tool):**
-```sql
-DELETE FROM password_reset_tokens     WHERE expires_at < now();
-DELETE FROM admin_notifications       WHERE read=true AND created_at < now()-interval '90 days';
-DELETE FROM handwerker_notifications  WHERE read=true AND created_at < now()-interval '90 days';
-DELETE FROM client_notifications      WHERE read=true AND created_at < now()-interval '90 days';
-```
+**2. Edit: `src/lib/fileUpload.ts`**
+- Import `compressToWebP`.
+- In `uploadLeadMedia` und `uploadProposalAttachment`: vor Validierung `const processed = await compressToWebP(file)`; Größen-/Typ-Checks + `.upload(path, processed, { contentType: processed.type })` arbeiten mit `processed`.
+- PDFs & GIFs bleiben durch den Helper unverändert.
+- Alle Call-Sites (`SubmitLead`, `HandwerkerDashboard`, `OpportunityView`) profitieren automatisch — keine Änderungen dort.
 
-**B. Automated retention (SSOT):** `public.run_retention_cleanup()` wraps the four purges + existing `delete_expired_magic_tokens()` + `delete_expired_contact_requests()`. Cron `retention-cleanup-daily` at `15 2 * * *` Europe/Zurich.
+## Teil B — Einmaliger Backfill für bestehende Bilder
 
-**C. Storage orphan sweep — safety-first pipeline**
+**Prinzip:** Objekte **in-place** überschreiben (gleicher Storage-Key), nur Bytes + `content-type` werden ersetzt. Damit bleiben **alle DB-Referenzen** in `leads.media_urls`, `handwerker_profiles.portfolio_urls`/`gallery_urls`, `lead_proposals.attachment_url` unangetastet. Browser rendern WebP-Bytes auch unter `.jpg`-Endung korrekt (Content-Type-Header entscheidet).
 
-Deletion pipeline for every candidate object in `handwerker-portfolio` and `lead-media`:
+**Neu: `supabase/functions/backfill-image-compression/index.ts`**
+- Admin-only (JWT + `has_role(uid,'admin')`), niemals per Cron.
+- Input: `{ bucket: 'lead-media' | 'handwerker-portfolio', mode: 'dry-run' | 'apply' (default dry-run), limit?: number, quality?: 0.85 }`.
+- Iteriert `storage.objects` mit `mimetype LIKE 'image/%' AND mimetype NOT IN ('image/webp','image/gif')`.
+- Für jedes Objekt: Download → WASM-Decode → Resize auf max 1920 px Breite → WebP-Encode (Q=0.85) → wenn kleiner als Original: `upload(path, bytes, { upsert: true, contentType: 'image/webp' })`; sonst überspringen.
+- **WASM-Toolchain:** `@jsquash/jpeg`, `@jsquash/png`, `@jsquash/webp`, `@jsquash/resize` via `esm.sh` (läuft in Deno-Edge-Runtime, keine nativen Binärabhängigkeiten).
+- Fail-safe: pro-Objekt try/catch, Fehler werden gesammelt und im Response-JSON zurückgegeben; Original bleibt bei jedem Fehler intakt.
+- Idempotent: Objekte, die bereits `image/webp` sind, werden übersprungen — Funktion kann beliebig oft wiederholt werden.
+- Report: Anzahl geprüft/geschrumpft/übersprungen/fehlgeschlagen, Bytes vorher/nachher, geschätzte Ersparnis.
+- `supabase/config.toml`: `verify_jwt = true`.
 
-```
-Storage object
-   │
-   ▼
-[1] Age gate: object.created_at older than 24h?
-      NO  → skip (active draft / in-progress upload)
-      YES → continue
-   │
-   ▼
-[2] DB reference check: does the normalized key appear in
-      handwerker_profiles.portfolio_urls / gallery_urls   (portfolio bucket)
-      leads.media_urls                                    (lead-media bucket)
-      lead_proposals.attachment_url                       (proposals/ prefix in lead-media)
-      YES → keep (referenced)
-      NO  → orphan candidate
-   │
-   ▼
-[3] Mode gate:
-      dry-run (default) → write to report only, no deletion
-      delete            → remove object + audit row
-```
+**Ausführung durch Admin (manuell, in dieser Reihenfolge):**
+1. `dry-run` auf `lead-media` (36 Objekte) → Bericht prüfen.
+2. `apply` auf `lead-media` → Sichtprüfung Lead-Details.
+3. `dry-run` auf `handwerker-portfolio` (865 Objekte, in Batches à 50–100).
+4. `apply` auf `handwerker-portfolio` in mehreren Aufrufen bis leer.
 
-Implementation details:
-- Extend `supabase/functions/cleanup-orphaned-records/index.ts` with `mode: 'dry-run' | 'delete'` (default `dry-run`) and `min_age_hours` (default `24`).
-- Pull each bucket via `storage.from(bucket).list('', { limit: 1000 })` recursively; filter with `Date.now() - new Date(obj.created_at).getTime() >= min_age_hours*3600_000`.
-- **URL normalization SSOT** (`normalizeStorageKey`): strip `https://<ref>.supabase.co/storage/v1/object/(public|sign)/<bucket>/`, `decodeURIComponent`, lowercase → compare on relative key only, so absolute CDN URLs and relative storage paths match.
-- Report: candidates + normalized keys → `admin_notifications` + function response. Human reviews before running `mode: 'delete'`.
-- Cron `orphan-storage-weekly` (`0 3 * * 0` Europe/Zurich) starts in `dry-run` forever; deletion runs stay manual/admin-invoked.
+## Bewusst NICHT im Scope (YAGNI)
+- Keine automatische Umbenennung auf `.webp` (würde DB-Updates + Cache-Bruch bedeuten — Extension ist irrelevant, Content-Type entscheidet).
+- Kein pg_cron für den Backfill; einmaliger admin-getriggerter Vorgang.
+- Keine externe npm-Dep im Frontend.
+- Keine Änderungen an RLS/Bucket-Policies.
 
-## 4) Latency — single migration
-
-```sql
-CREATE INDEX IF NOT EXISTS idx_leads_status_created_at
-  ON public.leads (status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_handwerker_profiles_created_at
-  ON public.handwerker_profiles (created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_handwerker_profiles_verification_created
-  ON public.handwerker_profiles (verification_status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_user_roles_role
-  ON public.user_roles (role);
-```
-Re-check `slow_queries`; add `.select('col,…').limit()` where callers pull full rows.
-
-## 5) Security hardening — trigger-safe
-
-**Rule:** blanket `REVOKE EXECUTE FROM authenticated` on `SECURITY DEFINER` functions breaks triggers (the row-modifier's role must execute the trigger function). Classify first:
-
-```sql
-SELECT p.proname,
-       EXISTS (SELECT 1 FROM pg_trigger t
-                WHERE t.tgfoid = p.oid AND NOT t.tgisinternal) AS is_trigger
-  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
- WHERE n.nspname='public';
-```
-
-- **Bucket A — Triggers (keep EXECUTE):** `handle_new_user`, `notify_admins_of_*`, `trigger_send_*`, `update_updated_at_column`, `update_conversation_timestamp`, `update_handwerker_search_text`, `validate_handwerker_data`, `validate_lead_media`, `sync_lead_proposals_count`, `prevent_handwerker_lead_creation`, `prevent_subscription_self_escalation`, `increment_proposal_count`, `increment_lead_purchased_count`. `handle_new_user` explicitly kept callable for the Supabase auth signup path.
-- **Bucket B — Cron/service-only utilities (REVOKE from anon+authenticated, keep service_role):** `check_lead_expiry`, `delete_expired_magic_tokens`, `delete_expired_contact_requests`, `generate_invoice_number`, `setup_admin_user`, `admin_activate_subscription`.
-- **Bucket C — UI RPCs (REVOKE from anon, GRANT to authenticated):** `has_role`, `get_user_role`, `handwerker_can_view_client_profile`, `get_accepted_client_contacts`, `handwerker_has_proposal_on_lead`, `can_submit_proposal`, `accept_proposal_atomic`, `budget_ranges_overlap`, `get_users_with_roles`.
-
-**Validation gate:** in a `BEGIN … ROLLBACK` block, exercise signup, lead insert (client), proposal insert. Any `permission denied for function` → rollback and reclassify.
-
-**Storage bucket policies:** tighten read on `lead-media` + `handwerker-portfolio` to owner-only or explicit public-read predicate. `sitemaps` stays public.
-
-**Dashboard toggles (out-of-band):** OTP expiry, leaked-password protection, Postgres patch — linked in final report.
-
-## 6) Dead code sweep
-
-- Remove unused `SUBMIT_LEAD_DRAFT` key in `src/lib/localStorageVersioning.ts`.
-- Audit `check-admin-role`, `reset-test-data`, `populate-test-data` edge functions — keep behind admin auth or delete.
-- Flag zero-scan indexes only (no drops this round).
-
-## 7) Execution order
-
-1. Migration #1: indexes (§4).
-2. Migration #2: security hardening (§5), split per bucket, gated by classification query + validation gate.
-3. Migration #3: `run_retention_cleanup()`.
-4. `insert` tool: §3A purge + `cron.schedule` for `retention-cleanup-daily` and `orphan-storage-weekly` (dry-run).
-5. Edge-function edit: `cleanup-orphaned-records` gains `mode`, `min_age_hours=24`, normalization SSOT, storage sweep.
-6. Code cleanup: remove `SUBMIT_LEAD_DRAFT`.
-7. Playwright smoke-test matrix.
-8. Final report: slow-query deltas, purge counts, dry-run storage candidates for review, dashboard toggle links.
-
-## Not doing (YAGNI)
-
-- No auto-delete of storage orphans on first run.
-- No blanket revoke on trigger functions.
-- No unused-index drops.
-- No policy rewrites beyond storage buckets.
+## Verifikation
+- Frontend: neuer Upload landet als `image/webp`, ~150–400 KB.
+- Backfill dry-run: Bericht zeigt Objekt-Anzahl + geschätzte Ersparnis, ohne Storage-Änderung.
+- Nach `apply`: `SELECT bucket_id, pg_size_pretty(sum((metadata->>'size')::bigint)) FROM storage.objects GROUP BY 1;` — Erwartung ~175–225 MB total.
+- Sichtprüfung: Lead-Details, Handwerker-Profile-Galerie, Proposal-Anhänge — Bilder erscheinen scharf und identisch positioniert.
