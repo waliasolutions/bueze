@@ -102,7 +102,7 @@ export default function ImageBackfill() {
 
 
   const run = async (bucket: Bucket, mode: Mode, limit: number) => {
-    const key = `${bucket}:${mode}`;
+    const key = `${bucket}:${mode}:${limit}`;
     setLoading(key);
     const aggregate = {
       bucket,
