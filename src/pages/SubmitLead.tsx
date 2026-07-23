@@ -27,18 +27,20 @@ import { majorCategories } from '@/config/majorCategories';
 import { CategorySelector } from '@/components/CategorySelector';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { runAllSpamChecks, recordAttempt } from '@/lib/spamProtection';
-import { validatePassword, PASSWORD_MIN_LENGTH } from '@/lib/validationHelpers';
+import { validatePassword, PASSWORD_MIN_LENGTH, DESCRIPTION_MIN_LENGTH } from '@/lib/validationHelpers';
 import { useMultiStepForm } from '@/hooks/useMultiStepForm';
 import { MultiStepProgress } from '@/components/ui/multi-step-progress';
 import { useUserRole } from '@/hooks/useUserRole';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Lightbulb } from 'lucide-react';
+import { budgetPresets } from '@/config/budgetPresets';
 
 
 // Base schema type — used for TypeScript inference only (no contact validation here)
 const leadSchemaBase = z.object({
   title: z.string().min(5, 'Titel muss mindestens 5 Zeichen haben'),
-  description: z.string().optional().or(z.literal('')),
+  description: z.string().trim().min(DESCRIPTION_MIN_LENGTH, `Bitte beschreiben Sie Ihr Projekt mit mindestens ${DESCRIPTION_MIN_LENGTH} Zeichen – so können Handwerker eine passende Offerte erstellen`),
   category: z.string().min(1, 'Bitte wählen Sie eine Kategorie'),
   budgetPreset: z.string().optional(),
   budget_min: z.number().optional().nullable(),
@@ -88,14 +90,6 @@ const urgencyLevels = [
   { value: 'planning', label: 'Planung (nächste Monate)' },
 ];
 
-// Budget presets for simpler selection
-const budgetPresets = [
-  { value: 'unknown', label: 'Noch unklar', min: null, max: null },
-  { value: 'small', label: 'Unter 1\'000 CHF', min: 0, max: 1000 },
-  { value: 'medium', label: '1\'000 - 5\'000 CHF', min: 1000, max: 5000 },
-  { value: 'large', label: '5\'000 - 20\'000 CHF', min: 5000, max: 20000 },
-  { value: 'xlarge', label: 'Über 20\'000 CHF', min: 20000, max: 100000 },
-];
 
 type StepContent = 'contact' | 'project' | 'location';
 
@@ -604,7 +598,8 @@ const SubmitLead = () => {
     if (currentContent === 'project') {
       const titleValid = await form.trigger('title');
       const catValid = await form.trigger('category');
-      if (!titleValid || !catValid) return;
+      const descValid = await form.trigger('description');
+      if (!titleValid || !catValid || !descValid) return;
     } else if (currentContent === 'location') {
       const zipValid = await form.trigger('zip');
       if (!zipValid) return;
@@ -970,22 +965,50 @@ const SubmitLead = () => {
                       )}
                     />
 
+                    <Alert className="bg-muted/50">
+                      <Lightbulb className="h-4 w-4" />
+                      <AlertTitle>So erhalten Sie passende Offerten</AlertTitle>
+                      <AlertDescription>
+                        <ul className="list-disc pl-4 space-y-1 mt-1">
+                          <li>Beschreiben Sie konkret, <strong>was</strong> gemacht werden soll (z.B. «Badezimmer ca. 8 m² komplett sanieren»)</li>
+                          <li>Nennen Sie <strong>Grösse, Umfang und Zustand</strong> (Masse, Anzahl, Baujahr)</li>
+                          <li>Fotos sagen mehr als Worte – laden Sie Bilder hoch</li>
+                          <li>Eine realistische <strong>Budgetspanne</strong> hilft Handwerkern, passende Angebote zu senden</li>
+                        </ul>
+                        <a href="/#faq" target="_blank" rel="noopener noreferrer" className="inline-block mt-2 underline hover:text-foreground">
+                          Mehr Tipps in unseren FAQ
+                        </a>
+                      </AlertDescription>
+                    </Alert>
+
                     <FormField
                       control={form.control}
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Projektbeschreibung (optional)</FormLabel>
+                          <FormLabel>Projektbeschreibung *</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              placeholder="Beschreiben Sie Ihr Projekt detailliert..."
-                              className="min-h-[100px]"
-                              {...field} 
+                            <Textarea
+                              placeholder="Was soll gemacht werden? Grösse/Fläche (z.B. m², Anzahl Räume)? Aktueller Zustand? Materialwünsche? Bis wann soll es fertig sein?"
+                              className="min-h-[120px]"
+                              {...field}
                             />
                           </FormControl>
-                          <FormDescription>
-                            Je detaillierter die Beschreibung, desto besser können Handwerker Ihr Projekt einschätzen.
-                          </FormDescription>
+                          <div className="flex items-center justify-between gap-2">
+                            <FormDescription>
+                              Je detaillierter die Beschreibung, desto besser können Handwerker Ihr Projekt einschätzen.
+                            </FormDescription>
+                            <span
+                              className={cn(
+                                'text-xs whitespace-nowrap',
+                                (field.value?.trim().length ?? 0) >= DESCRIPTION_MIN_LENGTH
+                                  ? 'text-primary'
+                                  : 'text-muted-foreground'
+                              )}
+                            >
+                              {field.value?.trim().length ?? 0} / mind. {DESCRIPTION_MIN_LENGTH} Zeichen
+                            </span>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -1170,6 +1193,9 @@ const SubmitLead = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                          <FormDescription>
+                            Eine Budgetspanne hilft Handwerkern, realistische Offerten zu erstellen – Sie können sie jederzeit anpassen.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

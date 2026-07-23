@@ -19,13 +19,16 @@ import { PostalCodeInput } from '@/components/PostalCodeInput';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { getUrgencyOptions } from '@/config/urgencyLevels';
+import { budgetPresets, findPresetForRange } from '@/config/budgetPresets';
+import { DESCRIPTION_MIN_LENGTH } from '@/lib/validationHelpers';
 
 const leadSchema = z.object({
   title: z.string().min(10, 'Titel muss mindestens 10 Zeichen haben'),
-  description: z.string().min(50, 'Beschreibung muss mindestens 50 Zeichen haben'),
+  description: z.string().trim().min(DESCRIPTION_MIN_LENGTH, `Beschreibung muss mindestens ${DESCRIPTION_MIN_LENGTH} Zeichen haben`),
   category: z.string().min(1, 'Bitte wählen Sie eine Kategorie'),
-  budget_min: z.number().min(0, 'Budget muss positiv sein'),
-  budget_max: z.number().min(0, 'Budget muss positiv sein'),
+  budgetPreset: z.string().optional(),
+  budget_min: z.number().nullable(),
+  budget_max: z.number().nullable(),
   urgency: z.string().min(1, 'Bitte wählen Sie eine Dringlichkeit'),
   address: z.string().optional(),
   canton: z.string().min(1, 'Bitte wählen Sie einen Kanton'),
@@ -60,8 +63,9 @@ const EditLead = () => {
       title: '',
       description: '',
       category: '',
-      budget_min: 0,
-      budget_max: 0,
+      budgetPreset: 'unknown',
+      budget_min: null,
+      budget_max: null,
       urgency: '',
       address: '',
       canton: '',
@@ -99,13 +103,18 @@ const EditLead = () => {
         return;
       }
 
-      // Populate form with lead data
+      // Populate form with lead data.
+      // Budget is normalized to the closest preset — legacy free-form ranges
+      // (e.g. 10'000 – 1'000'000) are mapped and rewritten on save.
+      const presetValue = findPresetForRange(lead.budget_min, lead.budget_max);
+      const preset = budgetPresets.find(p => p.value === presetValue);
       form.reset({
         title: lead.title,
         description: lead.description,
         category: lead.category,
-        budget_min: lead.budget_min,
-        budget_max: lead.budget_max,
+        budgetPreset: presetValue,
+        budget_min: preset?.min ?? null,
+        budget_max: preset?.max ?? null,
         urgency: lead.urgency,
         address: lead.address || '',
         canton: lead.canton,
@@ -126,10 +135,12 @@ const EditLead = () => {
 
     setSaving(true);
     try {
+      // budgetPreset is a UI-only field — only budget_min/budget_max are stored
+      const { budgetPreset, ...leadData } = data;
       const { error } = await supabase
         .from('leads')
         .update({
-          ...data,
+          ...leadData,
           category: data.category as any,
           urgency: data.urgency as any,
           canton: data.canton as any,
@@ -283,45 +294,40 @@ const EditLead = () => {
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="budget_min"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Budget Min (CHF)</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="budgetPreset"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Geschätztes Budget</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            const preset = budgetPresets.find(p => p.value === value);
+                            if (preset) {
+                              form.setValue('budget_min', preset.min);
+                              form.setValue('budget_max', preset.max);
+                            }
+                          }}
+                          value={field.value || 'unknown'}
+                        >
                           <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
+                            <SelectTrigger>
+                              <SelectValue placeholder="Wählen Sie einen Budgetrahmen" />
+                            </SelectTrigger>
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="budget_max"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Budget Max (CHF)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="0"
-                              {...field}
-                              onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                          <SelectContent>
+                            {budgetPresets.map((preset) => (
+                              <SelectItem key={preset.value} value={preset.value}>
+                                {preset.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <FormField
                     control={form.control}

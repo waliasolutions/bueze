@@ -9,6 +9,9 @@ export interface ValidationResult {
 // Password validation constants
 export const PASSWORD_MIN_LENGTH = 8;
 
+// Lead quality constants - shared by SubmitLead and EditLead
+export const DESCRIPTION_MIN_LENGTH = 50;
+
 /**
  * Validate password strength
  * @param password - The password to validate

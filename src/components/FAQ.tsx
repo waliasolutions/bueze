@@ -16,7 +16,7 @@ export const FAQ = ({ content }: FAQProps) => {
   const categories = fields?.categories?.length ? fields.categories : faqDefaults.categories;
 
   return (
-    <section className="py-20 bg-pastel-blue-50">
+    <section id="faq" className="py-20 bg-pastel-blue-50">
       <div className="text-center mb-16">
         <h2 className="text-3xl md:text-4xl font-bold text-ink-900 mb-4">
           {title}
