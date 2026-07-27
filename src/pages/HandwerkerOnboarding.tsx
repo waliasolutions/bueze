@@ -29,7 +29,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ServiceRadius, buildServiceAreas, parseServiceAreas } from "@/lib/serviceAreaHelpers";
 
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
-import { validatePassword, PASSWORD_MIN_LENGTH, normalizeUid } from "@/lib/validationHelpers";
+import { validatePassword, PASSWORD_MIN_LENGTH, normalizeUid, formatUidForDisplay } from "@/lib/validationHelpers";
 import { LEGAL_FORM_OPTIONS, getLegalFormLabel } from "@/config/legalForms";
 import { ZefixCompanyNameInput } from "@/components/ZefixCompanyNameInput";
 import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from "@/lib/zefix";
