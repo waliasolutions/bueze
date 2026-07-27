@@ -23,8 +23,8 @@ export const heroDefaults = {
 } as const;
 
 export const homepageSeoDefaults = {
-  title: 'Handwerker finden in der Schweiz | Kostenlose Offerten | Büeze.ch',
-  description: 'Ihr Schweizer Marktplatz für geprüfte Handwerker. Beschreiben Sie Ihr Projekt und erhalten Sie kostenlos bis zu 3 Offerten von Fachbetrieben aus Ihrer Region. Jetzt starten!',
+  title: 'Handwerker finden Schweiz | Kostenlos Offerten | Büeze.ch',
+  description: 'Ihr Schweizer Marktplatz für geprüfte Handwerker. Beschreiben Sie Ihr Projekt und erhalten Sie kostenlos bis zu 3 Offerten aus Ihrer Region. Jetzt starten!',
   canonical: 'https://bueeze.ch/'
 } as const;
 
