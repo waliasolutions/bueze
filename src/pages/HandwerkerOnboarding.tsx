@@ -893,6 +893,7 @@ const HandwerkerOnboarding = () => {
                         value={formData.companyName}
                         onChange={(companyName) => setFormData({ ...formData, companyName })}
                         onSelect={applyZefixCompany}
+                        onBusyChange={setZefixBusy}
                         onBlur={() => markTouched('companyName')}
                         inputClassName="h-12 text-base"
                       />
@@ -912,6 +913,7 @@ const HandwerkerOnboarding = () => {
                       <Select
                         value={formData.companyLegalForm}
                         onValueChange={(value) => setFormData({ ...formData, companyLegalForm: value })}
+                        disabled={zefixBusy}
                       >
                         <SelectTrigger className="h-12 text-base">
                           <SelectValue />
@@ -932,6 +934,7 @@ const HandwerkerOnboarding = () => {
                         onChange={(e) => setFormData({ ...formData, uidNumber: e.target.value })}
                         placeholder="CHE-123.456.789"
                         className="h-12 text-base"
+                        disabled={zefixBusy}
                       />
                     </div>
                   </div>
