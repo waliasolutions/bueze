@@ -47,6 +47,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<HandwerkerEditData | null>(null);
+  const [zefixBusy, setZefixBusy] = useState(false);
 
   const activeForm = form ?? handwerker;
 
