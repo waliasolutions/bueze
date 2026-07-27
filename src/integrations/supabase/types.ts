@@ -2053,6 +2053,30 @@ export type Database = {
           },
         ]
       }
+      zefix_lookup_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_hash: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       billing_settings_public: {
@@ -2280,6 +2304,10 @@ export type Database = {
         Returns: boolean
       }
       check_lead_expiry: { Args: never; Returns: undefined }
+      check_zefix_rate_limit: {
+        Args: { p_ip_hash: string; p_user_id: string }
+        Returns: Json
+      }
       delete_expired_contact_requests: { Args: never; Returns: undefined }
       delete_expired_magic_tokens: { Args: never; Returns: undefined }
       generate_invoice_number: { Args: never; Returns: string }
@@ -2342,6 +2370,10 @@ export type Database = {
           name: string
           size: number
         }[]
+      }
+      record_zefix_lookup: {
+        Args: { p_action: string; p_ip_hash: string; p_user_id: string }
+        Returns: undefined
       }
       run_retention_cleanup: { Args: never; Returns: Json }
       setup_admin_user: {

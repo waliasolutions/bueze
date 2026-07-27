@@ -22,24 +22,36 @@ import { fetchCompanyByUid, searchCompanies } from '../_shared/zefix.ts';
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 25;
 
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX_REQUESTS = 30;
-const requestLog = new Map<string, number[]>();
+// Short-window burst guard (in-memory, per warm instance).
+// The authoritative quotas (10/user/2h, 100/IP/day) live in the DB.
+const BURST_WINDOW_MS = 60_000;
+const BURST_MAX = 30;
+const burstLog = new Map<string, number[]>();
 
-function isRateLimited(key: string): boolean {
+function isBursting(key: string): boolean {
   const now = Date.now();
-  const recent = (requestLog.get(key) ?? []).filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS);
+  const recent = (burstLog.get(key) ?? []).filter((ts) => now - ts < BURST_WINDOW_MS);
   recent.push(now);
-  requestLog.set(key, recent);
-
-  // Keep the map from growing without bound on a long-lived instance.
-  if (requestLog.size > 500) {
-    for (const [entryKey, timestamps] of requestLog) {
-      if (timestamps.every((ts) => now - ts >= RATE_LIMIT_WINDOW_MS)) requestLog.delete(entryKey);
+  burstLog.set(key, recent);
+  if (burstLog.size > 500) {
+    for (const [k, ts] of burstLog) {
+      if (ts.every((t) => now - t >= BURST_WINDOW_MS)) burstLog.delete(k);
     }
   }
+  return recent.length > BURST_MAX;
+}
 
-  return recent.length > RATE_LIMIT_MAX_REQUESTS;
+async function hashIp(ip: string): Promise<string> {
+  const data = new TextEncoder().encode(`zefix:${ip}`);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getCallerUserId(req: Request, supabase: SupabaseAdmin): Promise<string | null> {
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user } } = await supabase.auth.getUser(token);
+  return user?.id ?? null;
 }
 
 type SupabaseAdmin = ReturnType<typeof createSupabaseAdmin>;
@@ -99,34 +111,56 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse;
 
   try {
-    const clientKey = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    if (isRateLimited(clientKey)) {
+    const rawIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    if (isBursting(rawIp)) {
       return errorResponse('Zu viele Anfragen. Bitte warten Sie einen Moment.', 429);
     }
 
     const body = await req.json().catch(() => ({}));
     const action = body?.action;
 
-    switch (action) {
-      case 'search': {
-        const limit = Math.min(Number(body.limit) || DEFAULT_LIMIT, MAX_LIMIT);
-        const companies = await searchCompanies(String(body.query ?? ''), limit);
-        return successResponse({ companies });
-      }
-
-      case 'detail': {
-        const company = await fetchCompanyByUid(String(body.uid ?? ''));
-        return successResponse({ company });
-      }
-
-      case 'verify': {
-        if (!body.profileId) return errorResponse('profileId fehlt', 400);
-        return successResponse(await verifyProfile(req, String(body.profileId)));
-      }
-
-      default:
-        return errorResponse(`Unbekannte Aktion: ${action ?? 'keine'}`, 400);
+    // Verify has its own auth + is server-authoritative; skip quota there.
+    if (action === 'verify') {
+      if (!body.profileId) return errorResponse('profileId fehlt', 400);
+      return successResponse(await verifyProfile(req, String(body.profileId)));
     }
+
+    if (action !== 'search' && action !== 'detail') {
+      return errorResponse(`Unbekannte Aktion: ${action ?? 'keine'}`, 400);
+    }
+
+    // DB-backed quotas: 10/user/2h, 100/IP/day.
+    const supabase = createSupabaseAdmin();
+    const userId = await getCallerUserId(req, supabase);
+    const ipHash = rawIp !== 'unknown' ? await hashIp(rawIp) : null;
+
+    const { data: gate, error: gateError } = await supabase.rpc('check_zefix_rate_limit', {
+      p_user_id: userId,
+      p_ip_hash: ipHash,
+    });
+    if (gateError) throw gateError;
+    if (gate && !gate.allowed) {
+      const msg = gate.reason === 'user'
+        ? 'Sie haben das Limit von 10 Handelsregister-Abfragen pro 2 Stunden erreicht. Bitte versuchen Sie es später erneut.'
+        : 'Das tägliche Handelsregister-Abfragelimit wurde erreicht. Bitte versuchen Sie es morgen erneut.';
+      return errorResponse(msg, 429);
+    }
+
+    // Record the lookup (fire-and-forget on failure).
+    await supabase.rpc('record_zefix_lookup', {
+      p_user_id: userId,
+      p_ip_hash: ipHash,
+      p_action: action,
+    });
+
+    if (action === 'search') {
+      const limit = Math.min(Number(body.limit) || DEFAULT_LIMIT, MAX_LIMIT);
+      const companies = await searchCompanies(String(body.query ?? ''), limit);
+      return successResponse({ companies });
+    }
+
+    const company = await fetchCompanyByUid(String(body.uid ?? ''));
+    return successResponse({ company });
   } catch (error: unknown) {
     const message = getErrorMessage(error);
 
