@@ -71,3 +71,15 @@ export function normalizeUid(value: string | null | undefined): string | null {
 
   return trimmed.replace(/^che[-\s]*/i, 'CHE-');
 }
+
+/**
+ * Display-safe UID renderer. Returns the canonical `CHE-123.456.789` when a
+ * full UID is present, otherwise the trimmed raw text (never null), and an
+ * empty string when nothing usable is provided. SSOT for read-only UID cells.
+ */
+export function formatUidForDisplay(value: string | null | undefined): string {
+  if (!value) return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  return normalizeUid(trimmed) ?? trimmed;
+}

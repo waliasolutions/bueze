@@ -11,6 +11,9 @@ interface ZefixCompanyNameInputProps {
   onChange: (value: string) => void;
   /** Called with the full Zefix record once a suggestion is applied. */
   onSelect: (company: ZefixCompany) => void;
+  /** Notifies the parent while a Zefix request is in flight, so it can gate
+   *  Rechtsform/UID inputs and show a skeleton. */
+  onBusyChange?: (busy: boolean) => void;
   id?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -34,6 +37,7 @@ export function ZefixCompanyNameInput({
   value,
   onChange,
   onSelect,
+  onBusyChange,
   id,
   placeholder = 'z.B. Muster Handwerk GmbH',
   disabled = false,
@@ -59,6 +63,13 @@ export function ZefixCompanyNameInput({
       if (chipTimer.current) clearTimeout(chipTimer.current);
     };
   }, []);
+
+  // Bubble busy state up so callers can skeleton/disable the Rechtsform + UID
+  // fields while Zefix is filling them in. Runs a stable microtask to avoid
+  // "cannot update a component while rendering" warnings from consumers.
+  useEffect(() => {
+    onBusyChange?.(isBusy);
+  }, [isBusy, onBusyChange]);
 
   const flashSuccess = useCallback(() => {
     setJustApplied(true);
@@ -191,7 +202,21 @@ export function ZefixCompanyNameInput({
           </button>
         )}
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <span className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-destructive">
+              Handelsregister nicht erreichbar — {error}
+            </p>
+            <button
+              type="button"
+              onClick={() => runSearch(value.trim(), { manual: true })}
+              disabled={isBusy || value.trim().length < MIN_QUERY_LENGTH}
+              className="text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              Erneut versuchen
+            </button>
+          </span>
+        )}
 
         {notFound && !error && (
           <p className="text-sm text-muted-foreground">

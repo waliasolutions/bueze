@@ -29,7 +29,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ServiceRadius, buildServiceAreas, parseServiceAreas } from "@/lib/serviceAreaHelpers";
 
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
-import { validatePassword, PASSWORD_MIN_LENGTH, normalizeUid } from "@/lib/validationHelpers";
+import { validatePassword, PASSWORD_MIN_LENGTH, normalizeUid, formatUidForDisplay } from "@/lib/validationHelpers";
 import { LEGAL_FORM_OPTIONS, getLegalFormLabel } from "@/config/legalForms";
 import { ZefixCompanyNameInput } from "@/components/ZefixCompanyNameInput";
 import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from "@/lib/zefix";
@@ -110,6 +110,8 @@ const HandwerkerOnboarding = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  // True while Zefix is filling company data — gates Rechtsform/UID inputs.
+  const [zefixBusy, setZefixBusy] = useState(false);
 
   // Helper to mark a field as touched
   const markTouched = (field: string) => {
@@ -891,6 +893,7 @@ const HandwerkerOnboarding = () => {
                         value={formData.companyName}
                         onChange={(companyName) => setFormData({ ...formData, companyName })}
                         onSelect={applyZefixCompany}
+                        onBusyChange={setZefixBusy}
                         onBlur={() => markTouched('companyName')}
                         inputClassName="h-12 text-base"
                       />
@@ -910,6 +913,7 @@ const HandwerkerOnboarding = () => {
                       <Select
                         value={formData.companyLegalForm}
                         onValueChange={(value) => setFormData({ ...formData, companyLegalForm: value })}
+                        disabled={zefixBusy}
                       >
                         <SelectTrigger className="h-12 text-base">
                           <SelectValue />
@@ -930,6 +934,7 @@ const HandwerkerOnboarding = () => {
                         onChange={(e) => setFormData({ ...formData, uidNumber: e.target.value })}
                         placeholder="CHE-123.456.789"
                         className="h-12 text-base"
+                        disabled={zefixBusy}
                       />
                     </div>
                   </div>
@@ -1099,7 +1104,7 @@ const HandwerkerOnboarding = () => {
                   {formData.uidNumber && (
                     <div className="flex justify-between py-2">
                       <span className="text-sm text-muted-foreground">UID-Nummer</span>
-                      <span className="text-sm font-medium">{normalizeUid(formData.uidNumber)}</span>
+                      <span className="text-sm font-medium">{formatUidForDisplay(formData.uidNumber)}</span>
                     </div>
                   )}
                 </CardContent>

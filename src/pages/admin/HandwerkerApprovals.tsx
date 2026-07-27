@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sanitizePhoneInput } from '@/lib/displayFormatters';
-import { normalizeUid } from '@/lib/validationHelpers';
+import { normalizeUid, formatUidForDisplay } from '@/lib/validationHelpers';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
@@ -105,6 +105,7 @@ const HandwerkerApprovals = () => {
   const [rejectingHandwerker, setRejectingHandwerker] = useState<PendingHandwerker | null>(null);
   const [editingHandwerker, setEditingHandwerker] = useState<PendingHandwerker | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<PendingHandwerker>>({});
+  const [zefixBusy, setZefixBusy] = useState(false);
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -926,7 +927,7 @@ const HandwerkerApprovals = () => {
                                 </div>
                                 <div>
                                   <span className="text-sm font-medium text-muted-foreground">UID-Nummer:</span>
-                                  <p className="text-sm font-mono">{handwerker.uid_number || 'Nicht angegeben'}</p>
+                                  <p className="text-sm font-mono">{formatUidForDisplay(handwerker.uid_number) || 'Nicht angegeben'}</p>
                                 </div>
                                 <div>
                                   <span className="text-sm font-medium text-muted-foreground">MWST-Nummer:</span>
@@ -1236,6 +1237,7 @@ const HandwerkerApprovals = () => {
                       value={editFormData.company_name || ''}
                       onChange={(company_name) => setEditFormData({ ...editFormData, company_name })}
                       onSelect={applyZefixCompany}
+                      onBusyChange={setZefixBusy}
                     />
                     <p className="text-xs text-muted-foreground">
                       Handelsregister-Vorschläge; Aktualisieren-Symbol lädt UID und Adresse nach.
@@ -1246,6 +1248,7 @@ const HandwerkerApprovals = () => {
                     <Select
                       value={editFormData.company_legal_form || ''}
                       onValueChange={(v) => setEditFormData({ ...editFormData, company_legal_form: v })}
+                      disabled={zefixBusy}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Rechtsform wählen" />
@@ -1263,6 +1266,7 @@ const HandwerkerApprovals = () => {
                       id="uid_number"
                       value={editFormData.uid_number || ''}
                       onChange={(e) => setEditFormData({ ...editFormData, uid_number: e.target.value })}
+                      disabled={zefixBusy}
                     />
                   </div>
                   <div className="space-y-2">

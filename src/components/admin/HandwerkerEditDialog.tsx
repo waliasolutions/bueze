@@ -47,6 +47,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<HandwerkerEditData | null>(null);
+  const [zefixBusy, setZefixBusy] = useState(false);
 
   const activeForm = form ?? handwerker;
 
@@ -189,6 +190,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
               value={activeForm.company_name || ''}
               onChange={(v) => updateField('company_name', v)}
               onSelect={applyZefixCompany}
+              onBusyChange={setZefixBusy}
             />
             <p className="text-xs text-muted-foreground">
               Handelsregister-Vorschläge; Aktualisieren-Symbol lädt UID und Adresse nach.
@@ -196,7 +198,11 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
           </div>
           <div className="space-y-1">
             <Label>Rechtsform</Label>
-            <Select value={activeForm.company_legal_form || ''} onValueChange={(v) => updateField('company_legal_form', v)}>
+            <Select
+              value={activeForm.company_legal_form || ''}
+              onValueChange={(v) => updateField('company_legal_form', v)}
+              disabled={zefixBusy}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Rechtsform wählen" />
               </SelectTrigger>
@@ -214,6 +220,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
               value={activeForm.uid_number || ''}
               onChange={(e) => updateField('uid_number', e.target.value)}
               placeholder="CHE-123.456.789"
+              disabled={zefixBusy}
             />
           </div>
           <div className="space-y-1">
