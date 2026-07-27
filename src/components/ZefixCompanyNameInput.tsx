@@ -11,6 +11,9 @@ interface ZefixCompanyNameInputProps {
   onChange: (value: string) => void;
   /** Called with the full Zefix record once a suggestion is applied. */
   onSelect: (company: ZefixCompany) => void;
+  /** Notifies the parent while a Zefix request is in flight, so it can gate
+   *  Rechtsform/UID inputs and show a skeleton. */
+  onBusyChange?: (busy: boolean) => void;
   id?: string;
   placeholder?: string;
   disabled?: boolean;
