@@ -64,6 +64,13 @@ export function ZefixCompanyNameInput({
     };
   }, []);
 
+  // Bubble busy state up so callers can skeleton/disable the Rechtsform + UID
+  // fields while Zefix is filling them in. Runs a stable microtask to avoid
+  // "cannot update a component while rendering" warnings from consumers.
+  useEffect(() => {
+    onBusyChange?.(isBusy);
+  }, [isBusy, onBusyChange]);
+
   const flashSuccess = useCallback(() => {
     setJustApplied(true);
     if (chipTimer.current) clearTimeout(chipTimer.current);
