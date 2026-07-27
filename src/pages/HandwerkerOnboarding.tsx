@@ -110,6 +110,8 @@ const HandwerkerOnboarding = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  // True while Zefix is filling company data — gates Rechtsform/UID inputs.
+  const [zefixBusy, setZefixBusy] = useState(false);
 
   // Helper to mark a field as touched
   const markTouched = (field: string) => {
