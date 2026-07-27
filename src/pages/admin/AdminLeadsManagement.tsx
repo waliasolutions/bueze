@@ -131,6 +131,47 @@ export default function AdminLeadsManagement() {
       })) || [];
 
       setLeads(formattedLeads);
+
+      // Bulk-prefetch proposals for all visible leads (SSOT — avoids on-expand race)
+      const leadIds = formattedLeads.map(l => l.id);
+      if (leadIds.length > 0) {
+        const { data: proposalsData, error: proposalsError } = await supabase
+          .from("lead_proposals")
+          .select("*")
+          .in("lead_id", leadIds)
+          .order("submitted_at", { ascending: false });
+
+        if (proposalsError) {
+          console.error("Error fetching proposals:", proposalsError);
+          toast.error("Fehler beim Laden der Offerten: " + proposalsError.message);
+        } else if (proposalsData) {
+          const handwerkerIds = [...new Set(proposalsData.map(p => p.handwerker_id).filter(Boolean))];
+          let handwerkers: Record<string, any> = {};
+          if (handwerkerIds.length > 0) {
+            const { data: hwData } = await supabase
+              .from("handwerker_profiles")
+              .select("user_id, first_name, last_name, company_name, email, phone_number, business_city")
+              .in("user_id", handwerkerIds);
+            hwData?.forEach(h => { handwerkers[h.user_id] = h; });
+          }
+          const grouped: Record<string, AdminProposal[]> = {};
+          // Seed every lead so "loaded and empty" is distinct from "not loaded"
+          leadIds.forEach(id => { grouped[id] = []; });
+          proposalsData.forEach((proposal: any) => {
+            const enriched = {
+              ...proposal,
+              handwerker_first_name: handwerkers[proposal.handwerker_id]?.first_name,
+              handwerker_last_name: handwerkers[proposal.handwerker_id]?.last_name,
+              handwerker_company_name: handwerkers[proposal.handwerker_id]?.company_name,
+              handwerker_email: handwerkers[proposal.handwerker_id]?.email,
+              handwerker_phone: handwerkers[proposal.handwerker_id]?.phone_number,
+              handwerker_city: handwerkers[proposal.handwerker_id]?.business_city,
+            };
+            (grouped[proposal.lead_id] ||= []).push(enriched);
+          });
+          setProposals(grouped);
+        }
+      }
     } catch (error) {
       console.error("Error fetching leads:", error);
       toast.error("Fehler beim Laden der Aufträge");
@@ -139,65 +180,16 @@ export default function AdminLeadsManagement() {
     }
   };
 
-  const fetchProposalsForLead = async (leadId: string) => {
-    if (proposals[leadId]) return;
-
-    try {
-      // Fetch proposals
-      const { data: proposalsData, error: proposalsError } = await supabase
-        .from("lead_proposals")
-        .select("*")
-        .eq("lead_id", leadId)
-        .order("submitted_at", { ascending: false });
-
-      if (proposalsError) throw proposalsError;
-
-      // Get handwerker IDs
-      const handwerkerIds = [...new Set(proposalsData?.map(p => p.handwerker_id).filter(Boolean))];
-      
-      // Fetch handwerker profiles
-      let handwerkers: Record<string, any> = {};
-      if (handwerkerIds.length > 0) {
-        const { data: hwData } = await supabase
-          .from("handwerker_profiles")
-          .select("user_id, first_name, last_name, company_name, email, phone_number, business_city")
-          .in("user_id", handwerkerIds);
-        
-        if (hwData) {
-          hwData.forEach(h => {
-            handwerkers[h.user_id] = h;
-          });
-        }
-      }
-
-      // Combine data
-      const formattedProposals = proposalsData?.map((proposal: any) => ({
-        ...proposal,
-        handwerker_first_name: handwerkers[proposal.handwerker_id]?.first_name,
-        handwerker_last_name: handwerkers[proposal.handwerker_id]?.last_name,
-        handwerker_company_name: handwerkers[proposal.handwerker_id]?.company_name,
-        handwerker_email: handwerkers[proposal.handwerker_id]?.email,
-        handwerker_phone: handwerkers[proposal.handwerker_id]?.phone_number,
-        handwerker_city: handwerkers[proposal.handwerker_id]?.business_city,
-      })) || [];
-
-      setProposals((prev) => ({ ...prev, [leadId]: formattedProposals }));
-    } catch (error) {
-      console.error("Error fetching proposals:", error);
-      toast.error("Fehler beim Laden der Offerten");
-    }
-  };
-
-  const toggleLeadExpansion = async (leadId: string) => {
+  const toggleLeadExpansion = (leadId: string) => {
     const newExpanded = new Set(expandedLeads);
     if (newExpanded.has(leadId)) {
       newExpanded.delete(leadId);
     } else {
       newExpanded.add(leadId);
-      await fetchProposalsForLead(leadId);
     }
     setExpandedLeads(newExpanded);
   };
+
 
   const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate' | 'renotify' | 'resend_nonproposers') => {
     setActionLead(lead);
@@ -728,9 +720,14 @@ export default function AdminLeadsManagement() {
                                     </div>
                                   ))}
                                 </div>
+                              ) : (lead.proposals_count || 0) > 0 ? (
+                                <div className="text-sm text-destructive">
+                                  Inkonsistenz: Zähler meldet {lead.proposals_count} Offerte(n), es konnten aber keine geladen werden. Bitte Seite aktualisieren.
+                                </div>
                               ) : (
                                 <div className="text-muted-foreground text-sm">Noch keine Offerten erhalten</div>
                               )}
+
                             </div>
                           </TableCell>
                         </TableRow>
