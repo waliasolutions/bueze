@@ -717,17 +717,31 @@ const HandwerkerDashboard = () => {
 
   // Check verification status - show restricted state for rejected/unknown, allow pending to browse
   if (handwerkerProfile.verification_status !== 'approved' && handwerkerProfile.verification_status !== 'pending') {
+    const handleSignOut = async () => {
+      await supabase.auth.signOut();
+      navigate('/auth');
+    };
     return <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8 pt-24">
-          <Alert className="max-w-2xl mx-auto mb-6 border-destructive/20 bg-destructive/5">
-            <AlertCircle className="h-5 w-5 text-destructive" />
-            <AlertTitle className="text-destructive">Profil nicht freigegeben</AlertTitle>
-            <AlertDescription className="text-destructive/80">
-              Ihr Profil wurde nicht freigegeben. Bitte kontaktieren Sie uns für weitere Informationen.
-            </AlertDescription>
-          </Alert>
-          
+          {isAdmin ? (
+            <Alert className="max-w-2xl mx-auto mb-6 border-amber-300 bg-amber-50">
+              <AlertCircle className="h-5 w-5 text-amber-700" />
+              <AlertTitle className="text-amber-800">Admin-Konto – kein Handwerker-Zugang</AlertTitle>
+              <AlertDescription className="text-amber-800/90">
+                Sie sind mit einem Admin-Konto angemeldet. Die Handwerker-Ansicht ist nur für freigegebene Handwerker verfügbar. Wechseln Sie in den Admin-Bereich oder melden Sie sich mit einem Handwerker-Konto an.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert className="max-w-2xl mx-auto mb-6 border-destructive/20 bg-destructive/5">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertTitle className="text-destructive">Profil nicht freigegeben</AlertTitle>
+              <AlertDescription className="text-destructive/80">
+                Ihr Profil wurde nicht freigegeben. Bitte kontaktieren Sie uns für weitere Informationen.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <Card className="max-w-2xl mx-auto">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -735,18 +749,31 @@ const HandwerkerDashboard = () => {
                 Status: {handwerkerProfile.verification_status || 'Unbekannt'}
               </CardTitle>
               <CardDescription>
-                Kontaktieren Sie unseren Support
+                {isAdmin ? 'Handwerker-Ansicht steht Admins nicht zur Verfügung.' : 'Kontaktieren Sie unseren Support'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex gap-3">
-                <Button onClick={() => navigate('/handwerker-profile/edit')} className="flex-1">
-                  <UserIcon className="h-4 w-4 mr-2" />
-                  Profil bearbeiten
-                </Button>
-                <Button onClick={() => navigate('/')} variant="outline" className="flex-1">
-                  Zur Startseite
-                </Button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                {isAdmin ? (
+                  <>
+                    <Button onClick={() => navigate('/admin')} className="flex-1">
+                      Zum Admin-Bereich
+                    </Button>
+                    <Button onClick={handleSignOut} variant="outline" className="flex-1">
+                      Abmelden
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button onClick={() => navigate('/handwerker-profile/edit')} className="flex-1">
+                      <UserIcon className="h-4 w-4 mr-2" />
+                      Profil bearbeiten
+                    </Button>
+                    <Button onClick={handleSignOut} variant="outline" className="flex-1">
+                      Abmelden
+                    </Button>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
