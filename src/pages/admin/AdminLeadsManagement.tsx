@@ -720,9 +720,14 @@ export default function AdminLeadsManagement() {
                                     </div>
                                   ))}
                                 </div>
+                              ) : (lead.proposals_count || 0) > 0 ? (
+                                <div className="text-sm text-destructive">
+                                  Inkonsistenz: Zähler meldet {lead.proposals_count} Offerte(n), es konnten aber keine geladen werden. Bitte Seite aktualisieren.
+                                </div>
                               ) : (
                                 <div className="text-muted-foreground text-sm">Noch keine Offerten erhalten</div>
                               )}
+
                             </div>
                           </TableCell>
                         </TableRow>
