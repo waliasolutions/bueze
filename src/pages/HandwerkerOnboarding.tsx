@@ -29,7 +29,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ServiceRadius, buildServiceAreas, parseServiceAreas } from "@/lib/serviceAreaHelpers";
 
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
-import { validatePassword, PASSWORD_MIN_LENGTH } from "@/lib/validationHelpers";
+import { validatePassword, PASSWORD_MIN_LENGTH, normalizeUid } from "@/lib/validationHelpers";
+import { LEGAL_FORM_OPTIONS, getLegalFormLabel } from "@/config/legalForms";
+import { ZefixCompanySearch } from "@/components/ZefixCompanySearch";
+import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from "@/lib/zefix";
 import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
 
 type StepContent = 'contact' | 'services' | 'summary';
@@ -79,6 +82,8 @@ const HandwerkerOnboarding = () => {
   const [businessPlz, setBusinessPlz] = useState('');
   const [businessCity, setBusinessCity] = useState('');
   const [businessCanton, setBusinessCanton] = useState('');
+  // Street comes from the Zefix record only - registration has no address input.
+  const [businessAddress, setBusinessAddress] = useState('');
   const [serviceRadius, setServiceRadius] = useState<ServiceRadius>('canton');
   const [customCantons, setCustomCantons] = useState<string[]>([]);
   
@@ -93,6 +98,7 @@ const HandwerkerOnboarding = () => {
     password: "",
     companyName: "",
     companyLegalForm: "einzelfirma",
+    uidNumber: "",
     
     // Step 2: Services (optional)
     categories: [] as string[],
@@ -548,6 +554,7 @@ const HandwerkerOnboarding = () => {
         phone_number: formData.phoneNumber?.trim() || null,
         company_name: formData.companyName?.trim() || null,
         company_legal_form: formData.companyLegalForm?.trim() || null,
+        uid_number: normalizeUid(formData.uidNumber),
         bio: formData.bio?.trim() || null,
         categories: allCategories as any,
         service_areas: formData.serviceAreas?.length > 0 ? formData.serviceAreas : [],
@@ -555,6 +562,7 @@ const HandwerkerOnboarding = () => {
         hourly_rate_max: formData.hourlyRateMax?.trim() ? parseInt(formData.hourlyRateMax) : null,
         verification_status: 'pending',
         is_verified: false,
+        business_address: businessAddress || null,
         business_zip: businessPlz || null,
         business_city: businessCity || null,
         business_canton: businessCanton || null,
@@ -599,6 +607,11 @@ const HandwerkerOnboarding = () => {
               .upsert({ user_id: user.id, role: 'handwerker' }, { onConflict: 'user_id,role' });
           }
 
+          // Confirm the UID against the Handelsregister (sets zefix_verified server-side)
+          if (insertData.uid_number) {
+            await syncZefixVerification(profileData.id);
+          }
+
           // Save pending plan if user selected one from query params
           if (selectedPlanParam && selectedPlanParam !== 'free') {
             await supabase
@@ -635,15 +648,26 @@ const HandwerkerOnboarding = () => {
     }
   };
 
-  const legalFormLabels: Record<string, string> = {
-    einzelfirma: "Einzelfirma",
-    gmbh: "GmbH",
-    ag: "AG",
-    kollektivgesellschaft: "Kollektivgesellschaft",
-    kommanditgesellschaft: "Kommanditgesellschaft",
-    genossenschaft: "Genossenschaft",
-    verein: "Verein",
-    stiftung: "Stiftung",
+  /** Fill the company fields from a Handelsregister record. */
+  const applyZefixCompany = (company: ZefixCompany) => {
+    const fields = mapZefixCompanyToProfile(company);
+
+    setFormData(prev => ({
+      ...prev,
+      companyName: fields.company_name,
+      companyLegalForm: fields.company_legal_form || prev.companyLegalForm,
+      uidNumber: fields.uid_number || '',
+    }));
+
+    if (fields.business_address) setBusinessAddress(fields.business_address);
+    if (fields.business_zip) setBusinessPlz(fields.business_zip);
+    if (fields.business_city) setBusinessCity(fields.business_city);
+    if (fields.business_canton) setBusinessCanton(fields.business_canton);
+
+    toast({
+      title: "Firmendaten übernommen",
+      description: `${fields.company_name} wurde aus dem Handelsregister übernommen.`,
+    });
   };
 
   // Render step content based on current step
@@ -860,6 +884,12 @@ const HandwerkerOnboarding = () => {
                   </div>
 
                   <div className="space-y-4">
+                    <ZefixCompanySearch
+                      onSelect={applyZefixCompany}
+                      inputClassName="h-12 text-base"
+                      className="rounded-lg border bg-muted/30 p-4"
+                    />
+
                     <div className="space-y-2">
                       <Label htmlFor="companyName" className="text-base font-medium">Firmenname *</Label>
                       <Input
@@ -888,23 +918,29 @@ const HandwerkerOnboarding = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
-                          <SelectItem value="gmbh">GmbH</SelectItem>
-                          <SelectItem value="ag">AG</SelectItem>
-                          <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
-                          <SelectItem value="kommanditgesellschaft">Kommanditgesellschaft</SelectItem>
-                          <SelectItem value="genossenschaft">Genossenschaft</SelectItem>
-                          <SelectItem value="verein">Verein</SelectItem>
-                          <SelectItem value="stiftung">Stiftung</SelectItem>
+                          {LEGAL_FORM_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="uidNumber" className="text-base font-medium">UID-Nummer</Label>
+                      <Input
+                        id="uidNumber"
+                        value={formData.uidNumber}
+                        onChange={(e) => setFormData({ ...formData, uidNumber: e.target.value })}
+                        placeholder="CHE-123.456.789"
+                        className="h-12 text-base"
+                      />
                     </div>
                   </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  Mit der Registrierung erstellen wir Ihr Konto. Sie können weitere Details wie 
-                  Versicherung, UID-Nummer und Bankdaten später in Ihrem Profil ergänzen.
+                  Mit der Registrierung erstellen wir Ihr Konto. Sie können weitere Details wie
+                  Versicherung und Bankdaten später in Ihrem Profil ergänzen.
                 </p>
               </div>
             )}
@@ -1059,10 +1095,16 @@ const HandwerkerOnboarding = () => {
                     <span className="text-sm text-muted-foreground">Firma</span>
                     <span className="text-sm font-medium">{formData.companyName}</span>
                   </div>
-                  <div className="flex justify-between py-2">
+                  <div className={formData.uidNumber ? "flex justify-between py-2 border-b" : "flex justify-between py-2"}>
                     <span className="text-sm text-muted-foreground">Rechtsform</span>
-                    <span className="text-sm font-medium">{legalFormLabels[formData.companyLegalForm] || formData.companyLegalForm}</span>
+                    <span className="text-sm font-medium">{getLegalFormLabel(formData.companyLegalForm)}</span>
                   </div>
+                  {formData.uidNumber && (
+                    <div className="flex justify-between py-2">
+                      <span className="text-sm text-muted-foreground">UID-Nummer</span>
+                      <span className="text-sm font-medium">{normalizeUid(formData.uidNumber)}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

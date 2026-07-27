@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { sanitizePhoneInput } from '@/lib/displayFormatters';
 import { normalizeUid } from '@/lib/validationHelpers';
+import { LEGAL_FORM_OPTIONS } from '@/config/legalForms';
+import { ZefixCompanySearch } from '@/components/ZefixCompanySearch';
+import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
+import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from '@/lib/zefix';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Header } from '@/components/Header';
@@ -114,6 +118,9 @@ const HandwerkerProfileEdit = () => {
   const [companyLegalForm, setCompanyLegalForm] = useState('');
   const [uidNumber, setUidNumber] = useState('');
   const [mwstNumber, setMwstNumber] = useState('');
+  const [zefixVerified, setZefixVerified] = useState(false);
+  // UID that was last confirmed against Zefix - lets a save skip a pointless re-check.
+  const lastVerifiedUid = useRef<string | null>(null);
   
   // Business Address
   const [businessAddress, setBusinessAddress] = useState('');
@@ -226,6 +233,8 @@ const HandwerkerProfileEdit = () => {
       setCompanyLegalForm(profileData.company_legal_form || '');
       setUidNumber(profileData.uid_number || '');
       setMwstNumber(profileData.mwst_number || '');
+      setZefixVerified(Boolean((profileData as { zefix_verified?: boolean }).zefix_verified));
+      lastVerifiedUid.current = profileData.uid_number || null;
       
       // Business Address
       setBusinessAddress(profileData.business_address || '');
@@ -599,6 +608,24 @@ const HandwerkerProfileEdit = () => {
     });
   };
 
+  /** Fill the company fields from a Handelsregister record. */
+  const applyZefixCompany = (company: ZefixCompany) => {
+    const fields = mapZefixCompanyToProfile(company);
+
+    setCompanyName(fields.company_name);
+    if (fields.company_legal_form) setCompanyLegalForm(fields.company_legal_form);
+    if (fields.uid_number) setUidNumber(fields.uid_number);
+    if (fields.business_address) setBusinessAddress(fields.business_address);
+    if (fields.business_zip) setBusinessZip(fields.business_zip);
+    if (fields.business_city) setBusinessCity(fields.business_city);
+    if (fields.business_canton) setBusinessCanton(fields.business_canton);
+
+    toast({
+      title: 'Firmendaten übernommen',
+      description: `${fields.company_name} wurde aus dem Handelsregister übernommen.`,
+    });
+  };
+
   const handleSave = async (silent = false) => {
     if (!profile || saving) return; // Prevent concurrent saves
 
@@ -674,6 +701,19 @@ const HandwerkerProfileEdit = () => {
         .eq('id', profile.id);
 
       if (error) throw error;
+
+      // Re-check the UID against the Handelsregister whenever it changed.
+      // The edge function owns zefix_verified / zefix_data.
+      const savedUid = normalizeUid(uidNumber);
+      if (savedUid !== lastVerifiedUid.current) {
+        try {
+          const { verified } = await syncZefixVerification(profile.id);
+          lastVerifiedUid.current = savedUid;
+          setZefixVerified(verified);
+        } catch (zefixError) {
+          console.error('Zefix verification failed:', zefixError);
+        }
+      }
 
       // If profile was rejected, resubmit for review by setting status back to pending
       if (profile.verification_status === 'rejected' && !silent) {
@@ -1048,9 +1088,15 @@ const HandwerkerProfileEdit = () => {
                         <div className="flex items-center gap-2">
                           <Building2 className="h-5 w-5 text-primary" />
                           <CardTitle>Firmeninformationen</CardTitle>
+                          <VerifiedSwissBadge zefixVerified={zefixVerified} uid={uidNumber} />
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
+                        <ZefixCompanySearch
+                          onSelect={applyZefixCompany}
+                          className="rounded-lg border bg-muted/30 p-4"
+                        />
+
                         <div className="space-y-2">
                           <Label htmlFor="companyName">Firmenname</Label>
                           <Input
@@ -1068,10 +1114,9 @@ const HandwerkerProfileEdit = () => {
                               <SelectValue placeholder="Rechtsform wählen" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="einzelfirma">Einzelfirma</SelectItem>
-                              <SelectItem value="gmbh">GmbH</SelectItem>
-                              <SelectItem value="ag">AG</SelectItem>
-                              <SelectItem value="kollektivgesellschaft">Kollektivgesellschaft</SelectItem>
+                              {LEGAL_FORM_OPTIONS.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>

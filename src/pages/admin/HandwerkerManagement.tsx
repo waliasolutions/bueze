@@ -62,6 +62,8 @@ interface Handwerker {
   email: string | null;
   phone_number: string | null;
   company_name: string | null;
+  company_legal_form: string | null;
+  zefix_verified: boolean | null;
   categories: string[];
   service_areas: string[];
   verification_status: string;
