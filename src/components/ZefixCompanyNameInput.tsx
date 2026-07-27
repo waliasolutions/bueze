@@ -174,14 +174,8 @@ export function ZefixCompanyNameInput({
   const showSkeleton = isBusy && results.length === 0 && !error;
 
   const helperText = useMemo(() => {
-    if (justApplied || error || notFound || isBusy) return null;
-    if (!trimmed) {
-      return 'Firmenname eingeben — Vorschläge aus dem Schweizerischen Handelsregister erscheinen automatisch.';
-    }
-    if (charsMissing > 0) {
-      return `Noch ${charsMissing} Zeichen für die Handelsregister-Suche…`;
-    }
-    return null;
+    if (justApplied || error || notFound || isBusy || !trimmed || charsMissing === 0) return null;
+    return `Noch ${charsMissing} Zeichen für die Handelsregister-Suche…`;
   }, [justApplied, error, notFound, isBusy, trimmed, charsMissing]);
 
   return (
