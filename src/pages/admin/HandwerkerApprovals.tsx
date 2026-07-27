@@ -105,6 +105,7 @@ const HandwerkerApprovals = () => {
   const [rejectingHandwerker, setRejectingHandwerker] = useState<PendingHandwerker | null>(null);
   const [editingHandwerker, setEditingHandwerker] = useState<PendingHandwerker | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<PendingHandwerker>>({});
+  const [zefixBusy, setZefixBusy] = useState(false);
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
