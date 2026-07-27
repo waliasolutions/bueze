@@ -78,6 +78,7 @@ const HandwerkerProfileEdit = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [zefixBusy, setZefixBusy] = useState(false);
   const [profile, setProfile] = useState<HandwerkerProfile | null>(null);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
