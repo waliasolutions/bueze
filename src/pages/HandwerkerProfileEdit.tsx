@@ -1100,6 +1100,7 @@ const HandwerkerProfileEdit = () => {
                             value={companyName}
                             onChange={setCompanyName}
                             onSelect={applyZefixCompany}
+                            onBusyChange={setZefixBusy}
                           />
                           <p className="text-xs text-muted-foreground">
                             Vorschläge aus dem Handelsregister. Mit dem Aktualisieren-Symbol
@@ -1109,7 +1110,7 @@ const HandwerkerProfileEdit = () => {
                         
                         <div className="space-y-2">
                           <Label htmlFor="companyLegalForm">Rechtsform</Label>
-                          <Select value={companyLegalForm} onValueChange={setCompanyLegalForm}>
+                          <Select value={companyLegalForm} onValueChange={setCompanyLegalForm} disabled={zefixBusy}>
                             <SelectTrigger>
                               <SelectValue placeholder="Rechtsform wählen" />
                             </SelectTrigger>
@@ -1129,6 +1130,7 @@ const HandwerkerProfileEdit = () => {
                               value={uidNumber}
                               onChange={(e) => setUidNumber(e.target.value)}
                               placeholder="CHE-123.456.789"
+                              disabled={zefixBusy}
                             />
                           </div>
                           <div className="space-y-2">
