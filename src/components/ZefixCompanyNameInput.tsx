@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getZefixCompany, searchZefixCompanies, type ZefixCompany } from '@/lib/zefix';
 
@@ -22,12 +21,12 @@ interface ZefixCompanyNameInputProps {
 
 const MIN_QUERY_LENGTH = 3;
 const DEBOUNCE_MS = 500;
+const SUCCESS_CHIP_MS = 3000;
 
 /**
  * Company name field with Handelsregister (Zefix) autocomplete — SSOT UI for
- * every company lookup. Typing suggests matching companies; the refresh button
- * re-runs the lookup for an already-filled name (e.g. to pull in a missing
- * UID) and applies a unique match straight away.
+ * every company lookup. Typing suggests matching companies; a subtle text link
+ * lets the user re-run the lookup manually (e.g. to pull in a missing UID).
  *
  * Used by registration, the handwerker profile editor and both admin editors.
  */
@@ -46,34 +45,51 @@ export function ZefixCompanyNameInput({
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [justApplied, setJustApplied] = useState(false);
 
   // Only values the user typed trigger suggestions — a value written back by
   // onSelect (or loaded from the profile) must not reopen the dropdown.
   const typedValue = useRef<string | null>(null);
   // Guards against a slow response overwriting the results of a newer query.
   const latestQuery = useRef('');
+  const chipTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (chipTimer.current) clearTimeout(chipTimer.current);
+    };
+  }, []);
+
+  const flashSuccess = useCallback(() => {
+    setJustApplied(true);
+    if (chipTimer.current) clearTimeout(chipTimer.current);
+    chipTimer.current = setTimeout(() => setJustApplied(false), SUCCESS_CHIP_MS);
+  }, []);
 
   const apply = useCallback(
     async (company: ZefixCompany) => {
+      // Close dropdown and stop treating current value as "typed" immediately.
       setResults([]);
       setNotFound(false);
+      setError(null);
       typedValue.current = null;
 
-      // Search hits carry no address — fetch the full record before filling the form.
+      // Optimistic: hand the caller what we already have so the form fills now.
+      onSelect(company);
+      flashSuccess();
+
+      // Silently upgrade with the full record (address) in the background.
       if (company.uid && !company.street) {
-        setIsBusy(true);
         try {
-          onSelect((await getZefixCompany(company.uid)) ?? company);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Firmendaten konnten nicht geladen werden');
-        } finally {
-          setIsBusy(false);
+          const full = await getZefixCompany(company.uid);
+          if (full) onSelect(full);
+        } catch {
+          // The optimistic apply already succeeded — a failed detail fetch is
+          // not worth surfacing an error for.
         }
-      } else {
-        onSelect(company);
       }
     },
-    [onSelect],
+    [onSelect, flashSuccess],
   );
 
   const runSearch = useCallback(
@@ -81,7 +97,6 @@ export function ZefixCompanyNameInput({
       latestQuery.current = query;
       setIsBusy(true);
       setError(null);
-      setNotFound(false);
 
       try {
         const companies = await searchZefixCompanies(query);
@@ -94,10 +109,11 @@ export function ZefixCompanyNameInput({
         }
 
         setResults(companies);
-        setNotFound(manual && companies.length === 0);
+        setNotFound(companies.length === 0);
       } catch (err) {
         if (latestQuery.current !== query) return;
-        setResults([]);
+        // Don't wipe the previous results on a transient error — keep them
+        // visible so the dropdown doesn't collapse.
         setError(err instanceof Error ? err.message : 'Suche fehlgeschlagen');
       } finally {
         if (latestQuery.current === query) setIsBusy(false);
@@ -109,7 +125,11 @@ export function ZefixCompanyNameInput({
   useEffect(() => {
     const trimmed = value.trim();
 
-    if (typedValue.current !== value || trimmed.length < MIN_QUERY_LENGTH) {
+    // Only auto-search values the user typed. Don't clear the current dropdown
+    // between keystrokes — a stale list under the spinner beats a flicker.
+    if (typedValue.current !== value) return;
+
+    if (trimmed.length < MIN_QUERY_LENGTH) {
       setResults([]);
       setNotFound(false);
       return;
@@ -122,42 +142,62 @@ export function ZefixCompanyNameInput({
   const handleChange = (next: string) => {
     typedValue.current = next;
     setError(null);
+    setJustApplied(false);
     onChange(next);
   };
 
   const canLookUp = value.trim().length >= MIN_QUERY_LENGTH;
+  const showManualLink =
+    !disabled && canLookUp && results.length === 0 && !isBusy && typedValue.current === null;
 
   return (
     <div className={className}>
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Input
-            id={id}
-            value={value}
-            onChange={(e) => handleChange(e.target.value)}
-            onBlur={onBlur}
-            placeholder={placeholder}
-            disabled={disabled}
-            autoComplete="off"
-            className={inputClassName}
-          />
-          {isBusy && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-          )}
-        </div>
+      <div className="relative">
+        <Input
+          id={id}
+          value={value}
+          onChange={(e) => handleChange(e.target.value)}
+          onBlur={onBlur}
+          placeholder={placeholder}
+          disabled={disabled}
+          autoComplete="off"
+          className={cn('pr-10', inputClassName)}
+        />
+        {isBusy ? (
+          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+        ) : justApplied ? (
+          <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-600" />
+        ) : null}
+      </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          disabled={disabled || isBusy || !canLookUp}
-          onClick={() => runSearch(value.trim(), { manual: true })}
-          title="Im Handelsregister suchen"
-          aria-label="Im Handelsregister suchen"
-          className={cn('shrink-0', inputClassName)}
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
+      <div className="min-h-[1.25rem] mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+        {justApplied && (
+          <Badge
+            variant="outline"
+            className="border-emerald-200 bg-emerald-50 text-emerald-700 gap-1"
+          >
+            <Check className="h-3 w-3" />
+            Aus Handelsregister übernommen
+          </Badge>
+        )}
+
+        {showManualLink && !justApplied && (
+          <button
+            type="button"
+            onClick={() => runSearch(value.trim(), { manual: true })}
+            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Handelsregister neu abfragen
+          </button>
+        )}
+
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
+        {notFound && !error && (
+          <p className="text-sm text-muted-foreground">
+            Kein Treffer im Handelsregister — bitte andere Schreibweise versuchen (z.&nbsp;B. mit Bindestrich) oder Daten manuell erfassen.
+          </p>
+        )}
       </div>
 
       {results.length > 0 && (
@@ -183,14 +223,6 @@ export function ZefixCompanyNameInput({
             </li>
           ))}
         </ul>
-      )}
-
-      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
-
-      {notFound && !error && (
-        <p className="mt-1 text-sm text-muted-foreground">
-          Kein Eintrag im Handelsregister gefunden. Daten bitte manuell erfassen.
-        </p>
       )}
     </div>
   );
