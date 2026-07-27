@@ -18,6 +18,18 @@ Büeze.ch verbindet Auftraggeber mit geprüften Handwerkern in der Schweiz. Die 
 2. Geprüfte Handwerker senden Offerten
 3. Auftraggeber vergleichen und wählen den passenden Handwerker
 
+## Pages
+
+- [Startseite](/): Übersicht über Büeze.ch und den Marktplatz für geprüfte Handwerker.
+- [Anfrage erstellen](/submit-lead): Kostenlos und unverbindlich ein Handwerker-Projekt einreichen.
+- [Handwerker-Verzeichnis](/handwerker-verzeichnis): Öffentliches Verzeichnis geprüfter Handwerkerbetriebe.
+- [Für Handwerker](/handwerker): Informationen für Handwerker über Registrierung, Abo-Pläne und Leads.
+- [Alle Kategorien](/kategorien): Übersicht aller Handwerker-Hauptkategorien.
+- [Preise](/pricing): Preisübersicht für Handwerker-Abonnements.
+- [Impressum](/impressum): Rechtliche Angaben zum Betreiber.
+- [Datenschutz](/datenschutz): Datenschutzerklärung und Umgang mit personenbezogenen Daten.
+- [AGB](/legal/agb): Allgemeine Geschäftsbedingungen.
+
 ## Handwerker-Kategorien
 
 - Bau & Renovation: Hochbau, Umbau, Abbruch, Renovationsarbeiten
@@ -34,17 +46,6 @@ Büeze.ch verbindet Auftraggeber mit geprüften Handwerkern in der Schweiz. Die 
 - Storen & Beschattung: Sonnenschutz, Rollladen, Markisen
 - Glas & Fenster: Fenstermontage, Glasreparatur, Wintergarten
 - Bautrocknung & Wasserschäden: Trocknung, Leckortung, Sanierung
-
-## Wichtige Seiten
-
-- Startseite: https://bueeze.ch/
-- Alle Kategorien: https://bueeze.ch/kategorien
-- Handwerker-Verzeichnis: https://bueeze.ch/handwerker-verzeichnis
-- Für Handwerker: https://bueeze.ch/handwerker
-- Preise: https://bueeze.ch/pricing
-- Impressum: https://bueeze.ch/impressum
-- Datenschutz: https://bueeze.ch/datenschutz
-- AGB: https://bueeze.ch/legal/agb
 
 ## Für Auftraggeber
 
