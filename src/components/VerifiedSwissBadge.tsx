@@ -40,14 +40,14 @@ export function VerifiedSwissBadge({
           <TooltipContent className="max-w-xs">
             <p className="font-medium">Geprüfte Schweizer Firma</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Eingetragen im Schweizerischen Handelsregister
+              «Verifiziert» bedeutet, dass wir Firma, Adresse und UID über das offizielle Schweizerische Handelsregister (Zefix) geprüft und abgeglichen haben. Die Prüfung erfolgt live bei der Registishändelsregisterdatenbank des Kantons.
             </p>
             {uid && (
               <a 
                 href={`https://www.zefix.ch/de/search/entity/welcome?searchText=${encodeURIComponent(uid)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-primary underline mt-1 block"
+                className="text-xs text-primary underline mt-2 block"
               >
                 Zefix-Eintrag ansehen →
               </a>
