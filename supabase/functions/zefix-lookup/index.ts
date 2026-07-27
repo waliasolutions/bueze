@@ -134,14 +134,19 @@ Deno.serve(async (req) => {
     const userId = await getCallerUserId(req, supabase);
     const ipHash = rawIp !== 'unknown' ? await hashIp(rawIp) : null;
 
+    // Split quota by action: typeahead 'search' only counts toward the IP cap
+    // (searches are cheap and expected to fire often while typing). The strict
+    // per-user quota (10/2h) applies only to 'detail' — a real user picking a
+    // company from the dropdown. Bots without a session are bound by the IP cap.
+    const gateUserId = action === 'detail' ? userId : null;
     const { data: gate, error: gateError } = await supabase.rpc('check_zefix_rate_limit', {
-      p_user_id: userId,
+      p_user_id: gateUserId,
       p_ip_hash: ipHash,
     });
     if (gateError) throw gateError;
     if (gate && !gate.allowed) {
       const msg = gate.reason === 'user'
-        ? 'Sie haben das Limit von 10 Handelsregister-Abfragen pro 2 Stunden erreicht. Bitte versuchen Sie es später erneut.'
+        ? 'Sie haben das Limit von 10 Firmenauswahlen pro 2 Stunden erreicht. Bitte versuchen Sie es später erneut.'
         : 'Das tägliche Handelsregister-Abfragelimit wurde erreicht. Bitte versuchen Sie es morgen erneut.';
       return errorResponse(msg, 429);
     }
