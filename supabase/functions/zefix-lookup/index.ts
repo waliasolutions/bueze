@@ -22,24 +22,36 @@ import { fetchCompanyByUid, searchCompanies } from '../_shared/zefix.ts';
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 25;
 
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX_REQUESTS = 30;
-const requestLog = new Map<string, number[]>();
+// Short-window burst guard (in-memory, per warm instance).
+// The authoritative quotas (10/user/2h, 100/IP/day) live in the DB.
+const BURST_WINDOW_MS = 60_000;
+const BURST_MAX = 30;
+const burstLog = new Map<string, number[]>();
 
-function isRateLimited(key: string): boolean {
+function isBursting(key: string): boolean {
   const now = Date.now();
-  const recent = (requestLog.get(key) ?? []).filter((ts) => now - ts < RATE_LIMIT_WINDOW_MS);
+  const recent = (burstLog.get(key) ?? []).filter((ts) => now - ts < BURST_WINDOW_MS);
   recent.push(now);
-  requestLog.set(key, recent);
-
-  // Keep the map from growing without bound on a long-lived instance.
-  if (requestLog.size > 500) {
-    for (const [entryKey, timestamps] of requestLog) {
-      if (timestamps.every((ts) => now - ts >= RATE_LIMIT_WINDOW_MS)) requestLog.delete(entryKey);
+  burstLog.set(key, recent);
+  if (burstLog.size > 500) {
+    for (const [k, ts] of burstLog) {
+      if (ts.every((t) => now - t >= BURST_WINDOW_MS)) burstLog.delete(k);
     }
   }
+  return recent.length > BURST_MAX;
+}
 
-  return recent.length > RATE_LIMIT_MAX_REQUESTS;
+async function hashIp(ip: string): Promise<string> {
+  const data = new TextEncoder().encode(`zefix:${ip}`);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function getCallerUserId(req: Request, supabase: SupabaseAdmin): Promise<string | null> {
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '');
+  if (!token) return null;
+  const { data: { user } } = await supabase.auth.getUser(token);
+  return user?.id ?? null;
 }
 
 type SupabaseAdmin = ReturnType<typeof createSupabaseAdmin>;
