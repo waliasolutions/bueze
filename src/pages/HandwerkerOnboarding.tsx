@@ -1104,7 +1104,7 @@ const HandwerkerOnboarding = () => {
                   {formData.uidNumber && (
                     <div className="flex justify-between py-2">
                       <span className="text-sm text-muted-foreground">UID-Nummer</span>
-                      <span className="text-sm font-medium">{normalizeUid(formData.uidNumber)}</span>
+                      <span className="text-sm font-medium">{formatUidForDisplay(formData.uidNumber)}</span>
                     </div>
                   )}
                 </CardContent>
