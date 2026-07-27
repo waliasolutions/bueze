@@ -23,6 +23,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getCantonLabel } from '@/config/cantons';
+import { LEGAL_FORM_OPTIONS } from '@/config/legalForms';
+import { ZefixCompanyNameInput } from '@/components/ZefixCompanyNameInput';
+import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
+import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from '@/lib/zefix';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 import { FREE_TIER_PROPOSALS_LIMIT } from '@/config/subscriptionPlans';
 
@@ -46,6 +50,7 @@ interface PendingHandwerker {
   company_name: string | null;
   company_legal_form: string | null;
   uid_number: string | null;
+  zefix_verified: boolean | null;
   mwst_number: string | null;
   business_address: string | null;
   business_zip: string | null;
@@ -140,6 +145,7 @@ const HandwerkerApprovals = () => {
           company_name,
           company_legal_form,
           uid_number,
+          zefix_verified,
           mwst_number,
           business_address,
           business_zip,
@@ -606,13 +612,32 @@ const HandwerkerApprovals = () => {
     setEditFormData({ ...handwerker });
   };
 
+  /** Fill the company fields from a Handelsregister record. */
+  const applyZefixCompany = (company: ZefixCompany) => {
+    const fields = mapZefixCompanyToProfile(company);
+
+    setEditFormData((prev) => ({
+      ...prev,
+      company_name: fields.company_name,
+      company_legal_form: fields.company_legal_form ?? prev.company_legal_form,
+      uid_number: fields.uid_number ?? prev.uid_number,
+      business_address: fields.business_address ?? prev.business_address,
+      business_zip: fields.business_zip ?? prev.business_zip,
+      business_city: fields.business_city ?? prev.business_city,
+      business_canton: fields.business_canton ?? prev.business_canton,
+    }));
+  };
+
   const saveHandwerkerEdit = async () => {
     if (!editingHandwerker) return;
 
     try {
+      // zefix_verified is owned by the zefix-lookup edge function - never written from here.
+      const { zefix_verified: _zefixVerified, ...editableFields } = editFormData;
+      const normalizedUid = normalizeUid(editFormData.uid_number ?? null);
       const payload = {
-        ...editFormData,
-        uid_number: normalizeUid(editFormData.uid_number ?? null),
+        ...editableFields,
+        uid_number: normalizedUid,
       };
       const { error } = await supabase
         .from('handwerker_profiles')
@@ -620,6 +645,14 @@ const HandwerkerApprovals = () => {
         .eq('id', editingHandwerker.id);
 
       if (error) throw error;
+
+      if (normalizedUid !== normalizeUid(editingHandwerker.uid_number)) {
+        try {
+          await syncZefixVerification(editingHandwerker.id);
+        } catch (zefixError) {
+          console.error('Zefix verification failed:', zefixError);
+        }
+      }
 
       toast({
         title: 'Profil aktualisiert',
@@ -1187,23 +1220,42 @@ const HandwerkerApprovals = () => {
 
               {/* Company Information */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold border-b pb-2">Firmeninformationen</h3>
+                <div className="flex items-center gap-2 border-b pb-2">
+                  <h3 className="text-lg font-semibold">Firmeninformationen</h3>
+                  <VerifiedSwissBadge
+                    zefixVerified={!!editFormData.zefix_verified}
+                    uid={editFormData.uid_number}
+                  />
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="company_name">Firmenname</Label>
-                    <Input
+                    <ZefixCompanyNameInput
                       id="company_name"
                       value={editFormData.company_name || ''}
-                      onChange={(e) => setEditFormData({ ...editFormData, company_name: e.target.value })}
+                      onChange={(company_name) => setEditFormData({ ...editFormData, company_name })}
+                      onSelect={applyZefixCompany}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Handelsregister-Vorschläge; Aktualisieren-Symbol lädt UID und Adresse nach.
+                    </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="company_legal_form">Rechtsform</Label>
-                    <Input
-                      id="company_legal_form"
+                    <Label>Rechtsform</Label>
+                    <Select
                       value={editFormData.company_legal_form || ''}
-                      onChange={(e) => setEditFormData({ ...editFormData, company_legal_form: e.target.value })}
-                    />
+                      onValueChange={(v) => setEditFormData({ ...editFormData, company_legal_form: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Rechtsform wählen" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LEGAL_FORM_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="uid_number">UID-Nummer</Label>

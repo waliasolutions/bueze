@@ -505,6 +505,27 @@ import {
 | SMTP2GO | Email delivery | `SMTP2GO_API_KEY` |
 | Mapbox | Location maps | Public token in code |
 | Google Indexing | SEO indexing | Service account in secrets |
+| Zefix | Swiss Commercial Registry lookup | `ZEFIX_USERNAME`, `ZEFIX_PASSWORD` |
+
+### Zefix (Handelsregister)
+
+All Zefix traffic goes through the `zefix-lookup` edge function — the API credentials
+never reach the browser.
+
+| Action | Auth | Purpose |
+|--------|------|---------|
+| `search` | public | Company-name or UID search (registration runs before the account exists) |
+| `detail` | public | Full record for one UID |
+| `verify` | owner or admin | Re-reads the profile's `uid_number`, resolves it at Zefix and writes `zefix_verified` / `zefix_data` |
+
+`zefix_verified` and `zefix_data` are written **only** by the edge function, so a client
+can never mark itself as verified. Every save that changes `uid_number` (registration,
+handwerker profile editor, both admin editors) triggers a `verify` call.
+
+UI: `ZefixCompanyNameInput` is the company-name field everywhere. Typing suggests
+matching companies; the refresh button re-runs the lookup for an already-filled name
+and applies a unique match directly, which is how an existing profile pulls in a
+missing UID. Selecting a match fills name, legal form, UID and address in one step.
 
 ---
 

@@ -11,9 +11,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { SWISS_CANTONS } from '@/config/cantons';
+import { LEGAL_FORM_OPTIONS } from '@/config/legalForms';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { Loader2, ChevronDown } from 'lucide-react';
+import { ZefixCompanyNameInput } from '@/components/ZefixCompanyNameInput';
+import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
+import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from '@/lib/zefix';
 
 interface HandwerkerEditData {
   id: string;
@@ -22,7 +26,9 @@ interface HandwerkerEditData {
   email: string | null;
   phone_number: string | null;
   company_name: string | null;
+  company_legal_form: string | null;
   uid_number: string | null;
+  zefix_verified?: boolean | null;
   business_address: string | null;
   business_zip: string | null;
   business_city: string | null;
@@ -58,6 +64,23 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
     setForm({ ...activeForm, [field]: value || null });
   };
 
+  /** Fill the company fields from a Handelsregister record. */
+  const applyZefixCompany = (company: ZefixCompany) => {
+    if (!activeForm) return;
+    const fields = mapZefixCompanyToProfile(company);
+
+    setForm({
+      ...activeForm,
+      company_name: fields.company_name,
+      company_legal_form: fields.company_legal_form ?? activeForm.company_legal_form,
+      uid_number: fields.uid_number ?? activeForm.uid_number,
+      business_address: fields.business_address ?? activeForm.business_address,
+      business_zip: fields.business_zip ?? activeForm.business_zip,
+      business_city: fields.business_city ?? activeForm.business_city,
+      business_canton: fields.business_canton ?? activeForm.business_canton,
+    });
+  };
+
   const toggleCategory = (cat: string) => {
     if (!activeForm) return;
     const cats = activeForm.categories || [];
@@ -91,6 +114,7 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
           email: activeForm.email,
           phone_number: activeForm.phone_number,
           company_name: activeForm.company_name,
+          company_legal_form: activeForm.company_legal_form,
           uid_number: normalizeUid(activeForm.uid_number),
           business_address: activeForm.business_address,
           business_zip: activeForm.business_zip,
@@ -102,7 +126,16 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
 
       if (error) throw error;
 
-      
+      // Re-check the UID against the Handelsregister when it changed.
+      // The edge function owns zefix_verified / zefix_data.
+      if (normalizeUid(activeForm.uid_number) !== normalizeUid(handwerker?.uid_number)) {
+        try {
+          await syncZefixVerification(activeForm.id);
+        } catch (zefixError) {
+          console.error('Zefix verification failed:', zefixError);
+        }
+      }
+
       onSaved();
       onOpenChange(false);
       setForm(null);
@@ -147,8 +180,32 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
             </div>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="edit-company">Firma</Label>
-            <Input id="edit-company" value={activeForm.company_name || ''} onChange={(e) => updateField('company_name', e.target.value)} />
+            <div className="flex items-center gap-2">
+              <Label htmlFor="edit-company">Firma</Label>
+              <VerifiedSwissBadge zefixVerified={!!activeForm.zefix_verified} uid={activeForm.uid_number} />
+            </div>
+            <ZefixCompanyNameInput
+              id="edit-company"
+              value={activeForm.company_name || ''}
+              onChange={(v) => updateField('company_name', v)}
+              onSelect={applyZefixCompany}
+            />
+            <p className="text-xs text-muted-foreground">
+              Handelsregister-Vorschläge; Aktualisieren-Symbol lädt UID und Adresse nach.
+            </p>
+          </div>
+          <div className="space-y-1">
+            <Label>Rechtsform</Label>
+            <Select value={activeForm.company_legal_form || ''} onValueChange={(v) => updateField('company_legal_form', v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Rechtsform wählen" />
+              </SelectTrigger>
+              <SelectContent>
+                {LEGAL_FORM_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1">
             <Label htmlFor="edit-uid">UID-Nummer</Label>
