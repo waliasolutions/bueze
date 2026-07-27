@@ -37,6 +37,7 @@ export function ZefixCompanyNameInput({
   value,
   onChange,
   onSelect,
+  onBusyChange,
   id,
   placeholder = 'z.B. Muster Handwerk GmbH',
   disabled = false,
