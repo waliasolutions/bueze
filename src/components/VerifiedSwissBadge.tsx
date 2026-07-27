@@ -26,13 +26,13 @@ export function VerifiedSwissBadge({
 
   const iconSize = size === 'sm' ? 'h-3 w-3' : 'h-4 w-4';
   
-  // Zefix-verified gets special treatment (red Swiss badge)
+  // Zefix-verified gets special treatment (green Swiss badge)
   if (zefixVerified) {
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Badge className="bg-red-600 hover:bg-red-700 text-white gap-1 cursor-help">
+            <Badge className="bg-green-600 hover:bg-green-700 text-white gap-1 cursor-help">
               <Shield className={iconSize} />
               {showLabel && <span>Verifiziert</span>}
             </Badge>
