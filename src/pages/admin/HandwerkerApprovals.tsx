@@ -927,7 +927,7 @@ const HandwerkerApprovals = () => {
                                 </div>
                                 <div>
                                   <span className="text-sm font-medium text-muted-foreground">UID-Nummer:</span>
-                                  <p className="text-sm font-mono">{handwerker.uid_number || 'Nicht angegeben'}</p>
+                                  <p className="text-sm font-mono">{formatUidForDisplay(handwerker.uid_number) || 'Nicht angegeben'}</p>
                                 </div>
                                 <div>
                                   <span className="text-sm font-medium text-muted-foreground">MWST-Nummer:</span>
