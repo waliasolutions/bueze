@@ -63,17 +63,72 @@ async function invokeZefix<T>(body: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+/**
+ * In-memory cache — same query/UID inside the same tab loads instantly and
+ * without a spinner flicker. TTL is short enough that Zefix edits still get
+ * picked up on the next session. SSOT for browser-side Zefix caching.
+ */
+const CACHE_TTL_MS = 10 * 60 * 1000;
+const searchCache = new Map<string, { at: number; value: ZefixCompany[] }>();
+const detailCache = new Map<string, { at: number; value: ZefixCompany | null }>();
+
+const searchKey = (query: string, limit?: number) =>
+  `${query.trim().toLowerCase()}::${limit ?? ''}`;
+
+const uidDigitsOnly = (uid: string) => uid.replace(/\D/g, '');
+
+function readCache<T>(map: Map<string, { at: number; value: T }>, key: string): T | undefined {
+  const hit = map.get(key);
+  if (!hit) return undefined;
+  if (Date.now() - hit.at > CACHE_TTL_MS) {
+    map.delete(key);
+    return undefined;
+  }
+  return hit.value;
+}
+
+function writeCache<T>(map: Map<string, { at: number; value: T }>, key: string, value: T) {
+  map.set(key, { at: Date.now(), value });
+}
+
+/** Preseed the detail cache with any full record we already hold (e.g. from a search hit). */
+function primeDetailFromRecord(company: ZefixCompany | null | undefined) {
+  if (!company?.uid) return;
+  const key = uidDigitsOnly(company.uid);
+  if (!key) return;
+  // Only prime when we have enough to answer a detail request — otherwise let
+  // the detail call happen so the address gets filled in.
+  if (company.street || company.zip || company.city) {
+    writeCache(detailCache, key, company);
+  }
+}
+
 /** Search by company name or UID. Queries shorter than 3 characters are ignored. */
 export async function searchZefixCompanies(query: string, limit?: number): Promise<ZefixCompany[]> {
   if (query.trim().length < 3) return [];
+  const key = searchKey(query, limit);
+  const cached = readCache(searchCache, key);
+  if (cached) return cached;
+
   const data = await invokeZefix<{ companies: ZefixCompany[] }>({ action: 'search', query, limit });
-  return data.companies ?? [];
+  const companies = data.companies ?? [];
+  writeCache(searchCache, key, companies);
+  companies.forEach(primeDetailFromRecord);
+  return companies;
 }
 
 /** Full record for one UID, or null when Zefix does not know it. */
 export async function getZefixCompany(uid: string): Promise<ZefixCompany | null> {
+  const key = uidDigitsOnly(uid);
+  if (key) {
+    const cached = readCache(detailCache, key);
+    if (cached !== undefined) return cached;
+  }
+
   const data = await invokeZefix<{ company: ZefixCompany | null }>({ action: 'detail', uid });
-  return data.company ?? null;
+  const company = data.company ?? null;
+  if (key) writeCache(detailCache, key, company);
+  return company;
 }
 
 /**
