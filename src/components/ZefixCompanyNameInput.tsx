@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Check } from 'lucide-react';
+import {
+  Loader2,
+  Check,
+  Search,
+  Building2,
+  RefreshCw,
+  AlertCircle,
+  SearchX,
+  ShieldCheck,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getZefixCompany, searchZefixCompanies, type ZefixCompany } from '@/lib/zefix';
 
@@ -26,12 +35,26 @@ const MIN_QUERY_LENGTH = 3;
 const DEBOUNCE_MS = 500;
 const SUCCESS_CHIP_MS = 3000;
 
+/** Highlight matching substring in a suggestion. */
+function highlightMatch(text: string, query: string) {
+  const q = query.trim();
+  if (!q) return text;
+  const idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark className="bg-primary/15 text-foreground rounded-sm px-0.5">
+        {text.slice(idx, idx + q.length)}
+      </mark>
+      {text.slice(idx + q.length)}
+    </>
+  );
+}
+
 /**
  * Company name field with Handelsregister (Zefix) autocomplete — SSOT UI for
- * every company lookup. Typing suggests matching companies; a subtle text link
- * lets the user re-run the lookup manually (e.g. to pull in a missing UID).
- *
- * Used by registration, the handwerker profile editor and both admin editors.
+ * every company lookup.
  */
 export function ZefixCompanyNameInput({
   value,
@@ -50,9 +73,9 @@ export function ZefixCompanyNameInput({
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [justApplied, setJustApplied] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
 
-  // Only values the user typed trigger suggestions — a value written back by
-  // onSelect (or loaded from the profile) must not reopen the dropdown.
+  // Only values the user typed trigger suggestions.
   const typedValue = useRef<string | null>(null);
   // Guards against a slow response overwriting the results of a newer query.
   const latestQuery = useRef('');
@@ -64,9 +87,6 @@ export function ZefixCompanyNameInput({
     };
   }, []);
 
-  // Bubble busy state up so callers can skeleton/disable the Rechtsform + UID
-  // fields while Zefix is filling them in. Runs a stable microtask to avoid
-  // "cannot update a component while rendering" warnings from consumers.
   useEffect(() => {
     onBusyChange?.(isBusy);
   }, [isBusy, onBusyChange]);
@@ -79,24 +99,20 @@ export function ZefixCompanyNameInput({
 
   const apply = useCallback(
     async (company: ZefixCompany) => {
-      // Close dropdown and stop treating current value as "typed" immediately.
       setResults([]);
       setNotFound(false);
       setError(null);
       typedValue.current = null;
 
-      // Optimistic: hand the caller what we already have so the form fills now.
       onSelect(company);
       flashSuccess();
 
-      // Silently upgrade with the full record (address) in the background.
       if (company.uid && !company.street) {
         try {
           const full = await getZefixCompany(company.uid);
           if (full) onSelect(full);
         } catch {
-          // The optimistic apply already succeeded — a failed detail fetch is
-          // not worth surfacing an error for.
+          // optimistic apply already succeeded
         }
       }
     },
@@ -113,7 +129,6 @@ export function ZefixCompanyNameInput({
         const companies = await searchZefixCompanies(query);
         if (latestQuery.current !== query) return;
 
-        // An explicit lookup with exactly one hit needs no picking.
         if (manual && companies.length === 1) {
           await apply(companies[0]);
           return;
@@ -123,8 +138,6 @@ export function ZefixCompanyNameInput({
         setNotFound(companies.length === 0);
       } catch (err) {
         if (latestQuery.current !== query) return;
-        // Don't wipe the previous results on a transient error — keep them
-        // visible so the dropdown doesn't collapse.
         setError(err instanceof Error ? err.message : 'Suche fehlgeschlagen');
       } finally {
         if (latestQuery.current === query) setIsBusy(false);
@@ -135,9 +148,6 @@ export function ZefixCompanyNameInput({
 
   useEffect(() => {
     const trimmed = value.trim();
-
-    // Only auto-search values the user typed. Don't clear the current dropdown
-    // between keystrokes — a stale list under the spinner beats a flicker.
     if (typedValue.current !== value) return;
 
     if (trimmed.length < MIN_QUERY_LENGTH) {
@@ -157,97 +167,202 @@ export function ZefixCompanyNameInput({
     onChange(next);
   };
 
-  const canLookUp = value.trim().length >= MIN_QUERY_LENGTH;
-  const showManualLink =
-    !disabled && canLookUp && results.length === 0 && !isBusy && typedValue.current === null;
+  const trimmed = value.trim();
+  const canLookUp = trimmed.length >= MIN_QUERY_LENGTH;
+  const charsMissing = Math.max(0, MIN_QUERY_LENGTH - trimmed.length);
+  const showResults = results.length > 0;
+  const showSkeleton = isBusy && results.length === 0 && !error;
+
+  const helperText = useMemo(() => {
+    if (justApplied || error || notFound || isBusy) return null;
+    if (!trimmed) {
+      return 'Firmenname eingeben — Vorschläge aus dem Schweizerischen Handelsregister erscheinen automatisch.';
+    }
+    if (charsMissing > 0) {
+      return `Noch ${charsMissing} Zeichen für die Handelsregister-Suche…`;
+    }
+    return null;
+  }, [justApplied, error, notFound, isBusy, trimmed, charsMissing]);
 
   return (
     <div className={className}>
-      <div className="relative">
+      {/* Input with leading search icon + trailing status */}
+      <div
+        className={cn(
+          'relative rounded-md transition-shadow',
+          isFocused && 'ring-2 ring-ring/40 ring-offset-0',
+        )}
+      >
+        <Search
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          aria-hidden
+        />
         <Input
           id={id}
           value={value}
           onChange={(e) => handleChange(e.target.value)}
-          onBlur={onBlur}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            setIsFocused(false);
+            onBlur?.();
+          }}
           placeholder={placeholder}
           disabled={disabled}
           autoComplete="off"
-          className={cn('pr-10', inputClassName)}
+          aria-busy={isBusy}
+          aria-describedby={id ? `${id}-hint` : undefined}
+          className={cn('pl-9 pr-10', inputClassName)}
         />
-        {isBusy ? (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-        ) : justApplied ? (
-          <Check className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-600" />
-        ) : null}
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          {isBusy ? (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="Suche läuft" />
+          ) : justApplied ? (
+            <Check className="h-4 w-4 text-emerald-600" aria-label="Übernommen" />
+          ) : null}
+        </div>
       </div>
 
-      <div className="min-h-[1.25rem] mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+      {/* Status / helper row */}
+      <div
+        id={id ? `${id}-hint` : undefined}
+        className="min-h-[1.5rem] mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1"
+      >
         {justApplied && (
           <Badge
             variant="outline"
             className="border-emerald-200 bg-emerald-50 text-emerald-700 gap-1"
           >
-            <Check className="h-3 w-3" />
+            <ShieldCheck className="h-3 w-3" />
             Aus Handelsregister übernommen
           </Badge>
         )}
 
-        {showManualLink && !justApplied && (
+        {isBusy && !justApplied && (
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Handelsregister wird abgefragt…
+          </span>
+        )}
+
+        {!isBusy && !justApplied && canLookUp && results.length === 0 && !notFound && !error && typedValue.current === null && (
           <button
             type="button"
-            onClick={() => runSearch(value.trim(), { manual: true })}
-            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            onClick={() => runSearch(trimmed, { manual: true })}
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline"
           >
+            <RefreshCw className="h-3 w-3" />
             Handelsregister neu abfragen
           </button>
         )}
 
         {error && (
-          <span className="flex flex-wrap items-center gap-2">
-            <p className="text-sm text-destructive">
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-sm text-destructive">
+              <AlertCircle className="h-3.5 w-3.5" />
               Handelsregister nicht erreichbar — {error}
-            </p>
+            </span>
             <button
               type="button"
-              onClick={() => runSearch(value.trim(), { manual: true })}
-              disabled={isBusy || value.trim().length < MIN_QUERY_LENGTH}
-              className="text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+              onClick={() => runSearch(trimmed, { manual: true })}
+              disabled={isBusy || !canLookUp}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
             >
+              <RefreshCw className="h-3 w-3" />
               Erneut versuchen
             </button>
           </span>
         )}
 
         {notFound && !error && (
-          <p className="text-sm text-muted-foreground">
-            Kein Treffer im Handelsregister — bitte andere Schreibweise versuchen (z.&nbsp;B. mit Bindestrich) oder Daten manuell erfassen.
-          </p>
+          <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
+            <SearchX className="h-4 w-4" />
+            Kein Treffer — andere Schreibweise versuchen (z.&nbsp;B. mit Bindestrich) oder Daten manuell erfassen.
+          </span>
+        )}
+
+        {helperText && (
+          <span className="text-xs text-muted-foreground">{helperText}</span>
         )}
       </div>
 
-      {results.length > 0 && (
-        <ul className="mt-2 max-h-64 divide-y overflow-y-auto rounded-md border bg-background shadow-sm">
-          {results.map((company) => (
-            <li key={company.ehraid ?? company.uid ?? company.name}>
-              <button
-                type="button"
-                onClick={() => apply(company)}
-                disabled={isBusy}
-                className="w-full px-3 py-2 text-left transition-colors hover:bg-muted disabled:opacity-60"
-              >
-                <span className="flex items-center gap-2">
-                  <span className="text-sm font-medium">{company.name}</span>
-                  {!company.isActive && (
-                    <Badge variant="outline" className="text-xs">Gelöscht</Badge>
-                  )}
+      {/* Suggestions dropdown */}
+      {(showResults || showSkeleton) && (
+        <div className="relative mt-2">
+          <div className="overflow-hidden rounded-lg border bg-popover shadow-lg">
+            <div className="flex items-center justify-between border-b bg-muted/40 px-3 py-1.5">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Building2 className="h-3.5 w-3.5" />
+                Schweizerisches Handelsregister
+              </span>
+              {showResults && (
+                <span className="text-xs text-muted-foreground">
+                  {results.length} Treffer
                 </span>
-                <span className="block text-xs text-muted-foreground">
-                  {[company.uid, company.legalSeat].filter(Boolean).join(' · ')}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+              )}
+            </div>
+
+            {showSkeleton ? (
+              <ul className="divide-y">
+                {[0, 1, 2].map((i) => (
+                  <li key={i} className="flex items-center gap-3 px-3 py-2.5">
+                    <div className="h-8 w-8 shrink-0 rounded-md bg-muted animate-pulse" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+                      <div className="h-2.5 w-1/2 rounded bg-muted/70 animate-pulse" />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <ul className="max-h-72 divide-y overflow-y-auto">
+                {results.map((company) => (
+                  <li key={company.ehraid ?? company.uid ?? company.name}>
+                    <button
+                      type="button"
+                      onClick={() => apply(company)}
+                      disabled={isBusy}
+                      className="group flex w-full items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
+                    >
+                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary/15">
+                        <Building2 className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <span className="truncate text-sm font-medium">
+                            {highlightMatch(company.name, trimmed)}
+                          </span>
+                          {!company.isActive && (
+                            <Badge variant="outline" className="text-[10px] font-normal">
+                              Gelöscht
+                            </Badge>
+                          )}
+                        </span>
+                        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                          {company.uid && (
+                            <span className="font-mono">{company.uid}</span>
+                          )}
+                          {company.legalSeat && (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+                              {company.legalSeat}
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <span className="mt-1 hidden text-[10px] font-medium uppercase tracking-wide text-primary opacity-0 transition-opacity group-hover:opacity-100 sm:block">
+                        Übernehmen
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="border-t bg-muted/30 px-3 py-1.5 text-[10px] text-muted-foreground">
+              Daten live aus zefix.ch — Auswahl übernimmt Firma, UID und Adresse.
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
