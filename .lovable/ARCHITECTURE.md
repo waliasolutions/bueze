@@ -522,6 +522,11 @@ never reach the browser.
 can never mark itself as verified. Every save that changes `uid_number` (registration,
 handwerker profile editor, both admin editors) triggers a `verify` call.
 
+UI: `ZefixCompanyNameInput` is the company-name field everywhere. Typing suggests
+matching companies; the refresh button re-runs the lookup for an already-filled name
+and applies a unique match directly, which is how an existing profile pulls in a
+missing UID. Selecting a match fills name, legal form, UID and address in one step.
+
 ---
 
 ## 14. Performance Optimizations

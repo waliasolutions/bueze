@@ -31,7 +31,7 @@ import { ServiceRadius, buildServiceAreas, parseServiceAreas } from "@/lib/servi
 import { useMultiStepForm } from "@/hooks/useMultiStepForm";
 import { validatePassword, PASSWORD_MIN_LENGTH, normalizeUid } from "@/lib/validationHelpers";
 import { LEGAL_FORM_OPTIONS, getLegalFormLabel } from "@/config/legalForms";
-import { ZefixCompanySearch } from "@/components/ZefixCompanySearch";
+import { ZefixCompanyNameInput } from "@/components/ZefixCompanyNameInput";
 import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from "@/lib/zefix";
 import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
 
@@ -884,22 +884,19 @@ const HandwerkerOnboarding = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <ZefixCompanySearch
-                      onSelect={applyZefixCompany}
-                      inputClassName="h-12 text-base"
-                      className="rounded-lg border bg-muted/30 p-4"
-                    />
-
                     <div className="space-y-2">
                       <Label htmlFor="companyName" className="text-base font-medium">Firmenname *</Label>
-                      <Input
+                      <ZefixCompanyNameInput
                         id="companyName"
                         value={formData.companyName}
-                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                        onChange={(companyName) => setFormData({ ...formData, companyName })}
+                        onSelect={applyZefixCompany}
                         onBlur={() => markTouched('companyName')}
-                        placeholder="z.B. Muster Handwerk GmbH"
-                        className="h-12 text-base"
+                        inputClassName="h-12 text-base"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Vorschläge kommen direkt aus dem Schweizerischen Handelsregister.
+                      </p>
                       {shouldShowError('companyName') && (
                         <p className="text-sm text-destructive flex items-center gap-2">
                           <AlertCircle className="h-4 w-4" />

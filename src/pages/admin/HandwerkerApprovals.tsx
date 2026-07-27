@@ -24,7 +24,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { getCantonLabel } from '@/config/cantons';
 import { LEGAL_FORM_OPTIONS } from '@/config/legalForms';
-import { ZefixCompanySearch } from '@/components/ZefixCompanySearch';
+import { ZefixCompanyNameInput } from '@/components/ZefixCompanyNameInput';
 import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
 import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from '@/lib/zefix';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
@@ -1228,19 +1228,18 @@ const HandwerkerApprovals = () => {
                   />
                 </div>
 
-                <ZefixCompanySearch
-                  onSelect={applyZefixCompany}
-                  className="rounded-md border bg-muted/30 p-3"
-                />
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="company_name">Firmenname</Label>
-                    <Input
+                    <ZefixCompanyNameInput
                       id="company_name"
                       value={editFormData.company_name || ''}
-                      onChange={(e) => setEditFormData({ ...editFormData, company_name: e.target.value })}
+                      onChange={(company_name) => setEditFormData({ ...editFormData, company_name })}
+                      onSelect={applyZefixCompany}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Handelsregister-Vorschläge; Aktualisieren-Symbol lädt UID und Adresse nach.
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>Rechtsform</Label>

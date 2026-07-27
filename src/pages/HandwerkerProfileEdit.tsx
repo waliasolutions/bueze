@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { sanitizePhoneInput } from '@/lib/displayFormatters';
 import { normalizeUid } from '@/lib/validationHelpers';
 import { LEGAL_FORM_OPTIONS } from '@/config/legalForms';
-import { ZefixCompanySearch } from '@/components/ZefixCompanySearch';
+import { ZefixCompanyNameInput } from '@/components/ZefixCompanyNameInput';
 import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
 import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from '@/lib/zefix';
 import { useNavigate } from 'react-router-dom';
@@ -1092,19 +1092,18 @@ const HandwerkerProfileEdit = () => {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        <ZefixCompanySearch
-                          onSelect={applyZefixCompany}
-                          className="rounded-lg border bg-muted/30 p-4"
-                        />
-
                         <div className="space-y-2">
                           <Label htmlFor="companyName">Firmenname</Label>
-                          <Input
+                          <ZefixCompanyNameInput
                             id="companyName"
                             value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
-                            placeholder="Muster Handwerk GmbH"
+                            onChange={setCompanyName}
+                            onSelect={applyZefixCompany}
                           />
+                          <p className="text-xs text-muted-foreground">
+                            Vorschläge aus dem Handelsregister. Mit dem Aktualisieren-Symbol
+                            werden UID und Adresse zur erfassten Firma nachgeladen.
+                          </p>
                         </div>
                         
                         <div className="space-y-2">

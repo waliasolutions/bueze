@@ -15,7 +15,7 @@ import { LEGAL_FORM_OPTIONS } from '@/config/legalForms';
 import { majorCategories } from '@/config/majorCategories';
 import { subcategoryLabels } from '@/config/subcategoryLabels';
 import { Loader2, ChevronDown } from 'lucide-react';
-import { ZefixCompanySearch } from '@/components/ZefixCompanySearch';
+import { ZefixCompanyNameInput } from '@/components/ZefixCompanyNameInput';
 import { VerifiedSwissBadge } from '@/components/VerifiedSwissBadge';
 import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from '@/lib/zefix';
 
@@ -179,17 +179,20 @@ export function HandwerkerEditDialog({ handwerker, open, onOpenChange, onSaved }
               <Input id="edit-last-name" value={activeForm.last_name || ''} onChange={(e) => updateField('last_name', e.target.value)} />
             </div>
           </div>
-          <ZefixCompanySearch
-            onSelect={applyZefixCompany}
-            className="rounded-md border bg-muted/30 p-3"
-          />
-
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Label htmlFor="edit-company">Firma</Label>
               <VerifiedSwissBadge zefixVerified={!!activeForm.zefix_verified} uid={activeForm.uid_number} />
             </div>
-            <Input id="edit-company" value={activeForm.company_name || ''} onChange={(e) => updateField('company_name', e.target.value)} />
+            <ZefixCompanyNameInput
+              id="edit-company"
+              value={activeForm.company_name || ''}
+              onChange={(v) => updateField('company_name', v)}
+              onSelect={applyZefixCompany}
+            />
+            <p className="text-xs text-muted-foreground">
+              Handelsregister-Vorschläge; Aktualisieren-Symbol lädt UID und Adresse nach.
+            </p>
           </div>
           <div className="space-y-1">
             <Label>Rechtsform</Label>
