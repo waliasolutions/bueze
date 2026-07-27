@@ -1237,6 +1237,7 @@ const HandwerkerApprovals = () => {
                       value={editFormData.company_name || ''}
                       onChange={(company_name) => setEditFormData({ ...editFormData, company_name })}
                       onSelect={applyZefixCompany}
+                      onBusyChange={setZefixBusy}
                     />
                     <p className="text-xs text-muted-foreground">
                       Handelsregister-Vorschläge; Aktualisieren-Symbol lädt UID und Adresse nach.
@@ -1247,6 +1248,7 @@ const HandwerkerApprovals = () => {
                     <Select
                       value={editFormData.company_legal_form || ''}
                       onValueChange={(v) => setEditFormData({ ...editFormData, company_legal_form: v })}
+                      disabled={zefixBusy}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Rechtsform wählen" />
@@ -1264,6 +1266,7 @@ const HandwerkerApprovals = () => {
                       id="uid_number"
                       value={editFormData.uid_number || ''}
                       onChange={(e) => setEditFormData({ ...editFormData, uid_number: e.target.value })}
+                      disabled={zefixBusy}
                     />
                   </div>
                   <div className="space-y-2">
