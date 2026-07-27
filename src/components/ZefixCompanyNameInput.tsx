@@ -202,7 +202,21 @@ export function ZefixCompanyNameInput({
           </button>
         )}
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <span className="flex flex-wrap items-center gap-2">
+            <p className="text-sm text-destructive">
+              Handelsregister nicht erreichbar — {error}
+            </p>
+            <button
+              type="button"
+              onClick={() => runSearch(value.trim(), { manual: true })}
+              disabled={isBusy || value.trim().length < MIN_QUERY_LENGTH}
+              className="text-xs font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+            >
+              Erneut versuchen
+            </button>
+          </span>
+        )}
 
         {notFound && !error && (
           <p className="text-sm text-muted-foreground">
