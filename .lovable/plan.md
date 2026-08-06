@@ -1,53 +1,37 @@
-## Rechtsform doubling — recommendation
+# Fix: Profil-Bearbeiten "closes by itself" when uploading a logo
 
-On the Zefix side the **legal name always contains the Rechtsform** (e.g. "Muster Bau GmbH"), and the Rechtsform is a separate structured column we need for filtering, invoicing and legal display. So the "double" appearance is expected — it mirrors the Handelsregister itself and matches how the Impressum / admin lists already read the two fields independently. Recommendation: **leave the company name untouched, keep Rechtsform as its own field**. Stripping the suffix from the name would diverge from the official HR entry and break downstream displays that assume the full legal name. No change required here unless you want a purely cosmetic tweak.
+Reported by Edgar Mkrtchyan (Art Multiservices, MKRTCHYAN — profile is `approved`, `logo_url` is still empty, so no logo ever landed). The page he uses is `src/pages/HandwerkerProfileEdit.tsx`.
 
-## Smoother Zefix UX — plan
+## What the code review shows
 
-### 1. In-memory cache for Zefix lookups (SSOT: `src/lib/zefix.ts`)
-- Add a small module-level `Map` cache with a TTL (e.g. 10 min):
-  - `searchCache` keyed by normalized query
-  - `detailCache` keyed by 9-digit UID
-- `searchZefixCompanies` and `getZefixCompany` return from cache synchronously when fresh, otherwise fetch and populate.
-- Preseed `detailCache` with any full record returned by search or `apply()` so selecting a hit that already carries an address never fires a second request.
-- No changes to the edge function or DB.
+Three confirmed weaknesses on that page, all of which look to a user like "the page closes without reason":
 
-### 2. Stronger UID formatting & display safety
-- Extend `src/lib/validationHelpers.ts`:
-  - Add `formatUidForDisplay(value)` — returns the canonical `CHE-123.456.789` when 9 digits are present, otherwise returns the raw trimmed value (never `null`, never crashes on partial input).
-- Route every UID render through it. Concrete sites to update (read-only surfaces):
-  - `src/pages/HandwerkerOnboarding.tsx` review step (line ~1101)
-  - `src/components/ProfilePreview.tsx`
-  - `src/pages/HandwerkerProfileEdit.tsx` (display cell)
-  - `src/pages/admin/HandwerkerApprovals.tsx`, `HandwerkerManagement.tsx`, `admin/HandwerkerEditDialog.tsx`
-  - `src/components/VerifiedSwissBadge.tsx`
-- The input field keeps `normalizeUid` on write (already SSOT).
+1. **Blank screen instead of an error.** If the initial load throws (mobile network hiccup, slow request), the catch block only fires a toast and leaves `profile` at `null`; the component then returns `null` — a fully empty page.
+2. **Hard redirect on any auth hiccup.** The page calls `supabase.auth.getUser()` (a network call) once on mount and redirects to `/auth` as soon as it returns no user. On iOS, opening the photo picker suspends/reloads the tab; coming back with a not-yet-refreshed session sends the user off the page instantly.
+3. **Logo/portfolio/document uploads bypass the shared upload pipeline.** `handleLogoUpload` and `handleImageUpload` are hand-rolled: raw original file, no compression, hard 5MB reject, `fileExt` taken from the filename. An iPhone photo (5–15MB, HEIC) therefore either gets rejected or is pushed uncompressed over a mobile connection, which is exactly where Safari kills the tab. The project already has an SSOT for this (`compressToWebP` + the `uploadLeadMedia` pattern in `src/lib/fileUpload.ts`), used for lead media and proposal attachments but not here.
 
-### 3. Loading skeleton + input gating during Zefix fetch
-- In `ZefixCompanyNameInput`: expose an `isBusy` state upward via a new optional `onBusyChange?: (busy: boolean) => void` prop **or** a shared `useZefixBusy` context — pick the prop, it's the simplest and matches existing patterns.
-- In `HandwerkerOnboarding.tsx` (and the two edit dialogs that use the same component):
-  - Track `zefixBusy` local state.
-  - While busy: disable the **Rechtsform Select** and **UID Input**, and swap their contents for a `Skeleton` (shadcn). Company name field stays interactive (that's where the user types).
-  - Guarantees the user cannot fight the auto-fill mid-flight, and eliminates the visible "value appears, then re-appears" flicker.
+## Plan
 
-### 4. Inline error + retry on Zefix failure
-- `ZefixCompanyNameInput` already surfaces `error`. Upgrade the empty-state row to render:
-  - Error text (`text-destructive`) with a clear message ("Handelsregister nicht erreichbar")
-  - A **"Erneut versuchen"** button that re-invokes `runSearch(value, { manual: true })` — same code path as the existing manual link, just presented as a button when in error state.
-- Distinguish transient network errors from "no result" (already handled) so we never show "Kein Treffer" on a failure.
+### 1. Confirm the failure on the real page (before changing behaviour)
+Drive the profile-edit page in a headless browser with the craftsman's session, upload an oversized iPhone-style image, and capture console + network output. This tells us which of the three paths actually fired for him instead of guessing.
 
-### 5. QA
-- Manual: type "Swisscom" → select → confirm no second spinner, Rechtsform+UID skeleton briefly appears, values fill once, no flicker.
-- Manual: block network, type a query → error line + Erneut-versuchen button, click → recovers.
-- Manual: search same term twice within 10 min → second call is instant (cache hit, no spinner).
-- Existing `src/lib/zefix.test.ts` continues to pass; add a small cache-hit test.
+### 2. Route logo uploads through the existing upload SSOT
+Extend `src/lib/fileUpload.ts` with one `uploadHandwerkerImage(file, userId, kind)` function that reuses the existing validate → `compressToWebP` → upload → publicUrl flow (bucket `handwerker-portfolio`, `contentType` set, deterministic `logo.webp` path with `upsert: true` for the logo, timestamped path for portfolio images). Then delete the duplicated inline logic in `handleLogoUpload` and `handleImageUpload` and call the shared helper. Same helper for the onboarding page if it duplicates the logic.
 
-### Files touched
-- `src/lib/zefix.ts` (cache)
-- `src/lib/validationHelpers.ts` (`formatUidForDisplay`)
-- `src/components/ZefixCompanyNameInput.tsx` (busy hoist, retry button)
-- `src/pages/HandwerkerOnboarding.tsx`, `src/pages/HandwerkerProfileEdit.tsx`, `src/components/admin/HandwerkerEditDialog.tsx` (skeleton + disable while busy)
-- Read-only UID display sites listed above (formatter swap)
-- `src/lib/zefix.test.ts` (cache test)
+Effect: a 12MB iPhone photo becomes a ~150KB WebP before it ever hits the network — no size rejection, no memory spike, no HEIC extension problems.
 
-No DB, no edge function, no design-token changes.
+### 3. No more blank page, no more surprise redirect
+- On load failure: keep `profile` null but render an inline error card with a "Erneut versuchen" button instead of returning `null`.
+- Replace the mount-time `getUser()` gate with `getSession()` plus the existing deferred-role pattern, and only redirect to `/auth` when the session is genuinely absent — never on a network error.
+- Keep the upload button disabled while `uploading` is true and show progress, so a slow mobile upload does not look frozen.
+
+### 4. Verify
+Re-run the browser check: upload a large image, confirm the compressed logo appears, `logo_url` is written by autosave, and the page stays mounted. Confirm the load-error path renders the retry card instead of a blank screen.
+
+### 5. Reply to the craftsman
+Not automated — I will give you a short German/French text you can send once the fix is live.
+
+## Notes on scope (SSOT / DRY / YAGNI)
+- No new upload library, no new bucket, no new state machine: one shared function added to the file that already owns uploads, duplicated code removed.
+- No design changes to the page beyond the error card and the disabled/progress state on the upload button.
+- Document uploads keep using `DocumentManagementSection`; they are only touched if they duplicate the same inline upload code.
