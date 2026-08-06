@@ -35,6 +35,8 @@ import { cn } from '@/lib/utils';
 import { ServiceAreaSelector } from '@/components/ServiceAreaSelector';
 import { ServiceRadius, buildServiceAreas, parseServiceAreas } from '@/lib/serviceAreaHelpers';
 import { DocumentManagementSection } from '@/components/DocumentManagementSection';
+import { uploadHandwerkerImage, deleteHandwerkerImage } from '@/lib/fileUpload';
+import { explainProfileError, explainUploadError, type ExplainedError } from '@/lib/errorCategories';
 
 interface HandwerkerProfile {
   id: string;
