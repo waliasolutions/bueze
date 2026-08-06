@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, RefreshCw, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -221,9 +221,8 @@ export default function ErrorLog() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((row) => (
-                    <>
+                    <Fragment key={row.id}>
                       <TableRow
-                        key={row.id}
                         className="cursor-pointer"
                         onClick={() => setExpanded(expanded === row.id ? null : row.id)}
                       >
@@ -241,7 +240,7 @@ export default function ErrorLog() {
                         <TableCell className="text-sm break-words max-w-[280px]">{row.message}</TableCell>
                       </TableRow>
                       {expanded === row.id && (
-                        <TableRow key={`${row.id}-detail`}>
+                        <TableRow>
                           <TableCell colSpan={6} className="bg-muted/40">
                             <dl className="grid gap-2 text-sm sm:grid-cols-2">
                               <div className="min-w-0">
@@ -270,7 +269,7 @@ export default function ErrorLog() {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </TableBody>
               </Table>
