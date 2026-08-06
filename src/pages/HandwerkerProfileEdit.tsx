@@ -658,8 +658,44 @@ const HandwerkerProfileEdit = () => {
     );
   }
 
-  if (!profile) {
-    return null;
+  // Never render a blank page: always explain what happened and what to do.
+  if (loadError || !profile) {
+    const err = loadError ?? explainProfileError({ message: 'no data: Profil nicht verfügbar' });
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 pb-16">
+          <div className="container mx-auto px-4 max-w-2xl">
+            <Card>
+              <CardHeader>
+                <CardTitle>{err.title}</CardTitle>
+                <CardDescription>{err.cause}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm">{err.action}</p>
+
+                {err.detail && (
+                  <p className="text-xs text-muted-foreground break-words">
+                    Technische Meldung: {err.detail}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  {err.requiresLogin ? (
+                    <Button onClick={() => navigate('/auth')}>Neu anmelden</Button>
+                  ) : (
+                    <Button onClick={checkAccessAndLoadProfile}>Erneut laden</Button>
+                  )}
+                  <Button variant="outline" onClick={() => navigate('/handwerker-dashboard')}>
+                    Zur Übersicht
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
