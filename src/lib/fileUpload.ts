@@ -194,3 +194,105 @@ export async function uploadProposalAttachment(
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Handwerker profile images (logo + portfolio)
+// ---------------------------------------------------------------------------
+
+const HANDWERKER_BUCKET = 'handwerker-portfolio';
+const HANDWERKER_ALLOWED_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/heic',
+  'image/heif',
+];
+const HANDWERKER_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB after compression
+
+/**
+ * Upload a handwerker logo or portfolio image.
+ * SSOT: same validate → compress → upload → publicUrl flow as lead media.
+ * Images are compressed to WebP first, so large phone photos never hit the
+ * network at full size (memory + mobile-connection safety).
+ */
+export async function uploadHandwerkerImage(
+  file: File,
+  userId: string,
+  kind: 'logo' | 'portfolio',
+): Promise<UploadResult> {
+  try {
+    if (!HANDWERKER_ALLOWED_TYPES.includes(file.type)) {
+      throw new Error(
+        `Dateityp ${file.type || 'unbekannt'} nicht erlaubt. Bitte JPG, PNG oder WebP verwenden.`,
+      );
+    }
+
+    // Compress to WebP (GIF and undecodable files pass through unchanged).
+    const processed = await compressToWebP(file, 0.82, kind === 'logo' ? 800 : 1600);
+
+    if (processed.size > HANDWERKER_MAX_FILE_SIZE) {
+      throw new Error(
+        `Datei zu gross. Maximum: 5MB (aktuell: ${(processed.size / 1024 / 1024).toFixed(2)}MB)`,
+      );
+    }
+
+    const extension = processed.type === 'image/webp'
+      ? 'webp'
+      : (processed.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    const filePath = kind === 'logo'
+      ? `${userId}/logo.${extension}`
+      : `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+
+    logWithCorrelation('Uploading handwerker image', {
+      path: filePath,
+      kind,
+      originalSize: file.size,
+      processedSize: processed.size,
+      type: processed.type,
+    });
+
+    const { error } = await supabase.storage
+      .from(HANDWERKER_BUCKET)
+      .upload(filePath, processed, {
+        cacheControl: '3600',
+        upsert: kind === 'logo',
+        contentType: processed.type,
+      });
+
+    if (error) throw error;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(HANDWERKER_BUCKET)
+      .getPublicUrl(filePath);
+
+    return { url: publicUrl, path: filePath };
+  } catch (error) {
+    logWithCorrelation('Handwerker image upload failed', { error, kind });
+    captureException(error as Error, { context: 'uploadHandwerkerImage', userId, kind });
+    return {
+      url: '',
+      path: '',
+      error: error instanceof Error ? error.message : 'Upload fehlgeschlagen',
+    };
+  }
+}
+
+/**
+ * Remove a handwerker image by its public URL.
+ */
+export async function deleteHandwerkerImage(publicUrl: string): Promise<boolean> {
+  const parts = publicUrl.split(`/${HANDWERKER_BUCKET}/`);
+  if (parts.length !== 2) return false;
+
+  const path = parts[1].split('?')[0];
+  const { error } = await supabase.storage.from(HANDWERKER_BUCKET).remove([path]);
+
+  if (error) {
+    logWithCorrelation('Handwerker image deletion failed', { error, path });
+    return false;
+  }
+  return true;
+}
