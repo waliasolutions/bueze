@@ -8,7 +8,7 @@ Betreff: Ihr Hinweis – Problem behoben
 
 Guten Tag Herr Mkrtchyan
 
-Vielen Dank für Ihre Rückmeldung – sie hat uns sehr geholfen und wir konnten dank Ihrem Hinweis ein paar Edge-Cases finden und beheben.
+Vielen Dank für Ihre Rückmeldung – sie hat uns sehr geholfen und wir konnten dank Ihrem Hinweis ein paar Spezial-Situationen finden und beheben.
 
 Bitte versuchen Sie es jetzt nochmals unter «Profil bearbeiten» → «Dokumente & Bilder». Sollte weiterhin etwas nicht klappen, melden Sie sich einfach kurz.
 
