@@ -28,5 +28,12 @@ Neue Seite unter «Admin → Fehlerlog»:
 3. `src/lib/fileUpload.ts`: bestehende `captureException`-Aufrufe erhalten `originalSize`, `processedSize`, `mimeType`, `bucket` im Kontext — mehr braucht es für Upload-Diagnose nicht.
 4. Neue Seite `src/pages/admin/ErrorLog.tsx` (Muster von `AdminLeadsManagement.tsx`: Card, Table, Select-Filter, Skeleton), Route `errors` in `src/App.tsx`, Eintrag in `src/components/admin/AdminSidebar.tsx`. Zeitanzeige über `src/lib/swissTime.ts`.
 
-## Nicht Teil davon
-Keine E-Mail-Alarme, kein Dashboard mit Charts, kein Ersatz für Sentry — nur ein lesbares Log im Admin-Bereich.
+## Nicht Teil davon (YAGNI)
+Keine E-Mail-Alarme, keine Charts, kein zweites Monitoring-System, keine neue Fehlerkategorie-Liste und kein eigener Cron-Job — nur ein lesbares Log im Admin-Bereich.
+
+## SSOT / DRY-Check
+- Ein Eintrittspunkt: `captureException` in `src/lib/errorTracking.ts`. Kein direkter Insert aus Komponenten.
+- Eine Kategorisierung: `categorizeError` in `src/lib/errorCategories.ts` — Log und UI-Text stammen aus derselben Quelle.
+- Eine Zeitformatierung: `src/lib/swissTime.ts`. Eine Aufräum-Funktion: `run_retention_cleanup()`.
+- Eine Tabelle, eine Admin-Seite; bestehende Upload-Aufrufe werden nur mit Kontext ergänzt, nicht dupliziert.
+
