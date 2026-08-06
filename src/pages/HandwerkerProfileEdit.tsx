@@ -158,16 +158,18 @@ const HandwerkerProfileEdit = () => {
   }, []);
 
   const checkAccessAndLoadProfile = async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      // getSession() reads the locally persisted session first — a mobile
+      // network hiccup or a suspended tab must never look like "logged out".
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+
+      const user = session?.user;
+
       if (!user) {
-        toast({
-          title: 'Nicht angemeldet',
-          description: 'Bitte melden Sie sich an.',
-          variant: 'destructive',
-        });
-        navigate('/auth');
+        setLoadError(explainProfileError({ status: 401, message: 'Keine aktive Sitzung' }));
         return;
       }
 
@@ -182,12 +184,7 @@ const HandwerkerProfileEdit = () => {
       if (error) throw error;
 
       if (!profileData) {
-        toast({
-          title: 'Zugriff verweigert',
-          description: 'Sie müssen ein Handwerker-Konto haben, um Ihr Profil zu bearbeiten.',
-          variant: 'destructive',
-        });
-        navigate('/dashboard');
+        setLoadError(explainProfileError({ message: 'no data: kein Handwerker-Profil' }));
         return;
       }
 
