@@ -80,7 +80,12 @@ export async function uploadLeadMedia(
     };
   } catch (error) {
     logWithCorrelation('File upload failed', { error });
-    captureException(error as Error, { context: 'uploadLeadMedia', userId });
+    captureException(error as Error, {
+      context: 'uploadLeadMedia',
+      userId,
+      originalSize: file?.size ?? null,
+      mimeType: file?.type ?? null,
+    });
     return {
       url: '',
       path: '',
@@ -186,7 +191,12 @@ export async function uploadProposalAttachment(
     };
   } catch (error) {
     logWithCorrelation('Proposal attachment upload failed', { error });
-    captureException(error as Error, { context: 'uploadProposalAttachment', userId });
+    captureException(error as Error, {
+      context: 'uploadProposalAttachment',
+      userId,
+      originalSize: file?.size ?? null,
+      mimeType: file?.type ?? null,
+    });
     return {
       url: '',
       path: '',
@@ -271,7 +281,14 @@ export async function uploadHandwerkerImage(
     return { url: publicUrl, path: filePath };
   } catch (error) {
     logWithCorrelation('Handwerker image upload failed', { error, kind });
-    captureException(error as Error, { context: 'uploadHandwerkerImage', userId, kind });
+    captureException(error as Error, {
+      context: 'uploadHandwerkerImage',
+      userId,
+      kind,
+      bucket: HANDWERKER_BUCKET,
+      originalSize: file?.size ?? null,
+      mimeType: file?.type ?? null,
+    });
     return {
       url: '',
       path: '',
