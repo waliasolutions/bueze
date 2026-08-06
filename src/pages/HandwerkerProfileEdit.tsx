@@ -143,6 +143,10 @@ const HandwerkerProfileEdit = () => {
   
   // Logo
   const [logoUrl, setLogoUrl] = useState('');
+
+  // Explained errors (SSOT texts from errorCategories.ts)
+  const [loadError, setLoadError] = useState<ExplainedError | null>(null);
+  const [uploadError, setUploadError] = useState<ExplainedError | null>(null);
   
   // Document upload dialog
   const [documentUploadOpen, setDocumentUploadOpen] = useState(false);
