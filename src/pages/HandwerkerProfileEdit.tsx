@@ -453,58 +453,19 @@ const HandwerkerProfileEdit = () => {
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !profile) return;
+    if (!file || !profile || !userId) return;
 
     setUploading(true);
+    setUploadError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'Ungültiger Dateityp',
-          description: 'Bitte laden Sie eine Bilddatei hoch.',
-          variant: 'destructive',
-        });
+      const result = await uploadHandwerkerImage(file, userId, 'logo');
+      if (result.error) {
+        setUploadError(explainUploadError(new Error(result.error)));
         return;
       }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: 'Datei zu groß',
-          description: 'Das Logo darf maximal 5MB groß sein.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/logo.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('handwerker-portfolio')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('handwerker-portfolio')
-        .getPublicUrl(fileName);
-
-      setLogoUrl(publicUrl);
-      
-    } catch (error: any) {
-      console.error('Error uploading logo:', error);
-      toast({
-        title: 'Upload fehlgeschlagen',
-        description: error.message || 'Logo konnte nicht hochgeladen werden.',
-        variant: 'destructive',
-      });
+      // Cache-busting: the logo path is stable (upsert), so the browser would
+      // otherwise keep showing the previous image.
+      setLogoUrl(`${result.url}?v=${Date.now()}`);
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -513,30 +474,16 @@ const HandwerkerProfileEdit = () => {
 
   const handleRemoveLogo = async () => {
     if (!logoUrl) return;
-    
-    try {
-      const urlParts = logoUrl.split('/handwerker-portfolio/');
-      if (urlParts.length === 2) {
-        const filePath = urlParts[1].split('?')[0];
-        
-        const { error } = await supabase.storage
-          .from('handwerker-portfolio')
-          .remove([filePath]);
+    setUploadError(null);
 
-        if (error) throw error;
-      }
-
-      setLogoUrl('');
-      
-    } catch (error: any) {
-      console.error('Error removing logo:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Logo konnte nicht entfernt werden.',
-        variant: 'destructive',
-      });
+    const removed = await deleteHandwerkerImage(logoUrl);
+    if (!removed) {
+      setUploadError(explainUploadError(new Error('Logo konnte nicht entfernt werden.')));
+      return;
     }
+    setLogoUrl('');
   };
+
 
   const calculateProfileCompletion = () => {
     let completed = 0;
