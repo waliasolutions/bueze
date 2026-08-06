@@ -320,30 +320,16 @@ const HandwerkerProfileEdit = () => {
 
 
   const handleRemoveImage = async (url: string) => {
-    try {
-      // Extract file path from URL
-      const urlParts = url.split('/handwerker-portfolio/');
-      if (urlParts.length === 2) {
-        const filePath = urlParts[1].split('?')[0];
-        
-        const { error } = await supabase.storage
-          .from('handwerker-portfolio')
-          .remove([filePath]);
+    setUploadError(null);
 
-        if (error) throw error;
-      }
-
-      setPortfolioUrls(portfolioUrls.filter(u => u !== url));
-      
-    } catch (error: any) {
-      console.error('Error removing image:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Bild konnte nicht entfernt werden.',
-        variant: 'destructive',
-      });
+    const removed = await deleteHandwerkerImage(url);
+    if (!removed) {
+      setUploadError(explainUploadError(new Error('Bild konnte nicht entfernt werden.')));
+      return;
     }
+    setPortfolioUrls(portfolioUrls.filter(u => u !== url));
   };
+
 
   const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
