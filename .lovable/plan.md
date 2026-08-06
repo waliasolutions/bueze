@@ -26,6 +26,7 @@ Alle Texte auf de-CH (keine französischen Varianten, «Guillemets», kein ß).
 - Auf Ladefehler bleibt die Seite montiert und zeigt eine Fehlerkarte, die konkret benennt, was passiert ist, statt nur «Erneut versuchen»: Titel («Profil konnte nicht geladen werden»), Ursache in Klartext (z. B. «Keine Verbindung zum Server», «Sitzung abgelaufen», «Zugriff verweigert – Handwerker-Konto erforderlich»), der technische Grund als Detailzeile (Postgrest-/Netzwerk-Meldung, gemäss bestehendem Error-Transparency-Standard), plus die nächste Handlung («Erneut laden» bzw. «Neu anmelden»).
 - Upload-Fehler analog: statt «Upload fehlgeschlagen» der echte Grund direkt beim Logo-Feld – Dateityp nicht unterstützt, Datei zu gross nach Komprimierung (mit Ist-Grösse), Verbindung unterbrochen, Speicher-Berechtigung fehlt – und was der Handwerker tun soll.
 - Mapping von Fehlerursache zu Text kommt aus einem einzigen Helfer (Erweiterung von `src/lib/errorCategories.ts`), damit Ladefehler, Upload-Fehler und Speicherfehler dieselben Formulierungen nutzen (SSOT, keine dritten Textvarianten).
+- Der Mount-Gate nutzt `getSession()` statt `getUser()`; Weiterleitung auf `/auth` nur bei wirklich fehlender Sitzung – niemals bei Netzwerkfehlern.
 - Der Upload-Button bleibt während `uploading` deaktiviert und zeigt den Fortschrittszustand, damit ein langsamer Mobil-Upload nicht wie ein Absturz wirkt.
 
 ### 4. Verify
