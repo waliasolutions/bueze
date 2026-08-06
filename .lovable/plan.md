@@ -1,18 +1,16 @@
 # Antwortmail an Edgar Mkrtchyan (Art Multiservice)
 
-Kurze, freundliche Antwort auf de-CH. Kein Code, keine technischen Details – nur der Mailtext.
+Kurze, freundliche Antwort auf de-CH. Kein Code, keine technischen Details.
 
 ## Mailtext (Vorschlag)
 
-Betreff: Ihr Hinweis – Upload funktioniert wieder
+Betreff: Ihr Hinweis – Problem behoben
 
 Guten Tag Herr Mkrtchyan
 
-Vielen Dank für Ihre Rückmeldung – sie hat uns sehr geholfen und wir konnten dank Ihrem Hinweis ein paar Sonderfälle beim Bild-Upload finden und beheben.
+Vielen Dank für Ihre Rückmeldung – sie hat uns sehr geholfen und wir konnten dank Ihrem Hinweis ein paar Edge-Cases finden und beheben.
 
-Probieren Sie es bitte nochmals unter «Profil bearbeiten» → «Dokumente & Bilder». Das Hochladen sollte jetzt problemlos funktionieren, auch mit Fotos direkt vom Handy.
-
-Falls doch noch etwas hakt, melden Sie sich einfach kurz – dann schauen wir es uns sofort an.
+Bitte versuchen Sie es jetzt nochmals unter «Profil bearbeiten» → «Dokumente & Bilder». Sollte weiterhin etwas nicht klappen, melden Sie sich einfach kurz.
 
 Freundliche Grüsse
 Büeze.ch GmbH
