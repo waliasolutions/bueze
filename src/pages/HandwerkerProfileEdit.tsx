@@ -1351,7 +1351,7 @@ const HandwerkerProfileEdit = () => {
                       <CardHeader>
                         <CardTitle>Firmen-Logo</CardTitle>
                         <CardDescription>
-                          Laden Sie Ihr Firmenlogo hoch (maximal 5MB)
+                          Laden Sie Ihr Firmenlogo hoch. Grosse Bilder werden automatisch verkleinert (max. 5 MB nach Verkleinerung).
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
