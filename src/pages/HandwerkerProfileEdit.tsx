@@ -289,84 +289,35 @@ const HandwerkerProfileEdit = () => {
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0 || !profile) return;
+    if (!files || files.length === 0 || !profile || !userId) return;
 
     setUploading(true);
+    setUploadError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const uploaded: string[] = [];
 
-      const fileArray = Array.from(files);
-      const validFiles: File[] = [];
-
-      // Validate all files first
-      for (const file of fileArray) {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          toast({
-            title: 'Ungültiger Dateityp',
-            description: `${file.name} ist keine Bilddatei.`,
-            variant: 'destructive',
-          });
-          continue;
+      // Sequential: compressing several phone photos at once is what makes
+      // mobile Safari run out of memory and kill the tab.
+      for (const file of Array.from(files)) {
+        const result = await uploadHandwerkerImage(file, userId, 'portfolio');
+        if (result.error) {
+          setUploadError(explainUploadError(new Error(result.error)));
+          break;
         }
-
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          toast({
-            title: 'Datei zu groß',
-            description: `${file.name} ist größer als 5MB.`,
-            variant: 'destructive',
-          });
-          continue;
-        }
-
-        validFiles.push(file);
+        uploaded.push(result.url);
       }
 
-      if (validFiles.length === 0) {
-        setUploading(false);
-        return;
+      if (uploaded.length > 0) {
+        setPortfolioUrls([...portfolioUrls, ...uploaded]);
       }
-
-      // Upload all files in parallel
-      const uploadPromises = validFiles.map(async (file) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('handwerker-portfolio')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('handwerker-portfolio')
-          .getPublicUrl(fileName);
-
-        return publicUrl;
-      });
-
-      const uploadedUrls = await Promise.all(uploadPromises);
-      setPortfolioUrls([...portfolioUrls, ...uploadedUrls]);
-      
-    } catch (error: any) {
-      console.error('Error uploading images:', error);
-      toast({
-        title: 'Upload fehlgeschlagen',
-        description: error.message || 'Bilder konnten nicht hochgeladen werden.',
-        variant: 'destructive',
-      });
     } finally {
       setUploading(false);
       // Reset input
       event.target.value = '';
     }
   };
+
 
   const handleRemoveImage = async (url: string) => {
     try {
