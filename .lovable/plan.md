@@ -20,16 +20,21 @@ Extend `src/lib/fileUpload.ts` with one `uploadHandwerkerImage(file, userId, kin
 
 Effect: a 12MB iPhone photo becomes a ~150KB WebP before it ever hits the network — no size rejection, no memory spike, no HEIC extension problems.
 
-### 3. No more blank page, no more surprise redirect
-- On load failure: keep `profile` null but render an inline error card with a "Erneut versuchen" button instead of returning `null`.
-- Replace the mount-time `getUser()` gate with `getSession()` plus the existing deferred-role pattern, and only redirect to `/auth` when the session is genuinely absent — never on a network error.
-- Keep the upload button disabled while `uploading` is true and show progress, so a slow mobile upload does not look frozen.
+### 3. No more blank page — stattdessen eine klare Fehlermeldung
+Alle Texte auf de-CH (keine französischen Varianten, «Guillemets», kein ß).
+
+- Auf Ladefehler bleibt die Seite montiert und zeigt eine Fehlerkarte, die konkret benennt, was passiert ist, statt nur «Erneut versuchen»: Titel («Profil konnte nicht geladen werden»), Ursache in Klartext (z. B. «Keine Verbindung zum Server», «Sitzung abgelaufen», «Zugriff verweigert – Handwerker-Konto erforderlich»), der technische Grund als Detailzeile (Postgrest-/Netzwerk-Meldung, gemäss bestehendem Error-Transparency-Standard), plus die nächste Handlung («Erneut laden» bzw. «Neu anmelden»).
+- Upload-Fehler analog: statt «Upload fehlgeschlagen» der echte Grund direkt beim Logo-Feld – Dateityp nicht unterstützt, Datei zu gross nach Komprimierung (mit Ist-Grösse), Verbindung unterbrochen, Speicher-Berechtigung fehlt – und was der Handwerker tun soll.
+- Mapping von Fehlerursache zu Text kommt aus einem einzigen Helfer (Erweiterung von `src/lib/errorCategories.ts`), damit Ladefehler, Upload-Fehler und Speicherfehler dieselben Formulierungen nutzen (SSOT, keine dritten Textvarianten).
+- Der Mount-Gate nutzt `getSession()` statt `getUser()`; Weiterleitung auf `/auth` nur bei wirklich fehlender Sitzung – niemals bei Netzwerkfehlern.
+- Der Upload-Button bleibt während `uploading` deaktiviert und zeigt den Fortschrittszustand, damit ein langsamer Mobil-Upload nicht wie ein Absturz wirkt.
 
 ### 4. Verify
-Re-run the browser check: upload a large image, confirm the compressed logo appears, `logo_url` is written by autosave, and the page stays mounted. Confirm the load-error path renders the retry card instead of a blank screen.
+Re-run the browser check: upload a large image, confirm the compressed logo appears, `logo_url` is written by autosave, and the page stays mounted. Confirm the load-error path renders the explicit error card (with cause + action) instead of a blank screen.
 
-### 5. Reply to the craftsman
-Not automated — I will give you a short German/French text you can send once the fix is live.
+### 5. Antwort an den Handwerker
+Nicht automatisiert – ich liefere dir einen kurzen deutschen (de-CH) Text, den du senden kannst, sobald der Fix live ist.
+
 
 ## Notes on scope (SSOT / DRY / YAGNI)
 - No new upload library, no new bucket, no new state machine: one shared function added to the file that already owns uploads, duplicated code removed.
