@@ -1331,6 +1331,21 @@ const HandwerkerProfileEdit = () => {
                 icon: FileText,
                 content: (
                   <div className="space-y-6">
+                    {uploadError && (
+                      <Alert variant="destructive">
+                        <AlertDescription className="space-y-1">
+                          <span className="block font-medium">{uploadError.title}</span>
+                          <span className="block text-sm">{uploadError.cause}</span>
+                          <span className="block text-sm">{uploadError.action}</span>
+                          {uploadError.detail && (
+                            <span className="block text-xs opacity-80 break-words">
+                              Technische Meldung: {uploadError.detail}
+                            </span>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {/* Logo Upload */}
                     <Card>
                       <CardHeader>
