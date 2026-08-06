@@ -191,3 +191,134 @@ export const getErrorStats = () => {
     }))
     .sort((a, b) => b.count - a.count);
 };
+
+// ---------------------------------------------------------------------------
+// User-facing German (de-CH) explanations — SSOT for load/save/upload errors.
+// Every surface must use these instead of inventing its own wording.
+// ---------------------------------------------------------------------------
+
+export interface ExplainedError {
+  /** Short headline of what happened. */
+  title: string;
+  /** Plain explanation of the cause. */
+  cause: string;
+  /** What the user should do next. */
+  action: string;
+  /** Raw technical detail (Postgrest/Storage message) for transparency. */
+  detail: string;
+  /** True when a fresh login is the only way forward. */
+  requiresLogin: boolean;
+}
+
+const rawDetail = (error: any): string =>
+  error?.message || error?.error_description || error?.details || error?.hint || '';
+
+/** Explain why the Handwerker profile could not be loaded or saved. */
+export const explainProfileError = (error: any): ExplainedError => {
+  const { category } = categorizeError(error);
+  const detail = rawDetail(error);
+
+  switch (category) {
+    case ErrorCategory.AUTH_401:
+      return {
+        title: 'Sitzung abgelaufen',
+        cause: 'Ihre Anmeldung ist nicht mehr gültig – das passiert, wenn die Seite lange im Hintergrund war.',
+        action: 'Bitte melden Sie sich erneut an. Ihre bereits gespeicherten Daten bleiben erhalten.',
+        detail,
+        requiresLogin: true,
+      };
+    case ErrorCategory.AUTH_403:
+    case ErrorCategory.RLS_POLICY:
+      return {
+        title: 'Kein Zugriff auf dieses Profil',
+        cause: 'Dieses Konto hat keine Berechtigung für das Handwerker-Profil.',
+        action: 'Melden Sie sich mit Ihrem Handwerker-Konto an oder kontaktieren Sie uns unter info@bueeze.ch.',
+        detail,
+        requiresLogin: true,
+      };
+    case ErrorCategory.NETWORK:
+    case ErrorCategory.FETCH_TIMEOUT:
+      return {
+        title: 'Keine Verbindung zum Server',
+        cause: 'Die Daten konnten nicht geladen werden, weil die Internetverbindung unterbrochen war oder zu langsam ist.',
+        action: 'Verbindung prüfen (WLAN/Mobilfunk) und «Erneut laden» drücken.',
+        detail,
+        requiresLogin: false,
+      };
+    case ErrorCategory.FETCH_EMPTY:
+      return {
+        title: 'Kein Handwerker-Profil gefunden',
+        cause: 'Für dieses Login existiert kein freigegebenes Handwerker-Profil.',
+        action: 'Registrierung abschliessen oder uns unter info@bueeze.ch kontaktieren.',
+        detail,
+        requiresLogin: false,
+      };
+    default:
+      return {
+        title: 'Profil konnte nicht geladen werden',
+        cause: 'Beim Laden Ihrer Profildaten ist ein unerwarteter Fehler aufgetreten.',
+        action: 'Bitte «Erneut laden» drücken. Bleibt der Fehler, senden Sie uns die technische Meldung unten.',
+        detail,
+        requiresLogin: false,
+      };
+  }
+};
+
+/** Explain why an image upload failed, in plain de-CH. */
+export const explainUploadError = (error: any): ExplainedError => {
+  const { category } = categorizeError(error);
+  const detail = rawDetail(error);
+
+  switch (category) {
+    case ErrorCategory.INVALID_FILE_TYPE:
+      return {
+        title: 'Dateityp nicht unterstützt',
+        cause: 'Es können nur Bilddateien hochgeladen werden (JPG, PNG oder WebP).',
+        action: 'Bild z. B. als JPG oder PNG speichern und erneut hochladen. PDF-Dateien gehören zu «Dokumente».',
+        detail,
+        requiresLogin: false,
+      };
+    case ErrorCategory.FILE_TOO_LARGE:
+      return {
+        title: 'Bild ist zu gross',
+        cause: 'Das Bild ist auch nach der automatischen Verkleinerung grösser als 5 MB.',
+        action: 'Bitte ein kleineres Bild wählen oder auf dem Handy als «kleine» Grösse exportieren.',
+        detail,
+        requiresLogin: false,
+      };
+    case ErrorCategory.NETWORK:
+    case ErrorCategory.FETCH_TIMEOUT:
+      return {
+        title: 'Upload unterbrochen',
+        cause: 'Die Verbindung ist während des Hochladens abgebrochen.',
+        action: 'Verbindung prüfen und den Upload erneut starten – die bisherigen Eingaben bleiben erhalten.',
+        detail,
+        requiresLogin: false,
+      };
+    case ErrorCategory.AUTH_401:
+      return {
+        title: 'Sitzung abgelaufen',
+        cause: 'Während des Uploads ist Ihre Anmeldung abgelaufen.',
+        action: 'Bitte neu anmelden und das Bild danach erneut hochladen.',
+        detail,
+        requiresLogin: true,
+      };
+    case ErrorCategory.AUTH_403:
+    case ErrorCategory.RLS_POLICY:
+      return {
+        title: 'Upload nicht erlaubt',
+        cause: 'Der Speicher hat den Upload für dieses Konto abgelehnt.',
+        action: 'Bitte melden Sie sich neu an. Bleibt es dabei, kontaktieren Sie uns unter info@bueeze.ch.',
+        detail,
+        requiresLogin: false,
+      };
+    default:
+      return {
+        title: 'Bild konnte nicht hochgeladen werden',
+        cause: 'Beim Hochladen ist ein unerwarteter Fehler aufgetreten.',
+        action: 'Bitte erneut versuchen. Bleibt der Fehler, senden Sie uns die technische Meldung unten.',
+        detail,
+        requiresLogin: false,
+      };
+  }
+};
