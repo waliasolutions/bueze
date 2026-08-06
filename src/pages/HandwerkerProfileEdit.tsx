@@ -35,6 +35,8 @@ import { cn } from '@/lib/utils';
 import { ServiceAreaSelector } from '@/components/ServiceAreaSelector';
 import { ServiceRadius, buildServiceAreas, parseServiceAreas } from '@/lib/serviceAreaHelpers';
 import { DocumentManagementSection } from '@/components/DocumentManagementSection';
+import { uploadHandwerkerImage, deleteHandwerkerImage } from '@/lib/fileUpload';
+import { explainProfileError, explainUploadError, type ExplainedError } from '@/lib/errorCategories';
 
 interface HandwerkerProfile {
   id: string;
@@ -141,6 +143,10 @@ const HandwerkerProfileEdit = () => {
   
   // Logo
   const [logoUrl, setLogoUrl] = useState('');
+
+  // Explained errors (SSOT texts from errorCategories.ts)
+  const [loadError, setLoadError] = useState<ExplainedError | null>(null);
+  const [uploadError, setUploadError] = useState<ExplainedError | null>(null);
   
   // Document upload dialog
   const [documentUploadOpen, setDocumentUploadOpen] = useState(false);
@@ -152,16 +158,18 @@ const HandwerkerProfileEdit = () => {
   }, []);
 
   const checkAccessAndLoadProfile = async () => {
+    setLoading(true);
+    setLoadError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      // getSession() reads the locally persisted session first — a mobile
+      // network hiccup or a suspended tab must never look like "logged out".
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+
+      const user = session?.user;
+
       if (!user) {
-        toast({
-          title: 'Nicht angemeldet',
-          description: 'Bitte melden Sie sich an.',
-          variant: 'destructive',
-        });
-        navigate('/auth');
+        setLoadError(explainProfileError({ status: 401, message: 'Keine aktive Sitzung' }));
         return;
       }
 
@@ -176,12 +184,7 @@ const HandwerkerProfileEdit = () => {
       if (error) throw error;
 
       if (!profileData) {
-        toast({
-          title: 'Zugriff verweigert',
-          description: 'Sie müssen ein Handwerker-Konto haben, um Ihr Profil zu bearbeiten.',
-          variant: 'destructive',
-        });
-        navigate('/dashboard');
+        setLoadError(explainProfileError({ message: 'no data: kein Handwerker-Profil' }));
         return;
       }
 
@@ -278,11 +281,7 @@ const HandwerkerProfileEdit = () => {
       setSelectedMajorCategories(Array.from(majorCats));
     } catch (error) {
       console.error('Error loading profile:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Profil konnte nicht geladen werden.',
-        variant: 'destructive',
-      });
+      setLoadError(explainProfileError(error));
     } finally {
       setLoading(false);
     }
@@ -290,78 +289,28 @@ const HandwerkerProfileEdit = () => {
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files || files.length === 0 || !profile) return;
+    if (!files || files.length === 0 || !profile || !userId) return;
 
     setUploading(true);
+    setUploadError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+      const uploaded: string[] = [];
 
-      const fileArray = Array.from(files);
-      const validFiles: File[] = [];
-
-      // Validate all files first
-      for (const file of fileArray) {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-          toast({
-            title: 'Ungültiger Dateityp',
-            description: `${file.name} ist keine Bilddatei.`,
-            variant: 'destructive',
-          });
-          continue;
+      // Sequential: compressing several phone photos at once is what makes
+      // mobile Safari run out of memory and kill the tab.
+      for (const file of Array.from(files)) {
+        const result = await uploadHandwerkerImage(file, userId, 'portfolio');
+        if (result.error) {
+          setUploadError(explainUploadError(new Error(result.error)));
+          break;
         }
-
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-          toast({
-            title: 'Datei zu groß',
-            description: `${file.name} ist größer als 5MB.`,
-            variant: 'destructive',
-          });
-          continue;
-        }
-
-        validFiles.push(file);
+        uploaded.push(result.url);
       }
 
-      if (validFiles.length === 0) {
-        setUploading(false);
-        return;
+      if (uploaded.length > 0) {
+        setPortfolioUrls([...portfolioUrls, ...uploaded]);
       }
-
-      // Upload all files in parallel
-      const uploadPromises = validFiles.map(async (file) => {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('handwerker-portfolio')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('handwerker-portfolio')
-          .getPublicUrl(fileName);
-
-        return publicUrl;
-      });
-
-      const uploadedUrls = await Promise.all(uploadPromises);
-      setPortfolioUrls([...portfolioUrls, ...uploadedUrls]);
-      
-    } catch (error: any) {
-      console.error('Error uploading images:', error);
-      toast({
-        title: 'Upload fehlgeschlagen',
-        description: error.message || 'Bilder konnten nicht hochgeladen werden.',
-        variant: 'destructive',
-      });
     } finally {
       setUploading(false);
       // Reset input
@@ -369,31 +318,18 @@ const HandwerkerProfileEdit = () => {
     }
   };
 
+
   const handleRemoveImage = async (url: string) => {
-    try {
-      // Extract file path from URL
-      const urlParts = url.split('/handwerker-portfolio/');
-      if (urlParts.length === 2) {
-        const filePath = urlParts[1].split('?')[0];
-        
-        const { error } = await supabase.storage
-          .from('handwerker-portfolio')
-          .remove([filePath]);
+    setUploadError(null);
 
-        if (error) throw error;
-      }
-
-      setPortfolioUrls(portfolioUrls.filter(u => u !== url));
-      
-    } catch (error: any) {
-      console.error('Error removing image:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Bild konnte nicht entfernt werden.',
-        variant: 'destructive',
-      });
+    const removed = await deleteHandwerkerImage(url);
+    if (!removed) {
+      setUploadError(explainUploadError(new Error('Bild konnte nicht entfernt werden.')));
+      return;
     }
+    setPortfolioUrls(portfolioUrls.filter(u => u !== url));
   };
+
 
   const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -503,58 +439,19 @@ const HandwerkerProfileEdit = () => {
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !profile) return;
+    if (!file || !profile || !userId) return;
 
     setUploading(true);
+    setUploadError(null);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast({
-          title: 'Ungültiger Dateityp',
-          description: 'Bitte laden Sie eine Bilddatei hoch.',
-          variant: 'destructive',
-        });
+      const result = await uploadHandwerkerImage(file, userId, 'logo');
+      if (result.error) {
+        setUploadError(explainUploadError(new Error(result.error)));
         return;
       }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast({
-          title: 'Datei zu groß',
-          description: 'Das Logo darf maximal 5MB groß sein.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/logo.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('handwerker-portfolio')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('handwerker-portfolio')
-        .getPublicUrl(fileName);
-
-      setLogoUrl(publicUrl);
-      
-    } catch (error: any) {
-      console.error('Error uploading logo:', error);
-      toast({
-        title: 'Upload fehlgeschlagen',
-        description: error.message || 'Logo konnte nicht hochgeladen werden.',
-        variant: 'destructive',
-      });
+      // Cache-busting: the logo path is stable (upsert), so the browser would
+      // otherwise keep showing the previous image.
+      setLogoUrl(`${result.url}?v=${Date.now()}`);
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -563,30 +460,16 @@ const HandwerkerProfileEdit = () => {
 
   const handleRemoveLogo = async () => {
     if (!logoUrl) return;
-    
-    try {
-      const urlParts = logoUrl.split('/handwerker-portfolio/');
-      if (urlParts.length === 2) {
-        const filePath = urlParts[1].split('?')[0];
-        
-        const { error } = await supabase.storage
-          .from('handwerker-portfolio')
-          .remove([filePath]);
+    setUploadError(null);
 
-        if (error) throw error;
-      }
-
-      setLogoUrl('');
-      
-    } catch (error: any) {
-      console.error('Error removing logo:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Logo konnte nicht entfernt werden.',
-        variant: 'destructive',
-      });
+    const removed = await deleteHandwerkerImage(logoUrl);
+    if (!removed) {
+      setUploadError(explainUploadError(new Error('Logo konnte nicht entfernt werden.')));
+      return;
     }
+    setLogoUrl('');
   };
+
 
   const calculateProfileCompletion = () => {
     let completed = 0;
@@ -775,8 +658,44 @@ const HandwerkerProfileEdit = () => {
     );
   }
 
-  if (!profile) {
-    return null;
+  // Never render a blank page: always explain what happened and what to do.
+  if (loadError || !profile) {
+    const err = loadError ?? explainProfileError({ message: 'no data: Profil nicht verfügbar' });
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="pt-24 pb-16">
+          <div className="container mx-auto px-4 max-w-2xl">
+            <Card>
+              <CardHeader>
+                <CardTitle>{err.title}</CardTitle>
+                <CardDescription>{err.cause}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm">{err.action}</p>
+
+                {err.detail && (
+                  <p className="text-xs text-muted-foreground break-words">
+                    Technische Meldung: {err.detail}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  {err.requiresLogin ? (
+                    <Button onClick={() => navigate('/auth')}>Neu anmelden</Button>
+                  ) : (
+                    <Button onClick={checkAccessAndLoadProfile}>Erneut laden</Button>
+                  )}
+                  <Button variant="outline" onClick={() => navigate('/handwerker-dashboard')}>
+                    Zur Übersicht
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -1412,12 +1331,27 @@ const HandwerkerProfileEdit = () => {
                 icon: FileText,
                 content: (
                   <div className="space-y-6">
+                    {uploadError && (
+                      <Alert variant="destructive">
+                        <AlertDescription className="space-y-1">
+                          <span className="block font-medium">{uploadError.title}</span>
+                          <span className="block text-sm">{uploadError.cause}</span>
+                          <span className="block text-sm">{uploadError.action}</span>
+                          {uploadError.detail && (
+                            <span className="block text-xs opacity-80 break-words">
+                              Technische Meldung: {uploadError.detail}
+                            </span>
+                          )}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
                     {/* Logo Upload */}
                     <Card>
                       <CardHeader>
                         <CardTitle>Firmen-Logo</CardTitle>
                         <CardDescription>
-                          Laden Sie Ihr Firmenlogo hoch (maximal 5MB)
+                          Laden Sie Ihr Firmenlogo hoch. Grosse Bilder werden automatisch verkleinert (max. 5 MB nach Verkleinerung).
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
