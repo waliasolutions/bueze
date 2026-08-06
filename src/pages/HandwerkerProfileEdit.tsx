@@ -281,11 +281,7 @@ const HandwerkerProfileEdit = () => {
       setSelectedMajorCategories(Array.from(majorCats));
     } catch (error) {
       console.error('Error loading profile:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Profil konnte nicht geladen werden.',
-        variant: 'destructive',
-      });
+      setLoadError(explainProfileError(error));
     } finally {
       setLoading(false);
     }
