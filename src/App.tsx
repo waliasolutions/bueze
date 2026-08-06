@@ -73,6 +73,7 @@ const AdminBillingSettings = lazy(() => import("./pages/admin/AdminBillingSettin
 const DeletionAudit = lazy(() => import("./pages/admin/DeletionAudit"));
 const OrphanedRecordsCleanup = lazy(() => import("./pages/admin/OrphanedRecordsCleanup"));
 const ImageBackfill = lazy(() => import("./pages/admin/ImageBackfill"));
+const AdminErrorLog = lazy(() => import("./pages/admin/ErrorLog"));
 
 // Legal pages - low priority
 const AGB = lazy(() => import("./pages/legal/AGB"));
@@ -250,6 +251,7 @@ const App = () => {
                         <Route path="deletion-audit" element={<DeletionAudit />} />
                         <Route path="orphaned-records" element={<OrphanedRecordsCleanup />} />
                         <Route path="image-backfill" element={<ImageBackfill />} />
+                        <Route path="errors" element={<AdminErrorLog />} />
                       </Routes>
                     </Suspense>
                   </AdminAuthProvider>

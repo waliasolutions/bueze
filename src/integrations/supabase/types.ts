@@ -166,6 +166,54 @@ export type Database = {
         }
         Relationships: []
       }
+      app_error_log: {
+        Row: {
+          category: string
+          context: string
+          correlation_id: string | null
+          created_at: string
+          detail: string | null
+          id: string
+          message: string
+          metadata: Json
+          route: string | null
+          severity: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category?: string
+          context?: string
+          correlation_id?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          message: string
+          metadata?: Json
+          route?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          context?: string
+          correlation_id?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          message?: string
+          metadata?: Json
+          route?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       billing_settings: {
         Row: {
           company_city: string

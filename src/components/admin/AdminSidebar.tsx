@@ -12,6 +12,7 @@ import {
   Receipt,
   Globe,
   Settings,
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   User,
@@ -75,6 +76,7 @@ const navSections: NavSection[] = [
       { label: 'Abrechnung', href: '/admin/billing', icon: Settings },
       { label: 'SEO', href: '/admin/seo', icon: Globe },
       { label: 'GTM', href: '/admin/gtm', icon: Settings },
+      { label: 'Fehlerlog', href: '/admin/errors', icon: AlertTriangle },
     ],
   },
 ];
