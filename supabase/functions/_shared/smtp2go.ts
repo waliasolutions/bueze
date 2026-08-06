@@ -11,6 +11,7 @@ export interface EmailAttachment {
 
 export interface EmailOptions {
   to: string | string[];
+  bcc?: string | string[];
   subject: string;
   htmlBody?: string;
   textBody?: string;
@@ -63,6 +64,9 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     subject: options.subject,
   };
 
+  if (options.bcc) {
+    payload.bcc = Array.isArray(options.bcc) ? options.bcc : [options.bcc];
+  }
   if (options.htmlBody) {
     payload.html_body = options.htmlBody;
   }
