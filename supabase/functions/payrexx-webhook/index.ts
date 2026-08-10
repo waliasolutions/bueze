@@ -176,13 +176,12 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('[payrexx-webhook] unexpected error', error);
     try {
-      await supabase.from('admin_notifications').insert({
+      await reportPayrexxIncident(supabase, {
         type: 'webhook_error',
         title: 'Webhook: Unerwarteter Fehler',
         message: `Payrexx Webhook-Verarbeitung fehlgeschlagen: ${String(error instanceof Error ? error.message : error).slice(0, 200)}`,
         metadata: {
           error_message: String(error instanceof Error ? error.message : error).slice(0, 500),
-          timestamp: new Date().toISOString(),
         },
       });
     } catch (_e) { /* ignore */ }
