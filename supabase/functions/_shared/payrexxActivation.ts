@@ -213,37 +213,35 @@ export async function activateFromConfirmedTransaction(
 
   // IDEMPOTENCY GUARD: unique payrexx_transaction_id acts as the lock.
   // If the row already exists, no other work is performed.
-  const { data: insertedPayment, error: insertError } = await supabase
-    .from('payment_history')
-    .upsert(
-      {
-        user_id: userId,
-        amount,
-        currency: (currency || 'CHF').toUpperCase(),
-        plan_type: planType,
-        status: 'paid',
-        payment_provider: 'payrexx',
-        payrexx_transaction_id: String(transactionId),
-        payment_date: now.toISOString(),
-        description: subscriptionId
-          ? `Büeze ${planType} Abonnement (automatische Verlängerung)`
-          : `Büeze ${planType} Abonnement`,
-        invoice_pdf_url: invoice?.paymentLink || null,
-      },
-      { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true }
-    )
-    .select('id');
+  const payment = await recordPayrexxPayment(supabase, {
+    userId,
+    amount,
+    currency,
+    planType,
+    status: 'paid',
+    transactionId,
+    description: subscriptionId
+      ? `Büeze ${planType} Abonnement (automatische Verlängerung)`
+      : `Büeze ${planType} Abonnement`,
+    invoicePdfUrl: invoice?.paymentLink || null,
+  });
 
-  if (insertError) {
-    return { ok: false, activated: false, alreadyProcessed: false, reason: `payment_history insert failed: ${insertError.message}` };
+  if (!payment.ok) {
+    return {
+      ok: false,
+      activated: false,
+      alreadyProcessed: false,
+      errorCode: 'payment_history_insert_failed',
+      reason: `payment_history insert failed: ${payment.error}`,
+    };
   }
 
-  if (!insertedPayment || insertedPayment.length === 0) {
+  if (payment.alreadyProcessed) {
     console.log(`[payrexxActivation:${opts.source}] tx ${transactionId} already processed`);
     return { ok: true, activated: false, alreadyProcessed: true };
   }
 
-  const paymentRowId = insertedPayment[0].id;
+  const paymentRowId = payment.paymentId;
 
   // Detect auto-renewal to preserve auto_renew flag semantics
   const { data: existingSub } = await supabase
