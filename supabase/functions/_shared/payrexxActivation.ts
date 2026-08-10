@@ -277,11 +277,12 @@ export async function activateFromConfirmedTransaction(
     .upsert(subscriptionData, { onConflict: 'user_id' });
 
   if (subError) {
-    // Payment row is already in — flag for admin so recovery is trivial.
-    await supabase.from('admin_notifications').insert({
+    // Payment row is already in — flag for admin (or e-mail on test cases).
+    await reportPayrexxIncident(supabase, {
       type: 'webhook_error',
       title: 'Abo-Aktivierung fehlgeschlagen',
       message: `Subscription-Update für User ${userId} fehlgeschlagen (source=${opts.source}). Zahlung erfasst, Abo NICHT aktiv. Transaction ${transactionId}.`,
+      userId,
       metadata: {
         payrexx_transaction_id: String(transactionId),
         reference_id: String(referenceId),
@@ -289,7 +290,6 @@ export async function activateFromConfirmedTransaction(
         plan_type: planType,
         source: opts.source,
         error_message: String(subError.message || JSON.stringify(subError)).slice(0, 500),
-        timestamp: new Date().toISOString(),
       },
     });
     return { ok: false, activated: false, alreadyProcessed: false, errorCode: 'subscription_update_failed', reason: subError.message };
