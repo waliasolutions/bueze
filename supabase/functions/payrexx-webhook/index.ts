@@ -82,16 +82,17 @@ Deno.serve(async (req) => {
       const result = await activateFromConfirmedTransaction(supabase, tx, { source: 'webhook' });
       if (!result.ok) {
         console.error(`[payrexx-webhook] activation failed: ${result.errorCode} ${result.reason}`);
-        await supabase.from('admin_notifications').insert({
+        const errorCode = result.errorCode || 'unbekannt';
+        await reportPayrexxIncident(supabase, {
           type: 'webhook_error',
           title: 'Webhook: Aktivierung fehlgeschlagen',
-          message: `Aktivierung fehlgeschlagen (${result.errorCode}). Transaction: ${transactionId}`,
+          message: `Aktivierung fehlgeschlagen (${errorCode}). Transaction: ${transactionId}. Grund: ${result.reason || 'unbekannt'}`,
+          userId: parseReferenceId(referenceId || '')?.userId,
           metadata: {
             payrexx_transaction_id: String(transactionId),
             reference_id: String(referenceId || ''),
-            error_code: result.errorCode,
-            error_message: result.reason,
-            timestamp: new Date().toISOString(),
+            error_code: errorCode,
+            error_message: String(result.reason || 'unbekannt').slice(0, 500),
           },
         });
         return successResponse({ received: true, error: result.errorCode });
