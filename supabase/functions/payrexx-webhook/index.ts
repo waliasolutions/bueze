@@ -5,6 +5,8 @@ import {
   activateFromConfirmedTransaction,
   fetchPayrexxTransaction,
   parseReferenceId,
+  recordPayrexxPayment,
+  reportPayrexxIncident,
 } from '../_shared/payrexxActivation.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
