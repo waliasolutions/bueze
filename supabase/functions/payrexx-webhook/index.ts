@@ -138,22 +138,17 @@ Deno.serve(async (req) => {
         );
       }
 
-      await supabase.from('payment_history').upsert(
-        {
-          user_id: userId,
-          amount,
-          currency: (currency || 'CHF').toUpperCase(),
-          plan_type: planType,
-          status: 'failed',
-          payment_provider: 'payrexx',
-          payrexx_transaction_id: String(transactionId),
-          payment_date: new Date().toISOString(),
-          description: isAutoRenewFailure
-            ? `Automatische Verlängerung fehlgeschlagen: ${planType} Abonnement`
-            : `Fehlgeschlagene Zahlung: ${planType} Abonnement`,
-        },
-        { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true }
-      );
+      await recordPayrexxPayment(supabase, {
+        userId,
+        amount,
+        currency,
+        planType,
+        status: 'failed',
+        transactionId,
+        description: isAutoRenewFailure
+          ? `Automatische Verlängerung fehlgeschlagen: ${planType} Abonnement`
+          : `Fehlgeschlagene Zahlung: ${planType} Abonnement`,
+      });
 
       await supabase.from('handwerker_notifications').insert({
         user_id: userId,
