@@ -160,10 +160,11 @@ Deno.serve(async (req) => {
         metadata: { planType, transactionId, status: tx.status, subscriptionId, isAutoRenewFailure },
       });
 
-      await supabase.from('admin_notifications').insert({
+      await reportPayrexxIncident(supabase, {
         type: 'payment_failed',
         title: 'Zahlung fehlgeschlagen',
         message: `Payrexx Zahlung für Benutzer ${userId} fehlgeschlagen. Status: ${tx.status}${isAutoRenewFailure ? ' (Auto-Renewal)' : ''}`,
+        userId,
         metadata: { userId, planType, transactionId, status: tx.status, subscriptionId },
       });
 
