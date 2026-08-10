@@ -5,6 +5,8 @@ import {
   activateFromConfirmedTransaction,
   fetchPayrexxTransaction,
   parseReferenceId,
+  recordPayrexxPayment,
+  reportPayrexxIncident,
 } from '../_shared/payrexxActivation.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -61,15 +63,15 @@ Deno.serve(async (req) => {
     const verification = await fetchPayrexxTransaction(transactionId, { status, amount, referenceId });
     if (!verification.ok || !verification.transaction) {
       console.error(`[payrexx-webhook] verification failed tx=${transactionId}: ${verification.reason}`);
-      await supabase.from('admin_notifications').insert({
+      await reportPayrexxIncident(supabase, {
         type: 'webhook_error',
         title: 'Webhook: Verifizierung fehlgeschlagen',
-        message: `Payrexx Webhook konnte nicht verifiziert werden. Transaction: ${transactionId}. Grund: ${verification.reason}`,
+        message: `Payrexx Webhook konnte nicht verifiziert werden. Transaction: ${transactionId}. Grund: ${verification.reason || 'unbekannt'}`,
+        userId: parseReferenceId(referenceId || '')?.userId,
         metadata: {
           payrexx_transaction_id: String(transactionId),
           reference_id: String(referenceId || ''),
-          error_message: String(verification.reason || '').slice(0, 500),
-          timestamp: new Date().toISOString(),
+          error_message: String(verification.reason || 'unbekannt').slice(0, 500),
         },
       });
       return successResponse({ received: true, error: 'verification_failed' });
@@ -80,16 +82,17 @@ Deno.serve(async (req) => {
       const result = await activateFromConfirmedTransaction(supabase, tx, { source: 'webhook' });
       if (!result.ok) {
         console.error(`[payrexx-webhook] activation failed: ${result.errorCode} ${result.reason}`);
-        await supabase.from('admin_notifications').insert({
+        const errorCode = result.errorCode || 'unbekannt';
+        await reportPayrexxIncident(supabase, {
           type: 'webhook_error',
           title: 'Webhook: Aktivierung fehlgeschlagen',
-          message: `Aktivierung fehlgeschlagen (${result.errorCode}). Transaction: ${transactionId}`,
+          message: `Aktivierung fehlgeschlagen (${errorCode}). Transaction: ${transactionId}. Grund: ${result.reason || 'unbekannt'}`,
+          userId: parseReferenceId(referenceId || '')?.userId,
           metadata: {
             payrexx_transaction_id: String(transactionId),
             reference_id: String(referenceId || ''),
-            error_code: result.errorCode,
-            error_message: result.reason,
-            timestamp: new Date().toISOString(),
+            error_code: errorCode,
+            error_message: String(result.reason || 'unbekannt').slice(0, 500),
           },
         });
         return successResponse({ received: true, error: result.errorCode });
@@ -135,22 +138,17 @@ Deno.serve(async (req) => {
         );
       }
 
-      await supabase.from('payment_history').upsert(
-        {
-          user_id: userId,
-          amount,
-          currency: (currency || 'CHF').toUpperCase(),
-          plan_type: planType,
-          status: 'failed',
-          payment_provider: 'payrexx',
-          payrexx_transaction_id: String(transactionId),
-          payment_date: new Date().toISOString(),
-          description: isAutoRenewFailure
-            ? `Automatische Verlängerung fehlgeschlagen: ${planType} Abonnement`
-            : `Fehlgeschlagene Zahlung: ${planType} Abonnement`,
-        },
-        { onConflict: 'payrexx_transaction_id', ignoreDuplicates: true }
-      );
+      await recordPayrexxPayment(supabase, {
+        userId,
+        amount,
+        currency,
+        planType,
+        status: 'failed',
+        transactionId,
+        description: isAutoRenewFailure
+          ? `Automatische Verlängerung fehlgeschlagen: ${planType} Abonnement`
+          : `Fehlgeschlagene Zahlung: ${planType} Abonnement`,
+      });
 
       await supabase.from('handwerker_notifications').insert({
         user_id: userId,
@@ -162,10 +160,11 @@ Deno.serve(async (req) => {
         metadata: { planType, transactionId, status: tx.status, subscriptionId, isAutoRenewFailure },
       });
 
-      await supabase.from('admin_notifications').insert({
+      await reportPayrexxIncident(supabase, {
         type: 'payment_failed',
         title: 'Zahlung fehlgeschlagen',
         message: `Payrexx Zahlung für Benutzer ${userId} fehlgeschlagen. Status: ${tx.status}${isAutoRenewFailure ? ' (Auto-Renewal)' : ''}`,
+        userId,
         metadata: { userId, planType, transactionId, status: tx.status, subscriptionId },
       });
 
@@ -177,13 +176,12 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('[payrexx-webhook] unexpected error', error);
     try {
-      await supabase.from('admin_notifications').insert({
+      await reportPayrexxIncident(supabase, {
         type: 'webhook_error',
         title: 'Webhook: Unerwarteter Fehler',
         message: `Payrexx Webhook-Verarbeitung fehlgeschlagen: ${String(error instanceof Error ? error.message : error).slice(0, 200)}`,
         metadata: {
           error_message: String(error instanceof Error ? error.message : error).slice(0, 500),
-          timestamp: new Date().toISOString(),
         },
       });
     } catch (_e) { /* ignore */ }
