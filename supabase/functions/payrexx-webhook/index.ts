@@ -63,15 +63,15 @@ Deno.serve(async (req) => {
     const verification = await fetchPayrexxTransaction(transactionId, { status, amount, referenceId });
     if (!verification.ok || !verification.transaction) {
       console.error(`[payrexx-webhook] verification failed tx=${transactionId}: ${verification.reason}`);
-      await supabase.from('admin_notifications').insert({
+      await reportPayrexxIncident(supabase, {
         type: 'webhook_error',
         title: 'Webhook: Verifizierung fehlgeschlagen',
-        message: `Payrexx Webhook konnte nicht verifiziert werden. Transaction: ${transactionId}. Grund: ${verification.reason}`,
+        message: `Payrexx Webhook konnte nicht verifiziert werden. Transaction: ${transactionId}. Grund: ${verification.reason || 'unbekannt'}`,
+        userId: parseReferenceId(referenceId || '')?.userId,
         metadata: {
           payrexx_transaction_id: String(transactionId),
           reference_id: String(referenceId || ''),
-          error_message: String(verification.reason || '').slice(0, 500),
-          timestamp: new Date().toISOString(),
+          error_message: String(verification.reason || 'unbekannt').slice(0, 500),
         },
       });
       return successResponse({ received: true, error: 'verification_failed' });
