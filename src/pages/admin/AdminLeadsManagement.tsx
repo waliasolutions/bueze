@@ -715,9 +715,20 @@ export default function AdminLeadsManagement() {
                                         <div>
                                           <div className="text-sm text-muted-foreground">Nachricht</div>
                                           <div className="text-sm line-clamp-3">{proposal.message}</div>
+                                          {proposal.status === 'accepted' && (
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="mt-3"
+                                              onClick={() => handleAdminRevoke(proposal.id, lead.id)}
+                                            >
+                                              Annahme zurücksetzen
+                                            </Button>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
+
                                   ))}
                                 </div>
                               ) : (lead.proposals_count || 0) > 0 ? (
