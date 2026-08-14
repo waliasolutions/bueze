@@ -35,6 +35,7 @@ import { getCategoryLabel } from "@/config/categoryLabels";
 import { getCantonLabel, SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
 import { checkCategoryMatch, checkServiceAreaMatch } from "@/lib/leadHelpers";
+import { revokeProposalAcceptance } from "@/lib/proposalHelpers";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic, ReviewForHandwerker } from "@/types/entities";
