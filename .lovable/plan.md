@@ -40,17 +40,16 @@ Neue SECURITY DEFINER RPC `revoke_proposal_acceptance(p_proposal_id uuid)`:
 ### 3. UI: Kunden-Ansicht (`ReceivedProposals.tsx`)
 
 - Bestätigungsdialog vor `handleAccept` und `handleReject` (AlertDialog): «Möchten Sie diese Offerte wirklich annehmen? Dieser Schritt ist nur innerhalb von 24 Stunden rückgängig machbar.»
-- Bei akzeptierten Offerten (`status === 'accepted'`) wird ein neuer Button «Widerrufen» angezeigt, wenn:
-  - `leads.delivered_at` noch nicht gesetzt ist,
-  - die Annahme jünger als 24h ist.
+- Bei akzeptierten Offerten (`status === 'accepted'`) erscheint ein Button «Widerrufen», solange die Annahme jünger als 24h ist.
 - Klick auf «Widerrufen» öffnet ebenfalls einen Bestätigungsdialog und ruft `revoke_proposal_acceptance` auf.
 - Nach Widerruf: UI refresht, Buttons «Annehmen/Ablehnen» erscheinen wieder.
 
 ### 4. UI: Handwerker-Ansicht
 
-- Im Handwerker-Dashboard / Auftragsbereich wird für akzeptierte, aber noch nicht ausgeführte Aufträge ein Button «Offerte zurückziehen» / «Auftrag stornieren» eingeblendet.
-- Ruft dieselbe RPC `revoke_proposal_acceptance` auf.
-- Nach Widerruf: Auftrag verschwindet aus «In Bearbeitung» und erscheint wieder als potenzielle Lead-Chance (sofern noch aktiv).
+- Im Handwerker-Dashboard wird bei jedem angenommenen Auftrag ein Button «Auftrag stornieren» eingeblendet – ohne Zeitlimit.
+- Bestätigungsdialog mit Hinweis, dass der Auftrag danach wieder offen ist und der Kunde informiert wird.
+- Ruft dieselbe RPC `revoke_proposal_acceptance` auf (SSOT).
+- Nach Storno: Auftrag verschwindet aus «In Bearbeitung», Offerte ist wieder `pending`, Kunde erhält Benachrichtigung.
 
 ### 5. Admin-Funktion
 
