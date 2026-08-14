@@ -1,16 +1,16 @@
-# Auftrag «Kernbohrung 4x 160er Trocken» stornieren und schliessen
+# öl Auftrag «Kernbohrung 4x 160er Trocken» stornieren und schliessen
 
 ## Ausgangslage (geprüft)
 
-- Auftrag: «Kernbohrung 4x 160er Trocken», Kunde Manuel Erdmann (manoloerdmann@gmail.com), Status aktuell `active`.
-- Offerte, die angenommen war: Helvetic Bau Service Farzat Al Housein (helveticbauservice@gmail.com) — steht nach dem Storno wieder auf `offen`.
+- Auftrag: «Kernbohrung 4x 160er Trocken», Kunde Manuel Erdmann ([manoloerdmann@gmail.com](mailto:manoloerdmann@gmail.com)), Status aktuell `active`.
+- Offerte, die angenommen war: Helvetic Bau Service Farzat Al Housein ([helveticbauservice@gmail.com](mailto:helveticbauservice@gmail.com)) — steht nach dem Storno wieder auf `offen`.
 - Zweite Offerte (ENIR Kida GmbH) ist bereits `abgelehnt` — bleibt unverändert, erhält keine Mail.
 
 ## Was gemacht wird
 
 1. **Auftrag schliessen**: offene Offerte auf `zurückgezogen` setzen, Auftrag auf `zurückgezogen/geschlossen` — kein Interesse mehr, keine neuen Offerten möglich.
 2. **Keine automatischen Massen-Mails**: Die Statusänderung wird so ausgeführt, dass die Auftrags-Benachrichtigungen (Handwerker-Blast) nicht ausgelöst werden.
-3. **Zwei Mails über SMTP2GO** im Namen von Büeze, je mit BCC an info@walia-solutions.ch.
+3. **Zwei Mails über SMTP2GO** im Namen von Büeze, je mit BCC an [info@walia-solutions.ch](mailto:info@walia-solutions.ch).
 
 ## Mailtext 1 — an den Kunden (Manuel Erdmann)
 
