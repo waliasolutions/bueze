@@ -12,7 +12,18 @@ import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
 import { HandwerkerRating } from './HandwerkerRating';
 import { ProposalStatusBadge } from './ProposalStatusBadge';
-import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBatch } from '@/lib/proposalHelpers';
+import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBatch, revokeProposalAcceptance } from '@/lib/proposalHelpers';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProposalComparisonDialog } from './ProposalComparisonDialog';
