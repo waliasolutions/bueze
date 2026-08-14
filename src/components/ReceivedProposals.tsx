@@ -295,6 +295,24 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId, on
     }
   };
 
+  const handleRevoke = async (proposalId: string) => {
+    const result = await revokeProposalAcceptance(proposalId);
+
+    toast({
+      title: result.success ? 'Annahme zurückgezogen' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
+
+    if (result.success) {
+      await invalidateProposalQueries(queryClient, proposalId, undefined, userId);
+      fetchProposals();
+      onProposalStatusChange?.();
+    }
+  };
+
+
+
   const getComparisonProposals = () => {
     return filteredProposals
       .filter(p => comparisonIds.has(p.id))
