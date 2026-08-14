@@ -190,6 +190,17 @@ export default function AdminLeadsManagement() {
     setExpandedLeads(newExpanded);
   };
 
+  // Storno durch Admin (SSOT: gemeinsamer RPC-Helper)
+  const handleAdminRevoke = async (proposalId: string, leadId: string) => {
+    const result = await revokeProposalAcceptance(proposalId);
+    if (result.success) {
+      toast.success(result.message);
+      await fetchLeads();
+    } else {
+      toast.error(result.message);
+    }
+  };
+
 
   const handleLeadAction = (lead: LeadWithOwnerContact, action: 'pause' | 'delete' | 'reactivate' | 'renotify' | 'resend_nonproposers') => {
     setActionLead(lead);
