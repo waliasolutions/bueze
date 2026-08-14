@@ -2423,6 +2423,10 @@ export type Database = {
         Args: { p_action: string; p_ip_hash: string; p_user_id: string }
         Returns: undefined
       }
+      revoke_proposal_acceptance: {
+        Args: { p_proposal_id: string }
+        Returns: Json
+      }
       run_retention_cleanup: { Args: never; Returns: Json }
       setup_admin_user: {
         Args: { user_email: string; user_name: string }

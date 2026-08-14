@@ -27,6 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { revokeProposalAcceptance } from '@/lib/proposalHelpers';
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -188,6 +189,17 @@ export default function AdminLeadsManagement() {
       newExpanded.add(leadId);
     }
     setExpandedLeads(newExpanded);
+  };
+
+  // Storno durch Admin (SSOT: gemeinsamer RPC-Helper)
+  const handleAdminRevoke = async (proposalId: string, leadId: string) => {
+    const result = await revokeProposalAcceptance(proposalId);
+    if (result.success) {
+      toast.success(result.message);
+      await fetchLeads();
+    } else {
+      toast.error(result.message);
+    }
   };
 
 
@@ -715,9 +727,20 @@ export default function AdminLeadsManagement() {
                                         <div>
                                           <div className="text-sm text-muted-foreground">Nachricht</div>
                                           <div className="text-sm line-clamp-3">{proposal.message}</div>
+                                          {proposal.status === 'accepted' && (
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              className="mt-3"
+                                              onClick={() => handleAdminRevoke(proposal.id, lead.id)}
+                                            >
+                                              Annahme zurücksetzen
+                                            </Button>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
+
                                   ))}
                                 </div>
                               ) : (lead.proposals_count || 0) > 0 ? (

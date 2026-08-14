@@ -12,7 +12,18 @@ import { useToast } from '@/hooks/use-toast';
 import { formatTimeAgo } from '@/lib/swissTime';
 import { HandwerkerRating } from './HandwerkerRating';
 import { ProposalStatusBadge } from './ProposalStatusBadge';
-import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBatch } from '@/lib/proposalHelpers';
+import { acceptProposal, rejectProposal, acceptProposalsBatch, rejectProposalsBatch, revokeProposalAcceptance } from '@/lib/proposalHelpers';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { CardSkeleton } from '@/components/ui/page-skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ProposalComparisonDialog } from './ProposalComparisonDialog';
@@ -284,6 +295,24 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId, on
     }
   };
 
+  const handleRevoke = async (proposalId: string) => {
+    const result = await revokeProposalAcceptance(proposalId);
+
+    toast({
+      title: result.success ? 'Annahme zurückgezogen' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
+
+    if (result.success) {
+      await invalidateProposalQueries(queryClient, proposalId, undefined, userId);
+      fetchProposals();
+      onProposalStatusChange?.();
+    }
+  };
+
+
+
   const getComparisonProposals = () => {
     return filteredProposals
       .filter(p => comparisonIds.has(p.id))
@@ -492,16 +521,85 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId, on
 
                   {proposal.status === 'pending' && (
                     <div className="flex gap-2 pt-2">
-                      <Button onClick={() => handleAccept(proposal.id)} className="flex-1 bg-green-600 hover:bg-green-700">
-                        <CheckCircle className="h-4 w-4 mr-2" />
-                        Annehmen
-                      </Button>
-                      <Button onClick={() => handleReject(proposal.id)} variant="outline" className="flex-1">
-                        <XCircle className="h-4 w-4 mr-2" />
-                        Ablehnen
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="flex-1 bg-green-600 hover:bg-green-700">
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Annehmen
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Offerte annehmen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Mit der Annahme werden die übrigen Offerten abgelehnt und Ihre Kontaktdaten
+                              für diesen Handwerker freigegeben. Sie können die Annahme innerhalb von
+                              24 Stunden zurückziehen.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleAccept(proposal.id)}>
+                              Ja, annehmen
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" className="flex-1">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Ablehnen
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Offerte ablehnen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Der Handwerker wird über die Ablehnung informiert. Dieser Schritt kann nicht
+                              rückgängig gemacht werden.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleReject(proposal.id)}>
+                              Ja, ablehnen
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   )}
+
+                  {proposal.status === 'accepted' && (
+                    <div className="pt-2">
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="w-full">
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Annahme zurückziehen
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Annahme zurückziehen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Die Offerte wird wieder auf «offen» gesetzt und Ihr Auftrag ist wieder aktiv.
+                              Der Handwerker wird informiert. Ein Rückzug ist nur innerhalb von 24 Stunden
+                              nach der Annahme möglich.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleRevoke(proposal.id)}>
+                              Ja, zurückziehen
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
+
 
                   {/* Contact Details for Accepted Proposals */}
                   {proposal.status === 'accepted' && proposal.handwerker_profiles && (

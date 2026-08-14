@@ -35,6 +35,7 @@ import { getCategoryLabel } from "@/config/categoryLabels";
 import { getCantonLabel, SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
 import { checkCategoryMatch, checkServiceAreaMatch } from "@/lib/leadHelpers";
+import { revokeProposalAcceptance } from "@/lib/proposalHelpers";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
 import type { LeadListItem, ProposalWithClientInfo, HandwerkerProfileBasic, ReviewForHandwerker } from "@/types/entities";
@@ -643,6 +644,22 @@ const HandwerkerDashboard = () => {
       });
     }
   };
+
+  // Storno: withdraw an accepted proposal (SSOT: shared RPC helper)
+  const handleRevokeAcceptance = async (proposal: ProposalWithClientInfo) => {
+    if (!user) return;
+    const result = await revokeProposalAcceptance(proposal.id);
+    toast({
+      title: result.success ? 'Auftrag storniert' : 'Fehler',
+      description: result.message,
+      variant: result.success ? undefined : 'destructive',
+    });
+    if (result.success) {
+      await fetchProposals(user.id);
+    }
+  };
+
+
 
   // Handle edit proposal
   const handleOpenEditDialog = (proposal: ProposalWithClientInfo) => {
@@ -1579,6 +1596,35 @@ const HandwerkerDashboard = () => {
                                   </AlertDialogContent>
                                 </AlertDialog>
                               )}
+
+                              {/* Storno: withdraw acceptance (always possible while not delivered) */}
+                              {proposal.status === 'accepted' && !(proposal.leads as any)?.delivered_at && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button className="mt-2 w-full" variant="outline" size="sm">
+                                      <XCircle className="h-4 w-4 mr-2" />
+                                      Auftrag stornieren
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Auftrag stornieren?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Ihre Offerte wird wieder auf «offen» gesetzt und der Auftrag ist für den Kunden
+                                        wieder verfügbar. Der Kunde wird über die Stornierung informiert.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleRevokeAcceptance(proposal)}>
+                                        Ja, stornieren
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+
+
 
                               {/* Show delivered badge */}
                               {proposal.status === 'accepted' && (proposal.leads as any)?.delivered_at && (
