@@ -55,26 +55,26 @@ Neue SECURITY DEFINER RPC `revoke_proposal_acceptance(p_proposal_id uuid)`:
 
 - In `AdminLeadsManagement.tsx` wird für jeden Auftrag mit akzeptierter Offerte ein Admin-Button «Annahme zurücksetzen» ergänzt, der jederzeit (auch nach 24h) widerrufen kann.
 
-### 6. Benachrichtigungen / E-Mails
+### 6. Benachrichtigungen
 
-- Neue Edge-Function oder Trigger-Function `send-proposal-revocation-email` informiert die betroffene Partei.
-- Keine Duplicate-E-Mails: Wird nur bei tatsächlichem Widerruf ausgelöst.
+- YAGNI: keine neue Edge-Function. Die RPC schreibt eine In-App-Benachrichtigung (`client_notifications` bzw. `handwerker_notifications`) über das bestehende Notification-Muster.
 
 ## Technische Details
 
-- Neue DB-Funktion: `revoke_proposal_acceptance(p_proposal_id uuid) -> jsonb` (SECURITY DEFINER, search_path = public).
-- Neue Edge-Function (optional): `send-proposal-revocation-email`.
+- Neue DB-Funktion: `revoke_proposal_acceptance(p_proposal_id uuid) -> jsonb` (SECURITY DEFINER, search_path = public) — einzige Quelle der Storno-Logik.
 - UI-Änderungen:
   - `src/components/ReceivedProposals.tsx` (Dialog + Widerruf-Button)
   - `src/pages/HandwerkerDashboard.tsx` (Stornieren-Button)
   - `src/pages/admin/AdminLeadsManagement.tsx` (Admin-Reset-Button)
+- Ein gemeinsamer Helper in `src/lib/proposalHelpers.ts` kapselt den RPC-Aufruf für alle drei Oberflächen (DRY).
 - Keine Änderung am bestehenden `accept_proposal_atomic` nötig.
 - SSOT: Der Widerruf nutzt denselben Zustands-Übergang wie die Annahme, nur rückwärts.
 
 ## Akzeptanzkriterien
 
-- Kunde kann akzeptierte Offerte innerhalb 24h widerrufen, sofern Auftrag nicht ausgeführt wurde.
-- Handwerker kann Auftrag stornieren, solange er nicht ausgeführt wurde.
+- Handwerker kann einen angenommenen Auftrag jederzeit stornieren.
+- Kunde kann eine Annahme innerhalb 24h widerrufen.
+- Admin kann jederzeit zurücksetzen.
 - Admin kann jederzeit zurücksetzen.
 - Vor Annahme/Ablehnung erscheint eine Rückfrage.
 - Der aktuelle «Kernbohrung»-Auftrag ist nach dem Fix wieder «active» und beide Offerten sind wieder «pending».
