@@ -644,6 +644,22 @@ const HandwerkerDashboard = () => {
     }
   };
 
+  // Storno: withdraw an accepted proposal (SSOT: shared RPC helper)
+  const handleRevokeAcceptance = async (proposal: ProposalWithClientInfo) => {
+    if (!user) return;
+    const result = await revokeProposalAcceptance(proposal.id);
+    toast({
+      title: result.success ? 'Auftrag storniert' : 'Fehler',
+      description: result.message,
+      variant: result.success ? undefined : 'destructive',
+    });
+    if (result.success) {
+      await fetchProposals(user.id);
+    }
+  };
+
+
+
   // Handle edit proposal
   const handleOpenEditDialog = (proposal: ProposalWithClientInfo) => {
     setEditForm({
