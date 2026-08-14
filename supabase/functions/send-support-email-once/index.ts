@@ -2,29 +2,56 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { sendEmail } from '../_shared/smtp2go.ts';
 
-const TEXT = `Guten Tag Herr Mkrtchyan
-
-Vielen Dank für Ihre Rückmeldung – sie hat uns sehr geholfen und wir konnten dank Ihrem Hinweis ein paar Spezial-Situationen finden und beheben.
-
-Bitte versuchen Sie es jetzt nochmals unter «Profil bearbeiten» → «Dokumente & Bilder». Sollte weiterhin etwas nicht klappen, melden Sie sich einfach kurz – am besten gleich mit einem Beispiel-Bild, damit wir es gezielt nachstellen können.
-
-Freundliche Grüsse
-Büeze.ch GmbH
+const SIGNATURE = `Freundliche Grüsse
+Ihr Büeze-Team
 info@bueeze.ch`;
+
+const CLIENT_TEXT = `Guten Tag Herr Erdmann
+
+Ihre angenommene Offerte zum Auftrag «Kernbohrung 4x 160er Trocken» wurde storniert und der Auftrag wurde zurückgezogen.
+
+Falls Sie später erneut Offerten möchten, können Sie den Auftrag jederzeit neu erfassen.
+
+${SIGNATURE}`;
+
+const HANDWERKER_TEXT = `Guten Tag Herr Al Housein
+
+Der Kunde hat den Auftrag «Kernbohrung 4x 160er Trocken» zurückgezogen. Es besteht kein Interesse mehr an einer Ausführung.
+
+Ihre Offerte wurde entsprechend geschlossen. Weitere Aufträge finden Sie jederzeit in Ihrem Büeze-Konto.
+
+${SIGNATURE}`;
+
+const toHtml = (text: string) =>
+  `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#111">${text
+    .split('\n\n')
+    .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+    .join('')}</div>`;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  const result = await sendEmail({
-    to: 'info.mkrtchyan@artmultiservis.ch',
-    bcc: 'info@walia-solutions.ch',
-    subject: 'Ihr Hinweis – Problem behoben',
-    textBody: TEXT,
-    htmlBody: `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6;color:#111">${TEXT.split('\n\n').map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('')}</div>`,
-  });
+  const results = await Promise.all([
+    sendEmail({
+      to: 'manoloerdmann@gmail.com',
+      bcc: 'info@walia-solutions.ch',
+      subject: 'Ihr Auftrag «Kernbohrung 4x 160er Trocken» wurde storniert',
+      textBody: CLIENT_TEXT,
+      htmlBody: toHtml(CLIENT_TEXT),
+    }),
+    sendEmail({
+      to: 'helveticbauservice@gmail.com',
+      bcc: 'info@walia-solutions.ch',
+      subject: 'Auftrag «Kernbohrung 4x 160er Trocken» zurückgezogen',
+      textBody: HANDWERKER_TEXT,
+      htmlBody: toHtml(HANDWERKER_TEXT),
+    }),
+  ]);
 
-  return new Response(JSON.stringify(result), {
+  const success = results.every((r) => r.success);
+
+  return new Response(JSON.stringify({ success, results }), {
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    status: result.success ? 200 : 500,
+    status: success ? 200 : 500,
   });
 });
