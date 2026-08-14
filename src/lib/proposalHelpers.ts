@@ -158,3 +158,42 @@ export async function rejectProposalsBatch(proposalIds: string[]): Promise<Propo
     };
   }
 }
+
+/**
+ * Revoke an accepted proposal (Storno).
+ * SSOT: all three surfaces (client, handwerker, admin) call the same RPC.
+ * Authorization + time window are enforced server-side:
+ * - Handwerker & Admin: any time
+ * - Client (Auftraggeber): within 24h of acceptance
+ */
+export async function revokeProposalAcceptance(proposalId: string): Promise<ProposalActionResult> {
+  try {
+    const { data, error } = await supabase.rpc('revoke_proposal_acceptance', {
+      p_proposal_id: proposalId,
+    });
+
+    if (error) {
+      console.error('Error revoking proposal acceptance:', error);
+      return {
+        success: false,
+        message: 'Auftrag konnte nicht storniert werden',
+        error: error.message,
+      };
+    }
+
+    const result = (data ?? {}) as { success?: boolean; message?: string };
+    return {
+      success: !!result.success,
+      message: result.message ?? (result.success
+        ? 'Auftrag storniert.'
+        : 'Auftrag konnte nicht storniert werden'),
+    };
+  } catch (error) {
+    console.error('Error revoking proposal acceptance:', error);
+    return {
+      success: false,
+      message: 'Auftrag konnte nicht storniert werden',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
