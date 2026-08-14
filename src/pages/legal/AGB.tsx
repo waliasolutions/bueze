@@ -93,11 +93,10 @@ const AGB = () => {
                   <li>Die Offerte enthält: Preisrahmen, Zeitschätzung, persönliche Nachricht und optionale Anhänge.</li>
                   <li>Der Kunde erhält eine Benachrichtigung über die neue Offerte.</li>
                   <li>Der Kunde kann die Offerte annehmen oder ablehnen.</li>
-                  <li>Der Kunde kann eine erteilte Annahme innerhalb von 24 Stunden widerrufen. Nach Ablauf dieser Frist gilt die Annahme als endgültig.</li>
+                  <li>Der Kunde kann eine erteilte Annahme innerhalb von 24 Stunden widerrufen. Nach Ablauf dieser Frist gilt die Annahme als endgültig. Nach dem Widerruf oder nach Ablauf der 24-Stunden-Frist obliegt die weitere Abwicklung ausschliesslich dem Kunden und dem vermittelten Handwerker. BÜEZE.CH bleibt in diesen Fällen Vermittlerin und ist keine Vertragspartei der vermittelten Leistungen.</li>
                   <li>Bei Annahme erhalten beide Parteien vollständige Kontaktdaten (Name, Telefon, E-Mail, Adresse).</li>
                   <li>Pro Anfrage kann nur eine Offerte angenommen werden.</li>
                   <li>Nach Annahme wird automatisch ein Nachrichten-Thread erstellt.</li>
-                  <li>Nach dem Widerruf oder nach Ablauf der 24-Stunden-Frist obliegt die weitere Abwicklung ausschliesslich dem Kunden und dem vermittelten Handwerker. BÜEZE.CH bleibt in diesen Fällen Vermittlerin und ist keine Vertragspartei der vermittelten Leistungen.</li>
                 </ol>
               </div>
 
