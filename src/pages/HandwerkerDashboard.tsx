@@ -1597,6 +1597,35 @@ const HandwerkerDashboard = () => {
                                 </AlertDialog>
                               )}
 
+                              {/* Storno: withdraw acceptance (always possible while not delivered) */}
+                              {proposal.status === 'accepted' && !(proposal.leads as any)?.delivered_at && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button className="mt-2 w-full" variant="outline" size="sm">
+                                      <XCircle className="h-4 w-4 mr-2" />
+                                      Auftrag stornieren
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Auftrag stornieren?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Ihre Offerte wird wieder auf «offen» gesetzt und der Auftrag ist für den Kunden
+                                        wieder verfügbar. Der Kunde wird über die Stornierung informiert.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => handleRevokeAcceptance(proposal)}>
+                                        Ja, stornieren
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
+
+
+
                               {/* Show delivered badge */}
                               {proposal.status === 'accepted' && (proposal.leads as any)?.delivered_at && (
                                 <div className="mt-3 flex items-center gap-2 text-sm text-green-700">
