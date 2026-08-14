@@ -28,53 +28,53 @@
 
 Neue SECURITY DEFINER RPC `revoke_proposal_acceptance(p_proposal_id uuid)`:
 
-- Prüft, ob die Offerte `accepted` ist und der aufrufende User berechtigt (Kunde = `leads.owner_id`, Handwerker = `lead_proposals.handwerker_id`, oder Admin).
-- Prüft, ob `leads.delivered_at IS NULL` (Auftrag noch nicht ausgeführt).
-- Prüft, ob die Annahme nicht älter als konfigurierbare Frist (z. B. 24h) ist, falls es sich um einen Kunden-Widerruf handelt. Admin darf jederzeit.
+- Prüft, ob die Offerte `accepted` ist und der aufrufende User berechtigt ist: Kunde (`leads.owner_id`), Handwerker (`lead_proposals.handwerker_id`) oder Admin.
+- Handwerker und Admin dürfen **immer** stornieren, ohne Zeitfenster.
+- Kunde darf innerhalb von 24h nach der Annahme widerrufen.
 - Setzt `lead_proposals.status = 'pending'`, `responded_at = NULL`.
 - Setzt `leads.status = 'active'`, `accepted_proposal_id = NULL`, `updated_at = now()`.
-- Erstellt eine Benachrichtigung für die andere Partei: «Offerte wurde zurückgezogen / Auftrag wieder offen».
-- Löscht KEINE bestehende Konversation, sondern fügt ggf. einen System-Message-Hinweis hinzu.
+- Erstellt eine Benachrichtigung für die jeweils andere Partei: «Auftrag storniert / Auftrag wieder offen».
+- Löscht KEINE bestehende Konversation (History bleibt erhalten).
+
 
 ### 3. UI: Kunden-Ansicht (`ReceivedProposals.tsx`)
 
 - Bestätigungsdialog vor `handleAccept` und `handleReject` (AlertDialog): «Möchten Sie diese Offerte wirklich annehmen? Dieser Schritt ist nur innerhalb von 24 Stunden rückgängig machbar.»
-- Bei akzeptierten Offerten (`status === 'accepted'`) wird ein neuer Button «Widerrufen» angezeigt, wenn:
-  - `leads.delivered_at` noch nicht gesetzt ist,
-  - die Annahme jünger als 24h ist.
+- Bei akzeptierten Offerten (`status === 'accepted'`) erscheint ein Button «Widerrufen», solange die Annahme jünger als 24h ist.
 - Klick auf «Widerrufen» öffnet ebenfalls einen Bestätigungsdialog und ruft `revoke_proposal_acceptance` auf.
 - Nach Widerruf: UI refresht, Buttons «Annehmen/Ablehnen» erscheinen wieder.
 
 ### 4. UI: Handwerker-Ansicht
 
-- Im Handwerker-Dashboard / Auftragsbereich wird für akzeptierte, aber noch nicht ausgeführte Aufträge ein Button «Offerte zurückziehen» / «Auftrag stornieren» eingeblendet.
-- Ruft dieselbe RPC `revoke_proposal_acceptance` auf.
-- Nach Widerruf: Auftrag verschwindet aus «In Bearbeitung» und erscheint wieder als potenzielle Lead-Chance (sofern noch aktiv).
+- Im Handwerker-Dashboard wird bei jedem angenommenen Auftrag ein Button «Auftrag stornieren» eingeblendet – ohne Zeitlimit.
+- Bestätigungsdialog mit Hinweis, dass der Auftrag danach wieder offen ist und der Kunde informiert wird.
+- Ruft dieselbe RPC `revoke_proposal_acceptance` auf (SSOT).
+- Nach Storno: Auftrag verschwindet aus «In Bearbeitung», Offerte ist wieder `pending`, Kunde erhält Benachrichtigung.
 
 ### 5. Admin-Funktion
 
 - In `AdminLeadsManagement.tsx` wird für jeden Auftrag mit akzeptierter Offerte ein Admin-Button «Annahme zurücksetzen» ergänzt, der jederzeit (auch nach 24h) widerrufen kann.
 
-### 6. Benachrichtigungen / E-Mails
+### 6. Benachrichtigungen
 
-- Neue Edge-Function oder Trigger-Function `send-proposal-revocation-email` informiert die betroffene Partei.
-- Keine Duplicate-E-Mails: Wird nur bei tatsächlichem Widerruf ausgelöst.
+- YAGNI: keine neue Edge-Function. Die RPC schreibt eine In-App-Benachrichtigung (`client_notifications` bzw. `handwerker_notifications`) über das bestehende Notification-Muster.
 
 ## Technische Details
 
-- Neue DB-Funktion: `revoke_proposal_acceptance(p_proposal_id uuid) -> jsonb` (SECURITY DEFINER, search_path = public).
-- Neue Edge-Function (optional): `send-proposal-revocation-email`.
+- Neue DB-Funktion: `revoke_proposal_acceptance(p_proposal_id uuid) -> jsonb` (SECURITY DEFINER, search_path = public) — einzige Quelle der Storno-Logik.
 - UI-Änderungen:
   - `src/components/ReceivedProposals.tsx` (Dialog + Widerruf-Button)
   - `src/pages/HandwerkerDashboard.tsx` (Stornieren-Button)
   - `src/pages/admin/AdminLeadsManagement.tsx` (Admin-Reset-Button)
+- Ein gemeinsamer Helper in `src/lib/proposalHelpers.ts` kapselt den RPC-Aufruf für alle drei Oberflächen (DRY).
 - Keine Änderung am bestehenden `accept_proposal_atomic` nötig.
 - SSOT: Der Widerruf nutzt denselben Zustands-Übergang wie die Annahme, nur rückwärts.
 
 ## Akzeptanzkriterien
 
-- Kunde kann akzeptierte Offerte innerhalb 24h widerrufen, sofern Auftrag nicht ausgeführt wurde.
-- Handwerker kann Auftrag stornieren, solange er nicht ausgeführt wurde.
+- Handwerker kann einen angenommenen Auftrag jederzeit stornieren.
+- Kunde kann eine Annahme innerhalb 24h widerrufen.
+- Admin kann jederzeit zurücksetzen.
 - Admin kann jederzeit zurücksetzen.
 - Vor Annahme/Ablehnung erscheint eine Rückfrage.
 - Der aktuelle «Kernbohrung»-Auftrag ist nach dem Fix wieder «active» und beide Offerten sind wieder «pending».
