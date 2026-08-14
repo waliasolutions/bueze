@@ -28,13 +28,14 @@
 
 Neue SECURITY DEFINER RPC `revoke_proposal_acceptance(p_proposal_id uuid)`:
 
-- Prüft, ob die Offerte `accepted` ist und der aufrufende User berechtigt (Kunde = `leads.owner_id`, Handwerker = `lead_proposals.handwerker_id`, oder Admin).
-- Prüft, ob `leads.delivered_at IS NULL` (Auftrag noch nicht ausgeführt).
-- Prüft, ob die Annahme nicht älter als konfigurierbare Frist (z. B. 24h) ist, falls es sich um einen Kunden-Widerruf handelt. Admin darf jederzeit.
+- Prüft, ob die Offerte `accepted` ist und der aufrufende User berechtigt ist: Kunde (`leads.owner_id`), Handwerker (`lead_proposals.handwerker_id`) oder Admin.
+- Handwerker und Admin dürfen **immer** stornieren, ohne Zeitfenster.
+- Kunde darf innerhalb von 24h nach der Annahme widerrufen.
 - Setzt `lead_proposals.status = 'pending'`, `responded_at = NULL`.
 - Setzt `leads.status = 'active'`, `accepted_proposal_id = NULL`, `updated_at = now()`.
-- Erstellt eine Benachrichtigung für die andere Partei: «Offerte wurde zurückgezogen / Auftrag wieder offen».
-- Löscht KEINE bestehende Konversation, sondern fügt ggf. einen System-Message-Hinweis hinzu.
+- Erstellt eine Benachrichtigung für die jeweils andere Partei: «Auftrag storniert / Auftrag wieder offen».
+- Löscht KEINE bestehende Konversation (History bleibt erhalten).
+
 
 ### 3. UI: Kunden-Ansicht (`ReceivedProposals.tsx`)
 
