@@ -176,7 +176,7 @@ const Dashboard = () => {
       if (reviewsData && reviewsData.length > 0) {
         const reviewedIds = [...new Set(reviewsData.map(r => r.reviewed_id))];
         const { data: handwerkerProfiles } = await supabase
-          .from('handwerker_profiles')
+          .from('handwerker_profiles_public')
           .select('id, user_id, first_name, last_name, company_name')
           .in('user_id', reviewedIds);
         

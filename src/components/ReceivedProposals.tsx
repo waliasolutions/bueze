@@ -121,9 +121,9 @@ export const ReceivedProposals: React.FC<ReceivedProposalsProps> = ({ userId, on
       // Batch fetch all unique handwerker IDs
       const handwerkerIds = [...new Set((data || []).map(p => p.handwerker_id))];
       
-      // Fetch handwerker profiles in batch with additional fields including contact details
+      // Fetch handwerker profiles in batch via the public projection (no banking/tax PII)
       const { data: hwProfiles } = await supabase
-        .from('handwerker_profiles')
+        .from('handwerker_profiles_public')
         .select('user_id, business_city, company_name, logo_url, verification_status, liability_insurance_provider, bio, phone_number, email, business_address, business_zip, business_canton, website, first_name, last_name')
         .in('user_id', handwerkerIds);
 

@@ -2284,6 +2284,7 @@ export type Database = {
           is_verified: boolean | null
           languages: string[] | null
           last_name: string | null
+          liability_insurance_provider: string | null
           logo_url: string | null
           phone_number: string | null
           portfolio_urls: string[] | null
@@ -2316,6 +2317,7 @@ export type Database = {
           is_verified?: boolean | null
           languages?: string[] | null
           last_name?: string | null
+          liability_insurance_provider?: string | null
           logo_url?: string | null
           phone_number?: string | null
           portfolio_urls?: string[] | null
@@ -2348,6 +2350,7 @@ export type Database = {
           is_verified?: boolean | null
           languages?: string[] | null
           last_name?: string | null
+          liability_insurance_provider?: string | null
           logo_url?: string | null
           phone_number?: string | null
           portfolio_urls?: string[] | null
