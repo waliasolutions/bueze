@@ -52,10 +52,68 @@ export function getSmtp2goApiKey(): string {
 
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 2000, 4000]; // exponential backoff
+const AUTO_DEDUPE_WINDOW_MS = 10 * 60 * 1000;
+
+async function sha256Hex(input: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function buildAutoDedupeKey(recipients: string[], options: EmailOptions): Promise<string> {
+  const bodyHash = await sha256Hex(`${options.subject}|${options.htmlBody ?? ''}|${options.textBody ?? ''}`);
+  const window = Math.floor(Date.now() / AUTO_DEDUPE_WINDOW_MS);
+  return `auto:${recipients.slice().sort().join(',')}:${bodyHash.slice(0, 32)}:${window}`;
+}
+
+/**
+ * Reserve the send in public.email_send_log. The unique index on dedupe_key is
+ * the lock: only the first caller wins, every later caller is a duplicate.
+ */
+async function reserveSend(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  dedupeKey: string,
+  recipients: string[],
+  options: EmailOptions,
+): Promise<'reserved' | 'duplicate'> {
+  const { error } = await supabase.from('email_send_log').insert({
+    dedupe_key: dedupeKey,
+    recipient: recipients.join(', '),
+    bcc: options.bcc ? (Array.isArray(options.bcc) ? options.bcc.join(', ') : options.bcc) : null,
+    subject: options.subject,
+    status: 'pending',
+    context: options.context ?? null,
+  });
+
+  if (!error) return 'reserved';
+
+  // 23505 = unique violation -> same mail already reserved/sent
+  if ((error as { code?: string }).code === '23505') return 'duplicate';
+
+  // Logging must never block a real send.
+  console.warn('email_send_log reservation failed (sending anyway):', error.message);
+  return 'reserved';
+}
+
+async function finalizeSend(
+  supabase: ReturnType<typeof createSupabaseAdmin>,
+  dedupeKey: string,
+  status: 'sent' | 'failed',
+  extra: { smtp2go_email_id?: string | null; error_detail?: string | null },
+) {
+  try {
+    await supabase
+      .from('email_send_log')
+      .update({ status, ...extra })
+      .eq('dedupe_key', dedupeKey);
+  } catch (e) {
+    console.warn('email_send_log finalize failed:', e);
+  }
+}
 
 /**
  * Send an email using SMTP2GO API with retry on transient failures.
  * Retries up to 3 times with exponential backoff (1s, 2s, 4s).
+ * Duplicate sends are blocked via the durable dedupe lock (see EmailOptions.dedupeKey).
  * @param options - Email options
  * @returns EmailResult with success status and response data
  */
@@ -71,6 +129,24 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
       return { success: false, error: `Ungültige E-Mail-Adresse: ${email}` };
     }
   }
+
+  const dedupeKey = options.dedupeKey ?? (await buildAutoDedupeKey(recipients, options));
+
+  let supabase: ReturnType<typeof createSupabaseAdmin> | null = null;
+  try {
+    supabase = createSupabaseAdmin();
+  } catch (e) {
+    console.warn('email_send_log unavailable (no admin client), sending without lock:', e);
+  }
+
+  if (supabase) {
+    const reservation = await reserveSend(supabase, dedupeKey, recipients, options);
+    if (reservation === 'duplicate') {
+      console.log(`Duplicate send blocked for key ${dedupeKey} (${recipients.join(', ')})`);
+      return { success: true, skipped: true, dedupeKey };
+    }
+  }
+
 
   const payload: Record<string, unknown> = {
     sender: EMAIL_SENDER,
