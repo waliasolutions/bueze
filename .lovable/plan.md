@@ -1,29 +1,26 @@
-# QA des Passwort-Reset-Flows vor dem Mailversand (Fall Edgar Mkrtchyan)
+# Bestehenden Reset-Link von Edgar Mkrtchyan auf 48 Stunden verlängern
 
-## Was ich live geprüft habe
+Ja, das geht — und zwar ohne neue Mail und ohne Änderung für alle anderen.
 
-- **Konto**: `info.mkrtchyan@artmultiservis.ch` = Auth-User `d15c925c…`, E-Mail bestätigt. Das `profiles.id` ist identisch mit der Auth-User-ID — der Reset-Token zeigt also auf den richtigen Benutzer, das Passwort-Update greift.
-- **Token**: Es existiert genau ein Token für ihn, erstellt 08:04 Uhr Zürich, gültig bis **09:04 Uhr Zürich**, noch nicht benutzt. Die Mail ist raus.
-- **Link-Prüfung**: `validate-password-reset-token` antwortet live korrekt (ungültiger Test-Token → «Ungültiger oder abgelaufener Link», HTTP 400 sauber).
-- **Zielseite**: `https://bueeze.ch/reset-password?token=…` liefert HTTP 200, Route existiert, Token wird direkt aus der URL gelesen und vorab validiert.
-- **Mailtemplate**: läuft über `emailWrapper()` (Büeze-CI), Button plus Klartext-Link als Fallback.
+## Warum es funktioniert (geprüft)
 
-## Das eine echte Problem
+- Die Gültigkeit steht **pro Token** in der Spalte `expires_at` der Tabelle `password_reset_tokens`. Es gibt keine globale Einstellung, die wir anfassen müssten.
+- Sein Token (erstellt 08:04 Zürich, aktuell gültig bis 09:04 Zürich) ist **unbenutzt** — der Link in der bereits versendeten Mail bleibt derselbe und funktioniert nach der Verlängerung weiter.
+- Die nächtliche Aufräum-Routine löscht nur Token, deren Ablaufzeit **bereits vergangen** ist. Ein Token mit 48 Stunden Restlaufzeit wird also nicht gelöscht.
+- Die Prüf-Funktion vergleicht bei jedem Klick `expires_at > now()` und dass der Token noch nicht benutzt ist — sie liest immer den aktuellen Wert, kein Cache.
 
-Der Link ist **nur 1 Stunde gültig** und läuft heute um 09:04 Uhr ab. Wenn ich jetzt eine Support-Mail mit «wir haben Ihnen soeben einen Link geschickt» schicke, ist der Link vermutlich schon abgelaufen, bevor er ihn öffnet — genau die Sackgasse, die er gemeldet hat.
+## Was wir machen
 
-## Vorgehen (klein, in dieser Reihenfolge)
-
-1. **Frischen Reset-Link auslösen** unmittelbar vor dem Mailversand, damit Link und Support-Mail zeitgleich ankommen.
-2. **Gültigkeitsdauer auf 24 Stunden erhöhen** in `send-password-reset` (eine Zeile: `60 * 60 * 1000` → `24 * 60 * 60 * 1000`) und im Mailtext «1 Stunde» → «24 Stunden». Token bleibt einmalig verwendbar und wird nach Ablauf weiterhin automatisch gelöscht — Sicherheitsniveau bleibt praktisch gleich, die Sackgasse verschwindet für alle Nutzer.
-3. **Support-Mail senden** (SMTP2GO, Büeze-CI via `emailWrapper()`, BCC an info@walia-solutions.ch) mit folgendem Text:
+1. **Nur seinen Token verlängern**: `expires_at` auf jetzt + 48 Stunden setzen (nur dieser eine Datensatz, gezielt über seine E-Mail und `used_at is null`).
+2. **Kein Zurücksetzen nötig**: Es gibt nichts, was nach 48 Stunden «zurückgestellt» werden müsste. Alle künftigen Reset-Links werden weiterhin mit **1 Stunde** erzeugt, weil der Standardwert im Code (`send-password-reset`) unverändert bleibt. Sein verlängerter Token verfällt nach 48 Stunden von selbst und wird beim nächsten Cleanup entfernt.
+3. **Support-Mail** (SMTP2GO, Büeze-CI, BCC an info@walia-solutions.ch) mit Hinweis auf die bereits erhaltene Mail:
 
 ```text
 Sehr geehrter Herr Mkrtchyan
 
 Ihr Konto bei Büeze.ch besteht bereits und ist freigegeben – eine neue Registrierung ist nicht nötig.
 
-Wir haben Ihnen soeben eine E-Mail mit einem Link zum Setzen eines neuen Passworts geschickt. Der Link ist 24 Stunden gültig. Danach können Sie sich direkt anmelden.
+Sie haben von uns eine E-Mail mit einem Link zum Setzen eines neuen Passworts erhalten. Wir haben die Gültigkeit dieses Links für Sie auf 48 Stunden verlängert, damit Sie in Ruhe Zeit haben. Danach können Sie sich direkt anmelden.
 
 Falls Sie weiterhin Unterstützung brauchen, können wir Sie zwischen Montag und Freitag kurz anrufen. Bitte geben Sie uns dazu 1–2 mögliche Zeiten an.
 
@@ -31,8 +28,9 @@ Freundliche Grüsse
 Ihr Büeze.ch Team
 ```
 
-4. **Danach kontrollieren**: neuer Token in der Datenbank vorhanden, Versand erfolgreich, kein neuer Eintrag im Fehlerlog.
+4. **Kontrolle danach**: neue Ablaufzeit in der Datenbank bestätigen und den Link mit der Prüf-Funktion einmal als «gültig» verifizieren.
 
-## Nicht enthalten (YAGNI)
+## Technische Details
 
-Keine neue Tabelle, kein Admin-UI für Reset-Verläufe, keine Änderung am Login- oder Onboarding-Code — der SSOT-Helper `requestPasswordReset` und das Fehler-Logging sind bereits umgesetzt.
+- Ein einmaliges, gezieltes `UPDATE` auf `public.password_reset_tokens` für `email = 'info.mkrtchyan@artmultiservis.ch'` und `used_at is null`. Keine Struktur-, Policy- oder Code-Änderung.
+- Standard-Ablaufzeit in `supabase/functions/send-password-reset/index.ts` bleibt bei 1 Stunde (SSOT unberührt).
