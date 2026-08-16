@@ -21,8 +21,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmailSendLog } from '@/components/admin/EmailSendLog';
 import { formatDateTime } from '@/lib/swissTime';
 import { ErrorCategory } from '@/lib/errorCategories';
+
 
 interface ErrorLogRow {
   id: string;
