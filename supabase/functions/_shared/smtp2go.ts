@@ -186,18 +186,18 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
         // 4xx errors are permanent — don't retry
         if (response.status >= 400 && response.status < 500) {
           console.error('SMTP2GO email sending failed (permanent):', data);
-          return {
-            success: false,
-            error: `Email sending failed: ${JSON.stringify(data)}`,
-            data,
-          };
+          const error = `Email sending failed: ${JSON.stringify(data)}`;
+          if (supabase) await finalizeSend(supabase, dedupeKey, 'failed', { error_detail: error });
+          return { success: false, error, data, dedupeKey };
         }
         // 5xx errors are transient — retry
         lastError = `Email sending failed (${response.status}): ${JSON.stringify(data)}`;
         console.warn(`SMTP2GO attempt ${attempt + 1}/${MAX_RETRIES + 1} failed:`, lastError);
       } else {
         console.log(`Email sent successfully to ${recipients.join(', ')}`);
-        return { success: true, data };
+        const emailId = (data as { data?: { email_id?: string } })?.data?.email_id ?? null;
+        if (supabase) await finalizeSend(supabase, dedupeKey, 'sent', { smtp2go_email_id: emailId });
+        return { success: true, data, dedupeKey };
       }
     } catch (error) {
       lastError = error instanceof Error ? error.message : 'Unknown error sending email';
@@ -211,8 +211,11 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
   }
 
   console.error(`SMTP2GO email sending failed after ${MAX_RETRIES + 1} attempts:`, lastError);
-  return { success: false, error: lastError || 'Email sending failed after retries' };
+  const finalError = lastError || 'Email sending failed after retries';
+  if (supabase) await finalizeSend(supabase, dedupeKey, 'failed', { error_detail: finalError });
+  return { success: false, error: finalError, dedupeKey };
 }
+
 
 /**
  * Send multiple emails in parallel
