@@ -287,6 +287,13 @@ export default function ErrorLog() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="emails">
+          <EmailSendLog />
+        </TabsContent>
+      </Tabs>
     </div>
+
   );
 }
