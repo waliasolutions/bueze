@@ -11,13 +11,12 @@ interface SiteSettings {
   default_og_image?: string;
   site_name?: string;
   robots_txt?: string;
-  sitemap_url?: string;
-  sitemap_generated_at?: string;
+  sitemap_last_generated?: string;
 }
 
 /** SSOT column projection for site SEO settings. */
 const SITE_SETTINGS_SELECT =
-  'id, gtm_container_id, google_analytics_id, google_search_console_verification, default_meta_title, default_meta_description, default_og_image, site_name, robots_txt, sitemap_url, sitemap_generated_at';
+  'id, gtm_container_id, google_analytics_id, google_search_console_verification, default_meta_title, default_meta_description, default_og_image, site_name, robots_txt, sitemap_last_generated';
 
 export const SITE_SETTINGS_QUERY_KEY = ['site-seo-settings'] as const;
 
