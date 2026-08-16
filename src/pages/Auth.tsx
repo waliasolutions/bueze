@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { getUserRoles } from '@/lib/roleHelpers';
+import { requestPasswordReset } from '@/lib/passwordReset';
 
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { DynamicHelmet } from '@/components/DynamicHelmet';
