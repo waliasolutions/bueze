@@ -2,7 +2,7 @@
 
 ## Ziel
 
-Der bestehende Reset-Link für `info.mkrtchyan@artmultiservis.ch` soll bis **Dienstag, 18. August 2026, 08:00 Uhr (Zürich)** gültig sein. Der Kunde bekommt daraufhin eine kurze Support-Mail mit klaren Anweisungen — ohne technische Details, ohne Erwähnung von «48 Stunden».
+Der bestehende Reset-Link für `info.mkrtchyan@artmultiservis.ch` soll bis **Dienstag, 18. August 2026, 08:00 Uhr (Zürich)** gültig sein. Der Kunde bekommt eine kurze Support-Mail mit klaren Schritt-Anweisungen.
 
 ## Warum das geht
 
@@ -20,9 +20,19 @@ Sehr geehrter Herr Mkrtchyan,
 
 Ihr Konto bei Büeze.ch besteht bereits und ist freigegeben – eine neue Registrierung ist nicht nötig.
 
-Bitte setzen Sie Ihr Passwort genau dort über den Link in der E-Mail, die Sie von uns erhalten haben. Bitte tun Sie dies bis Dienstag, 18. August um 08:00 Uhr.
+Wir haben Ihnen eine E-Mail mit einem Link zum Zurücksetzen Ihres Passworts geschickt. Bitte setzen Sie Ihr Passwort direkt dort.
 
-Falls Sie weiterhin Unterstützung brauchen, können wir Sie zwischen Montag und Freitag kurz anrufen. Bitte geben Sie uns dazu 1–2 mögliche Zeiten an.
+Schritt 1: Link öffnen
+Klicken Sie auf den Reset-Link in der E-Mail, die Sie von uns erhalten haben.
+
+Schritt 2: Neues Passwort wählen
+Setzen Sie auf der geöffneten Seite Ihr neues Passwort.
+
+Schritt 3: Frist beachten
+Bitte erledigen Sie dies bis Dienstag, 18. August um 08:00 Uhr.
+
+Unterstützung
+Falls Sie Hilfe brauchen, können wir Sie zwischen Montag und Freitag kurz anrufen. Bitte geben Sie uns dazu 1–2 mögliche Zeiten an.
 
 Freundliche Grüsse
 Ihr Büeze.ch Team
