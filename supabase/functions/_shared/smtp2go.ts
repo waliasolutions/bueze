@@ -1,7 +1,8 @@
 // Shared SMTP2GO email sending utility for Edge Functions
-// SSOT for all email sending operations
+// SSOT for all email sending operations (incl. duplicate-send lock)
 
 import { EMAIL_SENDER } from './siteConfig.ts';
+import { createSupabaseAdmin } from './supabaseClient.ts';
 
 export interface EmailAttachment {
   filename: string;
@@ -16,13 +17,26 @@ export interface EmailOptions {
   htmlBody?: string;
   textBody?: string;
   attachments?: EmailAttachment[];
+  /**
+   * Durable send lock. If an entry with this key already exists in
+   * public.email_send_log, the mail is NOT sent again.
+   * When omitted, a key is derived from recipient + subject + body hash
+   * within a 10 minute window (accidental double-send protection).
+   */
+  dedupeKey?: string;
+  /** Optional label for the admin email log (e.g. 'support_manual'). */
+  context?: string;
 }
 
 export interface EmailResult {
   success: boolean;
   data?: unknown;
   error?: string;
+  /** true when the send was blocked because the same mail already went out */
+  skipped?: boolean;
+  dedupeKey?: string;
 }
+
 
 /**
  * Get SMTP2GO API key from environment
