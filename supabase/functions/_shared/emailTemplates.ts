@@ -1121,3 +1121,31 @@ export const invoiceEmailTemplate = (data: InvoiceEmailData, company?: Partial<B
     </div>
   `, company);
 };
+
+interface PasswordResetData {
+  resetUrl: string;
+}
+
+export const passwordResetTemplate = (data: PasswordResetData) => {
+  return emailWrapper(`
+    <div class="content">
+      <h2>Passwort zurücksetzen</h2>
+      <p>Hallo,</p>
+      <p>Sie haben angefordert, Ihr Passwort bei Büeze.ch zurückzusetzen.</p>
+
+      <p style="text-align: center;">
+        <a href="${data.resetUrl}" class="button">Passwort zurücksetzen</a>
+      </p>
+
+      <p style="font-size: 14px; color: #666;">
+        Dieser Link ist <strong>1 Stunde</strong> gültig. Falls Sie diese Anfrage nicht gestellt haben,
+        können Sie diese E-Mail ignorieren – Ihr Passwort bleibt unverändert.
+      </p>
+
+      <p style="font-size: 12px; color: #999; word-break: break-all;">
+        Falls der Button nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:<br>
+        <a href="${data.resetUrl}">${data.resetUrl}</a>
+      </p>
+    </div>
+  `);
+};
