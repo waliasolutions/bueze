@@ -223,16 +223,17 @@ const HandwerkerDashboard = () => {
       
       // Fire all remaining loads in parallel — no waterfalls
       const isApproved = profile.verification_status === 'approved';
-      const [, subResult] = await Promise.all([
+      const subPromise = supabase
+        .from('handwerker_subscriptions')
+        .select('plan_type, current_period_end')
+        .eq('user_id', currentUser.id)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      await Promise.all([
         canBrowse
           ? fetchLeads(currentUser.id, profile.categories, profile.service_areas)
           : Promise.resolve(),
-        supabase
-          .from('handwerker_subscriptions')
-          .select('plan_type, current_period_end')
-          .eq('user_id', currentUser.id)
-          .eq('status', 'active')
-          .maybeSingle(),
         ...(isApproved
           ? [
               fetchProposals(currentUser.id),
@@ -241,7 +242,9 @@ const HandwerkerDashboard = () => {
             ]
           : []),
       ]);
-      if (subResult?.data) setSubscriptionData(subResult.data);
+
+      const { data: subData } = await subPromise;
+      if (subData) setSubscriptionData(subData);
       setLoading(false);
     } catch (error) {
       console.error('Auth error:', error);
