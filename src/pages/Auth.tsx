@@ -152,42 +152,20 @@ export default function Auth() {
 
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!resetEmail) {
-      toast({
-        title: 'Fehler',
-        description: 'Bitte geben Sie Ihre E-Mail-Adresse ein.',
-        variant: 'destructive',
-      });
-      return;
-    }
 
     setIsResetting(true);
+    const result = await requestPasswordReset(resetEmail);
+    setIsResetting(false);
 
-    try {
-      const { data, error } = await supabase.functions.invoke('send-password-reset', {
-        body: { email: resetEmail },
-      });
+    toast({
+      title: result.success ? 'E-Mail gesendet' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
 
-      if (error) {
-        throw new Error(error.message || 'Failed to send reset email');
-      }
-
-      toast({
-        title: 'E-Mail gesendet',
-        description: 'Bitte überprüfen Sie Ihren Posteingang für den Link zum Zurücksetzen des Passworts.',
-      });
+    if (result.success) {
       setIsDialogOpen(false);
       setResetEmail('');
-    } catch (error) {
-      console.error('Password reset error:', error);
-      toast({
-        title: 'Fehler',
-        description: 'Ein unerwarteter Fehler ist aufgetreten.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsResetting(false);
     }
   };
 
