@@ -75,6 +75,19 @@ const HandwerkerOnboarding = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [emailChanged, setEmailChanged] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
+
+  // Inline password reset so the user never leaves the onboarding (draft stays intact)
+  const handleSendResetLink = async () => {
+    setIsSendingReset(true);
+    const result = await requestPasswordReset(loginEmail || formData.email);
+    setIsSendingReset(false);
+    toast({
+      title: result.success ? 'E-Mail gesendet' : 'Fehler',
+      description: result.message,
+      variant: result.success ? 'default' : 'destructive',
+    });
+  };
   
   const [selectedMajorCategories, setSelectedMajorCategories] = useState<string[]>([]);
   
