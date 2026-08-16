@@ -86,13 +86,30 @@ async function reserveSend(
 
   if (!error) return 'reserved';
 
-  // 23505 = unique violation -> same mail already reserved/sent
-  if ((error as { code?: string }).code === '23505') return 'duplicate';
+  // 23505 = unique violation -> same mail already reserved/sent/failed
+  if ((error as { code?: string }).code === '23505') {
+    const { data: existing } = await supabase
+      .from('email_send_log')
+      .select('status')
+      .eq('dedupe_key', dedupeKey)
+      .maybeSingle();
+
+    // A previously failed send may be retried; sent/pending is a duplicate.
+    if (existing?.status === 'failed') {
+      await supabase
+        .from('email_send_log')
+        .update({ status: 'pending', error_detail: null })
+        .eq('dedupe_key', dedupeKey);
+      return 'reserved';
+    }
+    return 'duplicate';
+  }
 
   // Logging must never block a real send.
   console.warn('email_send_log reservation failed (sending anyway):', error.message);
   return 'reserved';
 }
+
 
 async function finalizeSend(
   supabase: ReturnType<typeof createSupabaseAdmin>,
