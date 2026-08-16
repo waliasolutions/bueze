@@ -34,6 +34,7 @@ import { LEGAL_FORM_OPTIONS, getLegalFormLabel } from "@/config/legalForms";
 import { ZefixCompanyNameInput } from "@/components/ZefixCompanyNameInput";
 import { mapZefixCompanyToProfile, syncZefixVerification, type ZefixCompany } from "@/lib/zefix";
 import { FREE_TIER_PROPOSALS_LIMIT } from "@/config/subscriptionPlans";
+import { requestPasswordReset } from "@/lib/passwordReset";
 
 type StepContent = 'contact' | 'services' | 'summary';
 
