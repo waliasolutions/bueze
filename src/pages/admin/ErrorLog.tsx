@@ -21,8 +21,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmailSendLog } from '@/components/admin/EmailSendLog';
 import { formatDateTime } from '@/lib/swissTime';
 import { ErrorCategory } from '@/lib/errorCategories';
+
 
 interface ErrorLogRow {
   id: string;
@@ -129,8 +132,15 @@ export default function ErrorLog() {
           Aktualisieren
         </Button>
       </div>
+      <Tabs defaultValue="errors" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="errors">Fehler</TabsTrigger>
+          <TabsTrigger value="emails">E-Mail-Versand</TabsTrigger>
+        </TabsList>
 
+        <TabsContent value="errors" className="space-y-6">
       <Card>
+
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Häufigkeit im gewählten Zeitraum</CardTitle>
           <CardDescription>
@@ -277,6 +287,13 @@ export default function ErrorLog() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="emails">
+          <EmailSendLog />
+        </TabsContent>
+      </Tabs>
     </div>
+
   );
 }

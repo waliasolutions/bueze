@@ -589,6 +589,51 @@ export type Database = {
         }
         Relationships: []
       }
+      email_send_log: {
+        Row: {
+          bcc: string | null
+          context: string | null
+          created_at: string
+          dedupe_key: string
+          error_detail: string | null
+          id: string
+          metadata: Json
+          recipient: string
+          smtp2go_email_id: string | null
+          status: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          bcc?: string | null
+          context?: string | null
+          created_at?: string
+          dedupe_key: string
+          error_detail?: string | null
+          id?: string
+          metadata?: Json
+          recipient: string
+          smtp2go_email_id?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          bcc?: string | null
+          context?: string | null
+          created_at?: string
+          dedupe_key?: string
+          error_detail?: string | null
+          id?: string
+          metadata?: Json
+          recipient?: string
+          smtp2go_email_id?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       form_submissions: {
         Row: {
           created_at: string
