@@ -16,6 +16,7 @@ import { getCategoryLabel } from '@/config/categoryLabels';
 import { getCantonLabel } from '@/config/cantons';
 import { formatPhoneDisplay, formatPhoneHref, formatAddress } from '@/lib/displayFormatters';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
+import { HANDWERKER_ADMIN_LIST_SELECT } from '@/lib/querySelects';
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import { HandwerkerEditDialog } from '@/components/admin/HandwerkerEditDialog';
 import { PasswordResetDialog, type PasswordResetTarget } from '@/components/admin/PasswordResetDialog';
@@ -109,8 +110,7 @@ export default function HandwerkerManagement() {
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
-      fetchHandwerkers();
-      fetchSubscriptions();
+      void fetchHandwerkers();
     }
   }, [hasChecked, isAuthorized]);
 
@@ -119,11 +119,16 @@ export default function HandwerkerManagement() {
     try {
       const { data, error } = await supabase
         .from('handwerker_profiles')
-        .select('*')
+        .select(HANDWERKER_ADMIN_LIST_SELECT)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setHandwerkers(data || []);
+      const rows = (data || []) as unknown as Handwerker[];
+      setHandwerkers(rows);
+      // Load only the subscriptions of the listed handwerkers (no full-table scan)
+      await fetchSubscriptions(
+        rows.map((h) => h.user_id).filter((id): id is string => Boolean(id))
+      );
     } catch (error) {
       console.error('Error fetching handwerkers:', error);
       toast({
@@ -136,11 +141,16 @@ export default function HandwerkerManagement() {
     }
   };
 
-  const fetchSubscriptions = async () => {
+  const fetchSubscriptions = async (userIds: string[]) => {
+    if (userIds.length === 0) {
+      setSubscriptions(new Map());
+      return;
+    }
     try {
       const { data, error } = await supabase
         .from('handwerker_subscriptions')
-        .select('user_id, plan_type, proposals_used_this_period, proposals_limit');
+        .select('user_id, plan_type, proposals_used_this_period, proposals_limit')
+        .in('user_id', userIds);
 
       if (error) throw error;
       const subsMap = new Map<string, Subscription>();
