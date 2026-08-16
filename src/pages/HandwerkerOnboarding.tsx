@@ -763,9 +763,17 @@ const HandwerkerOnboarding = () => {
                     >
                       Andere E-Mail verwenden
                     </Button>
-                    <a href="/auth?mode=reset" className="text-primary hover:underline text-sm">
-                      Passwort vergessen?
-                    </a>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary"
+                      disabled={isSendingReset}
+                      onClick={handleSendResetLink}
+                    >
+                      {isSendingReset && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Passwort-Link senden
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
