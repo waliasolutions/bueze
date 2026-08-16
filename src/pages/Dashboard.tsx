@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { supabase } from '@/integrations/supabase/client';
+import { LEAD_LIST_SELECT } from '@/lib/querySelects';
 import { Plus, MapPin, Eye, Users, FileText, Trash2, Archive, RotateCcw, Star, MessageSquare } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { getCategoryLabel } from '@/config/categoryLabels';
@@ -114,7 +115,7 @@ const Dashboard = () => {
         // Fetch user's active leads (exclude deleted and cancelled)
         supabase
           .from('leads')
-          .select('*')
+          .select(LEAD_LIST_SELECT)
           .eq('owner_id', user.id)
           .not('status', 'in', '("deleted","cancelled")')
           .order('created_at', { ascending: false })
@@ -123,7 +124,7 @@ const Dashboard = () => {
         // Fetch archived/cancelled leads
         supabase
           .from('leads')
-          .select('*')
+          .select(LEAD_LIST_SELECT)
           .eq('owner_id', user.id)
           .eq('status', 'cancelled')
           .order('created_at', { ascending: false })

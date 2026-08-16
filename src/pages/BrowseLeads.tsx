@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { LEAD_LIST_SELECT } from '@/lib/querySelects';
 import { MapPin, Clock, Coins, X, Filter, Globe } from 'lucide-react';
 import { formatTimeAgo, formatBudget } from '@/lib/swissTime';
 import { SWISS_CANTONS } from '@/config/cantons';
@@ -76,7 +77,7 @@ const BrowseLeads = () => {
 
       // Fetch leads and existing proposals in parallel
       const [leadsResult, proposalsResult] = await Promise.all([
-        supabase.from('leads').select('*').eq('status', 'active').order('created_at', { ascending: false }),
+        supabase.from('leads').select(LEAD_LIST_SELECT).eq('status', 'active').order('created_at', { ascending: false }),
         supabase.from('lead_proposals').select('lead_id').eq('handwerker_id', user.id),
       ]);
 

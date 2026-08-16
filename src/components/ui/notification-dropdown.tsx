@@ -1,4 +1,5 @@
-import { useState, useEffect, ReactNode, useCallback } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,17 +53,17 @@ export function NotificationDropdown<T extends BaseNotification>({
   renderIcon,
   maxHeight = '400px',
 }: NotificationDropdownProps<T>) {
-  const [notifications, setNotifications] = useState<T[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const queryKey = ['notifications', tableName, userId ?? 'all'] as const;
 
-  const fetchNotifications = useCallback(async () => {
-    try {
+  const { data: notifications = [], isLoading: loading } = useQuery({
+    queryKey,
+    queryFn: async (): Promise<T[]> => {
       // All three notification tables share identical schemas, so we cast
       // to avoid Supabase's per-table type narrowing while keeping a single query
       let query = (supabase.from(tableName as any) as any)
-        .select('*')
+        .select('id, type, title, message, read, related_id, metadata, created_at')
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -72,36 +73,26 @@ export function NotificationDropdown<T extends BaseNotification>({
       }
 
       const { data, error } = await query;
+      if (error) throw error;
 
-      if (error) {
-        console.error(`Error fetching ${tableName}:`, error);
-        return;
-      }
-
-      const mapped = (data || []).map((n: any) => ({
+      return (data || []).map((n: any) => ({
         ...n,
-        metadata: n.metadata as Record<string, unknown> | null
+        metadata: n.metadata as Record<string, unknown> | null,
       })) as T[];
+    },
+    // Cached across route changes / remounts; realtime keeps it fresh
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
+    enabled: tableName === 'admin_notifications' || Boolean(userId),
+  });
 
-      setNotifications(mapped);
-      setUnreadCount(mapped.filter(n => !n.read).length);
-    } catch (error) {
-      console.error(`Error in fetchNotifications for ${tableName}:`, error);
-    } finally {
-      setLoading(false);
-    }
-  }, [tableName, userId]);
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const setNotifications = (updater: (prev: T[]) => T[]) => {
+    queryClient.setQueryData<T[]>(queryKey, (prev) => updater(prev ?? []));
+  };
 
   useEffect(() => {
-    let isMounted = true;
-
-    const init = async () => {
-      if (isMounted) {
-        await fetchNotifications();
-      }
-    };
-    init();
-
     // Set up realtime subscription
     const channel = supabase
       .channel(channelName)
@@ -112,27 +103,25 @@ export function NotificationDropdown<T extends BaseNotification>({
           schema: 'public',
           table: tableName,
         },
-        async (payload) => {
-          if (!isMounted) return;
-          
+        (payload) => {
           const newNotification = payload.new as T;
-          
+
           // For user-specific tables, verify the notification belongs to this user
           if (userId && tableName !== 'admin_notifications') {
             if ((newNotification as any).user_id !== userId) return;
           }
-          
-          setNotifications(prev => [newNotification, ...prev].slice(0, 20));
-          setUnreadCount(prev => prev + 1);
+
+          // Patch the cache instead of refetching the whole list
+          setNotifications((prev) => [newNotification, ...prev].slice(0, 20));
         }
       )
       .subscribe();
 
     return () => {
-      isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [channelName, tableName, userId, fetchNotifications]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [channelName, tableName, userId]);
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -143,7 +132,6 @@ export function NotificationDropdown<T extends BaseNotification>({
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -159,7 +147,6 @@ export function NotificationDropdown<T extends BaseNotification>({
         .in('id', unreadIds);
 
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
