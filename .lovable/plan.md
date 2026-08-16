@@ -1,44 +1,38 @@
-# Registrierung/Passwort-Reset: Sackgasse dauerhaft beheben (Fall Edgar Mkrtchyan)
+# QA des Passwort-Reset-Flows vor dem Mailversand (Fall Edgar Mkrtchyan)
 
-## Befund (geprüft in der Datenbank)
+## Was ich live geprüft habe
 
-- Das Konto `info.mkrtchyan@artmultiservis.ch` **existiert bereits**, E-Mail bestätigt, letzter Login 05.08.2026.
-- Das Handwerker-Profil «Art Multiservices, MKRTCHYAN» ist vorhanden und **freigegeben** (Rollen: user, handwerker).
-- Folge: Jeder neue Registrierungsversuch endet zwangsläufig in «E-Mail bereits registriert». Der einzige Ausweg ist Login oder Passwort-Reset.
-- Der Passwort-Reset-Endpunkt funktioniert technisch (Live-Test gibt 200 zurück). Reset-Token sind nicht mehr in der Tabelle, weil sie nach 1 Stunde ablaufen und vom nächtlichen Cleanup gelöscht werden — es ist daher **nicht nachvollziehbar**, ob seine Reset-Mails je erzeugt bzw. versendet wurden. Genau diese fehlende Nachvollziehbarkeit ist das eigentliche Problem.
-- Im Fehlerfall zeigt die Oberfläche nur «Ein unerwarteter Fehler ist aufgetreten» — der Nutzer erfährt nichts und wir sehen nichts.
+- **Konto**: `info.mkrtchyan@artmultiservis.ch` = Auth-User `d15c925c…`, E-Mail bestätigt. Das `profiles.id` ist identisch mit der Auth-User-ID — der Reset-Token zeigt also auf den richtigen Benutzer, das Passwort-Update greift.
+- **Token**: Es existiert genau ein Token für ihn, erstellt 08:04 Uhr Zürich, gültig bis **09:04 Uhr Zürich**, noch nicht benutzt. Die Mail ist raus.
+- **Link-Prüfung**: `validate-password-reset-token` antwortet live korrekt (ungültiger Test-Token → «Ungültiger oder abgelaufener Link», HTTP 400 sauber).
+- **Zielseite**: `https://bueeze.ch/reset-password?token=…` liefert HTTP 200, Route existiert, Token wird direkt aus der URL gelesen und vorab validiert.
+- **Mailtemplate**: läuft über `emailWrapper()` (Büeze-CI), Button plus Klartext-Link als Fallback.
 
-## Was wir umsetzen (klein und gezielt)
+## Das eine echte Problem
 
-1. **Nachvollziehbarkeit**: `send-password-reset` schreibt Fehlschläge (Profil-Lookup, Token-Insert, SMTP2GO-Versand) ins bestehende `app_error_log` mit E-Mail und Grund. Erfolgreiche Sendungen werden nur geloggt (Konsole), keine neue Tabelle.
-2. **Klare Meldungen**: Im Passwort-vergessen-Dialog statt der generischen Fehlermeldung die echte Ursache in de-CH anzeigen (z. B. «E-Mail konnte momentan nicht versendet werden – bitte in wenigen Minuten erneut versuchen»). Erfolgsfall bleibt neutral (keine Auskunft, ob ein Konto existiert).
-3. **Kein Umweg mehr im Onboarding**: Erscheint in Schritt 1 «Konto bereits vorhanden», gibt es dort direkt einen Button «Passwort-Link senden» — ohne Seitenwechsel, der Entwurf bleibt erhalten. Dazu ein einziger gemeinsamer Helper `requestPasswordReset(email)`, den Login-Seite und Onboarding nutzen (SSOT, kein doppelter Code).
-4. **Büeze-CI**: Die Reset-Mail wird über den bestehenden `emailWrapper()` gerendert; das doppelte Inline-HTML in der Funktion fällt weg.
+Der Link ist **nur 1 Stunde gültig** und läuft heute um 09:04 Uhr ab. Wenn ich jetzt eine Support-Mail mit «wir haben Ihnen soeben einen Link geschickt» schicke, ist der Link vermutlich schon abgelaufen, bevor er ihn öffnet — genau die Sackgasse, die er gemeldet hat.
 
-## Sofortmassnahme für Edgar Mkrtchyan
+## Vorgehen (klein, in dieser Reihenfolge)
 
-- Passwort-Reset-Link für sein bestehendes Konto auslösen und ihm eine kurze, freundliche Antwortmail (Büeze-CI, SMTP2GO, BCC an info@walia-solutions.ch) schicken: Konto besteht und ist freigegeben, keine Neuregistrierung nötig, Link zum Passwort setzen, Angebot für einen kurzen Anruf.
-- **Vorschlag für den Mailtext (de-CH):**
+1. **Frischen Reset-Link auslösen** unmittelbar vor dem Mailversand, damit Link und Support-Mail zeitgleich ankommen.
+2. **Gültigkeitsdauer auf 24 Stunden erhöhen** in `send-password-reset` (eine Zeile: `60 * 60 * 1000` → `24 * 60 * 60 * 1000`) und im Mailtext «1 Stunde» → «24 Stunden». Token bleibt einmalig verwendbar und wird nach Ablauf weiterhin automatisch gelöscht — Sicherheitsniveau bleibt praktisch gleich, die Sackgasse verschwindet für alle Nutzer.
+3. **Support-Mail senden** (SMTP2GO, Büeze-CI via `emailWrapper()`, BCC an info@walia-solutions.ch) mit folgendem Text:
 
 ```text
-Sehr geehrter Herr Mkrtchyan,
+Sehr geehrter Herr Mkrtchyan
 
 Ihr Konto bei Büeze.ch besteht bereits und ist freigegeben – eine neue Registrierung ist nicht nötig.
 
-Wir haben Ihnen soeben eine E-Mail mit einem Link zum Setzen eines neuen Passworts geschickt. Danach können Sie sich direkt anmelden.
+Wir haben Ihnen soeben eine E-Mail mit einem Link zum Setzen eines neuen Passworts geschickt. Der Link ist 24 Stunden gültig. Danach können Sie sich direkt anmelden.
 
-Falls Sie weiterhin Unterstützung brauchen, können wir Sie zwischen Montag und Freitag kurz anrufen. Bitte geben Sie uns 1–2 mögliche Zeiten an.
+Falls Sie weiterhin Unterstützung brauchen, können wir Sie zwischen Montag und Freitag kurz anrufen. Bitte geben Sie uns dazu 1–2 mögliche Zeiten an.
 
 Freundliche Grüsse
 Ihr Büeze.ch Team
 ```
 
-## Technische Details
+4. **Danach kontrollieren**: neuer Token in der Datenbank vorhanden, Versand erfolgreich, kein neuer Eintrag im Fehlerlog.
 
-- Geändert: `supabase/functions/send-password-reset/index.ts` (Logging + `emailWrapper()`), `src/pages/Auth.tsx` und `src/pages/HandwerkerOnboarding.tsx` (Helper-Nutzung, Inline-Reset-Button), neuer Helper in `src/lib/` (~20 Zeilen).
-- Keine Datenbankänderung nötig (`app_error_log` und Retention-Cleanup existieren bereits).
-- Nicht enthalten (YAGNI): eigene Reset-Statistik-Tabelle, Admin-UI für Reset-Verläufe, Änderungen an der Token-Lebensdauer.
+## Nicht enthalten (YAGNI)
 
-## Zur «extremen Langsamkeit»
-
-Dafür liegen aktuell keine Messdaten vor (Fehlerlog ist leer). Mit Punkt 1 sehen wir künftig serverseitige Fehlschläge; falls er nach dem Reset weiterhin Verzögerungen meldet, messen wir gezielt mit seinem Gerät/Netz nach.
+Keine neue Tabelle, kein Admin-UI für Reset-Verläufe, keine Änderung am Login- oder Onboarding-Code — der SSOT-Helper `requestPasswordReset` und das Fehler-Logging sind bereits umgesetzt.
