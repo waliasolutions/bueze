@@ -132,8 +132,15 @@ export default function ErrorLog() {
           Aktualisieren
         </Button>
       </div>
+      <Tabs defaultValue="errors" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="errors">Fehler</TabsTrigger>
+          <TabsTrigger value="emails">E-Mail-Versand</TabsTrigger>
+        </TabsList>
 
+        <TabsContent value="errors" className="space-y-6">
       <Card>
+
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Häufigkeit im gewählten Zeitraum</CardTitle>
           <CardDescription>
