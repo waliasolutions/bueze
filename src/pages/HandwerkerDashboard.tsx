@@ -35,6 +35,7 @@ import { getCategoryLabel } from "@/config/categoryLabels";
 import { getCantonLabel, SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
 import { checkCategoryMatch, checkServiceAreaMatch } from "@/lib/leadHelpers";
+import { LEAD_LIST_SELECT, PROPOSAL_LIST_SELECT } from "@/lib/querySelects";
 import { revokeProposalAcceptance } from "@/lib/proposalHelpers";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
@@ -220,28 +221,27 @@ const HandwerkerDashboard = () => {
       // Fetch leads for approved AND pending (Pre-Verified Browse Mode)
       const canBrowse = ['approved', 'pending'].includes(profile.verification_status || '');
       
-      if (canBrowse) {
-        // Pending users can browse leads (read-only)
-        await fetchLeads(currentUser.id, profile.categories, profile.service_areas);
-      }
-      
-      // Only fetch proposals, reviews, and stats for approved users
-      // Fetch subscription data for grace period banner
-      const { data: subData } = await supabase
-        .from('handwerker_subscriptions')
-        .select('plan_type, current_period_end')
-        .eq('user_id', currentUser.id)
-        .eq('status', 'active')
-        .maybeSingle();
-      if (subData) setSubscriptionData(subData);
-
-      if (profile.verification_status === 'approved') {
-        await Promise.all([
-          fetchProposals(currentUser.id),
-          fetchReviews(currentUser.id),
-          fetchDashboardStats(currentUser.id)
-        ]);
-      }
+      // Fire all remaining loads in parallel — no waterfalls
+      const isApproved = profile.verification_status === 'approved';
+      const [, subResult] = await Promise.all([
+        canBrowse
+          ? fetchLeads(currentUser.id, profile.categories, profile.service_areas)
+          : Promise.resolve(),
+        supabase
+          .from('handwerker_subscriptions')
+          .select('plan_type, current_period_end')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'active')
+          .maybeSingle(),
+        ...(isApproved
+          ? [
+              fetchProposals(currentUser.id),
+              fetchReviews(currentUser.id),
+              fetchDashboardStats(currentUser.id),
+            ]
+          : []),
+      ]);
+      if (subResult?.data) setSubscriptionData(subResult.data);
       setLoading(false);
     } catch (error) {
       console.error('Auth error:', error);
@@ -284,7 +284,7 @@ const HandwerkerDashboard = () => {
     try {
       // Fetch active leads and existing proposals in parallel
       const [leadsResult, proposalsResult] = await Promise.all([
-        supabase.from('leads').select('*').eq('status', 'active').order('created_at', { ascending: false }),
+        supabase.from('leads').select(LEAD_LIST_SELECT).eq('status', 'active').order('created_at', { ascending: false }),
         supabase.from('lead_proposals').select('lead_id').eq('handwerker_id', userId)
       ]);
 
@@ -337,7 +337,7 @@ const HandwerkerDashboard = () => {
       const { data, error } = await supabase
         .from('lead_proposals')
         .select(`
-          *,
+          ${PROPOSAL_LIST_SELECT},
           leads!lead_proposals_lead_id_fkey (title, city, canton, owner_id, delivered_at)
         `)
         .eq('handwerker_id', userId)
