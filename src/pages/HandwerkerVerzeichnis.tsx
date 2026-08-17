@@ -65,6 +65,7 @@ const HandwerkerVerzeichnis = () => {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).has('alle')) {
       setShowResults(true);
+      window.scrollTo(0, 0);
     }
   }, []);
 
