@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LeadStatusType } from '@/config/leadStatuses';
 import { majorCategories } from '@/config/majorCategories';
 import type { LeadListItem } from '@/types/entities';
+import { coversCanton } from '@/lib/serviceAreaHelpers';
 
 // =============================================================================
 // Lead-to-Handwerker Matching Helpers (SSOT)
@@ -40,9 +41,8 @@ export function checkCategoryMatch(lead: LeadListItem, categories: string[]): bo
  */
 export function checkServiceAreaMatch(lead: LeadListItem, serviceAreas: string[]): boolean {
   if (serviceAreas.length === 0) return false;
-  const cantons = serviceAreas.filter(area => area.length === 2);
   const postalCodes = serviceAreas.filter(area => area.length >= 4);
-  return cantons.includes(lead.canton) || postalCodes.includes(lead.zip);
+  return coversCanton(serviceAreas, lead.canton) || postalCodes.includes(lead.zip);
 }
 
 export interface LeadUpdateResult {
