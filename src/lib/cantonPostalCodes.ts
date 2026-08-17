@@ -32,6 +32,7 @@ export const CANTON_POSTAL_RANGES: Record<string, string[]> = {
   'NE': ['2000-2149'],
   'GE': ['1200-1299'],
   'JU': ['2350-2900'],
+  'FL': ['9485-9498'],
 };
 
 /**
