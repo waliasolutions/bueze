@@ -125,6 +125,10 @@ const HandwerkerVerzeichnis = () => {
     window.scrollTo(0, 0);
   };
 
+  const handleLoadMore = () => {
+    setDisplayCount(prev => prev + 24);
+  };
+
   const availableCantons = useMemo(() => {
     const result = new Set<string>();
     handwerkers.forEach(hw => {
