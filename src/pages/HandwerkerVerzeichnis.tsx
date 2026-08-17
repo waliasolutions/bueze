@@ -341,22 +341,27 @@ interface ResultsLayerProps {
   filterCategory: string;
   filteredHandwerkers: PublicHandwerker[];
   handwerkers: PublicHandwerker[];
+  displayCount: number;
   onSearchTermChange: (v: string) => void;
   onFilterCantonChange: (v: string) => void;
   onFilterCategoryChange: (v: string) => void;
   onBackToBrowse: () => void;
   onCardClick: (userId: string | null) => void;
+  onLoadMore: () => void;
 }
 
 const ResultsLayer = ({
   loading, searchTerm, filterCanton, filterCategory,
-  filteredHandwerkers, handwerkers,
+  filteredHandwerkers, handwerkers, displayCount,
   onSearchTermChange, onFilterCantonChange, onFilterCategoryChange,
-  onBackToBrowse, onCardClick
+  onBackToBrowse, onCardClick, onLoadMore
 }: ResultsLayerProps) => {
   const allCategories = Object.values(majorCategories)
     .flatMap(cat => cat.subcategories)
     .sort();
+
+  const visibleHandwerkers = filteredHandwerkers.slice(0, displayCount);
+  const hasMore = displayCount < filteredHandwerkers.length;
 
   return (
     <>
