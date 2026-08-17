@@ -61,6 +61,13 @@ const HandwerkerVerzeichnis = () => {
     fetchHandwerkers();
   }, []);
 
+  // Deep-Link: /handwerker-verzeichnis?alle=1 zeigt direkt alle Einträge
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('alle')) {
+      setShowResults(true);
+    }
+  }, []);
+
   // Show results whenever a filter is active
   useEffect(() => {
     if (filterCanton !== 'all' || filterCategory !== 'all') {
