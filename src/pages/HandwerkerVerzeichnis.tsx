@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Star, Search, Mail, Phone, ArrowLeft, Eye } from 'lucide-react';
 import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
+import { coversCanton } from '@/lib/serviceAreaHelpers';
 import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
@@ -37,6 +38,7 @@ interface PublicHandwerker {
   logo_url: string | null;
   is_verified: boolean | null;
   languages: string[] | null;
+  service_areas: string[] | null;
 }
 
 const HandwerkerVerzeichnis = () => {
@@ -70,7 +72,7 @@ const HandwerkerVerzeichnis = () => {
     try {
       const { data, error } = await supabase
         .from('handwerker_profiles_public')
-        .select('id, user_id, company_name, first_name, last_name, business_city, business_canton, business_address, business_zip, email, phone_number, categories, bio, logo_url, is_verified, languages')
+        .select('id, user_id, company_name, first_name, last_name, business_city, business_canton, business_address, business_zip, email, phone_number, categories, bio, logo_url, is_verified, languages, service_areas')
         .eq('verification_status', 'approved')
         .eq('is_verified', true);
 
@@ -91,7 +93,9 @@ const HandwerkerVerzeichnis = () => {
       hw.last_name?.toLowerCase().includes(term) ||
       hw.business_city?.toLowerCase().includes(term);
 
-    const matchesCanton = filterCanton === 'all' || hw.business_canton === filterCanton;
+    const matchesCanton = filterCanton === 'all' ||
+      hw.business_canton === filterCanton ||
+      coversCanton(hw.service_areas, filterCanton);
     const matchesCategory = filterCategory === 'all' || hw.categories?.includes(filterCategory);
 
     return matchesSearch && matchesCanton && matchesCategory;
@@ -120,6 +124,10 @@ const HandwerkerVerzeichnis = () => {
     const result = new Set<string>();
     handwerkers.forEach(hw => {
       if (hw.business_canton) result.add(hw.business_canton);
+      hw.service_areas?.forEach(area => {
+        if (area.length === 2) result.add(area);
+      });
+      if (coversCanton(hw.service_areas, 'FL')) result.add('FL');
     });
     return result;
   }, [handwerkers]);
