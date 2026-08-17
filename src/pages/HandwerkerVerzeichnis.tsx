@@ -46,6 +46,7 @@ const HandwerkerVerzeichnis = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCanton, setFilterCanton] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [displayCount, setDisplayCount] = useState(24);
   const [showResults, setShowResults] = useState(false);
   const [selectedHandwerkerId, setSelectedHandwerkerId] = useState<string | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
