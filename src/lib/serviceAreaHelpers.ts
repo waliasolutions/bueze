@@ -15,6 +15,12 @@ export interface ServiceAreaConfig {
 }
 
 /**
+ * SSOT: does a stored areas array cover all 26 Swiss cantons (= nationwide)?
+ */
+export const isNationwideCoverage = (areas: string[]): boolean =>
+  SWISS_ONLY_CANTON_CODES.every(code => areas.includes(code));
+
+/**
  * Parse stored service_areas array to determine the radius type and config
  */
 export const parseServiceAreas = (areas: string[]): ServiceAreaConfig => {
@@ -36,7 +42,7 @@ export const parseServiceAreas = (areas: string[]): ServiceAreaConfig => {
   };
   
   // Determine radius type based on stored data
-  if (SWISS_ONLY_CANTON_CODES.every(code => storedCantons.includes(code))) {
+  if (isNationwideCoverage(storedCantons)) {
     // All 26 Swiss cantons covered (FL optional) = nationwide
     config.radius = 'nationwide';
     if (storedCantons.length > 0) {
@@ -129,6 +135,6 @@ export const getServiceAreaSummary = (
 export const coversCanton = (areas: string[] | null | undefined, canton: string): boolean => {
   if (!areas || areas.length === 0) return false;
   if (areas.includes(canton)) return true;
-  const isNationwide = SWISS_ONLY_CANTON_CODES.every(code => areas.includes(code));
-  return isNationwide && canton === 'FL';
+  // Nationwide coverage also serves the Principality of Liechtenstein
+  return canton === 'FL' && isNationwideCoverage(areas);
 };

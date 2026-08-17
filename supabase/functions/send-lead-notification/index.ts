@@ -10,9 +10,7 @@ import { formatSwissDateTime, addDays } from '../_shared/dateFormatter.ts';
 
 import { handwerkerMatchesCategory } from '../_shared/majorCategoryMapping.ts';
 import { markLeadExpired } from '../_shared/markLeadExpired.ts';
-
-// Swiss canton codes
-const SWISS_CANTONS = ['AG', 'AI', 'AR', 'BE', 'BL', 'BS', 'FR', 'GE', 'GL', 'GR', 'JU', 'LU', 'NE', 'NW', 'OW', 'SG', 'SH', 'SO', 'SZ', 'TG', 'TI', 'UR', 'VD', 'VS', 'ZG', 'ZH'];
+import { coversCanton, isNationwideCoverage } from '../_shared/cantons.ts';
 
 interface HandwerkerMatch {
   id: string;
@@ -36,14 +34,13 @@ function matchHandwerkerByServiceArea(
     return { matches: false, matchType: null };
   }
 
-  // Check for nationwide coverage (all 26 cantons)
-  const cantonCount = serviceAreas.filter(area => SWISS_CANTONS.includes(area)).length;
-  if (cantonCount >= 26) {
+  // Nationwide coverage (all 26 Swiss cantons, incl. FL leads)
+  if (isNationwideCoverage(serviceAreas)) {
     return { matches: true, matchType: 'nationwide' };
   }
 
-  // Check for canton match
-  if (serviceAreas.includes(leadCanton)) {
+  // Canton/region match (SSOT helper, FL-aware)
+  if (coversCanton(serviceAreas, leadCanton)) {
     return { matches: true, matchType: 'canton' };
   }
 

@@ -165,12 +165,9 @@ const HandwerkerDashboard = () => {
             const categories = handwerkerProfile.categories || [];
             const serviceAreas = handwerkerProfile.service_areas || [];
             
-            const cantons = serviceAreas.filter(area => area.length === 2);
-            const postalCodes = serviceAreas.filter(area => area.length >= 4);
-            
-            const categoryMatches = categories.length === 0 || categories.includes(newLead.category);
-            const serviceAreaMatches = serviceAreas.length === 0 || 
-              cantons.includes(newLead.canton) || postalCodes.includes(newLead.zip);
+            // SSOT matching helpers (same rules as the lead list / BrowseLeads)
+            const categoryMatches = categories.length === 0 || checkCategoryMatch(newLead, categories);
+            const serviceAreaMatches = serviceAreas.length === 0 || checkServiceAreaMatch(newLead, serviceAreas);
             
             if (categoryMatches && serviceAreaMatches) {
               setLeads(prev => [newLead, ...prev]);
