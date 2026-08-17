@@ -124,10 +124,6 @@ const HandwerkerVerzeichnis = () => {
     const result = new Set<string>();
     handwerkers.forEach(hw => {
       if (hw.business_canton) result.add(hw.business_canton);
-      hw.service_areas?.forEach(area => {
-        if (area.length === 2) result.add(area);
-      });
-      if (coversCanton(hw.service_areas, 'FL')) result.add('FL');
     });
     return result;
   }, [handwerkers]);
