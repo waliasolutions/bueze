@@ -68,6 +68,11 @@ const HandwerkerVerzeichnis = () => {
     }
   }, [filterCanton, filterCategory]);
 
+  // Reset pagination whenever filters or search change
+  useEffect(() => {
+    setDisplayCount(24);
+  }, [filterCanton, filterCategory, searchTerm]);
+
   const fetchHandwerkers = async () => {
     try {
       const { data, error } = await supabase
