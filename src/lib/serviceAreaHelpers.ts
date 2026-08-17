@@ -121,3 +121,14 @@ export const getServiceAreaSummary = (
       return '';
   }
 };
+
+/**
+ * SSOT: does a stored service_areas array cover a given canton/region?
+ * Nationwide coverage (all 26 Swiss cantons) also covers the Principality of Liechtenstein.
+ */
+export const coversCanton = (areas: string[] | null | undefined, canton: string): boolean => {
+  if (!areas || areas.length === 0) return false;
+  if (areas.includes(canton)) return true;
+  const isNationwide = SWISS_ONLY_CANTON_CODES.every(code => areas.includes(code));
+  return isNationwide && canton === 'FL';
+};
