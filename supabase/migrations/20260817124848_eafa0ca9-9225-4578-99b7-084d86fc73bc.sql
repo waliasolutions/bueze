@@ -1,0 +1,2 @@
+ALTER TYPE public.canton ADD VALUE IF NOT EXISTS 'FL';
+ALTER TYPE public.swiss_canton ADD VALUE IF NOT EXISTS 'FL';
