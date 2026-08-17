@@ -451,81 +451,91 @@ const ResultsLayer = ({
           description="Keine Handwerker mit diesen Filterkriterien gefunden."
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredHandwerkers.map(hw => (
-            <Card
-              key={hw.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => onCardClick(hw.user_id)}
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-start gap-3 mb-3">
-                  {hw.logo_url ? (
-                    <img
-                      src={hw.logo_url}
-                      alt={hw.company_name || ''}
-                      className="h-12 w-12 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-lg">
-                      {(hw.company_name || hw.first_name || '?')[0].toUpperCase()}
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {visibleHandwerkers.map(hw => (
+              <Card
+                key={hw.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => onCardClick(hw.user_id)}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-3 mb-3">
+                    {hw.logo_url ? (
+                      <img
+                        src={hw.logo_url}
+                        alt={hw.company_name || ''}
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground font-bold text-lg">
+                        {(hw.company_name || hw.first_name || '?')[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold">
+                        {hw.company_name || `${hw.first_name || ''} ${hw.last_name || ''}`.trim()}
+                      </h3>
+                      {hw.business_city && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {hw.business_zip && `${hw.business_zip} `}{hw.business_city}
+                          {hw.business_canton && `, ${hw.business_canton}`}
+                        </p>
+                      )}
                     </div>
+                  </div>
+
+                  {hw.business_address && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {hw.business_address}
+                    </p>
                   )}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold">
-                      {hw.company_name || `${hw.first_name || ''} ${hw.last_name || ''}`.trim()}
-                    </h3>
-                    {hw.business_city && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {hw.business_zip && `${hw.business_zip} `}{hw.business_city}
-                        {hw.business_canton && `, ${hw.business_canton}`}
-                      </p>
+
+                  <div className="space-y-1 mb-3">
+                    {hw.email && (
+                      <a href={`mailto:${hw.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        <Mail className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{hw.email}</span>
+                      </a>
+                    )}
+                    {hw.phone_number && (
+                      <a href={formatPhoneHref(hw.phone_number)} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        {formatPhoneDisplay(hw.phone_number)}
+                      </a>
                     )}
                   </div>
-                </div>
 
-                {hw.business_address && (
-                  <p className="text-sm text-muted-foreground mb-2">
-                    {hw.business_address}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {(hw.categories || []).slice(0, 3).map(cat => (
+                      <Badge key={cat} variant="secondary" className="text-xs">
+                        {getCategoryLabel(cat)}
+                      </Badge>
+                    ))}
+                    {(hw.categories || []).length > 3 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{hw.categories.length - 3}
+                      </Badge>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 hover:text-primary transition-colors">
+                    <Eye className="h-3 w-3" />
+                    Profil ansehen
                   </p>
-                )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-                <div className="space-y-1 mb-3">
-                  {hw.email && (
-                    <a href={`mailto:${hw.email}`} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      <Mail className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{hw.email}</span>
-                    </a>
-                  )}
-                  {hw.phone_number && (
-                    <a href={formatPhoneHref(hw.phone_number)} onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                      <Phone className="h-3 w-3 shrink-0" />
-                      {formatPhoneDisplay(hw.phone_number)}
-                    </a>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {(hw.categories || []).slice(0, 3).map(cat => (
-                    <Badge key={cat} variant="secondary" className="text-xs">
-                      {getCategoryLabel(cat)}
-                    </Badge>
-                  ))}
-                  {(hw.categories || []).length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{hw.categories.length - 3}
-                    </Badge>
-                  )}
-                </div>
-
-                <p className="text-xs text-muted-foreground flex items-center gap-1 hover:text-primary transition-colors">
-                  <Eye className="h-3 w-3" />
-                  Profil ansehen
-                </p>
-              </CardContent>
-            </Card>
-          ))}
+          {hasMore && (
+            <div className="flex justify-center">
+              <Button variant="outline" onClick={onLoadMore}>
+                Mehr laden
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </>
