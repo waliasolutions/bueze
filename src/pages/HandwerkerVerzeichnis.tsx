@@ -166,8 +166,8 @@ const HandwerkerVerzeichnis = () => {
   return (
     <div className="min-h-screen bg-background">
       <DynamicHelmet
-        title="Handwerker-Verzeichnis Schweiz | Geprüfte Betriebe | Büeze.ch"
-        description="Durchsuchen Sie unser Verzeichnis geprüfter Handwerker in der Schweiz. Filtern Sie nach Kanton, Kategorie und finden Sie den passenden Fachbetrieb."
+        title="Handwerker-Verzeichnis Schweiz & Liechtenstein | Geprüfte Betriebe | Büeze.ch"
+        description="Durchsuchen Sie unser Verzeichnis geprüfter Handwerker in der Schweiz und Liechtenstein. Filtern Sie nach Kanton, Kategorie und finden Sie den passenden Fachbetrieb."
         canonical="https://bueeze.ch/handwerker-verzeichnis"
         schemaMarkup={schemaMarkup}
       />
@@ -177,7 +177,7 @@ const HandwerkerVerzeichnis = () => {
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">Handwerkerverzeichnis</h1>
             <p className="text-muted-foreground">
-              Verifizierte Schweizer Handwerker in Ihrer Region
+              Verifizierte Handwerker in Ihrer Region
             </p>
           </div>
 
