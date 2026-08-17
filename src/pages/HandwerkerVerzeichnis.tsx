@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Star, Search, Mail, Phone, ArrowLeft, Eye } from 'lucide-react';
 import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
-import { coversCanton } from '@/lib/serviceAreaHelpers';
 import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
