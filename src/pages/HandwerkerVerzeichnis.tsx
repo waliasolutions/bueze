@@ -410,7 +410,7 @@ const ResultsLayer = ({
                 <SelectValue placeholder="Kanton" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Alle Kantone</SelectItem>
+                <SelectItem value="all">Alle Einträge</SelectItem>
                 {SWISS_CANTONS.map(canton => (
                   <SelectItem key={canton.value} value={canton.value}>
                     {canton.label}
