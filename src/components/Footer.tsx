@@ -158,16 +158,6 @@ export const Footer = ({ content }: FooterProps) => {
             </a>
           </div>
 
-          <div className="flex justify-center mb-6">
-            <Link
-              to="/handwerker-verzeichnis"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-brand-500 hover:bg-brand-600 text-white font-semibold transition-colors"
-            >
-              <Search className="h-4 w-4" />
-              Handwerker finden
-            </Link>
-          </div>
-
           <div className="text-center">
             <p className="text-sm text-ink-300">
               © {new Date().getFullYear()} {billing.company_legal_name}. Alle Rechte vorbehalten.
