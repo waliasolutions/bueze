@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Star, Search, Mail, Phone, ArrowLeft, Eye } from 'lucide-react';
 import { SWISS_CANTONS, getCantonLabel } from '@/config/cantons';
-import { coversCanton } from '@/lib/serviceAreaHelpers';
 import { formatPhoneDisplay, formatPhoneHref } from '@/lib/displayFormatters';
 import { getCategoryLabel } from '@/config/categoryLabels';
 import { majorCategories } from '@/config/majorCategories';
@@ -93,9 +92,9 @@ const HandwerkerVerzeichnis = () => {
       hw.last_name?.toLowerCase().includes(term) ||
       hw.business_city?.toLowerCase().includes(term);
 
+    // SSOT: Verzeichnis filtert nach Firmensitz (Kanton/Region), nicht nach Einsatzgebiet
     const matchesCanton = filterCanton === 'all' ||
-      hw.business_canton === filterCanton ||
-      coversCanton(hw.service_areas, filterCanton);
+      hw.business_canton === filterCanton;
     const matchesCategory = filterCategory === 'all' || hw.categories?.includes(filterCategory);
 
     return matchesSearch && matchesCanton && matchesCategory;
@@ -124,10 +123,6 @@ const HandwerkerVerzeichnis = () => {
     const result = new Set<string>();
     handwerkers.forEach(hw => {
       if (hw.business_canton) result.add(hw.business_canton);
-      hw.service_areas?.forEach(area => {
-        if (area.length === 2) result.add(area);
-      });
-      if (coversCanton(hw.service_areas, 'FL')) result.add('FL');
     });
     return result;
   }, [handwerkers]);
