@@ -190,6 +190,8 @@ const HandwerkerVerzeichnis = () => {
               filterCategory={filterCategory}
               filteredHandwerkers={filteredHandwerkers}
               handwerkers={handwerkers}
+              displayCount={displayCount}
+              onLoadMore={handleLoadMore}
               onSearchTermChange={setSearchTerm}
               onFilterCantonChange={setFilterCanton}
               onFilterCategoryChange={setFilterCategory}
