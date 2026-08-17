@@ -106,6 +106,17 @@ export const Footer = ({ content }: FooterProps) => {
                 </div>
               ))}
             </div>
+
+            <div className="mt-8 lg:mt-10">
+              <Link
+                to="/handwerker-verzeichnis?alle=1"
+                className="inline-flex items-center gap-2 text-sm text-ink-300 hover:text-brand-400 transition-colors"
+                onClick={() => window.scrollTo(0, 0)}
+              >
+                <Search className="h-4 w-4" />
+                Alle Handwerker
+              </Link>
+            </div>
           </div>
         </div>
 
