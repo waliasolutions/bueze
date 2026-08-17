@@ -2,7 +2,7 @@
  * Service Area Helpers - SSOT for parsing and building service areas
  * Used by both HandwerkerOnboarding and HandwerkerProfileEdit
  */
-import { SWISS_CANTONS } from '@/config/cantons';
+import { SWISS_CANTONS, SWISS_ONLY_CANTON_CODES } from '@/config/cantons';
 
 export type ServiceRadius = 'city' | 'canton' | 'nationwide' | 'custom';
 
@@ -36,8 +36,8 @@ export const parseServiceAreas = (areas: string[]): ServiceAreaConfig => {
   };
   
   // Determine radius type based on stored data
-  if (storedCantons.length === allCantonCodes.length) {
-    // All 26 cantons = nationwide
+  if (SWISS_ONLY_CANTON_CODES.every(code => storedCantons.includes(code))) {
+    // All 26 Swiss cantons covered (FL optional) = nationwide
     config.radius = 'nationwide';
     if (storedCantons.length > 0) {
       // Try to determine the business canton from the first one

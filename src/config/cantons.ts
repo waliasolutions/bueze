@@ -36,6 +36,9 @@ export type CantonCode = typeof SWISS_CANTONS[number]['value'];
 
 export const CANTON_CODES = SWISS_CANTONS.map(c => c.value);
 
+/** Codes of the 26 Swiss cantons only (excludes the Principality of Liechtenstein) */
+export const SWISS_ONLY_CANTON_CODES = CANTON_CODES.filter(code => code !== 'FL');
+
 export const getCantonLabel = (code: string): string => {
   return SWISS_CANTONS.find(c => c.value === code)?.label || code;
 };
