@@ -113,7 +113,7 @@ export const footerDefaults = {
     { label: 'Für Auftraggeber', href: '/submit-lead' },
     { label: 'Für Handwerker', href: '/handwerker' },
     { label: 'Preise', href: '/pricing' },
-    { label: 'Alle Handwerker', href: '/handwerker-verzeichnis' },
+    { label: 'Alle Handwerker', href: '/handwerker-verzeichnis?alle=1' },
     { label: 'AGB', href: '/legal/agb' },
     { label: 'Impressum', href: '/impressum' },
     { label: 'Datenschutz', href: '/datenschutz' },
