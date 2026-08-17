@@ -93,9 +93,9 @@ const HandwerkerVerzeichnis = () => {
       hw.last_name?.toLowerCase().includes(term) ||
       hw.business_city?.toLowerCase().includes(term);
 
+    // SSOT: Verzeichnis filtert nach Firmensitz (Kanton/Region), nicht nach Einsatzgebiet
     const matchesCanton = filterCanton === 'all' ||
-      hw.business_canton === filterCanton ||
-      coversCanton(hw.service_areas, filterCanton);
+      hw.business_canton === filterCanton;
     const matchesCategory = filterCategory === 'all' || hw.categories?.includes(filterCategory);
 
     return matchesSearch && matchesCanton && matchesCategory;
