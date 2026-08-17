@@ -276,7 +276,7 @@ const BrowseLayer = ({ searchTerm, onSearchTermChange, onSearch, onCantonClick, 
       <section>
         <h2 className="text-xl font-semibold mb-4">Kantone</h2>
         <div className="flex flex-wrap gap-2">
-          {filteredCantons.map(canton => (
+          {[{ value: 'all', label: 'Alle Kantone' }, ...filteredCantons].map(canton => (
             <button
               key={canton.value}
               onClick={() => onCantonClick(canton.value)}
