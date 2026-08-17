@@ -1,6 +1,6 @@
 /**
- * Complete list of all 26 Swiss cantons
- * Single Source of Truth for canton data across the application
+ * Complete list of all 26 Swiss cantons plus the Principality of Liechtenstein (FL)
+ * Single Source of Truth for canton/region data across the application
  */
 export const SWISS_CANTONS = [
   { value: 'AG', label: 'Aargau' },
@@ -29,11 +29,15 @@ export const SWISS_CANTONS = [
   { value: 'VS', label: 'Wallis' },
   { value: 'ZG', label: 'Zug' },
   { value: 'ZH', label: 'Zürich' },
+  { value: 'FL', label: 'Fürstentum Liechtenstein' },
 ] as const;
 
 export type CantonCode = typeof SWISS_CANTONS[number]['value'];
 
 export const CANTON_CODES = SWISS_CANTONS.map(c => c.value);
+
+/** Codes of the 26 Swiss cantons only (excludes the Principality of Liechtenstein) */
+export const SWISS_ONLY_CANTON_CODES = CANTON_CODES.filter(code => code !== 'FL');
 
 export const getCantonLabel = (code: string): string => {
   return SWISS_CANTONS.find(c => c.value === code)?.label || code;

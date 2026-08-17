@@ -2517,6 +2517,7 @@ export type Database = {
         | "VS"
         | "ZG"
         | "ZH"
+        | "FL"
       handwerker_category:
         | "elektriker"
         | "sanitaer"
@@ -2667,6 +2668,7 @@ export type Database = {
         | "VS"
         | "ZG"
         | "ZH"
+        | "FL"
       urgency_level: "today" | "this_week" | "this_month" | "planning"
       user_role: "homeowner" | "handwerker" | "admin"
     }
@@ -2832,6 +2834,7 @@ export const Constants = {
         "VS",
         "ZG",
         "ZH",
+        "FL",
       ],
       handwerker_category: [
         "elektriker",
@@ -2986,6 +2989,7 @@ export const Constants = {
         "VS",
         "ZG",
         "ZH",
+        "FL",
       ],
       urgency_level: ["today", "this_week", "this_month", "planning"],
       user_role: ["homeowner", "handwerker", "admin"],
