@@ -48,6 +48,8 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
   const [resetMode, setResetMode] = useState<'support' | 'custom'>('support');
   const [customPwInput, setCustomPwInput] = useState('');
   const [customPwConfirm, setCustomPwConfirm] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   // Reset internal state whenever the dialog closes
   useEffect(() => {
