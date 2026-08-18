@@ -137,6 +137,32 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!target || !generatedPassword) return;
+    setEmailSending(true);
+    try {
+      await sendAccessCredentialsEmail({
+        userId: target.userId,
+        email: target.email,
+        name: target.name,
+        password: generatedPassword,
+      });
+      setEmailSent(true);
+      toast({
+        title: 'E-Mail gesendet',
+        description: `Zugangsdaten wurden an ${target.email} gesendet.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Fehler',
+        description: err?.message || 'E-Mail konnte nicht gesendet werden.',
+        variant: 'destructive',
+      });
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   const handleClose = () => onOpenChange(false);
 
   return (
