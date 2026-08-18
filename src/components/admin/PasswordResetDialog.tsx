@@ -279,6 +279,26 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
                   <p className="text-sm text-muted-foreground">
                     Kopieren Sie das Passwort und teilen Sie es dem Benutzer manuell mit, damit er sich sofort anmelden kann.
                   </p>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleSendEmail}
+                    disabled={emailSending || emailSent}
+                  >
+                    {emailSending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        E-Mail wird gesendet...
+                      </>
+                    ) : emailSent ? (
+                      'Zugangsdaten gesendet'
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Zugangsdaten per E-Mail senden
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </div>
