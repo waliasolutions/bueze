@@ -60,6 +60,8 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
       setCustomPwInput('');
       setCustomPwConfirm('');
       setActionLoading(false);
+      setEmailSending(false);
+      setEmailSent(false);
     }
   }, [open]);
 
