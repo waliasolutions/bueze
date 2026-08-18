@@ -31,7 +31,7 @@ Sprache: Deutsch (de-CH). Versand erst auf dein «senden»-Kommando.
 > 3. Sie erhalten eine E-Mail mit einem Link. Wichtig: Dieser Link ist nur **eine Stunde** gültig und kann nur **einmal** verwendet werden.
 > 4. Öffnen Sie den Link innerhalb dieser Stunde und vergeben Sie Ihr neues Passwort.
 >
-> Wir freuen uns auf Ihre Rückmeldung, ob die Anmeldung nun funktioniert. Bei Fragen erreichen Sie uns unter info@bueeze.ch; ein kurzer Telefontermin an Werktagen ist ebenfalls möglich.
+> Wir freuen uns auf Ihre Rückmeldung, ob die Anmeldung nun funktioniert. Bei Fragen erreichen Sie uns unter info@bueeze.ch; ein kurzer Telefontermin an Werktagen ist ebenfalls möglich – bitte beachten Sie, dass wir für Anrufe nur **Deutsch oder Englisch** anbieten können.
 >
 > Freundliche Grüsse
 > Ihr Büeze.ch Team
