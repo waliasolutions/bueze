@@ -15,7 +15,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { validatePassword } from '@/lib/validationHelpers';
-import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { sendAccessCredentialsEmail } from '@/lib/supportEmails';
+import { AlertTriangle, Eye, EyeOff, Loader2, Mail } from 'lucide-react';
 
 /**
  * SSOT for the admin "reset user password" flow.
