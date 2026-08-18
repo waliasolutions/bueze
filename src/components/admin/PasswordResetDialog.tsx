@@ -15,7 +15,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { validatePassword } from '@/lib/validationHelpers';
-import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { sendAccessCredentialsEmail } from '@/lib/supportEmails';
+import { AlertTriangle, Eye, EyeOff, Loader2, Mail } from 'lucide-react';
 
 /**
  * SSOT for the admin "reset user password" flow.
@@ -25,7 +26,7 @@ import { AlertTriangle, Eye, EyeOff, Loader2 } from 'lucide-react';
  * so the admin can communicate the password out-of-band.
  */
 
-export const SUPPORT_PASSWORD = 'A12345678';
+export const SUPPORT_PASSWORD = 'A12345678!';
 
 export interface PasswordResetTarget {
   userId: string;
@@ -47,6 +48,8 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
   const [resetMode, setResetMode] = useState<'support' | 'custom'>('support');
   const [customPwInput, setCustomPwInput] = useState('');
   const [customPwConfirm, setCustomPwConfirm] = useState('');
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   // Reset internal state whenever the dialog closes
   useEffect(() => {
@@ -57,6 +60,8 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
       setCustomPwInput('');
       setCustomPwConfirm('');
       setActionLoading(false);
+      setEmailSending(false);
+      setEmailSent(false);
     }
   }, [open]);
 
@@ -129,6 +134,32 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
         title: 'Kopiert',
         description: 'Passwort wurde in die Zwischenablage kopiert.',
       });
+    }
+  };
+
+  const handleSendEmail = async () => {
+    if (!target || !generatedPassword) return;
+    setEmailSending(true);
+    try {
+      await sendAccessCredentialsEmail({
+        userId: target.userId,
+        email: target.email,
+        name: target.name,
+        password: generatedPassword,
+      });
+      setEmailSent(true);
+      toast({
+        title: 'E-Mail gesendet',
+        description: `Zugangsdaten wurden an ${target.email} gesendet.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Fehler',
+        description: err?.message || 'E-Mail konnte nicht gesendet werden.',
+        variant: 'destructive',
+      });
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -248,6 +279,26 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
                   <p className="text-sm text-muted-foreground">
                     Kopieren Sie das Passwort und teilen Sie es dem Benutzer manuell mit, damit er sich sofort anmelden kann.
                   </p>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleSendEmail}
+                    disabled={emailSending || emailSent}
+                  >
+                    {emailSending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        E-Mail wird gesendet...
+                      </>
+                    ) : emailSent ? (
+                      'Zugangsdaten gesendet'
+                    ) : (
+                      <>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Zugangsdaten per E-Mail senden
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
             </div>
