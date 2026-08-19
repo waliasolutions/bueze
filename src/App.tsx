@@ -15,7 +15,6 @@ import { ViewModeProvider } from "@/contexts/ViewModeContext";
 import { BillingSettingsProvider } from "@/contexts/BillingSettingsProvider";
 import { AdminSuspenseFallback } from "@/components/admin/AdminPageSkeleton";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { useOverflowDetector } from "@/hooks/useOverflowDetector";
 
 // Critical routes - loaded immediately
 import Index from "./pages/Index";
@@ -134,8 +133,6 @@ const ScrollToTop = () => {
 };
 
 const App = () => {
-  // Dev-only horizontal overflow detector. No-op in production builds.
-  useOverflowDetector();
 
   React.useEffect(() => {
     // Initialize error tracking and correlation ID
