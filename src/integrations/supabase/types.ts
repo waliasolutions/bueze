@@ -2458,6 +2458,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_lead_owner: { Args: { lead_uuid: string }; Returns: boolean }
       list_image_backfill_candidates: {
         Args: { p_bucket: string; p_limit?: number }
         Returns: {
