@@ -585,6 +585,12 @@ export default function HandwerkerManagement() {
   };
 
   const filteredHandwerkers = getFilteredHandwerkers();
+  const totalPages = Math.max(1, Math.ceil(filteredHandwerkers.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedHandwerkers = filteredHandwerkers.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
   const counts = {
     all: handwerkers.length,
     pending: handwerkers.filter((h) => h.verification_status === 'pending').length,
@@ -592,6 +598,7 @@ export default function HandwerkerManagement() {
     inactive: handwerkers.filter((h) => h.verification_status === 'inactive').length,
     rejected: handwerkers.filter((h) => h.verification_status === 'rejected').length,
   };
+
 
   const isReady = hasChecked && isAuthorized && !loading;
 
