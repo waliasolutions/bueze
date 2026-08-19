@@ -5,6 +5,9 @@ import { AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { FREE_TIER_PROPOSALS_LIMIT } from '@/config/subscriptionPlans';
+import { useHandwerkerProfile } from '@/hooks/useHandwerkerProfile';
+import { HANDWERKER_SUBSCRIPTION_SELECT } from '@/lib/querySelects';
+
 
 interface HandwerkerStatusIndicatorProps {
   userId: string;
