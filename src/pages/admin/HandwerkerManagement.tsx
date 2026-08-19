@@ -17,6 +17,8 @@ import { getCantonLabel } from '@/config/cantons';
 import { formatPhoneDisplay, formatPhoneHref, formatAddress } from '@/lib/displayFormatters';
 import { calculateProfileCompleteness } from '@/lib/profileCompleteness';
 import { HANDWERKER_ADMIN_LIST_SELECT } from '@/lib/querySelects';
+import { chunk } from '@/lib/utils';
+
 import { HandwerkerProfileModal } from '@/components/HandwerkerProfileModal';
 import { HandwerkerEditDialog } from '@/components/admin/HandwerkerEditDialog';
 import { PasswordResetDialog, type PasswordResetTarget } from '@/components/admin/PasswordResetDialog';
