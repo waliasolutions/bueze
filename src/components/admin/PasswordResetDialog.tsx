@@ -27,7 +27,7 @@ import { AlertTriangle, Eye, EyeOff, Loader2, Mail } from 'lucide-react';
  * so the admin can communicate the password out-of-band.
  */
 
-export const SUPPORT_PASSWORD = 'A12345678!';
+export const SUPPORT_PASSWORD = 'A12345678';
 
 export interface PasswordResetTarget {
   userId: string;
