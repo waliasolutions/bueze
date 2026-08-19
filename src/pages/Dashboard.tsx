@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { supabase } from '@/integrations/supabase/client';
-import { LEAD_LIST_SELECT } from '@/lib/querySelects';
+import { LEAD_LIST_SELECT, USER_PROFILE_SELECT } from '@/lib/querySelects';
 import { Plus, MapPin, Eye, Users, FileText, Trash2, Archive, RotateCcw, Star, MessageSquare } from 'lucide-react';
 import { formatTimeAgo, formatNumber, formatBudget } from '@/lib/swissTime';
 import { getCategoryLabel } from '@/config/categoryLabels';
@@ -108,7 +108,7 @@ const Dashboard = () => {
         // Fetch user profile
         supabase
           .from('profiles')
-          .select('*')
+          .select(USER_PROFILE_SELECT)
           .eq('id', user.id)
           .maybeSingle(),
         

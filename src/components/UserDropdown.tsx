@@ -19,15 +19,19 @@ import { roleNavigation } from '@/config/navigation';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { hasHandwerkerIdentity } from '@/config/roles';
 import type { UserProfileBasic } from '@/types/entities';
+import { USER_PROFILE_BASIC_SELECT } from '@/lib/querySelects';
+import { useHandwerkerProfile } from '@/hooks/useHandwerkerProfile';
+
 
 export const UserDropdown = () => {
   const [profile, setProfile] = useState<UserProfileBasic | null>(null);
-  const [hasHandwerkerProfile, setHasHandwerkerProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userId, isAdmin, isHandwerker, isClient, loading: roleLoading } = useUserRole();
   const { activeView } = useViewMode();
+  const { hasActiveProfile: hasHandwerkerProfile } = useHandwerkerProfile(userId);
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -35,25 +39,15 @@ export const UserDropdown = () => {
         setIsLoading(false);
         return;
       }
-      
+
       try {
-        const [{ data: profileData }, { data: hwProfile }] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single(),
-          supabase
-            .from('handwerker_profiles')
-            .select('id, verification_status')
-            .eq('user_id', userId)
-            .maybeSingle(),
-        ]);
-        
-        setProfile(profileData);
-        setHasHandwerkerProfile(
-          !!hwProfile && ['pending', 'approved'].includes(hwProfile.verification_status || '')
-        );
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select(USER_PROFILE_BASIC_SELECT)
+          .eq('id', userId)
+          .maybeSingle();
+
+        setProfile(profileData as UserProfileBasic | null);
       } catch (error) {
         console.error('Error fetching profile:', error);
       } finally {
@@ -65,6 +59,7 @@ export const UserDropdown = () => {
       fetchProfile();
     }
   }, [userId, roleLoading]);
+
 
   const handleSignOut = async () => {
     // Enhanced logout - clear all session data

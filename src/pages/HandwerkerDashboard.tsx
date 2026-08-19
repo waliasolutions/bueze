@@ -35,7 +35,7 @@ import { getCategoryLabel } from "@/config/categoryLabels";
 import { getCantonLabel, SWISS_CANTONS } from "@/config/cantons";
 import { getUrgencyLabel, getUrgencyColor } from "@/config/urgencyLevels";
 import { checkCategoryMatch, checkServiceAreaMatch } from "@/lib/leadHelpers";
-import { LEAD_LIST_SELECT, PROPOSAL_LIST_SELECT } from "@/lib/querySelects";
+import { LEAD_LIST_SELECT, PROPOSAL_LIST_SELECT, HANDWERKER_PROFILE_SELECT } from "@/lib/querySelects";
 import { revokeProposalAcceptance } from "@/lib/proposalHelpers";
 import { EmptyState, InlineEmptyState } from "@/components/ui/empty-state";
 import { CardSkeleton } from "@/components/ui/page-skeleton";
@@ -200,7 +200,7 @@ const HandwerkerDashboard = () => {
       const {
         data: profile,
         error
-      } = await supabase.from('handwerker_profiles').select('*').eq('user_id', currentUser.id).maybeSingle();
+      } = await supabase.from('handwerker_profiles').select(HANDWERKER_PROFILE_SELECT).eq('user_id', currentUser.id).maybeSingle();
       if (error) {
         console.error('Error fetching profile:', error);
         // Silent fail on initial load - avoid disruptive toast on page load
@@ -1484,7 +1484,7 @@ const HandwerkerDashboard = () => {
                                     // Fetch full lead details
                                     const { data: leadData } = await supabase
                                       .from('leads')
-                                      .select('*')
+                                      .select(LEAD_LIST_SELECT)
                                       .eq('id', proposal.lead_id)
                                       .single();
                                     if (leadData) {
