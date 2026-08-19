@@ -57,6 +57,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { FREE_TIER_PROPOSALS_LIMIT, SUBSCRIPTION_PLAN_LIST, SUBSCRIPTION_PLANS, type SubscriptionPlanType, getProposalLimit } from '@/config/subscriptionPlans';
 
+const PAGE_SIZE = 50;
+
 interface Handwerker {
   id: string;
   user_id: string | null;
@@ -109,6 +111,13 @@ export default function HandwerkerManagement() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [editingHandwerker, setEditingHandwerker] = useState<Handwerker | null>(null);
   const [resetTarget, setResetTarget] = useState<PasswordResetTarget | null>(null);
+  const [page, setPage] = useState(1);
+
+  // Reset pagination whenever the result set changes
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, searchTerm, categoryFilter]);
+
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
@@ -585,6 +594,12 @@ export default function HandwerkerManagement() {
   };
 
   const filteredHandwerkers = getFilteredHandwerkers();
+  const totalPages = Math.max(1, Math.ceil(filteredHandwerkers.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedHandwerkers = filteredHandwerkers.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE
+  );
   const counts = {
     all: handwerkers.length,
     pending: handwerkers.filter((h) => h.verification_status === 'pending').length,
@@ -592,6 +607,7 @@ export default function HandwerkerManagement() {
     inactive: handwerkers.filter((h) => h.verification_status === 'inactive').length,
     rejected: handwerkers.filter((h) => h.verification_status === 'rejected').length,
   };
+
 
   const isReady = hasChecked && isAuthorized && !loading;
 
@@ -752,7 +768,7 @@ export default function HandwerkerManagement() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredHandwerkers.map((h) => {
+                  pagedHandwerkers.map((h) => {
                     const completeness = getCompleteness(h);
                     return (
                       <TableRow key={h.id}>
@@ -969,7 +985,38 @@ export default function HandwerkerManagement() {
               </TableBody>
             </Table>
             </div>
+            {filteredHandwerkers.length > PAGE_SIZE && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4">
+                <p className="text-sm text-muted-foreground">
+                  {(currentPage - 1) * PAGE_SIZE + 1}–
+                  {Math.min(currentPage * PAGE_SIZE, filteredHandwerkers.length)} von{' '}
+                  {filteredHandwerkers.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage(currentPage - 1)}
+                  >
+                    Zurück
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Seite {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage(currentPage + 1)}
+                  >
+                    Weiter
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
+
         </Card>
       </Tabs>
 
