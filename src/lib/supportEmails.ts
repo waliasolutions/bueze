@@ -43,7 +43,7 @@ export async function sendAccessCredentialsEmail({
         'Dies ist ein Standard-Passwort. Sie können es jederzeit in Ihrem Profil ändern.',
         'Falls Sie das Passwort selbst zurücksetzen möchten:',
         'Öffnen Sie https://bueeze.ch/auth, klicken Sie auf «Passwort vergessen», geben Sie Ihre E-Mail-Adresse ein und öffnen Sie anschliessend den Link in der E-Mail. Bitte beachten Sie: Der Link ist nur 1 Stunde gültig. Danach müssen Sie einen neuen Link anfordern.',
-        'Wir freuen uns auf Ihre Rückmeldung, ob die Anmeldung nun funktioniert. Bei Fragen erreichen Sie uns unter info@bueeze.ch. Ein kurzer Telefontermin an Werktagen ist ebenfalls möglich – bitte beachten Sie, dass wir Anrufe nur auf Deutsch oder Englisch anbieten können.',
+        'Wir freuen uns auf Ihre Rückmeldung, ob die Anmeldung nun funktioniert. Bei Fragen erreichen Sie uns unter info@bueeze.ch. Bitte beachten Sie, dass technischer Support zurzeit nur auf Deutsch oder Englisch angeboten werden kann.',
         'Freundliche Grüsse',
         'Ihr Büeze.ch Team',
       ],
