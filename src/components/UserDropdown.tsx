@@ -19,6 +19,9 @@ import { roleNavigation } from '@/config/navigation';
 import { useViewMode } from '@/contexts/ViewModeContext';
 import { hasHandwerkerIdentity } from '@/config/roles';
 import type { UserProfileBasic } from '@/types/entities';
+import { USER_PROFILE_BASIC_SELECT } from '@/lib/querySelects';
+import { useHandwerkerProfile } from '@/hooks/useHandwerkerProfile';
+
 
 export const UserDropdown = () => {
   const [profile, setProfile] = useState<UserProfileBasic | null>(null);
