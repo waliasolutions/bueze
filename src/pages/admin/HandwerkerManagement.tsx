@@ -147,14 +147,21 @@ export default function HandwerkerManagement() {
       return;
     }
     try {
-      const { data, error } = await supabase
-        .from('handwerker_subscriptions')
-        .select('user_id, plan_type, proposals_used_this_period, proposals_limit')
-        .in('user_id', userIds);
+      // Batched: a single `.in()` with hundreds of UUIDs exceeds the request
+      // URL limit (414) and silently drops the subscription column.
+      const batches = await Promise.all(
+        chunk(userIds, 100).map(async (ids) => {
+          const { data, error } = await supabase
+            .from('handwerker_subscriptions')
+            .select('user_id, plan_type, proposals_used_this_period, proposals_limit')
+            .in('user_id', ids);
+          if (error) throw error;
+          return data || [];
+        })
+      );
 
-      if (error) throw error;
       const subsMap = new Map<string, Subscription>();
-      data?.forEach((sub) => {
+      batches.flat().forEach((sub) => {
         subsMap.set(sub.user_id, sub);
       });
       setSubscriptions(subsMap);
@@ -162,6 +169,7 @@ export default function HandwerkerManagement() {
       console.error('Error fetching subscriptions:', error);
     }
   };
+
 
   const getFilteredHandwerkers = () => {
     let filtered = handwerkers;
