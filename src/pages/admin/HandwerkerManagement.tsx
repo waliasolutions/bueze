@@ -768,7 +768,7 @@ export default function HandwerkerManagement() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredHandwerkers.map((h) => {
+                  pagedHandwerkers.map((h) => {
                     const completeness = getCompleteness(h);
                     return (
                       <TableRow key={h.id}>
