@@ -145,7 +145,7 @@ export const HandwerkerStatusIndicator: React.FC<HandwerkerStatusIndicatorProps>
     };
   };
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className={cn("flex items-center gap-2", className)}>
         <div className="h-2.5 w-2.5 rounded-full bg-gray-300 animate-pulse" />

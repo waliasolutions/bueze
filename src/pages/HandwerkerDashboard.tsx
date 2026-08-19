@@ -200,7 +200,7 @@ const HandwerkerDashboard = () => {
       const {
         data: profile,
         error
-      } = await supabase.from('handwerker_profiles').select('*').eq('user_id', currentUser.id).maybeSingle();
+      } = await supabase.from('handwerker_profiles').select(HANDWERKER_PROFILE_SELECT).eq('user_id', currentUser.id).maybeSingle();
       if (error) {
         console.error('Error fetching profile:', error);
         // Silent fail on initial load - avoid disruptive toast on page load
@@ -1484,7 +1484,7 @@ const HandwerkerDashboard = () => {
                                     // Fetch full lead details
                                     const { data: leadData } = await supabase
                                       .from('leads')
-                                      .select('*')
+                                      .select(LEAD_LIST_SELECT)
                                       .eq('id', proposal.lead_id)
                                       .single();
                                     if (leadData) {

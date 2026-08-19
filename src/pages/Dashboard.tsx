@@ -108,7 +108,7 @@ const Dashboard = () => {
         // Fetch user profile
         supabase
           .from('profiles')
-          .select('*')
+          .select(USER_PROFILE_SELECT)
           .eq('id', user.id)
           .maybeSingle(),
         
