@@ -65,7 +65,7 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
     }
   }, [open]);
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (sendEmailAfterReset = false) => {
     if (!target) return;
 
     let passwordToSet: string;
@@ -108,11 +108,28 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
 
       if (data?.success) {
         setGeneratedPassword(passwordToSet);
+
+        if (sendEmailAfterReset) {
+          setEmailSending(true);
+          await sendAccessCredentialsEmail({
+            userId: target.userId,
+            email: target.email,
+            name: target.name,
+            password: passwordToSet,
+          });
+          setEmailSent(true);
+        }
       }
 
       toast({
-        title: resetMode === 'custom' ? 'Eigenes Passwort gesetzt' : 'Support-Passwort gesetzt',
-        description: `Das Passwort für ${target.email} wurde aktualisiert.`,
+        title: sendEmailAfterReset
+          ? 'Passwort gesetzt und E-Mail gesendet'
+          : resetMode === 'custom'
+            ? 'Eigenes Passwort gesetzt'
+            : 'Support-Passwort gesetzt',
+        description: sendEmailAfterReset
+          ? `Die Zugangsdaten wurden an ${target.email} gesendet.`
+          : `Das Passwort für ${target.email} wurde aktualisiert.`,
       });
     } catch (err: any) {
       console.error('Error resetting password:', err);
@@ -124,6 +141,7 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
       onOpenChange(false);
     } finally {
       setActionLoading(false);
+      setEmailSending(false);
     }
   };
 
@@ -308,7 +326,22 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
           {!generatedPassword ? (
             <>
               <AlertDialogCancel onClick={handleClose}>Abbrechen</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirm} disabled={actionLoading}>
+              {resetMode === 'support' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleConfirm(true)}
+                  disabled={actionLoading || emailSending}
+                >
+                  {actionLoading && emailSending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="mr-2 h-4 w-4" />
+                  )}
+                  Passwort setzen &amp; E-Mail senden
+                </Button>
+              )}
+              <AlertDialogAction onClick={() => handleConfirm(false)} disabled={actionLoading}>
                 {actionLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
