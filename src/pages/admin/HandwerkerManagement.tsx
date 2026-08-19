@@ -109,6 +109,13 @@ export default function HandwerkerManagement() {
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
   const [editingHandwerker, setEditingHandwerker] = useState<Handwerker | null>(null);
   const [resetTarget, setResetTarget] = useState<PasswordResetTarget | null>(null);
+  const [page, setPage] = useState(1);
+
+  // Reset pagination whenever the result set changes
+  useEffect(() => {
+    setPage(1);
+  }, [activeTab, searchTerm, categoryFilter]);
+
 
   useEffect(() => {
     if (hasChecked && isAuthorized) {
