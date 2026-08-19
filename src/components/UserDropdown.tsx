@@ -35,25 +35,15 @@ export const UserDropdown = () => {
         setIsLoading(false);
         return;
       }
-      
+
       try {
-        const [{ data: profileData }, { data: hwProfile }] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .single(),
-          supabase
-            .from('handwerker_profiles')
-            .select('id, verification_status')
-            .eq('user_id', userId)
-            .maybeSingle(),
-        ]);
-        
-        setProfile(profileData);
-        setHasHandwerkerProfile(
-          !!hwProfile && ['pending', 'approved'].includes(hwProfile.verification_status || '')
-        );
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select(USER_PROFILE_BASIC_SELECT)
+          .eq('id', userId)
+          .maybeSingle();
+
+        setProfile(profileData as UserProfileBasic | null);
       } catch (error) {
         console.error('Error fetching profile:', error);
       } finally {
@@ -65,6 +55,7 @@ export const UserDropdown = () => {
       fetchProfile();
     }
   }, [userId, roleLoading]);
+
 
   const handleSignOut = async () => {
     // Enhanced logout - clear all session data
