@@ -985,7 +985,38 @@ export default function HandwerkerManagement() {
               </TableBody>
             </Table>
             </div>
+            {filteredHandwerkers.length > PAGE_SIZE && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t p-4">
+                <p className="text-sm text-muted-foreground">
+                  {(currentPage - 1) * PAGE_SIZE + 1}–
+                  {Math.min(currentPage * PAGE_SIZE, filteredHandwerkers.length)} von{' '}
+                  {filteredHandwerkers.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={currentPage <= 1}
+                    onClick={() => setPage(currentPage - 1)}
+                  >
+                    Zurück
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Seite {currentPage} / {totalPages}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setPage(currentPage + 1)}
+                  >
+                    Weiter
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
+
         </Card>
       </Tabs>
 
