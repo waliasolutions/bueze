@@ -57,6 +57,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { FREE_TIER_PROPOSALS_LIMIT, SUBSCRIPTION_PLAN_LIST, SUBSCRIPTION_PLANS, type SubscriptionPlanType, getProposalLimit } from '@/config/subscriptionPlans';
 
+const PAGE_SIZE = 50;
+
 interface Handwerker {
   id: string;
   user_id: string | null;
