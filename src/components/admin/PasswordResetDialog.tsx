@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { validatePassword } from '@/lib/validationHelpers';
 import { sendAccessCredentialsEmail } from '@/lib/supportEmails';
+import { useUserRole } from '@/hooks/useUserRole';
 import { AlertTriangle, Eye, EyeOff, Loader2, Mail } from 'lucide-react';
 
 /**
@@ -42,6 +43,7 @@ interface Props {
 
 export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
   const { toast } = useToast();
+  const { isSuperAdmin } = useUserRole();
   const [actionLoading, setActionLoading] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -297,6 +299,7 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
                   <p className="text-sm text-muted-foreground">
                     Kopieren Sie das Passwort und teilen Sie es dem Benutzer manuell mit, damit er sich sofort anmelden kann.
                   </p>
+                  {isSuperAdmin && (
                   <Button
                     variant="outline"
                     className="w-full"
@@ -317,6 +320,7 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
                       </>
                     )}
                   </Button>
+                  )}
                 </div>
               )}
             </div>
@@ -326,7 +330,7 @@ export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
           {!generatedPassword ? (
             <>
               <AlertDialogCancel onClick={handleClose}>Abbrechen</AlertDialogCancel>
-              {resetMode === 'support' && (
+              {resetMode === 'support' && isSuperAdmin && (
                 <Button
                   type="button"
                   variant="outline"
