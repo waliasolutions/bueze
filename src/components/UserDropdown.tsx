@@ -25,12 +25,13 @@ import { useHandwerkerProfile } from '@/hooks/useHandwerkerProfile';
 
 export const UserDropdown = () => {
   const [profile, setProfile] = useState<UserProfileBasic | null>(null);
-  const [hasHandwerkerProfile, setHasHandwerkerProfile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { userId, isAdmin, isHandwerker, isClient, loading: roleLoading } = useUserRole();
   const { activeView } = useViewMode();
+  const { hasActiveProfile: hasHandwerkerProfile } = useHandwerkerProfile(userId);
+
 
   useEffect(() => {
     const fetchProfile = async () => {

@@ -33,54 +33,47 @@ export const HandwerkerStatusIndicator: React.FC<HandwerkerStatusIndicatorProps>
 }) => {
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [profileComplete, setProfileComplete] = useState(false);
   const navigate = useNavigate();
+  const { profile: profileData, loading: profileLoading } = useHandwerkerProfile(userId);
 
   useEffect(() => {
-    fetchData();
+    let active = true;
+
+    const fetchSubscription = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('handwerker_subscriptions')
+          .select(HANDWERKER_SUBSCRIPTION_SELECT)
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (active) setSubscription(data);
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    if (userId) fetchSubscription();
+    else setLoading(false);
+
+    return () => {
+      active = false;
+    };
   }, [userId]);
 
-  const fetchData = async () => {
-    try {
-      // Fetch subscription
-      const { data: subData, error: subError } = await supabase
-        .from('handwerker_subscriptions')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
+  // Profile completeness derives from the shared profile cache (SSOT)
+  const profileComplete = !!(
+    profileData?.first_name &&
+    profileData?.last_name &&
+    profileData?.email &&
+    profileData?.phone_number &&
+    profileData?.bio &&
+    (profileData?.service_areas?.length ?? 0) > 0
+  );
 
-      if (subError) throw subError;
-      setSubscription(subData);
-
-      // Fetch profile to check completeness - use user_id, not id
-      const { data: profileData, error: profileError } = await supabase
-        .from('handwerker_profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      // Handle missing profile gracefully
-      if (profileError && profileError.code !== 'PGRST116') {
-        throw profileError;
-      }
-      
-      // Check if profile exists and has essential information
-      const isComplete = !!(
-        profileData?.first_name &&
-        profileData?.last_name &&
-        profileData?.email &&
-        profileData?.phone_number &&
-        profileData?.bio &&
-        profileData?.service_areas?.length > 0
-      );
-      
-      setProfileComplete(isComplete);
-    } catch (error) {
-      console.error('Error fetching status data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getStatus = (): StatusConfig => {
     // Check profile completeness first
