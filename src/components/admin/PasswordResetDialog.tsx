@@ -43,6 +43,7 @@ interface Props {
 
 export function PasswordResetDialog({ open, onOpenChange, target }: Props) {
   const { toast } = useToast();
+  const { isSuperAdmin } = useUserRole();
   const [actionLoading, setActionLoading] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
